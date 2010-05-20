@@ -19,19 +19,20 @@
  *
  */
 
-#include "AutoPtrHandle.h"
+#include "stdafx.h" 
+
 #include "FileCache.h"
 #include "utils/Thread.h"
 #include "File.h"
 #include "URL.h"
+#include "Settings.h"
 
 #include "CacheMemBuffer.h"
 #include "utils/SingleLock.h"
-#include "utils/log.h"
 
 using namespace AUTOPTR;
 using namespace XFILE;
-
+ 
 #define READ_CACHE_CHUNK_SIZE (64*1024)
 
 CFileCache::CFileCache()
@@ -40,7 +41,11 @@ CFileCache::CFileCache()
    m_nSeekResult = 0;
    m_seekPos = 0;
    m_readPos = 0;
-   m_pCache = new CacheMemBuffer();
+
+   if (!g_advancedSettings.m_cacheMemBufferSize)
+     m_pCache = new CSimpleFileCache();
+   else
+     m_pCache = new CacheMemBuffer();
    m_seekPossible = 0;
 }
 
@@ -243,14 +248,14 @@ int CFileCache::Stat(const CURL& url, struct __stat64* buffer)
   return CFile::Stat(url.Get(), buffer);
 }
 
-unsigned int CFileCache::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileCache::Read(void* lpBuf, __int64 uiBufSize)
 {
   CSingleLock lock(m_sync);
   if (!m_pCache) {
     CLog::Log(LOGERROR,"%s - sanity failed. no cache strategy!", __FUNCTION__);
     return 0;
   }
-  int64_t iRc;
+  __int64 iRc;
 
 retry:
   // attempt to read
@@ -283,7 +288,7 @@ retry:
   return 0;
 }
 
-int64_t CFileCache::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileCache::Seek(__int64 iFilePosition, int iWhence)
 {
   CSingleLock lock(m_sync);
 
@@ -292,8 +297,8 @@ int64_t CFileCache::Seek(int64_t iFilePosition, int iWhence)
     return -1;
   }
 
-  int64_t iCurPos = m_readPos;
-  int64_t iTarget = iFilePosition;
+  __int64 iCurPos = m_readPos;
+  __int64 iTarget = iFilePosition;
   if (iWhence == SEEK_END)
     iTarget = GetLength() + iTarget;
   else if (iWhence == SEEK_CUR)
@@ -339,12 +344,12 @@ void CFileCache::Close()
   m_source.Close();
 }
 
-int64_t CFileCache::GetPosition()
+__int64 CFileCache::GetPosition()
 {
   return m_readPos;
 }
 
-int64_t CFileCache::GetLength()
+__int64 CFileCache::GetLength()
 {
   return m_source.GetLength();
 }

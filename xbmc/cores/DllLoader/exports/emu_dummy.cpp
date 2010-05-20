@@ -18,15 +18,15 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "emu_dummy.h"
-#include "utils/log.h"
 
-extern "C" void not_implement( const char* debuginfo)
+extern "C" void not_implement( LPCSTR debuginfo)
 {
   if (debuginfo)
   {
-    CLog::Log(LOGDEBUG, "%s", (char*)debuginfo);
+    CLog::Log(LOGDEBUG, "%s", debuginfo);
   }
 }
 

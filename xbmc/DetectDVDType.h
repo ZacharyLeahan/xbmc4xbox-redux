@@ -29,11 +29,7 @@
 //
 //
 
-#include "system.h"
-
-#ifdef HAS_DVD_DRIVE
-
-#include "utils/IoSupport.h"
+#include "xbox/IoSupport.h"
 #include "FileSystem/cdioSupport.h"
 #include "utils/CriticalSection.h"
 
@@ -65,7 +61,7 @@ public:
 protected:
   void UpdateDvdrom();
   DWORD GetTrayState();
-
+  
 
   void DetectMediaType();
   void SetNewDVDShareUrl( const CStdString& strNewUrl, bool bCDDA, const CStdString& strDiscLabel );
@@ -87,9 +83,7 @@ private:
 
   static CStdString m_diskLabel;
   static CStdString m_diskPath;
-
+  
   CLibcdio* m_cdio;
 };
 }
-
-#endif

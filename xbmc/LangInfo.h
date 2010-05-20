@@ -20,10 +20,6 @@
  *
  */
 
-#include "StdString.h"
-
-#include <map>
-
 class TiXmlNode;
 
 class CLangInfo
@@ -45,7 +41,7 @@ public:
   bool ForceUnicodeFont() const { return m_currentRegion->m_forceUnicodeFont; }
 
   const CStdString& GetDateFormat(bool bLongDate=false) const;
-
+  
   typedef enum _MERIDIEM_SYMBOL
   {
     MERIDIEM_SYMBOL_PM=0,
@@ -70,7 +66,7 @@ public:
 
   const CStdString& GetTempUnitString() const;
   CLangInfo::TEMP_UNIT GetTempUnit() const;
-
+  
 
   typedef enum _SPEED_UNIT
   {

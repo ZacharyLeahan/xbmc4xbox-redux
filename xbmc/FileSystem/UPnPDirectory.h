@@ -25,7 +25,7 @@
 
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CUPnPDirectory :  public IDirectory
 {

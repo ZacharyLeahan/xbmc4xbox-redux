@@ -19,17 +19,15 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlayListPlayer.h"
 #include "PlayListFactory.h"
 #include "Application.h"
 #include "PartyModeManager.h"
 #include "AdvancedSettings.h"
-#include "GUIUserMessages.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogOK.h"
 #include "PlayList.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace PLAYLIST;
 
@@ -251,7 +249,7 @@ void CPlayListPlayer::Play(int iSong, bool bAutoPlay /* = false */, bool bPlayPr
 
   m_bPlaybackStarted = false;
 
-  unsigned int playAttempt = CTimeUtils::GetTimeMS();
+  DWORD playAttempt = timeGetTime();
   if (!g_application.PlayFile(*item, bAutoPlay))
   {
     CLog::Log(LOGERROR,"Playlist Player: skipping unplayable item: %i, path [%s]", m_iCurrentSong, item->m_strPath.c_str());
@@ -262,7 +260,7 @@ void CPlayListPlayer::Play(int iSong, bool bAutoPlay /* = false */, bool bPlayPr
       m_failedSongsStart = playAttempt;
     m_iFailedSongs++;
     if ((m_iFailedSongs >= g_advancedSettings.m_playlistRetries && g_advancedSettings.m_playlistRetries >= 0)
-        || ((CTimeUtils::GetTimeMS() - m_failedSongsStart  >= (unsigned int)g_advancedSettings.m_playlistTimeout * 1000) && g_advancedSettings.m_playlistTimeout))
+        || ((timeGetTime() - m_failedSongsStart  >= (unsigned int)g_advancedSettings.m_playlistTimeout * 1000) && g_advancedSettings.m_playlistTimeout))
     {
       CLog::Log(LOGDEBUG,"Playlist Player: one or more items failed to play... aborting playback");
 
@@ -615,5 +613,4 @@ void CPlayListPlayer::Clear()
     m_PlaylistEmpty->Clear();
   }
 }
-
 

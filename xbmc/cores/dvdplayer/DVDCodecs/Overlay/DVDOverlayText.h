@@ -22,9 +22,6 @@
  */
 
 #include "DVDOverlay.h"
-#ifdef _LINUX
-#include "../../utils/CharsetConverter.h"
-#endif
 
 class CDVDOverlayText : public CDVDOverlay
 {
@@ -44,13 +41,13 @@ public:
     {
       m_type = type;
     }
-
+    
     virtual ~CElement()
     {
     }
-
+    
     bool IsElementType(ElementType type) { return (type == m_type); }
-
+    
     CElement* pNext;
     ElementType m_type;
   };
@@ -69,15 +66,15 @@ public:
         m_text[size] = '\0';
       }
     }
-
+    
     virtual ~CElementText()
     {
       if (m_text) free(m_text);
     }
-
+    
     char* m_text;
   };
-
+  
   class CElementProperty : public CElement
   {
     CElementProperty() : CElement(ELEMENT_TYPE_PROPERTY)
@@ -85,13 +82,13 @@ public:
       bItalic = false;
       bBold = false;
     }
-
+    
   public:
     bool bItalic;
     bool bBold;
     // color
   };
-
+  
   CDVDOverlayText() : CDVDOverlay(DVDOVERLAY_TYPE_TEXT)
   {
     m_pHead = NULL;
@@ -108,11 +105,11 @@ public:
       delete pTemp;
     }
   }
-
+  
   void AddElement(CDVDOverlayText::CElement* pElement)
   {
     pElement->pNext = NULL;
-
+    
     if (!m_pHead)
     { // first element - set our head to this element, and update the end to the new element
       m_pHead = pElement;
@@ -124,7 +121,7 @@ public:
       m_pEnd = pElement;
     }
   }
-
+  
   CElement* m_pHead;
   CElement* m_pEnd;
 };

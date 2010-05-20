@@ -1,6 +1,6 @@
 /*!
 \file GUIControlGroupList.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -41,8 +41,7 @@ public:
 
   virtual void Render();
   virtual bool OnMessage(CGUIMessage& message);
-
-  virtual EVENT_RESULT SendMouseEvent(const CPoint &point, const CMouseEvent &event);
+  virtual bool CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const;
   virtual void UnfocusFromPoint(const CPoint &point);
 
   virtual void AddControl(CGUIControl *control, int position = -1);
@@ -50,7 +49,6 @@ public:
 
   virtual bool GetCondition(int condition, int data) const;
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   bool IsFirstFocusableControl(const CGUIControl *control) const;
   bool IsLastFocusableControl(const CGUIControl *control) const;
   void ValidateOffset();

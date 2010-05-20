@@ -54,7 +54,7 @@ public:
 
   bool IsStalled() { return m_pOverlayContainer->GetSize() == 0; }
 private:
-  CDVDOverlayContainer* m_pOverlayContainer;
+  CDVDOverlayContainer* m_pOverlayContainer;  
 
   CDVDSubtitleStream* m_pSubtitleStream;
   CDVDSubtitleParser* m_pSubtitleFileParser;

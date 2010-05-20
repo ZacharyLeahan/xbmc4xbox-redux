@@ -19,17 +19,17 @@
  *
  */
 
+#include "include.h"
 #include "GUIMultiImage.h"
 #include "TextureManager.h"
 #include "FileSystem/Directory.h"
 #include "Util.h"
 #include "FileItem.h"
-#include "Key.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
-CGUIMultiImage::CGUIMultiImage(int parentID, int controlID, float posX, float posY, float width, float height, const CTextureInfo& texture, unsigned int timePerImage, unsigned int fadeTime, bool randomized, bool loop, unsigned int timeToPauseAtEnd)
+CGUIMultiImage::CGUIMultiImage(int parentID, int controlID, float posX, float posY, float width, float height, const CTextureInfo& texture, DWORD timePerImage, DWORD fadeTime, bool randomized, bool loop, DWORD timeToPauseAtEnd)
     : CGUIControl(parentID, controlID, posX, posY, width, height),
       m_image(0, 0, posX, posY, width, height, texture)
 {
@@ -77,17 +77,7 @@ void CGUIMultiImage::UpdateVisibility(const CGUIListItem *item)
   }
 
   // we are either delayed or visible, so we can allocate our resources
-  if (!m_directoryLoaded)
-  {
-    LoadDirectory();
-    m_image.SetFileName(m_files.size() ? m_files[0] : "");
-  }
-  if (!m_bAllocated)
-    AllocResources();
-}
 
-void CGUIMultiImage::UpdateInfo(const CGUIListItem *item)
-{
   // check for conditional information before we
   // alloc as this can free our resources
   if (!m_texturePath.IsConstant())
@@ -95,11 +85,15 @@ void CGUIMultiImage::UpdateInfo(const CGUIListItem *item)
     CStdString texturePath(m_texturePath.GetLabel(m_parentID));
     if (texturePath != m_currentPath && !texturePath.IsEmpty())
     {
-      // a new path - set our current path and tell ourselves to load our directory
       m_currentPath = texturePath;
-      m_directoryLoaded = false;
+      LoadDirectory();
+      m_image.SetFileName(m_files.size() ? m_files[0] : "");
     }
   }
+
+  // and allocate our resources
+  if (!m_bAllocated)
+    AllocResources();
 }
 
 void CGUIMultiImage::Render()
@@ -116,7 +110,7 @@ void CGUIMultiImage::Render()
     if (nextImage != m_currentImage)
     {
       // check if we should be loading a new image yet
-      unsigned int timeToShow = m_timePerImage;
+      DWORD timeToShow = m_timePerImage;
       if (0 == nextImage) // last image should be paused for a bit longer if that's what the skinner wishes.
         timeToShow += m_timeToPauseAtEnd;
       if (m_imageTimer.IsRunning() && m_imageTimer.GetElapsedMilliseconds() > timeToShow)
@@ -169,23 +163,17 @@ void CGUIMultiImage::AllocResources()
   m_image.SetFileName(m_files.size() ? m_files[0] : "");
 }
 
-void CGUIMultiImage::FreeResources(bool immediately)
+void CGUIMultiImage::FreeResources()
 {
-  m_image.FreeResources(immediately);
+  m_image.FreeResources();
   m_currentImage = 0;
-  CGUIControl::FreeResources(immediately);
+  CGUIControl::FreeResources();
 }
 
 void CGUIMultiImage::DynamicResourceAlloc(bool bOnOff)
 {
   CGUIControl::DynamicResourceAlloc(bOnOff);
   m_bDynamicResourceAlloc=bOnOff;
-}
-
-void CGUIMultiImage::SetInvalid()
-{
-  m_image.SetInvalid();
-  CGUIControl::SetInvalid();
 }
 
 bool CGUIMultiImage::CanFocus() const

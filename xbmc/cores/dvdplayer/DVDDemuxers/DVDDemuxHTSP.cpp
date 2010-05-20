@@ -20,6 +20,7 @@
  */
 
 
+#include "stdafx.h"
 #include "DVDCodecs/DVDCodecs.h"
 #include "DVDInputStreams/DVDInputStream.h"
 #include "DVDInputStreams/DVDInputStreamHTSP.h"
@@ -27,7 +28,6 @@
 #include "DVDDemuxUtils.h"
 #include "DVDClock.h"
 #include "Application.h"
-#include "utils/log.h"
 
 extern "C" {
 #include "lib/libhts/net.h"
@@ -70,7 +70,7 @@ public:
   CDemuxStreamAudioHTSP(CDVDDemuxHTSP *parent, const string& codec)
     : m_parent(parent)
     , m_codec(codec)
-
+    
   {}
   void GetStreamInfo(string& strInfo)
   {
@@ -326,7 +326,7 @@ void CDVDDemuxHTSP::SubscriptionStatus(htsmsg_t *m)
     m_StatusCount++;
     m_Status = status;
     CLog::Log(LOGDEBUG, "CDVDDemuxHTSP::SubscriptionStatus - %s", status);
-    g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Info, "TVHeadend Status", status, TOAST_DISPLAY_TIME, false);
+    g_application.m_guiDialogKaiToast.QueueNotification("TVHeadend Status", status);
   }
 }
 

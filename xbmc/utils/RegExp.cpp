@@ -19,10 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include <stdlib.h>
 #include <string.h>
 #include "RegExp.h"
-#include "StdString.h"
+#include "include.h"
 #include "log.h"
 
 using namespace PCRE;
@@ -61,7 +62,6 @@ const CRegExp& CRegExp::operator=(const CRegExp& re)
         m_iMatchCount = re.m_iMatchCount;
         m_bMatched = re.m_bMatched;
         m_subject = re.m_subject;
-        m_iOptions = re.m_iOptions;
       }
     }
   }

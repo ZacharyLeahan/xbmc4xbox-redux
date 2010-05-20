@@ -1,6 +1,6 @@
 /*!
 \file LocalizeStrings.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_LOCALIZESTRINGS_H
@@ -29,13 +29,11 @@
  *
  */
 
-#include "StdString.h"
-
 #include <map>
 
 /*!
  \ingroup strings
- \brief
+ \brief 
  */
 class CLocalizeStrings
 {
@@ -51,7 +49,7 @@ public:
   void ClearBlock(const CStdString &id);
 protected:
   void Clear(uint32_t start, uint32_t end);
-  bool LoadXML(const CStdString &filename, CStdString &encoding, uint32_t offset = 0);
+  bool LoadXML(const CStdString &filename, CStdString &encoding, CStdString &error, uint32_t offset = 0);
   CStdString ToUTF8(const CStdString &encoding, const CStdString &str);
   std::map<uint32_t, CStdString> m_strings;
   typedef std::map<uint32_t, CStdString>::const_iterator ciStrings;
@@ -65,7 +63,7 @@ protected:
 
 /*!
  \ingroup strings
- \brief
+ \brief 
  */
 extern CLocalizeStrings g_localizeStrings;
 extern CLocalizeStrings g_localizeStringsTemp;

@@ -19,16 +19,16 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSmartPlaylistRule.h"
 #include "GUIDialogFileBrowser.h"
 #include "MusicDatabase.h"
 #include "VideoDatabase.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogSelect.h"
-#include "Directory.h"
+#include "FileSystem/Directory.h"
 #include "FileItem.h"
 #include "GUIEditControl.h"
-#include "LocalizeStrings.h"
 
 #define CONTROL_FIELD           15
 #define CONTROL_OPERATOR        16
@@ -51,7 +51,7 @@ CGUIDialogSmartPlaylistRule::~CGUIDialogSmartPlaylistRule()
 
 bool CGUIDialogSmartPlaylistRule::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_PREVIOUS_MENU)
     m_cancelled = true;
   return CGUIDialog::OnAction(action);
 }
@@ -119,11 +119,6 @@ void CGUIDialogSmartPlaylistRule::OnBrowse()
     }
     iLabel = 515;
   }
-  else if (m_rule.m_field == CSmartPlaylistRule::FIELD_COUNTRY)
-  {
-    videodatabase.GetCountriesNav("videodb://2/1/",items,type);
-    iLabel = 574;
-  }
   else if (m_rule.m_field == CSmartPlaylistRule::FIELD_ARTIST || m_rule.m_field == CSmartPlaylistRule::FIELD_ALBUMARTIST)
   {
     if (m_type.Equals("songs") || m_type.Equals("mixed") || m_type.Equals("albums"))
@@ -183,7 +178,7 @@ void CGUIDialogSmartPlaylistRule::OnBrowse()
     CStdString path = "special://videoplaylists/";
     if (m_type.Equals("songs") || m_type.Equals("albums"))
       path = "special://musicplaylists/";
-    XFILE::CDirectory::GetDirectory(path, items, ".xsp",false,false,XFILE::DIR_CACHE_ONCE,true,true);
+    DIRECTORY::CDirectory::GetDirectory(path, items, ".xsp");
     iLabel = 559;
   }
   else
@@ -358,7 +353,7 @@ bool CGUIDialogSmartPlaylistRule::EditRule(CSmartPlaylistRule &rule, const CStdS
 {
   CGUIDialogSmartPlaylistRule *editor = (CGUIDialogSmartPlaylistRule *)g_windowManager.GetWindow(WINDOW_DIALOG_SMART_PLAYLIST_RULE);
   if (!editor) return false;
-
+  
   editor->m_rule = rule;
   editor->m_type = type;
   editor->DoModal(g_windowManager.GetActiveWindow());

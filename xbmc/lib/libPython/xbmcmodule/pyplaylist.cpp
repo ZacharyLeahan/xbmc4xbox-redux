@@ -19,27 +19,13 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
+#include "stdafx.h"
 #include "PlayListPlayer.h"
 #include "Util.h"
 #include "pyplaylist.h"
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/structmember.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/structmember.h"
-#endif
+#include "lib/libPython/python/structmember.h"
 #include "../XBPythonDll.h"
-#include "../../../PlayListFactory.h"
+#include "PlayListFactory.h"
 #include "pyutil.h"
 #include "listitem.h"
 #include "PlayList.h"
@@ -118,7 +104,7 @@ namespace PYXBMC
   {
     int iNr;
     PlayList *self;
-    if (!PyArg_ParseTuple(args, (char*)"i", &iNr)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"i", &iNr))	return NULL;
 
     self = (PlayList*)type->tp_alloc(type, 0);
     if (!self) return NULL;
@@ -230,7 +216,7 @@ namespace PYXBMC
   {
     char* cFileName = NULL;
 
-    if (!PyArg_ParseTuple(args, (char*)"s", &cFileName)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"s", &cFileName))	return NULL;
 
     CFileItem item(cFileName);
     item.m_strPath=cFileName;
@@ -282,7 +268,7 @@ namespace PYXBMC
   PyObject* PlayList_Remove(PlayList *self, PyObject *args)
   {
     char *cFileName = NULL;
-    if (!PyArg_ParseTuple(args, (char*)"s", &cFileName)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"s", &cFileName))	return NULL;
 
     self->pPlayList->Remove(cFileName);
 
@@ -392,7 +378,7 @@ namespace PYXBMC
 
   PyMappingMethods Playlist_as_mapping = {
     PlayList_Length,    /* inquiry mp_length;                  __len__ */
-    PlayList_GetItem,   /* binaryfunc mp_subscript             __getitem__ */
+    PlayList_GetItem,   /* binaryfunc mp_subscript             __getitem__ */ 
     0,                  /* objargproc mp_ass_subscript;     __setitem__ */
   };
 

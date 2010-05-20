@@ -22,7 +22,7 @@
 
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CFTPDirectory : public IDirectory
   {
@@ -30,7 +30,7 @@ namespace XFILE
       CFTPDirectory(void);
       virtual ~CFTPDirectory(void);
       virtual bool GetDirectory(const CStdString& strPath, CFileItemList &items);
-    private:
+    private:      
   };
 }
 

@@ -21,7 +21,6 @@
 
 #include "AdvancedSettings.h"
 #include "Album.h"
-#include "StringUtils.h"
 #include "XMLUtils.h"
 
 using namespace std;
@@ -34,7 +33,7 @@ bool CAlbum::Load(const TiXmlElement *album, bool chained)
     Reset();
 
   XMLUtils::GetString(album,"title",strAlbum);
-
+  
   XMLUtils::GetAdditiveString(album,"artist",g_advancedSettings.m_musicItemSeparator,strArtist);
   XMLUtils::GetAdditiveString(album,"genre",g_advancedSettings.m_musicItemSeparator,strGenre);
   XMLUtils::GetAdditiveString(album,"style",g_advancedSettings.m_musicItemSeparator,strStyles);
@@ -45,9 +44,9 @@ bool CAlbum::Load(const TiXmlElement *album, bool chained)
   XMLUtils::GetString(album,"releasedate",m_strDateOfRelease);
   XMLUtils::GetString(album,"label",strLabel);
   XMLUtils::GetString(album,"type",strType);
-
+ 
   XMLUtils::GetInt(album,"year",iYear);
-  XMLUtils::GetInt(album,"rating",iRating);
+  XMLUtils::GetInt(album,"rating",iRating); 
 
   const TiXmlElement* thumb = album->FirstChildElement("thumb");
   while (thumb)
@@ -76,10 +75,10 @@ bool CAlbum::Load(const TiXmlElement *album, bool chained)
       CStdString strDur;
       XMLUtils::GetString(node,"duration",strDur);
       song.iDuration = StringUtils::TimeStringToSeconds(strDur);
-
+  
       if (bIncrement)
         song.iTrack = song.iTrack + 1;
-
+     
       songs.push_back(song);
     }
     node = node->NextSiblingElement("track");
@@ -118,7 +117,7 @@ bool CAlbum::Save(TiXmlNode *node, const CStdString &tag, const CStdString& strP
   if (!thumbURL.m_xml.empty())
   {
     TiXmlDocument doc;
-    doc.Parse(thumbURL.m_xml);
+    doc.Parse(thumbURL.m_xml); 
     const TiXmlNode* thumb = doc.FirstChild("thumb");
     while (thumb)
     {
@@ -156,4 +155,3 @@ bool CAlbum::Save(TiXmlNode *node, const CStdString &tag, const CStdString& strP
 
   return true;
 }
-

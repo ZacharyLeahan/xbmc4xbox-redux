@@ -27,11 +27,6 @@
 #include "tinyxml.h"
 #include "../../xbmc/utils/RegExp.h"
 
-#ifdef _LINUX
-#define _tmain main
-#define _TCHAR char
-#endif
-
 const char header[] = "*************************************************************************************************************\r\n"
                       "*************************************************************************************************************\r\n"
                       "                                     XBMC CHANGELOG\r\n"
@@ -96,18 +91,14 @@ int _tmain(int argc, _TCHAR* argv[])
     if(argc > 3)
       limit = atoi(argv[3]);
     // download our input file
-    std::string command = "svn log -r 'HEAD':8638 ";
+    std::string command = "svn log ";
     if (limit > 0)
     {
       command += "--limit ";
       command += argv[3]; // the limit as a string
       command += " ";
     }
-#ifndef _LINUX
     command += "--xml https://xbmc.svn.sourceforge.net/svnroot/xbmc/trunk/XBMC > svn_log.xml";
-#else
-    command += "--xml https://xbmc.svn.sourceforge.net/svnroot/xbmc/branches/linuxport/XBMC > svn_log.xml";
-#endif
     printf("Downloading changelog from SVN - this will take some time (around 1MB to download with no limit)\n");
     system(command.c_str());
     input = "svn_log.xml";

@@ -1,10 +1,6 @@
 #ifndef _RAR_OS_
 #define _RAR_OS_
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
 #define FALSE 0
 #define TRUE  1
 
@@ -41,10 +37,9 @@
 #endif
 
 #if !defined(_XBOX)
-#include "system.h"
+#include "include.h"
+#include <windows.h>                        /* WIN32 definitions            */
 #include <prsht.h>
-#elif defined(_LINUX)
-#include "PlatformDefs.h"
 #else
 #include <xtl.h>
 #endif

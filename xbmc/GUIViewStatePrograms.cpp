@@ -19,21 +19,19 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIViewStatePrograms.h"
 #include "GUIBaseContainer.h"
 #include "FileItem.h"
 #include "ViewState.h"
-#include "GUISettings.h"
 #include "Settings.h"
 #include "FileSystem/Directory.h"
 #include "FileSystem/PluginDirectory.h"
 #include "Util.h"
-#include "LocalizeStrings.h"
-#include "Key.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
-CGUIViewStateWindowPrograms::CGUIViewStateWindowPrograms(const CFileItemList& items) : CGUIViewState(items, CONTENT_PROGRAM)
+CGUIViewStateWindowPrograms::CGUIViewStateWindowPrograms(const CFileItemList& items) : CGUIViewState(items)
 {
   if (g_guiSettings.GetBool("filelists.ignorethewhensorting"))
     AddSortMethod(SORT_METHOD_LABEL_IGNORE_THE, 551, LABEL_MASKS("%K", "%I", "%L", ""));  // Titel, Size | Foldername, empty
@@ -44,16 +42,16 @@ CGUIViewStateWindowPrograms::CGUIViewStateWindowPrograms(const CFileItemList& it
   AddSortMethod(SORT_METHOD_SIZE, 553, LABEL_MASKS("%K", "%I", "%K", "%I"));  // Filename, Size | Foldername, Size
   AddSortMethod(SORT_METHOD_FILE, 561, LABEL_MASKS("%L", "%I", "%L", ""));  // Filename, Size | FolderName, empty
 
-  SetSortMethod(g_settings.m_viewStatePrograms.m_sortMethod);
-  SetViewAsControl(g_settings.m_viewStatePrograms.m_viewMode);
-  SetSortOrder(g_settings.m_viewStatePrograms.m_sortOrder);
+  SetSortMethod(g_stSettings.m_viewStatePrograms.m_sortMethod);
+  SetViewAsControl(g_stSettings.m_viewStatePrograms.m_viewMode);
+  SetSortOrder(g_stSettings.m_viewStatePrograms.m_sortOrder);
 
   LoadViewState(items.m_strPath, WINDOW_PROGRAMS);
 }
 
 void CGUIViewStateWindowPrograms::SaveViewState()
 {
-  SaveViewToDb(m_items.m_strPath, WINDOW_PROGRAMS, &g_settings.m_viewStatePrograms);
+    SaveViewToDb(m_items.m_strPath, WINDOW_PROGRAMS, &g_stSettings.m_viewStatePrograms);  
 }
 
 CStdString CGUIViewStateWindowPrograms::GetLockType()
@@ -68,7 +66,16 @@ CStdString CGUIViewStateWindowPrograms::GetExtensions()
 
 VECSOURCES& CGUIViewStateWindowPrograms::GetSources()
 {
-  AddOrReplace(g_settings.m_programSources,CGUIViewState::GetSources());
-  return g_settings.m_programSources;
+  // plugins share
+  if (CPluginDirectory::HasPlugins("programs"))
+  {
+    CMediaSource share;
+    share.strName = g_localizeStrings.Get(1043); // Program Plugins
+    share.strPath = "plugin://programs/";
+    share.m_strThumbnailImage = CUtil::GetDefaultFolderThumb("DefaultProgramPlugins.png");
+    share.m_ignore= true;
+    AddOrReplace(g_settings.m_programSources,share);
+  }
+  return g_settings.m_programSources; 
 }
 

@@ -18,16 +18,16 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDInputStreamStack.h"
 #include "FileItem.h"
 #include "FileSystem/File.h"
 #include "FileSystem/StackDirectory.h"
-#include "utils/log.h"
-
-#include <limits.h>
+#include <limits>
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace boost;
 using namespace std;
 
@@ -49,7 +49,7 @@ bool CDVDInputStreamStack::IsEOF()
 
 bool CDVDInputStreamStack::Open(const char* path, const std::string& content)
 {
-  if (!CDVDInputStream::Open(path, content))
+  if (!CDVDInputStream::Open(path, content)) 
     return false;
 
   CStackDirectory dir;

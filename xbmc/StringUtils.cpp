@@ -30,19 +30,15 @@
 //------------------------------------------------------------------------
 
 
+#include "stdafx.h"
 #include "StringUtils.h"
-#include "utils/RegExp.h"
-
 #include <math.h>
 #include <sstream>
 
 using namespace std;
 
-const char* ADDON_GUID_RE = "^(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}$";
-
 /* empty string for use in returns by ref */
 const CStdString StringUtils::EmptyString = "";
-CStdString StringUtils::m_lastUUID = "";
 
 void StringUtils::JoinString(const CStdStringArray &strings, const CStdString& delimiter, CStdString& result)
 {
@@ -194,7 +190,7 @@ int64_t StringUtils::AlphaNumericCompare(const char *left, const char *right)
 }
 
 int StringUtils::DateStringToYYYYMMDD(const CStdString &dateString)
-{
+{  
   CStdStringArray days;
   int splitCount = StringUtils::SplitString(dateString, "-", days);
   if (splitCount == 1)
@@ -208,7 +204,7 @@ int StringUtils::DateStringToYYYYMMDD(const CStdString &dateString)
 }
 
 long StringUtils::TimeStringToSeconds(const CStdString &timeString)
-{
+{  
   if(timeString.Right(4).Equals(" min"))
   {
     // this is imdb format of "XXX min"
@@ -261,11 +257,11 @@ void StringUtils::RemoveCRLF(CStdString& strLine)
 {
   while ( strLine.size() && (strLine.Right(1) == "\n" || strLine.Right(1) == "\r") )
   {
-    strLine = strLine.Left(std::max(0, (int)strLine.size() - 1));
+    strLine = strLine.Left((int)strLine.size() - 1);
   }
 }
 
-CStdString StringUtils::SizeToString(int64_t size)
+CStdString StringUtils::SizeToString(__int64 size)
 {
   CStdString strLabel;
   if (size == 0)
@@ -285,7 +281,7 @@ CStdString StringUtils::SizeToString(int64_t size)
     strLabel.Format("%2.1f KB", (((float)size) / 1024.0f) + fToAdd);
     return strLabel;
   }
-  const int64_t iOneMeg = 1024 * 1024;
+  const __int64 iOneMeg = 1024 * 1024;
 
   // file < 1 megabyte?
   if (size < iOneMeg)
@@ -295,8 +291,8 @@ CStdString StringUtils::SizeToString(int64_t size)
   }
 
   // file < 1 GByte?
-  int64_t iOneGigabyte = iOneMeg;
-  iOneGigabyte *= 1000;
+  __int64 iOneGigabyte = iOneMeg;
+  iOneGigabyte *= (__int64)1000;
   if (size < iOneGigabyte)
   {
     strLabel.Format("%02.1f MB", ((float)size) / ((float)iOneMeg));
@@ -304,7 +300,7 @@ CStdString StringUtils::SizeToString(int64_t size)
   }
   //file > 1 GByte
   int iGigs = 0;
-  int64_t dwFileSize = size;
+  __int64 dwFileSize = size;
   while (dwFileSize >= iOneGigabyte)
   {
     dwFileSize -= iOneGigabyte;
@@ -369,7 +365,7 @@ int StringUtils::FindEndBracket(const CStdString &str, char opener, char closer,
   return (int)CStdString::npos;
 }
 
-void StringUtils::WordToDigits(CStdString &word)
+void StringUtils::WordToDigits(CStdString &word) 
 {
   static const char word_to_letter[] = "22233344455566677778889999";
   word.ToLower();
@@ -377,68 +373,23 @@ void StringUtils::WordToDigits(CStdString &word)
   { // NB: This assumes ascii, which probably needs extending at some  point.
     char letter = word[i];
     if ((letter >= 'a' && letter <= 'z')) // assume contiguous letter range
-    {
+    {  
       word[i] = word_to_letter[letter-'a'];
     }
     else if (letter < '0' || letter > '9') // We want to keep 0-9!
-    {
+    {  
       word[i] = ' ';  // replace everything else with a space
     }
   }
 }
 
-CStdString StringUtils::CreateUUID()
+float StringUtils::GetFloat(const char* str)
 {
-  /* This function generate a DCE 1.1, ISO/IEC 11578:1996 and IETF RFC-4122
-  * Version 4 conform local unique UUID based upon random number generation.
-  */
-  char UuidStrTmp[40];
-  char *pUuidStr = UuidStrTmp;
-  int i;
+  istringstream converter;
+  converter.imbue(locale("C"));
+  converter.str(str);
+  float result;
+  converter >> result;
 
-  /* generate hash from last generated UUID string */
-  unsigned seed = 0;
-  for (unsigned i = 0; i < m_lastUUID.length(); i++) {
-    seed = 31*seed + m_lastUUID[i];
-  }
-
-  /* use hash as the seed for rand()*/
-  srand(seed);
-
-  /*Data1 - 8 characters.*/
-  for(i = 0; i < 8; i++, pUuidStr++)
-    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
-
-  /*Data2 - 4 characters.*/
-  *pUuidStr++ = '-';
-  for(i = 0; i < 4; i++, pUuidStr++)
-    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
-
-  /*Data3 - 4 characters.*/
-  *pUuidStr++ = '-';
-  for(i = 0; i < 4; i++, pUuidStr++)
-    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
-
-  /*Data4 - 4 characters.*/
-  *pUuidStr++ = '-';
-  for(i = 0; i < 4; i++, pUuidStr++)
-    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
-
-  /*Data5 - 12 characters.*/
-  *pUuidStr++ = '-';
-  for(i = 0; i < 12; i++, pUuidStr++)
-    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
-
-  *pUuidStr = '\0';
-
-  m_lastUUID = UuidStrTmp;
-  return UuidStrTmp;
+  return result;
 }
-
-bool StringUtils::ValidateUUID(const CStdString &uuid)
-{
-  CRegExp guidRE;
-  guidRE.RegComp(ADDON_GUID_RE);
-  return (guidRE.RegFind(uuid.c_str()) == 0);
-}
-

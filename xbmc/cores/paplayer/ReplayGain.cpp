@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "ReplayGain.h"
 
 CReplayGain::CReplayGain()

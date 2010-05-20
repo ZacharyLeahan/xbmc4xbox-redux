@@ -18,13 +18,13 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDMessageQueue.h"
 #include "DVDDemuxers/DVDDemuxUtils.h"
-#include "utils/log.h"
 #include "SingleLock.h"
 #include "DVDClock.h"
-#include "MathUtils.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -36,7 +36,7 @@ CDVDMessageQueue::CDVDMessageQueue(const string &owner)
   m_bInitialized  = false;
   m_bCaching      = false;
   m_bEmptied      = true;
-
+  
   m_TimeBack      = DVD_NOPTS_VALUE;
   m_TimeFront     = DVD_NOPTS_VALUE;
   m_TimeSize      = 1.0 / 4.0; /* 4 seconds */
@@ -47,7 +47,7 @@ CDVDMessageQueue::~CDVDMessageQueue()
 {
   // remove all remaining messages
   Flush();
-
+  
   CloseHandle(m_hEvent);
 }
 
@@ -96,7 +96,7 @@ void CDVDMessageQueue::End()
   CSingleLock lock(m_section);
 
   Flush();
-
+  
   m_bInitialized  = false;
   m_iDataSize     = 0;
   m_bAbortRequest = false;
@@ -128,7 +128,7 @@ MsgQueueReturnCode CDVDMessageQueue::Put(CDVDMsg* pMsg, int priority)
   }
   m_list.insert(it, DVDMessageListItem(pMsg, priority));
 
-  if (pMsg->IsType(CDVDMsg::DEMUXER_PACKET) && priority == 0)
+  if (pMsg->IsType(CDVDMsg::DEMUXER_PACKET))
   {
     DemuxPacket* packet = ((CDVDMsgDemuxerPacket*)pMsg)->GetPacket();
     if(packet)
@@ -138,8 +138,6 @@ MsgQueueReturnCode CDVDMessageQueue::Put(CDVDMsg* pMsg, int priority)
         m_TimeFront = packet->dts;
       else if(packet->pts != DVD_NOPTS_VALUE)
         m_TimeFront = packet->pts;
-      if(m_TimeBack == DVD_NOPTS_VALUE)
-        m_TimeBack = m_TimeFront;
     }
   }
 
@@ -150,12 +148,12 @@ MsgQueueReturnCode CDVDMessageQueue::Put(CDVDMsg* pMsg, int priority)
   return MSGQ_OK;
 }
 
-MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds, int &priority)
+MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds, int priority)
 {
   CSingleLock lock(m_section);
 
   *pMsg = NULL;
-
+  
   int ret = 0;
 
   if (!m_bInitialized)
@@ -169,9 +167,8 @@ MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutIn
     if(!m_list.empty() && m_list.back().priority >= priority && !m_bCaching)
     {
       DVDMessageListItem& item(m_list.back());
-      priority = item.priority;
-
-      if (item.message->IsType(CDVDMsg::DEMUXER_PACKET) && item.priority == 0)
+      
+      if (item.message->IsType(CDVDMsg::DEMUXER_PACKET))
       {
         DemuxPacket* packet = ((CDVDMsgDemuxerPacket*)item.message)->GetPacket();
         if(packet)
@@ -185,7 +182,7 @@ MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutIn
 
         if(m_iDataSize == 0)
         {
-          if(!m_bEmptied && m_owner != "teletext") // Prevent log flooding
+          if(!m_bEmptied)
             CLog::Log(LOGWARNING, "CDVDMessageQueue(%s)::Get - retrieved last data packet of queue", m_owner.c_str());
           m_bEmptied = true;
         }
@@ -195,7 +192,7 @@ MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutIn
 
       *pMsg = item.message->Acquire();
       m_list.pop_back();
-
+      
       ret = MSGQ_OK;
       break;
     }
@@ -208,7 +205,7 @@ MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutIn
     {
       ResetEvent(m_hEvent);
       lock.Leave();
-
+      
       // wait for a new message
       if (WaitForSingleObject(m_hEvent, iTimeoutInMilliSeconds) == WAIT_TIMEOUT)
         return MSGQ_TIMEOUT;
@@ -216,15 +213,15 @@ MsgQueueReturnCode CDVDMessageQueue::Get(CDVDMsg** pMsg, unsigned int iTimeoutIn
       lock.Enter();
     }
   }
-
+  
   if (m_bAbortRequest) return MSGQ_ABORT;
-
+  
   return (MsgQueueReturnCode)ret;
 }
 
 
 unsigned CDVDMessageQueue::GetPacketCount(CDVDMsg::Message type)
-{
+{    
   CSingleLock lock(m_section);
 
   if (!m_bInitialized)
@@ -236,7 +233,7 @@ unsigned CDVDMessageQueue::GetPacketCount(CDVDMsg::Message type)
     if(it->message->IsType(type))
       count++;
   }
-
+  
   return count;
 }
 

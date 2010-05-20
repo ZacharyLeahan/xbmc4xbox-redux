@@ -19,13 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogGamepad.h"
 #include "utils/md5.h"
+#include "xbox/XKGeneral.h"
 #include "GUIAudioManager.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogOK.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
 
 CGUIDialogGamepad::CGUIDialogGamepad(void)
     : CGUIDialogBoxBase(WINDOW_DIALOG_GAMEPAD, "DialogGamepad.xml")
@@ -42,12 +42,12 @@ CGUIDialogGamepad::~CGUIDialogGamepad(void)
 
 bool CGUIDialogGamepad::OnAction(const CAction &action)
 {
-  if ((action.GetButtonCode() >= KEY_BUTTON_A &&
-       action.GetButtonCode() <= KEY_BUTTON_RIGHT_TRIGGER) ||
-      (action.GetButtonCode() >= KEY_BUTTON_DPAD_UP &&
-       action.GetButtonCode() <= KEY_BUTTON_DPAD_RIGHT))
+  if ((action.buttonCode >= KEY_BUTTON_A &&
+       action.buttonCode <= KEY_BUTTON_RIGHT_TRIGGER) ||
+      (action.buttonCode >= KEY_BUTTON_DPAD_UP &&
+       action.buttonCode <= KEY_BUTTON_DPAD_RIGHT))
   {
-    switch (action.GetButtonCode())
+    switch (action.buttonCode)
     {
     case KEY_BUTTON_A : m_strUserInput += "A"; break;
     case KEY_BUTTON_B : m_strUserInput += "B"; break;
@@ -72,7 +72,7 @@ bool CGUIDialogGamepad::OnAction(const CAction &action)
     SetLine(2, strHiddenInput);
     return true;
   }
-  else if (action.GetButtonCode() == KEY_BUTTON_BACK || action.GetID() == ACTION_CLOSE_DIALOG || action.GetID() == ACTION_PREVIOUS_MENU || action.GetID() == ACTION_PARENT_DIR)
+  else if (action.buttonCode == KEY_BUTTON_BACK || action.id == ACTION_CLOSE_DIALOG || action.id == ACTION_PREVIOUS_MENU || action.id == ACTION_PARENT_DIR)
   {
     m_bConfirmed = false;
     m_bCanceled = true;
@@ -81,13 +81,13 @@ bool CGUIDialogGamepad::OnAction(const CAction &action)
     Close();
     return true;
   }
-  else if (action.GetButtonCode() == KEY_BUTTON_START)
+  else if (action.buttonCode == KEY_BUTTON_START)
   {
     m_bConfirmed = false;
     m_bCanceled = false;
 
     CStdString md5pword2;
-    XBMC::XBMC_MD5 md5state;
+    XBMC::MD5 md5state;
     md5state.append(m_strUserInput);
     md5state.getDigest(md5pword2);
 
@@ -115,7 +115,7 @@ bool CGUIDialogGamepad::OnAction(const CAction &action)
     Close();
     return true;
   }
-  else if (action.GetID() >= REMOTE_0 && action.GetID() <= REMOTE_9)
+  else if (action.id >= REMOTE_0 && action.id <= REMOTE_9)
   {
     return true; // unhandled
   }
@@ -281,7 +281,7 @@ bool CGUIDialogGamepad::ShowAndVerifyInput(CStdString& strToVerify, const CStdSt
 
   if (bGetUserInput && !pDialog->IsCanceled())
   {
-    XBMC::XBMC_MD5 md5state;
+    XBMC::MD5 md5state;
     md5state.append(pDialog->m_strUserInput);
     md5state.getDigest(strToVerify);
     strToVerify.ToLower();

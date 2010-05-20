@@ -19,15 +19,29 @@
  *
  */
 
+#include "include.h"
 #include "GUIFont.h"
 #include "GUIFontTTF.h"
 #include "GraphicContext.h"
-
 #include "utils/SingleLock.h"
-#include "utils/TimeUtils.h"
-#include "MathUtils.h"
 
+using namespace std;
+namespace MathUtils {
+  inline int round_int (double x);
+}
 #define ROUND(x) (float)(MathUtils::round_int(x))
+
+void CScrollInfo::SetSpeed(int speed)
+{
+  if (speed == defaultSpeed)
+  {
+    // HACK: workaround for PAL vs NTSC speeds on xbox
+    if (g_graphicsContext.GetVideoResolution() == PAL_4x3 ||
+        g_graphicsContext.GetVideoResolution() == PAL_16x9)
+      speed = 50;
+  }
+  pixelSpeed = speed * 0.001f;
+}
 
 float CScrollInfo::GetPixelsPerFrame()
 {
@@ -35,7 +49,7 @@ float CScrollInfo::GetPixelsPerFrame()
 
   if (0 == pixelSpeed)
     return 0; // not scrolling
-  unsigned int currentTime = CTimeUtils::GetFrameTime();
+  DWORD currentTime = timeGetTime();
   float delta = m_lastFrameTime ? (float)(currentTime - m_lastFrameTime) : m_averageFrameTime;
   if (delta > 100)
     delta = 100; // assume a minimum of 10 fps
@@ -43,10 +57,14 @@ float CScrollInfo::GetPixelsPerFrame()
   // do an exponential moving average of the frame time
   m_averageFrameTime = m_averageFrameTime + (delta - m_averageFrameTime) * alphaEMA;
   // and multiply by pixel speed (per ms) to get number of pixels to move this frame
+#ifdef _XBOX
+  return ROUND(pixelSpeed * m_averageFrameTime);
+#else
   return pixelSpeed * m_averageFrameTime;
+#endif
 }
 
-CGUIFont::CGUIFont(const CStdString& strFontName, uint32_t style, color_t textColor, color_t shadowColor, float lineSpacing, CGUIFontTTFBase *font)
+CGUIFont::CGUIFont(const CStdString& strFontName, uint32_t style, color_t textColor, color_t shadowColor, float lineSpacing, CGUIFontTTF *font)
 {
   m_strFontName = strFontName;
   m_style = style & 3;
@@ -54,7 +72,7 @@ CGUIFont::CGUIFont(const CStdString& strFontName, uint32_t style, color_t textCo
   m_shadowColor = shadowColor;
   m_lineSpacing = lineSpacing;
   m_font = font;
-
+  
   if (m_font)
     m_font->AddReference();
 }
@@ -78,7 +96,7 @@ void CGUIFont::DrawText( float x, float y, const vecColors &colors, color_t shad
   bool clip = maxPixelWidth > 0;
   if (clip && ClippedRegionIsEmpty(x, y, maxPixelWidth, alignment))
     return;
-
+      
   maxPixelWidth = ROUND(maxPixelWidth / g_graphicsContext.GetGUIScaleX());
   vecColors renderColors;
   for (unsigned int i = 0; i < colors.size(); i++)
@@ -105,11 +123,7 @@ void CGUIFont::DrawScrollingText(float x, float y, const vecColors &colors, colo
   if (!shadowColor) shadowColor = m_shadowColor;
 
   float spaceWidth = GetCharWidth(L' ');
-  // max chars on screen + extra margin chars
-  vecText::size_type maxChars =
-    std::min<vecText::size_type>(
-      (text.size() + (vecText::size_type)scrollInfo.suffix.size()),
-      (vecText::size_type)((maxWidth * 1.05f) / spaceWidth));
+  unsigned int maxChars = min((long unsigned int)(text.size() + scrollInfo.suffix.size()), (long unsigned int)((maxWidth*1.05f)/spaceWidth)); //max chars on screen + extra marginchars
 
   if (!text.size() || ClippedRegionIsEmpty(x, y, maxWidth, alignment))
     return; // nothing to render
@@ -231,7 +245,7 @@ bool CGUIFont::ClippedRegionIsEmpty(float x, float y, float width, uint32_t alig
   if (alignment & XBFONT_CENTER_Y)
     y -= m_font->GetLineHeight(m_lineSpacing);
 
-  return !g_graphicsContext.SetClipRegion(x, y, width, m_font->GetLineHeight(2.0f) * g_graphicsContext.GetGUIScaleY());
+  return !g_graphicsContext.SetClipRegion(x, y, width, m_font->GetLineHeight(2.0f));
 }
 
 float CGUIFont::GetTextWidth( const vecText &text )
@@ -260,25 +274,14 @@ float CGUIFont::GetLineHeight() const
   return m_font->GetLineHeight(m_lineSpacing) * g_graphicsContext.GetGUIScaleY();
 }
 
-void CGUIFont::Begin()
-{
+void CGUIFont::Begin() 
+{ 
   if (!m_font) return;
-  m_font->Begin();
+  m_font->Begin(); 
 }
 
-void CGUIFont::End()
-{
+void CGUIFont::End() 
+{ 
   if (!m_font) return;
-  m_font->End();
-}
-
-void CGUIFont::SetFont(CGUIFontTTFBase *font)
-{
-  if (m_font == font)
-    return; // no need to update the font if we already have it
-  if (m_font)
-    m_font->RemoveReference();
-  m_font = font;
-  if (m_font)
-    m_font->AddReference();
+  m_font->End(); 
 }

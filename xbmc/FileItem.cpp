@@ -19,9 +19,8 @@
  *
  */
 
+#include "stdafx.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
-#include "StringUtils.h"
 #include "Util.h"
 #include "Picture.h"
 #include "PlayListFactory.h"
@@ -48,15 +47,13 @@
 #include "Album.h"
 #include "Song.h"
 #include "URL.h"
-#include "GUISettings.h"
-#include "AdvancedSettings.h"
 #include "Settings.h"
+#include "AdvancedSettings.h"
 #include "utils/RegExp.h"
-#include "utils/log.h"
-#include "karaoke/karaokelyricsfactory.h"
 
 using namespace std;
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace PLAYLIST;
 using namespace MUSIC_INFO;
 
@@ -90,6 +87,16 @@ CFileItem::CFileItem(const CStdString &path, const CAlbum& album)
     m_strThumbnailImage = album.thumbURL.m_url[0].m_url;
   else
     m_strThumbnailImage.clear();
+
+  /* TODO: remove when we remove old properties */
+  SetProperty("description", album.strReview);
+  SetProperty("theme", album.strThemes);
+  SetProperty("mood", album.strMoods);
+  SetProperty("style", album.strStyles);
+  SetProperty("type", album.strType);
+  SetProperty("label", album.strLabel);
+  if (album.iRating > 0)
+    SetProperty("rating", album.iRating);
 
   CMusicDatabase::SetPropertiesFromAlbum(*this,album);
 }
@@ -190,7 +197,12 @@ CFileItem::CFileItem(const CStdString& strPath, bool bIsFolder)
   m_bIsFolder = bIsFolder;
   // tuxbox urls cannot have a / at end
   if (m_bIsFolder && !m_strPath.IsEmpty() && !IsFileFolder() && !CUtil::IsTuxBox(m_strPath))
+  {
+#ifdef DEBUG
+    ASSERT(CUtil::HasSlashAtEnd(m_strPath));
+#endif
     CUtil::AddSlashAtEnd(m_strPath);
+  }
 }
 
 CFileItem::CFileItem(const CMediaSource& share)
@@ -483,7 +495,7 @@ bool CFileItem::IsVideo() const
 
   extension.ToLower();
 
-  if (g_settings.m_videoExtensions.Find(extension) != -1)
+  if (g_stSettings.m_videoExtensions.Find(extension) != -1)
     return true;
 
   return false;
@@ -518,18 +530,10 @@ bool CFileItem::IsAudio() const
     return false;
 
   extension.ToLower();
-  if (g_settings.m_musicExtensions.Find(extension) != -1)
+  if (g_stSettings.m_musicExtensions.Find(extension) != -1)
     return true;
 
   return false;
-}
-
-bool CFileItem::IsKaraoke() const
-{
-  if ( !IsAudio() || IsLastFM() || IsShoutCast())
-    return false;
-
-  return CKaraokeLyricsFactory::HasLyrics( m_strPath );
 }
 
 bool CFileItem::IsPicture() const
@@ -548,7 +552,7 @@ bool CFileItem::IsPicture() const
     return false;
 
   extension.ToLower();
-  if (g_settings.m_pictureExtensions.Find(extension) != -1)
+  if (g_stSettings.m_pictureExtensions.Find(extension) != -1)
     return true;
 
   if (extension == ".tbn" || extension == ".dds")
@@ -709,6 +713,11 @@ bool CFileItem::IsPlugin() const
   return CUtil::IsPlugin(m_strPath);
 }
 
+bool CFileItem::IsPluginRoot() const
+{
+  return CUtil::IsPluginRoot(m_strPath);
+}
+
 bool CFileItem::IsMultiPath() const
 {
   return CUtil::IsMultiPath(m_strPath);
@@ -721,12 +730,12 @@ bool CFileItem::IsCDDA() const
 
 bool CFileItem::IsDVD() const
 {
-  return CUtil::IsDVD(m_strPath) || m_iDriveType == CMediaSource::SOURCE_TYPE_DVD;
+  return CUtil::IsDVD(m_strPath);
 }
 
 bool CFileItem::IsOnDVD() const
 {
-  return CUtil::IsOnDVD(m_strPath) || m_iDriveType == CMediaSource::SOURCE_TYPE_DVD;
+  return CUtil::IsOnDVD(m_strPath);
 }
 
 bool CFileItem::IsOnLAN() const
@@ -811,9 +820,15 @@ bool CFileItem::IsVirtualDirectoryRoot() const
   return (m_bIsFolder && m_strPath.IsEmpty());
 }
 
+bool CFileItem::IsMemoryUnit() const
+{
+  CURL url(m_strPath);
+  return url.GetProtocol().Left(3).Equals("mem");
+}
+
 bool CFileItem::IsRemovable() const
 {
-  return IsOnDVD() || IsCDDA() || m_iDriveType == CMediaSource::SOURCE_TYPE_REMOVABLE;
+  return IsOnDVD() || IsCDDA() || IsMemoryUnit();
 }
 
 bool CFileItem::IsReadOnly() const
@@ -920,6 +935,11 @@ void CFileItem::FillInDefaultIcon()
 CStdString CFileItem::GetCachedArtistThumb() const
 {
   return GetCachedThumb("artist"+GetLabel(),g_settings.GetMusicArtistThumbFolder());
+}
+
+CStdString CFileItem::GetCachedProfileThumb() const
+{
+  return GetCachedThumb("profile"+m_strPath,CUtil::AddFileToFolder(g_settings.GetUserDataFolder(),"Thumbnails\\Profiles"));
 }
 
 CStdString CFileItem::GetCachedSeasonThumb() const
@@ -1426,7 +1446,10 @@ void CFileItemList::Reserve(int iCount)
 void CFileItemList::Sort(FILEITEMLISTCOMPARISONFUNC func)
 {
   CSingleLock lock(m_lock);
+  DWORD dwStart = GetTickCount();
   std::stable_sort(m_items.begin(), m_items.end(), func);
+  DWORD dwElapsed = GetTickCount() - dwStart;
+  CLog::Log(LOGDEBUG,"%s, sorting took %u millis", __FUNCTION__, dwElapsed);
 }
 
 void CFileItemList::FillSortFields(FILEITEMFILLFUNC func)
@@ -1488,9 +1511,6 @@ void CFileItemList::Sort(SORT_METHOD sortMethod, SORT_ORDER sortOrder)
     break;
   case SORT_METHOD_GENRE:
     FillSortFields(SSortFileItem::ByGenre);
-    break;
-  case SORT_METHOD_COUNTRY:
-    FillSortFields(SSortFileItem::ByCountry);
     break;
   case SORT_METHOD_FILE:
     FillSortFields(SSortFileItem::ByFile);
@@ -1792,7 +1812,7 @@ void CFileItemList::FilterCueItems()
                 else
                 { // try replacing the extension with one of our allowed ones.
                   CStdStringArray extensions;
-                  StringUtils::SplitString(g_settings.m_musicExtensions, "|", extensions);
+                  StringUtils::SplitString(g_stSettings.m_musicExtensions, "|", extensions);
                   for (unsigned int i = 0; i < extensions.size(); i++)
                   {
                     strMediaFile = CUtil::ReplaceExtension(pItem->m_strPath, extensions[i]);
@@ -1935,7 +1955,7 @@ void CFileItemList::Stack()
         if (folderName.Left(2).Equals("CD") && StringUtils::IsNaturalNumber(folderName.Mid(2)))
         {
           CFileItemList items;
-          CDirectory::GetDirectory(item->m_strPath,items,g_settings.m_videoExtensions,true);
+          CDirectory::GetDirectory(item->m_strPath,items,g_stSettings.m_videoExtensions,true);
           // optimized to only traverse listing once by checking for filecount
           // and recording last file item for later use
           int nFiles = 0;
@@ -1972,19 +1992,6 @@ void CFileItemList::Stack()
             if (CFile::Exists(path))
               dvdPath = path;
           }
-#ifdef HAS_LIBBDNAV
-          if (dvdPath.IsEmpty())
-          {
-            CUtil::AddFileToFolder(item->m_strPath, "BDMV", dvdPath);
-            CUtil::AddFileToFolder(dvdPath, "PLAYLIST/00000.mpls", path);
-            dvdPath.Empty();
-            if (CFile::Exists(path))
-            {
-              dvdPath = path;
-              dvdPath.Replace("00000.mpls","main.mpls");
-            }
-          }
-#endif
           if (!dvdPath.IsEmpty())
           {
             // NOTE: should this be done for the CD# folders too?
@@ -2038,7 +2045,7 @@ void CFileItemList::Stack()
 
     // set property
     item1->SetProperty("isstacked", "1");
-
+    
     // skip folders, nfo files, playlists
     if (item1->m_bIsFolder
       || item1->IsParentFolder()
@@ -2070,7 +2077,7 @@ void CFileItemList::Stack()
     VECCREGEXP::iterator  expr        = stackRegExps.begin();
 
     CUtil::Split(item1->m_strPath, filePath, file1);
-    int j;
+    int j; 
     while (expr != stackRegExps.end())
     {
       if (expr->RegFind(file1, offset) != -1)
@@ -2179,15 +2186,13 @@ void CFileItemList::Stack()
       if (stack.size() > 1)
       {
         // have a stack, remove the items and add the stacked item
+        CStackDirectory dir;
         // dont actually stack a multipart rar set, just remove all items but the first
         CStdString stackPath;
         if (Get(stack[0])->IsRAR())
           stackPath = Get(stack[0])->m_strPath;
         else
-        {
-          CStackDirectory dir;
           stackPath = dir.ConstructStackPath(*this, stack);
-        }
         item1->m_strPath = stackPath;
         // clean up list
         for (unsigned k = 1; k < stack.size(); k++)
@@ -2299,6 +2304,17 @@ void CFileItemList::SetCachedVideoThumbs()
   }
 }
 
+void CFileItemList::SetCachedProgramThumbs()
+{
+  CSingleLock lock(m_lock);
+  // TODO: Investigate caching time to see if it speeds things up
+  for (unsigned int i = 0; i < m_items.size(); ++i)
+  {
+    CFileItemPtr pItem = m_items[i];
+    pItem->SetCachedProgramThumb();
+  }
+}
+
 void CFileItemList::SetCachedMusicThumbs()
 {
   CSingleLock lock(m_lock);
@@ -2308,6 +2324,11 @@ void CFileItemList::SetCachedMusicThumbs()
     CFileItemPtr pItem = m_items[i];
     pItem->SetCachedMusicThumb();
   }
+}
+
+CStdString CFileItem::GetCachedPictureThumb() const
+{
+  return GetCachedThumb(m_strPath,g_settings.GetPicturesThumbFolder(),true);
 }
 
 void CFileItem::SetCachedMusicThumb()
@@ -2429,10 +2450,19 @@ void CFileItem::SetUserMusicThumb(bool alwaysCheckRemote /* = false */)
   if (!thumb.IsEmpty())
   {
     CStdString cachedThumb(CUtil::GetCachedMusicThumb(m_strPath));
-    CPicture::CreateThumbnail(thumb, cachedThumb);
+    CPicture pic;
+    pic.CreateThumbnail(thumb, cachedThumb);
   }
 
   SetCachedMusicThumb();
+}
+
+void CFileItem::SetCachedPictureThumb()
+{
+  if (IsParentFolder()) return;
+  CStdString cachedThumb(GetCachedPictureThumb());
+  if (CFile::Exists(cachedThumb))
+    SetThumbnailImage(cachedThumb);
 }
 
 CStdString CFileItem::GetCachedVideoThumb() const
@@ -2572,7 +2602,7 @@ CStdString CFileItem::GetFolderThumb(const CStdString &folderJPG /* = "folder.jp
   CStdString strFolder = m_strPath;
 
   if (IsStack() ||
-      CUtil::IsInRAR(strFolder) ||
+      CUtil::IsInRAR(strFolder) || 
       CUtil::IsInZIP(strFolder))
   {
     CUtil::GetParentPath(m_strPath,strFolder);
@@ -2598,15 +2628,9 @@ CStdString CFileItem::GetMovieName(bool bUseFolderNames /* = false */) const
   if (CUtil::IsStack(strMovieName))
     strMovieName = CStackDirectory::GetStackedTitlePath(strMovieName);
 
-  int pos;
-  if ((pos=strMovieName.Find("BDMV/")) != -1 ||
-      (pos=strMovieName.Find("BDMV\\")) != -1)
-    strMovieName = strMovieName.Mid(0,pos+5);
-
   if ((!m_bIsFolder || IsDVDFile(false, true) || CUtil::IsInArchive(m_strPath)) && bUseFolderNames)
   {
-    CStdString name2(strMovieName);
-    CUtil::GetParentPath(name2,strMovieName);
+    CUtil::GetParentPath(m_strPath, strMovieName);
     if (CUtil::IsInArchive(m_strPath) || strMovieName.Find( "VIDEO_TS" ) != -1)
     {
       CStdString strArchivePath;
@@ -2640,7 +2664,8 @@ void CFileItem::SetUserVideoThumb()
   if (!thumb.IsEmpty())
   {
     CStdString cachedThumb(GetCachedVideoThumb());
-    CPicture::CreateThumbnail(thumb, cachedThumb);
+    CPicture pic;
+    pic.CreateThumbnail(thumb, cachedThumb);
   }
   SetCachedVideoThumb();
 }
@@ -2655,7 +2680,10 @@ bool CFileItem::CacheLocalFanart() const
   // we don't have a cached image, so let's see if the user has a local image, and cache it if so
   CStdString localFanart(GetLocalFanart());
   if (!localFanart.IsEmpty())
-    return CPicture::CacheFanart(localFanart, cachedFanart);
+  {
+    CPicture pic;
+    return pic.CacheFanart(localFanart, cachedFanart);
+  }
   return false;
 }
 
@@ -2707,7 +2735,7 @@ CStdString CFileItem::GetLocalFanart() const
     return "";
 
   CFileItemList items;
-  CDirectory::GetDirectory(strDir, items, g_settings.m_pictureExtensions, false, false, DIR_CACHE_ALWAYS, false, true);
+  CDirectory::GetDirectory(strDir, items, g_stSettings.m_pictureExtensions, false, false, DIR_CACHE_ALWAYS, false);
 
   CStdStringArray fanarts;
   StringUtils::SplitString(g_advancedSettings.m_fanartImages, "|", fanarts);
@@ -2779,6 +2807,155 @@ CStdString CFileItem::GetCachedThumb(const CStdString &path, const CStdString &p
   return CUtil::AddFileToFolder(path2, thumb);
 }
 
+CStdString CFileItem::GetCachedProgramThumb() const
+{
+  // get the locally cached thumb
+  Crc32 crc;
+  if (IsOnDVD())
+  {
+    CStdString strDesc;
+    CUtil::GetXBEDescription(m_strPath,strDesc);
+    CStdString strCRC;
+    strCRC.Format("%s%u",strDesc.c_str(),CUtil::GetXbeID(m_strPath));
+    crc.ComputeFromLowerCase(strCRC);
+  }
+  else
+    crc.ComputeFromLowerCase(m_strPath);
+
+  CStdString hex;
+  hex.Format("%08x", (__int32)crc);
+
+  CStdString thumb;
+
+  thumb.Format("%s\\%c\\%08x.tbn", g_settings.GetProgramsThumbFolder().c_str(), hex[0], (unsigned __int32)crc);
+
+  return thumb;
+}
+
+CStdString CFileItem::GetCachedGameSaveThumb() const
+{
+  CStdString extension;
+  CUtil::GetExtension(m_strPath,extension);
+  if (extension.Equals(".xbx")) // savemeta.xbx - cache thumb
+  {
+    CStdString thumb = GetCachedThumb(m_strPath,g_settings.GetGameSaveThumbFolder());
+    CLog::Log(LOGDEBUG, "Thumb (%s)",thumb.c_str());
+    if (!CFile::Exists(thumb))
+    {
+      CStdString strTitleImage, strParent, strParentSave, strParentTitle;
+      CUtil::GetDirectory(m_strPath,strTitleImage);
+      CUtil::GetParentPath(strTitleImage,strParent);
+      CUtil::AddFileToFolder(strTitleImage,"saveimage.xbx",strTitleImage);
+      CUtil::AddFileToFolder(strParent,"saveimage.xbx",strParentSave);
+      CUtil::AddFileToFolder(strParent,"titleimage.xbx",strParentTitle);
+      //CUtil::AddFileToFolder(strTitleImageCur,"titleimage.xbx",m_strPath);
+      if (CFile::Exists(strTitleImage))
+        CUtil::CacheXBEIcon(strTitleImage, thumb);
+      else if (CFile::Exists(strParentSave))
+        CUtil::CacheXBEIcon(strParentSave,thumb);
+      else if (CFile::Exists(strParentTitle))
+        CUtil::CacheXBEIcon(strParentTitle,thumb);
+      else
+        thumb = "";
+    }
+    return thumb;
+  }
+  else if (CDirectory::Exists(m_strPath))
+  {
+    // get the save game id
+    CStdString fullPath(m_strPath);
+    CUtil::RemoveSlashAtEnd(fullPath);
+    CStdString fileName(CUtil::GetFileName(fullPath));
+
+    CStdString thumb;
+    thumb.Format("%s\\%s.tbn", g_settings.GetGameSaveThumbFolder().c_str(), fileName.c_str());
+    CLog::Log(LOGDEBUG, "Thumb (%s)",thumb.c_str());
+    if (!CFile::Exists(thumb))
+    {
+      CStdString titleimageXBX;
+      CStdString saveimageXBX;
+
+      CUtil::AddFileToFolder(m_strPath, "titleimage.xbx", titleimageXBX);
+      CUtil::AddFileToFolder(m_strPath,"saveimage.xbx",saveimageXBX);
+
+      /*if (CFile::Exists(saveimageXBX))
+      {
+        CUtil::CacheXBEIcon(saveimageXBX, thumb);
+        CLog::Log(LOGDEBUG, "saveimageXBX  (%s)",saveimageXBX.c_str());
+      }*/
+      if (CFile::Exists(titleimageXBX))
+      {
+        CLog::Log(LOGDEBUG, "titleimageXBX  (%s)",titleimageXBX.c_str());
+        CUtil::CacheXBEIcon(titleimageXBX, thumb);
+      }
+    }
+    return thumb;
+  }
+  return "";
+}
+
+void CFileItem::SetCachedProgramThumb()
+{
+  // don't set any thumb for programs on DVD, as they're bound to be named the
+  // same (D:\default.xbe).
+  if (IsParentFolder()) return;
+  CStdString thumb(GetCachedProgramThumb());
+  if (CFile::Exists(thumb))
+    SetThumbnailImage(thumb);
+}
+
+void CFileItem::SetUserProgramThumb()
+{
+  if (m_bIsShareOrDrive) return;
+  if (IsParentFolder()) return;
+
+  if (IsShortCut())
+  {
+    CShortcut shortcut;
+    if ( shortcut.Create(m_strPath) && !shortcut.m_strThumb.IsEmpty() )
+    {
+      m_strThumbnailImage = shortcut.m_strThumb;
+      return;
+    }
+  }
+  // 1.  Try <filename>.tbn
+  CStdString fileThumb(GetTBNFile());
+  CStdString thumb(GetCachedProgramThumb());
+  if (CFile::Exists(fileThumb))
+  { // cache
+    CPicture pic;
+    if (pic.CreateThumbnail(fileThumb, thumb))
+      SetThumbnailImage(thumb);
+  }
+  else if (IsXBE())
+  {
+    // 2. check for avalaunch_icon.jpg
+    CStdString directory;
+    CUtil::GetDirectory(m_strPath, directory);
+    CStdString avalaunchIcon;
+    CUtil::AddFileToFolder(directory, "avalaunch_icon.jpg", avalaunchIcon);
+    if (CFile::Exists(avalaunchIcon))
+    {
+      CPicture pic;
+      if (pic.CreateThumbnail(avalaunchIcon, thumb))
+        SetThumbnailImage(thumb);
+    }
+    else if (CUtil::CacheXBEIcon(m_strPath, thumb))
+      SetThumbnailImage(thumb);
+  }
+  else if (m_bIsFolder)
+  {
+    // 3. cache the folder image
+    CStdString folderThumb(GetFolderThumb());
+    if (CFile::Exists(folderThumb))
+    {
+      CPicture pic;
+      if (pic.CreateThumbnail(folderThumb, thumb))
+        SetThumbnailImage(thumb);
+    }
+  }
+}
+
 /*void CFileItem::SetThumb()
 {
   // we need to know the type of file at this point
@@ -2805,6 +2982,20 @@ CStdString CFileItem::GetCachedThumb(const CStdString &path, const CStdString &p
   //  * Thumbs are cached from here using file or folder path
 
 }*/
+
+void CFileItemList::SetProgramThumbs()
+{
+  // TODO: Is there a speed up if we cache the program thumbs first?
+  for (unsigned int i = 0; i < m_items.size(); i++)
+  {
+    CFileItemPtr pItem = m_items[i];
+    if (pItem->IsParentFolder())
+      continue;
+    pItem->SetCachedProgramThumb();
+    if (!pItem->HasThumbnail())
+      pItem->SetUserProgramThumb();
+  }
+}
 
 bool CFileItem::LoadMusicTag()
 {
@@ -2868,6 +3059,37 @@ bool CFileItem::LoadMusicTag()
     }
   }
   return false;
+}
+
+void CFileItem::SetCachedGameSavesThumb()
+{
+  if (IsParentFolder()) return;
+  CStdString thumb(GetCachedGameSaveThumb());
+  if (CFile::Exists(thumb))
+    SetThumbnailImage(thumb);
+}
+
+void CFileItemList::SetCachedGameSavesThumbs()
+{
+  // TODO: Investigate caching time to see if it speeds things up
+  for (unsigned int i = 0; i < m_items.size(); ++i)
+  {
+    CFileItemPtr pItem = m_items[i];
+    pItem->SetCachedGameSavesThumb();
+  }
+}
+
+void CFileItemList::SetGameSavesThumbs()
+{
+  // No User thumbs
+  // TODO: Is there a speed up if we cache the program thumbs first?
+  for (unsigned int i = 0; i < m_items.size(); i++)
+  {
+    CFileItemPtr pItem = m_items[i];
+    if (pItem->IsParentFolder())
+      continue;
+    pItem->SetCachedGameSavesThumb();  // was  pItem->SetCachedProgramThumb(); oringally
+  }
 }
 
 void CFileItemList::Swap(unsigned int item1, unsigned int item2)
@@ -2963,7 +3185,7 @@ CStdString CFileItem::FindTrailer() const
   CStdString strDir;
   CUtil::GetDirectory(strFile, strDir);
   CFileItemList items;
-  CDirectory::GetDirectory(strDir, items, g_settings.m_videoExtensions, true, false, DIR_CACHE_ALWAYS, false, true);
+  CDirectory::GetDirectory(strDir, items, g_stSettings.m_videoExtensions, true, false, DIR_CACHE_ALWAYS, false);
   CUtil::RemoveExtension(strFile);
   strFile += "-trailer";
   CStdString strFile3 = CUtil::AddFileToFolder(strDir, "movie-trailer");
@@ -3005,7 +3227,7 @@ CStdString CFileItem::FindTrailer() const
           strTrailer = items[i]->m_strPath;
           i = items.Size();
           break;
-        }
+  }
         expr++;
       }
     }

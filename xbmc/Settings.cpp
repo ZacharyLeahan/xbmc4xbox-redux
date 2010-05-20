@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "Settings.h"
 #include "AdvancedSettings.h"
 #include "Application.h"
@@ -28,44 +28,41 @@
 #include "URL.h"
 #include "GUIWindowFileManager.h"
 #include "GUIDialogButtonMenu.h"
+#include "GUIDialogContentSettings.h"
 #include "GUIFontManager.h"
 #include "LangCodeExpander.h"
 #include "ButtonTranslator.h"
 #include "XMLUtils.h"
-#include "utils/PasswordManager.h"
-#include "utils/RegExp.h"
 #include "GUIPassword.h"
 #include "GUIAudioManager.h"
 #include "AudioContext.h"
 #include "utils/GUIInfoManager.h"
-#include "utils/Network.h"
+#include "xbox/Network.h"
 #include "FileSystem/MultiPathDirectory.h"
 #include "FileSystem/SpecialProtocol.h"
 #include "GUIBaseContainer.h" // for VIEW_TYPE enum
+#include "utils/FanController.h"
 #include "MediaManager.h"
+#include "XBVideoConfig.h"
 #include "DNSNameCache.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogYesNo.h"
 #include "FileSystem/Directory.h"
 #include "FileItem.h"
-#include "LangInfo.h"
-#include "LocalizeStrings.h"
-#include "StringUtils.h"
-#include "SystemInfo.h"
-#ifdef _WIN32
-#include "win32/WIN32Util.h"
+#ifdef HAS_XBOX_HARDWARE
+#include "utils/MemoryUnitManager.h"
 #endif
-#if defined(_LINUX) && defined(HAS_FILESYSTEM_SMB)
-#include "FileSystem/SMBDirectory.h"
-#endif
-#include "playercorefactory/PlayerCoreFactory.h"
-#include "utils/FileUtils.h"
-#include "MouseStat.h"
+#include "cores/playercorefactory/PlayerCoreFactory.h"
 
 using namespace std;
 using namespace XFILE;
+using namespace DIRECTORY;
+using namespace MEDIA_DETECT;
 
+struct CSettings::stSettings g_stSettings;
 class CSettings g_settings;
+
+extern CStdString g_LoadErrorStr;
 
 CSettings::CSettings(void)
 {
@@ -73,78 +70,56 @@ CSettings::CSettings(void)
 
 void CSettings::Initialize()
 {
-  RESOLUTION_INFO res;
-  vector<RESOLUTION_INFO>::iterator it = m_ResInfo.begin();
-
-  m_ResInfo.insert(it, RES_CUSTOM, res);
-
-  for (int i = RES_HDTV_1080i; i <= RES_PAL60_16x9; i++)
+  for (int i = HDTV_1080i; i <= PAL60_16x9; i++)
   {
     g_graphicsContext.ResetScreenParameters((RESOLUTION)i);
     g_graphicsContext.ResetOverscan((RESOLUTION)i, m_ResInfo[i].Overscan);
   }
 
-  m_iMyVideoStack = STACK_NONE;
+  g_stSettings.m_iMyVideoStack = STACK_NONE;
 
-  m_bMyMusicSongInfoInVis = true;    // UNUSED - depreciated.
-  m_bMyMusicSongThumbInVis = false;  // used for music info in vis screen
+  strcpy(g_stSettings.szOnlineArenaPassword, "");
+  strcpy(g_stSettings.szOnlineArenaDescription, "It's Good To Play Together!");
 
-  m_bMyMusicPlaylistRepeat = false;
-  m_bMyMusicPlaylistShuffle = false;
+  g_stSettings.m_bMyMusicSongInfoInVis = true;    // UNUSED - depreciated.
+  g_stSettings.m_bMyMusicSongThumbInVis = false;  // used for music info in vis screen
 
-  m_bMyVideoPlaylistRepeat = false;
-  m_bMyVideoPlaylistShuffle = false;
-  m_bMyVideoNavFlatten = false;
-  m_bStartVideoWindowed = false;
-  m_bAddonAutoUpdate = true;
+  g_stSettings.m_bMyMusicPlaylistRepeat = false;
+  g_stSettings.m_bMyMusicPlaylistShuffle = false;
 
-  m_nVolumeLevel = 0;
-  m_dynamicRangeCompressionLevel = 0;
-  m_iPreMuteVolumeLevel = 0;
-  m_bMute = false;
-  m_fZoomAmount = 1.0f;
-  m_fPixelRatio = 1.0f;
-  m_bNonLinStretch = false;
+  g_stSettings.m_bMyVideoPlaylistRepeat = false;
+  g_stSettings.m_bMyVideoPlaylistShuffle = false;
+  g_stSettings.m_bMyVideoNavFlatten = false;
 
-  m_pictureExtensions = ".png|.jpg|.jpeg|.bmp|.gif|.ico|.tif|.tiff|.tga|.pcx|.cbz|.zip|.cbr|.rar|.m3u|.dng|.nef|.cr2|.crw|.orf|.arw|.erf|.3fr|.dcr|.x3f|.mef|.raf|.mrw|.pef|.sr2|.rss";
-  m_musicExtensions = ".nsv|.m4a|.flac|.aac|.strm|.pls|.rm|.rma|.mpa|.wav|.wma|.ogg|.mp3|.mp2|.m3u|.mod|.amf|.669|.dmf|.dsm|.far|.gdm|.imf|.it|.m15|.med|.okt|.s3m|.stm|.sfx|.ult|.uni|.xm|.sid|.ac3|.dts|.cue|.aif|.aiff|.wpl|.ape|.mac|.mpc|.mp+|.mpp|.shn|.zip|.rar|.wv|.nsf|.spc|.gym.adx|.dsp|.adp|.ymf|.ast|.afc|.hps|.xsp|.xwav|.waa|.wvs|.wam|.gcm|.idsp|.mpdsp|.mss|.spt|.rsd|.mid|.kar|.sap|.cmc|.cmr|.dmc|.mpt|.mpd|.rmt|.tmc|.tm8|.tm2|.oga|.url|.pxml|.tta|.rss|.cm3|.cms|.dlt|.brstm";
-  m_videoExtensions = ".m4v|.3g2|.3gp|.nsv|.tp|.ts|.ty|.strm|.pls|.rm|.rmvb|.m3u|.ifo|.mov|.qt|.divx|.xvid|.bivx|.vob|.nrg|.img|.iso|.pva|.wmv|.asf|.asx|.ogm|.m2v|.avi|.bin|.dat|.mpg|.mpeg|.mp4|.mkv|.avc|.vp3|.svq3|.nuv|.viv|.dv|.fli|.flv|.rar|.001|.wpl|.zip|.vdr|.dvr-ms|.xsp|.mts|.m2t|.m2ts|.evo|.ogv|.sdp|.avs|.rec|.url|.pxml|.vc1|.h264|.rcv|.rss|.mpls";
+  g_stSettings.m_nVolumeLevel = 0;
+  g_stSettings.m_dynamicRangeCompressionLevel = 0;
+  g_stSettings.m_iPreMuteVolumeLevel = 0;
+  g_stSettings.m_bMute = false;
+  g_stSettings.m_fZoomAmount = 1.0f;
+  g_stSettings.m_fPixelRatio = 1.0f;
+
+  g_stSettings.m_pictureExtensions = ".png|.jpg|.jpeg|.bmp|.gif|.ico|.tif|.tiff|.tga|.pcx|.cbz|.zip|.cbr|.rar|.m3u|.dng|.nef|.cr2|.crw|.orf|.arw|.erf|.3fr|.dcr|.x3f|.mef|.raf|.mrw|.pef|.sr2";
+  g_stSettings.m_musicExtensions = ".nsv|.m4a|.flac|.aac|.strm|.pls|.rm|.rma|.mpa|.wav|.wma|.ogg|.mp3|.mp2|.m3u|.mod|.amf|.669|.dmf|.dsm|.far|.gdm|.imf|.it|.m15|.med|.okt|.s3m|.stm|.sfx|.ult|.uni|.xm|.sid|.ac3|.dts|.cue|.aif|.aiff|.wpl|.ape|.mac|.mpc|.mp+|.mpp|.shn|.zip|.rar|.wv|.nsf|.spc|.gym|.adplug|.adx|.dsp|.adp|.ymf|.ast|.afc|.hps|.xsp|.xwav|.waa|.wvs|.wam|.gcm|.idsp|.mpdsp|.mss|.spt|.rsd|.mid|.kar|.sap|.cmc|.cmr|.dmc|.mpt|.mpd|.rmt|.tmc|.tm8|.tm2|.oga|.url|.pxml";
+  g_stSettings.m_videoExtensions = ".m4v|.3g2|.3gp|.nsv|.tp|.ts|.ty|.strm|.pls|.rm|.rmvb|.m3u|.ifo|.mov|.qt|.divx|.xvid|.bivx|.vob|.nrg|.img|.iso|.pva|.wmv|.asf|.asx|.ogm|.m2v|.avi|.bin|.dat|.mpg|.mpeg|.mp4|.mkv|.avc|.vp3|.svq3|.nuv|.viv|.dv|.fli|.flv|.rar|.001|.wpl|.zip|.vdr|.dvr-ms|.xsp|.mts|.m2t|.m2ts|.evo|.ogv|.sdp|.avs|.rec|.url|.pxml|.vc1|.h264|.rcv";
   // internal music extensions
-  m_musicExtensions += "|.sidstream|.oggstream|.nsfstream|.asapstream|.cdda";
+  g_stSettings.m_musicExtensions += "|.sidstream|.oggstream|.nsfstream|.asapstream|.cdda";
 
-  #ifdef __APPLE__
-    CStdString logDir = getenv("HOME");
-    logDir += "/Library/Logs/";
-    m_logFolder = logDir;
-  #else
-    m_logFolder = "special://home/";              // log file location
-  #endif
+  // This shouldn't be set here but in CApp::Create!!!!!
+//  g_stSettings.m_logFolder = "Q:\\";              // log file location
+  g_stSettings.m_logFolder = "";
+
+  m_iLastLoadedProfileIndex = 0;
 
   // defaults for scanning
-  m_bMyMusicIsScanning = false;
+  g_stSettings.m_bMyMusicIsScanning = false;
 
-  iAdditionalSubtitleDirectoryChecked = 0;
-  m_iMyMusicStartWindow = WINDOW_MUSIC_FILES;
-  m_iVideoStartWindow = WINDOW_VIDEO_FILES;
+  g_stSettings.iAdditionalSubtitleDirectoryChecked = 0;
 
-  m_watchMode["movies"] = VIDEO_SHOW_ALL;
-  m_watchMode["tvshows"] = VIDEO_SHOW_ALL;
-  m_watchMode["musicvideos"] = VIDEO_SHOW_ALL;
-
-  m_iSystemTimeTotalUp = 0;
-  m_HttpApiBroadcastLevel = 0;
-  m_HttpApiBroadcastPort = 8278;
-
-  m_userAgent = g_sysinfo.GetUserAgent();
-
-  m_usingLoginScreen = false;
-  m_lastUsedProfile = 0;
-  m_currentProfile = 0;
+  g_settings.bUseLoginScreen = false;
 }
 
 CSettings::~CSettings(void)
 {
-  m_ResInfo.clear();
 }
 
 
@@ -171,36 +146,180 @@ bool CSettings::Reset()
   return LoadSettings(GetSettingsFile());
 }
 
-bool CSettings::Load()
+bool CSettings::Load(bool& bXboxMediacenter, bool& bSettings)
 {
+  // load settings file...
+  bXboxMediacenter = bSettings = false;
+
+#ifdef _XBOX
+  char szDevicePath[1024];
+  CStdString strMnt = _P(GetProfileUserDataFolder());
+  if (strMnt.Left(2).Equals("Q:"))
+  {
+    CUtil::GetHomePath(strMnt);
+    strMnt += _P(GetProfileUserDataFolder()).substr(2);
+  }
+  CIoSupport::GetPartition(strMnt.c_str()[0], szDevicePath);
+  strcat(szDevicePath,strMnt.c_str()+2);
+  CIoSupport::RemapDriveLetter('P', szDevicePath);
+#endif
   CSpecialProtocol::SetProfilePath(GetProfileUserDataFolder());
   CLog::Log(LOGNOTICE, "loading %s", GetSettingsFile().c_str());
   if (!LoadSettings(GetSettingsFile()))
   {
     CLog::Log(LOGERROR, "Unable to load %s, creating new %s with default values", GetSettingsFile().c_str(), GetSettingsFile().c_str());
-    if (!Reset())
+    Save();
+    if (!(bSettings = Reset()))
       return false;
   }
 
-  LoadSources();
+  // clear sources, then load xml file...
+  m_fileSources.clear();
+  m_musicSources.clear();
+  m_pictureSources.clear();
+  m_programSources.clear();
+  m_videoSources.clear();
+  CStdString strXMLFile = GetSourcesFile();
+  CLog::Log(LOGNOTICE, "%s", strXMLFile.c_str());
+  TiXmlDocument xmlDoc;
+  TiXmlElement *pRootElement = NULL;
+  if ( xmlDoc.LoadFile( strXMLFile ) )
+  {
+    pRootElement = xmlDoc.RootElement();
+    CStdString strValue;
+    if (pRootElement)
+      strValue = pRootElement->Value();
+    if ( strValue != "sources")
+      CLog::Log(LOGERROR, "%s sources.xml file does not contain <sources>", __FUNCTION__);
+  }
+  else if (CFile::Exists(strXMLFile))
+    CLog::Log(LOGERROR, "%s Error loading %s: Line %d, %s", __FUNCTION__, strXMLFile.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+
+  // look for external sources file
+  TiXmlNode *pInclude = pRootElement ? pRootElement->FirstChild("remote") : NULL;
+  if (pInclude)
+  {
+    CStdString strRemoteFile = pInclude->FirstChild()->Value();
+    if (!strRemoteFile.IsEmpty())
+    {
+      CLog::Log(LOGDEBUG, "Found <remote> tag");
+      CLog::Log(LOGDEBUG, "Attempting to retrieve remote file: %s", strRemoteFile.c_str());
+      // sometimes we have to wait for the network
+      if (!g_network.IsAvailable(true) && CFile::Exists(strRemoteFile))
+      {
+        if ( xmlDoc.LoadFile(strRemoteFile) )
+        {
+          pRootElement = xmlDoc.RootElement();
+          CStdString strValue;
+          if (pRootElement)
+            strValue = pRootElement->Value();
+          if ( strValue != "sources")
+            CLog::Log(LOGERROR, "%s remote_sources.xml file does not contain <sources>", __FUNCTION__);
+        }
+        else
+          CLog::Log(LOGERROR, "%s unable to load file: %s, Line %d, %s", __FUNCTION__, strRemoteFile.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+      }
+      else
+        CLog::Log(LOGNOTICE, "Could not retrieve remote file, defaulting to local sources");
+    }
+  }
+
+  if (pRootElement)
+  { // parse sources...
+    GetSources(pRootElement, "programs", m_programSources, m_defaultProgramSource);
+    GetSources(pRootElement, "pictures", m_pictureSources, m_defaultPictureSource);
+    GetSources(pRootElement, "files", m_fileSources, m_defaultFileSource);
+    GetSources(pRootElement, "music", m_musicSources, m_defaultMusicSource);
+    GetSources(pRootElement, "video", m_videoSources, m_defaultVideoSource);
+  }
+
+  bXboxMediacenter = true;
+
   LoadRSSFeeds();
   LoadUserFolderLayout();
 
   return true;
 }
 
+void CSettings::ConvertHomeVar(CStdString& strText)
+{
+  // Replaces first occurence of $HOME with the home directory.
+  // "$HOME\foo" becomes for instance "e:\apps\xbmc\foo"
+
+  char szText[1024];
+  char szTemp[1024];
+  char *pReplace, *pReplace2;
+
+  CStdString strHomePath = "Q:";
+  strcpy(szText, strText.c_str());
+
+  pReplace = strstr(szText, "$HOME");
+
+  if (pReplace != NULL)
+  {
+    pReplace2 = pReplace + sizeof("$HOME") - 1;
+    strcpy(szTemp, pReplace2);
+    strcpy(pReplace, strHomePath.c_str() );
+    strcat(szText, szTemp);
+  }
+  strText = szText;
+  // unroll any relative paths used
+  vector<CStdString> token;
+  CUtil::Tokenize(strText,token,"\\");
+  if (token.size() > 1)
+  {
+    strText = "";
+    for (unsigned int i=0;i<token.size();++i)
+      if (token[i] == "..")
+      {
+        CStdString strParent;
+        CUtil::GetParentPath(strText,strParent);
+        strText = strParent;
+      }
+      else
+        strText += token[i]+"\\";
+  }
+}
+
 VECSOURCES *CSettings::GetSourcesFromType(const CStdString &type)
 {
   if (type == "programs" || type == "myprograms")
-    return &m_programSources;
+    return &g_settings.m_programSources;
   else if (type == "files")
-    return &m_fileSources;
+  {
+    // this nasty block of code is needed as we have to
+    // call getlocaldrives after localize strings has been loaded
+    bool bAdded=false;
+    for (unsigned int i=0;i<g_settings.m_fileSources.size();++i)
+    {
+      if (g_settings.m_fileSources[i].m_ignore)
+      {
+        bAdded = true;
+        break;
+      }
+    }
+    if (!bAdded)
+    {
+      VECSOURCES shares;
+      g_mediaManager.GetLocalDrives(shares, true);  // true to include Q
+      m_fileSources.insert(m_fileSources.end(),shares.begin(),shares.end());
+
+      CMediaSource source;
+      source.strName = g_localizeStrings.Get(22013);
+      source.m_ignore = true;
+      source.strPath = "special://profile/";
+      source.m_iDriveType = CMediaSource::SOURCE_TYPE_LOCAL;
+      m_fileSources.push_back(source);
+    }
+
+    return &g_settings.m_fileSources;
+  }
   else if (type == "music")
-    return &m_musicSources;
+    return &g_settings.m_musicSources;
   else if (type == "video")
-    return &m_videoSources;
+    return &g_settings.m_videoSources;
   else if (type == "pictures")
-    return &m_pictureSources;
+    return &g_settings.m_pictureSources;
 
   return NULL;
 }
@@ -209,15 +328,15 @@ CStdString CSettings::GetDefaultSourceFromType(const CStdString &type)
 {
   CStdString defaultShare;
   if (type == "programs" || type == "myprograms")
-    defaultShare = m_defaultProgramSource;
+    defaultShare = g_settings.m_defaultProgramSource;
   else if (type == "files")
-    defaultShare = m_defaultFileSource;
+    defaultShare = g_settings.m_defaultFileSource;
   else if (type == "music")
-    defaultShare = m_defaultMusicSource;
+    defaultShare = g_settings.m_defaultMusicSource;
   else if (type == "video")
-    defaultShare = m_defaultVideoSource;
+    defaultShare = g_settings.m_defaultVideoSource;
   else if (type == "pictures")
-    defaultShare = m_defaultPictureSource;
+    defaultShare = g_settings.m_defaultPictureSource;
   return defaultShare;
 }
 
@@ -494,93 +613,80 @@ void CSettings::SetViewState(TiXmlNode *pRootNode, const CStdString &strTagName,
   }
 }
 
-bool CSettings::LoadCalibration(const TiXmlElement* pRoot, const CStdString& strSettingsFile)
+bool CSettings::LoadCalibration(const TiXmlElement* pElement, const CStdString& strSettingsFile)
 {
-  const TiXmlElement *pElement = pRoot->FirstChildElement("resolutions");
-  if (!pElement)
+  // reset the calibration to the defaults
+  //g_graphicsContext.SetD3DParameters(NULL, m_ResInfo);
+  //for (int i=0; i<10; i++)
+  //  g_graphicsContext.ResetScreenParameters((RESOLUTION)i);
+
+  const TiXmlElement *pRootElement;
+  CStdString strTagName = pElement->Value();
+  if (!strcmp(strTagName.c_str(), "calibration"))
   {
-    CLog::Log(LOGERROR, "%s Doesn't contain <resolutions>", strSettingsFile.c_str());
+    pRootElement = pElement;
+  }
+  else
+  {
+    pRootElement = pElement->FirstChildElement("calibration");
+  }
+  if (!pRootElement)
+  {
+    g_LoadErrorStr.Format("%s Doesn't contain <calibration>", strSettingsFile.c_str());
     return false;
   }
-  const TiXmlElement *pResolution = pElement->FirstChildElement("resolution");
+  const TiXmlElement *pResolution = pRootElement->FirstChildElement("resolution");
   while (pResolution)
   {
     // get the data for this resolution
-    CStdString mode;
-    XMLUtils::GetString(pResolution, "description", mode);
-    // find this resolution in our resolution vector
-    for (unsigned int res = 0; res < m_ResInfo.size(); res++)
+    int iRes;
+    GetInteger(pResolution, "id", iRes, (int)PAL_4x3, HDTV_1080i, PAL60_16x9); //PAL4x3 as default data
+    GetString(pResolution, "description", m_ResInfo[iRes].strMode, m_ResInfo[iRes].strMode);
+    // get the appropriate "safe graphics area" = 10% for 4x3, 3.5% for 16x9
+    float fSafe;
+    if (iRes == PAL_4x3 || iRes == NTSC_4x3 || iRes == PAL60_4x3 || iRes == HDTV_480p_4x3)
+      fSafe = 0.1f;
+    else
+      fSafe = 0.035f;
+    GetInteger(pResolution, "subtitles", m_ResInfo[iRes].iSubtitles, (int)((1 - fSafe)*m_ResInfo[iRes].iHeight), m_ResInfo[iRes].iHeight / 2, m_ResInfo[iRes].iHeight*5 / 4);
+    GetFloat(pResolution, "pixelratio", m_ResInfo[iRes].fPixelRatio, 128.0f / 117.0f, 0.5f, 2.0f);
+
+    // get the overscan info
+    const TiXmlElement *pOverscan = pResolution->FirstChildElement("overscan");
+    if (pOverscan)
     {
-      if (res == RES_WINDOW)
-        continue;
-
-      if (m_ResInfo[res].strMode == mode)
-      { // found, read in the rest of the information for this item
-        const TiXmlElement *pOverscan = pResolution->FirstChildElement("overscan");
-        if (pOverscan)
-        {
-          GetInteger(pOverscan, "left", m_ResInfo[res].Overscan.left, 0, -m_ResInfo[res].iWidth / 4, m_ResInfo[res].iWidth / 4);
-          GetInteger(pOverscan, "top", m_ResInfo[res].Overscan.top, 0, -m_ResInfo[res].iHeight / 4, m_ResInfo[res].iHeight / 4);
-          GetInteger(pOverscan, "right", m_ResInfo[res].Overscan.right, m_ResInfo[res].iWidth, m_ResInfo[res].iWidth / 2, m_ResInfo[res].iWidth*3 / 2);
-          GetInteger(pOverscan, "bottom", m_ResInfo[res].Overscan.bottom, m_ResInfo[res].iHeight, m_ResInfo[res].iHeight / 2, m_ResInfo[res].iHeight*3 / 2);
-        }
-
-        // get the appropriate "safe graphics area" = 10% for 4x3, 3.5% for 16x9
-        float fSafe;
-        if (res == RES_PAL_4x3 || res == RES_NTSC_4x3 || res == RES_PAL60_4x3 || res == RES_HDTV_480p_4x3)
-          fSafe = 0.1f;
-        else
-          fSafe = 0.035f;
-
-        GetInteger(pResolution, "subtitles", m_ResInfo[res].iSubtitles, (int)((1 - fSafe)*m_ResInfo[res].iHeight), m_ResInfo[res].iHeight / 2, m_ResInfo[res].iHeight*5 / 4);
-        GetFloat(pResolution, "pixelratio", m_ResInfo[res].fPixelRatio, 128.0f / 117.0f, 0.5f, 2.0f);
-    /*    CLog::Log(LOGDEBUG, "  calibration for %s %ix%i", m_ResInfo[res].strMode, m_ResInfo[res].iWidth, m_ResInfo[res].iHeight);
-        CLog::Log(LOGDEBUG, "    subtitle yposition:%i pixelratio:%03.3f offsets:(%i,%i)->(%i,%i)",
-                  m_ResInfo[res].iSubtitles, m_ResInfo[res].fPixelRatio,
-                  m_ResInfo[res].Overscan.left, m_ResInfo[res].Overscan.top,
-                  m_ResInfo[res].Overscan.right, m_ResInfo[res].Overscan.bottom);*/
-      }
+      GetInteger(pOverscan, "left", m_ResInfo[iRes].Overscan.left, 0, -m_ResInfo[iRes].iWidth / 4, m_ResInfo[iRes].iWidth / 4);
+      GetInteger(pOverscan, "top", m_ResInfo[iRes].Overscan.top, 0, -m_ResInfo[iRes].iHeight / 4, m_ResInfo[iRes].iHeight / 4);
+      GetInteger(pOverscan, "right", m_ResInfo[iRes].Overscan.right, m_ResInfo[iRes].iWidth, m_ResInfo[iRes].iWidth / 2, m_ResInfo[iRes].iWidth*3 / 2);
+      GetInteger(pOverscan, "bottom", m_ResInfo[iRes].Overscan.bottom, m_ResInfo[iRes].iHeight, m_ResInfo[iRes].iHeight / 2, m_ResInfo[iRes].iHeight*3 / 2);
     }
+
+/*    CLog::Log(LOGDEBUG, "  calibration for %s %ix%i", m_ResInfo[iRes].strMode, m_ResInfo[iRes].iWidth, m_ResInfo[iRes].iHeight);
+    CLog::Log(LOGDEBUG, "    subtitle yposition:%i pixelratio:%03.3f offsets:(%i,%i)->(%i,%i)",
+              m_ResInfo[iRes].iSubtitles, m_ResInfo[iRes].fPixelRatio,
+              m_ResInfo[iRes].Overscan.left, m_ResInfo[iRes].Overscan.top,
+              m_ResInfo[iRes].Overscan.right, m_ResInfo[iRes].Overscan.bottom);*/
+
     // iterate around
     pResolution = pResolution->NextSiblingElement("resolution");
-
-
-/* Hmm, these stuff shouldn't be releaded, they should be used instead of our internal
-   id counter to select what resolution is affected by this settings
-#ifdef HAS_XRANDR
-    const CStdString def("");
-    CStdString val;
-    GetString(pResolution, "xrandrid", val, def);
-    strncpy(m_ResInfo[iRes].strId, val.c_str(), sizeof(m_ResInfo[iRes].strId));
-    GetString(pResolution, "output", val, def);
-    strncpy(m_ResInfo[iRes].strOutput, val.c_str(), sizeof(m_ResInfo[iRes].strOutput));
-    GetFloat(pResolution, "refreshrate", m_ResInfo[iRes].fRefreshRate, 0, 0, 200);
-#endif
-*/
   }
   return true;
 }
 
 bool CSettings::SaveCalibration(TiXmlNode* pRootNode) const
 {
-  TiXmlElement xmlRootElement("resolutions");
+  TiXmlElement xmlRootElement("calibration");
   TiXmlNode *pRoot = pRootNode->InsertEndChild(xmlRootElement);
-
-  // save WINDOW, DESKTOP and CUSTOM resolution
-  for (size_t i = RES_WINDOW ; i < m_ResInfo.size() ; i++)
+  for (int i = 0; i < 10; i++)
   {
     // Write the resolution tag
     TiXmlElement resElement("resolution");
     TiXmlNode *pNode = pRoot->InsertEndChild(resElement);
     // Now write each of the pieces of information we need...
     XMLUtils::SetString(pNode, "description", m_ResInfo[i].strMode);
+    XMLUtils::SetInt(pNode, "id", i);
     XMLUtils::SetInt(pNode, "subtitles", m_ResInfo[i].iSubtitles);
     XMLUtils::SetFloat(pNode, "pixelratio", m_ResInfo[i].fPixelRatio);
-#ifdef HAS_XRANDR
-    XMLUtils::SetFloat(pNode, "refreshrate", m_ResInfo[i].fRefreshRate);
-    XMLUtils::SetString(pNode, "output", m_ResInfo[i].strOutput);
-    XMLUtils::SetString(pNode, "xrandrid", m_ResInfo[i].strId);
-#endif
     // create the overscan child
     TiXmlElement overscanElement("overscan");
     TiXmlNode *pOverscanNode = pNode->InsertEndChild(overscanElement);
@@ -599,14 +705,14 @@ bool CSettings::LoadSettings(const CStdString& strSettingsFile)
 
   if (!xmlDoc.LoadFile(strSettingsFile))
   {
-    CLog::Log(LOGERROR, "%s, Line %d\n%s", strSettingsFile.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    g_LoadErrorStr.Format("%s, Line %d\n%s", strSettingsFile.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
     return false;
   }
 
   TiXmlElement *pRootElement = xmlDoc.RootElement();
   if (strcmpi(pRootElement->Value(), "settings") != 0)
   {
-    CLog::Log(LOGERROR, "%s\nDoesn't contain <settings>", strSettingsFile.c_str());
+    g_LoadErrorStr.Format("%s\nDoesn't contain <settings>", strSettingsFile.c_str());
     return false;
   }
 
@@ -617,111 +723,113 @@ bool CSettings::LoadSettings(const CStdString& strSettingsFile)
     TiXmlElement *pChild = pElement->FirstChildElement("playlist");
     if (pChild)
     {
-      XMLUtils::GetBoolean(pChild, "repeat", m_bMyMusicPlaylistRepeat);
-      XMLUtils::GetBoolean(pChild, "shuffle", m_bMyMusicPlaylistShuffle);
+      XMLUtils::GetBoolean(pChild, "repeat", g_stSettings.m_bMyMusicPlaylistRepeat);
+      XMLUtils::GetBoolean(pChild, "shuffle", g_stSettings.m_bMyMusicPlaylistShuffle);
     }
     // if the user happened to reboot in the middle of the scan we save this state
     pChild = pElement->FirstChildElement("scanning");
     if (pChild)
     {
-      XMLUtils::GetBoolean(pChild, "isscanning", m_bMyMusicIsScanning);
+      XMLUtils::GetBoolean(pChild, "isscanning", g_stSettings.m_bMyMusicIsScanning);
     }
-    GetInteger(pElement, "startwindow", m_iMyMusicStartWindow, WINDOW_MUSIC_FILES, WINDOW_MUSIC_FILES, WINDOW_MUSIC_NAV); //501; view songs
-    XMLUtils::GetBoolean(pElement, "songinfoinvis", m_bMyMusicSongInfoInVis);
-    XMLUtils::GetBoolean(pElement, "songthumbinvis", m_bMyMusicSongThumbInVis);
-    GetPath(pElement, "defaultlibview", m_defaultMusicLibSource);
+    GetInteger(pElement, "startwindow", g_stSettings.m_iMyMusicStartWindow, WINDOW_MUSIC_FILES, WINDOW_MUSIC_FILES, WINDOW_MUSIC_NAV); //501; view songs
+    XMLUtils::GetBoolean(pElement, "songinfoinvis", g_stSettings.m_bMyMusicSongInfoInVis);
+    XMLUtils::GetBoolean(pElement, "songthumbinvis", g_stSettings.m_bMyMusicSongThumbInVis);
+    GetPath(pElement, "defaultlibview", g_settings.m_defaultMusicLibSource);
   }
   // myvideos settings
   pElement = pRootElement->FirstChildElement("myvideos");
   if (pElement)
   {
-    GetInteger(pElement, "startwindow", m_iVideoStartWindow, WINDOW_VIDEO_FILES, WINDOW_VIDEO_FILES, WINDOW_VIDEO_NAV);
-    GetInteger(pElement, "stackvideomode", m_iMyVideoStack, STACK_NONE, STACK_NONE, STACK_SIMPLE);
+    GetInteger(pElement, "startwindow", g_stSettings.m_iVideoStartWindow, WINDOW_VIDEO_FILES, WINDOW_VIDEO_FILES, WINDOW_VIDEO_NAV);
+    GetInteger(pElement, "stackvideomode", g_stSettings.m_iMyVideoStack, STACK_NONE, STACK_NONE, STACK_SIMPLE);
 
-    GetPath(pElement, "defaultlibview", m_defaultVideoLibSource);
-
-    // Read the watchmode settings for the various media views
-    GetInteger(pElement, "watchmodemovies", m_watchMode["movies"], VIDEO_SHOW_ALL, VIDEO_SHOW_ALL, VIDEO_SHOW_WATCHED);
-    GetInteger(pElement, "watchmodetvshows", m_watchMode["tvshows"], VIDEO_SHOW_ALL, VIDEO_SHOW_ALL, VIDEO_SHOW_WATCHED);
-    GetInteger(pElement, "watchmodemusicvideos", m_watchMode["musicvideos"], VIDEO_SHOW_ALL, VIDEO_SHOW_ALL, VIDEO_SHOW_WATCHED);
-
-    XMLUtils::GetBoolean(pElement, "flatten", m_bMyVideoNavFlatten);
+    GetPath(pElement, "defaultlibview", g_settings.m_defaultVideoLibSource);
+    GetInteger(pElement, "watchmode", g_stSettings.m_iMyVideoWatchMode, VIDEO_SHOW_ALL, VIDEO_SHOW_ALL, VIDEO_SHOW_WATCHED);
+    XMLUtils::GetBoolean(pElement, "flatten", g_stSettings.m_bMyVideoNavFlatten);
 
     TiXmlElement *pChild = pElement->FirstChildElement("playlist");
     if (pChild)
     { // playlist
-      XMLUtils::GetBoolean(pChild, "repeat", m_bMyVideoPlaylistRepeat);
-      XMLUtils::GetBoolean(pChild, "shuffle", m_bMyVideoPlaylistShuffle);
+      XMLUtils::GetBoolean(pChild, "repeat", g_stSettings.m_bMyVideoPlaylistRepeat);
+      XMLUtils::GetBoolean(pChild, "shuffle", g_stSettings.m_bMyVideoPlaylistShuffle);
     }
   }
 
   pElement = pRootElement->FirstChildElement("viewstates");
   if (pElement)
   {
-    GetViewState(pElement, "musicnavartists", m_viewStateMusicNavArtists);
-    GetViewState(pElement, "musicnavalbums", m_viewStateMusicNavAlbums);
-    GetViewState(pElement, "musicnavsongs", m_viewStateMusicNavSongs);
-    GetViewState(pElement, "musicshoutcast", m_viewStateMusicShoutcast);
-    GetViewState(pElement, "musiclastfm", m_viewStateMusicLastFM);
-    GetViewState(pElement, "videonavactors", m_viewStateVideoNavActors);
-    GetViewState(pElement, "videonavyears", m_viewStateVideoNavYears);
-    GetViewState(pElement, "videonavgenres", m_viewStateVideoNavGenres);
-    GetViewState(pElement, "videonavtitles", m_viewStateVideoNavTitles);
-    GetViewState(pElement, "videonavepisodes", m_viewStateVideoNavEpisodes, SORT_METHOD_EPISODE);
-    GetViewState(pElement, "videonavtvshows", m_viewStateVideoNavTvShows);
-    GetViewState(pElement, "videonavseasons", m_viewStateVideoNavSeasons);
-    GetViewState(pElement, "videonavmusicvideos", m_viewStateVideoNavMusicVideos);
+    GetViewState(pElement, "musicnavartists", g_stSettings.m_viewStateMusicNavArtists);
+    GetViewState(pElement, "musicnavalbums", g_stSettings.m_viewStateMusicNavAlbums);
+    GetViewState(pElement, "musicnavsongs", g_stSettings.m_viewStateMusicNavSongs);
+    GetViewState(pElement, "musicshoutcast", g_stSettings.m_viewStateMusicShoutcast);
+    GetViewState(pElement, "musiclastfm", g_stSettings.m_viewStateMusicLastFM);
+    GetViewState(pElement, "videonavactors", g_stSettings.m_viewStateVideoNavActors);
+    GetViewState(pElement, "videonavyears", g_stSettings.m_viewStateVideoNavYears);
+    GetViewState(pElement, "videonavgenres", g_stSettings.m_viewStateVideoNavGenres);
+    GetViewState(pElement, "videonavtitles", g_stSettings.m_viewStateVideoNavTitles);
+    GetViewState(pElement, "videonavepisodes", g_stSettings.m_viewStateVideoNavEpisodes, SORT_METHOD_EPISODE);
+    GetViewState(pElement, "videonavtvshows", g_stSettings.m_viewStateVideoNavTvShows);
+    GetViewState(pElement, "videonavseasons", g_stSettings.m_viewStateVideoNavSeasons);
+    GetViewState(pElement, "videonavmusicvideos", g_stSettings.m_viewStateVideoNavMusicVideos);
 
-    GetViewState(pElement, "programs", m_viewStatePrograms, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
-    GetViewState(pElement, "pictures", m_viewStatePictures, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
-    GetViewState(pElement, "videofiles", m_viewStateVideoFiles, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
-    GetViewState(pElement, "musicfiles", m_viewStateMusicFiles, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
+    GetViewState(pElement, "programs", g_stSettings.m_viewStatePrograms, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
+    GetViewState(pElement, "pictures", g_stSettings.m_viewStatePictures, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
+    GetViewState(pElement, "videofiles", g_stSettings.m_viewStateVideoFiles, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
+    GetViewState(pElement, "musicfiles", g_stSettings.m_viewStateMusicFiles, SORT_METHOD_LABEL, DEFAULT_VIEW_AUTO);
   }
 
   // general settings
   pElement = pRootElement->FirstChildElement("general");
   if (pElement)
   {
-    GetInteger(pElement, "systemtotaluptime", m_iSystemTimeTotalUp, 0, 0, INT_MAX);
-    GetInteger(pElement, "httpapibroadcastlevel", m_HttpApiBroadcastLevel, 0, 0, 255);
-    GetInteger(pElement, "httpapibroadcastport", m_HttpApiBroadcastPort, 8278, 1, 65535);
+    GetInteger(pElement, "systemtotaluptime", g_stSettings.m_iSystemTimeTotalUp, 0, 0, INT_MAX);
+    GetInteger(pElement, "httpapibroadcastlevel", g_stSettings.m_HttpApiBroadcastLevel, 0, 0,5);
+    GetInteger(pElement, "httpapibroadcastport", g_stSettings.m_HttpApiBroadcastPort, 8278, 1, 65535);
   }
 
   pElement = pRootElement->FirstChildElement("defaultvideosettings");
   if (pElement)
   {
     int interlaceMethod;
-    GetInteger(pElement, "interlacemethod", interlaceMethod, VS_INTERLACEMETHOD_NONE, VS_INTERLACEMETHOD_NONE, VS_INTERLACEMETHOD_INVERSE_TELECINE);
-    m_defaultVideoSettings.m_InterlaceMethod = (EINTERLACEMETHOD)interlaceMethod;
-    int scalingMethod;
-    GetInteger(pElement, "scalingmethod", scalingMethod, VS_SCALINGMETHOD_LINEAR, VS_SCALINGMETHOD_NEAREST, VS_SCALINGMETHOD_AUTO);
-    m_defaultVideoSettings.m_ScalingMethod = (ESCALINGMETHOD)scalingMethod;
+    GetInteger(pElement, "interlacemethod", interlaceMethod, VS_INTERLACEMETHOD_NONE, VS_INTERLACEMETHOD_NONE, VS_INTERLACEMETHOD_DEINTERLACE);
+    g_stSettings.m_defaultVideoSettings.m_InterlaceMethod = (EINTERLACEMETHOD)interlaceMethod;
 
-    GetInteger(pElement, "viewmode", m_defaultVideoSettings.m_ViewMode, VIEW_MODE_NORMAL, VIEW_MODE_NORMAL, VIEW_MODE_CUSTOM);
-    GetFloat(pElement, "zoomamount", m_defaultVideoSettings.m_CustomZoomAmount, 1.0f, 0.5f, 2.0f);
-    GetFloat(pElement, "pixelratio", m_defaultVideoSettings.m_CustomPixelRatio, 1.0f, 0.5f, 2.0f);
-    GetFloat(pElement, "volumeamplification", m_defaultVideoSettings.m_VolumeAmplification, VOLUME_DRC_MINIMUM * 0.01f, VOLUME_DRC_MINIMUM * 0.01f, VOLUME_DRC_MAXIMUM * 0.01f);
-    GetFloat(pElement, "noisereduction", m_defaultVideoSettings.m_NoiseReduction, 0.0f, 0.0f, 1.0f);
-    GetFloat(pElement, "sharpness", m_defaultVideoSettings.m_Sharpness, 0.0f, -1.0f, 1.0f);
-    XMLUtils::GetBoolean(pElement, "outputtoallspeakers", m_defaultVideoSettings.m_OutputToAllSpeakers);
-    XMLUtils::GetBoolean(pElement, "showsubtitles", m_defaultVideoSettings.m_SubtitleOn);
-    GetFloat(pElement, "brightness", m_defaultVideoSettings.m_Brightness, 50, 0, 100);
-    GetFloat(pElement, "contrast", m_defaultVideoSettings.m_Contrast, 50, 0, 100);
-    GetFloat(pElement, "gamma", m_defaultVideoSettings.m_Gamma, 20, 0, 100);
-    GetFloat(pElement, "audiodelay", m_defaultVideoSettings.m_AudioDelay, 0.0f, -10.0f, 10.0f);
-    GetFloat(pElement, "subtitledelay", m_defaultVideoSettings.m_SubtitleDelay, 0.0f, -10.0f, 10.0f);
-    XMLUtils::GetBoolean(pElement, "autocrop", m_defaultVideoSettings.m_Crop);
-    XMLUtils::GetBoolean(pElement, "nonlinstretch", m_defaultVideoSettings.m_CustomNonLinStretch);
-    XMLUtils::GetBoolean(pElement, "addonautoupdate", m_bAddonAutoUpdate);
+    GetFloat(pElement, "filmgrain", g_stSettings.m_defaultVideoSettings.m_FilmGrain, 0, 0, 10);
+    GetInteger(pElement, "viewmode", g_stSettings.m_defaultVideoSettings.m_ViewMode, VIEW_MODE_NORMAL, VIEW_MODE_NORMAL, VIEW_MODE_CUSTOM);
+    GetFloat(pElement, "zoomamount", g_stSettings.m_defaultVideoSettings.m_CustomZoomAmount, 1.0f, 0.5f, 2.0f);
+    GetFloat(pElement, "pixelratio", g_stSettings.m_defaultVideoSettings.m_CustomPixelRatio, 1.0f, 0.5f, 2.0f);
+    GetFloat(pElement, "volumeamplification", g_stSettings.m_defaultVideoSettings.m_VolumeAmplification, VOLUME_DRC_MINIMUM * 0.01f, VOLUME_DRC_MINIMUM * 0.01f, VOLUME_DRC_MAXIMUM * 0.01f);
+    GetFloat(pElement, "noisereduction", g_stSettings.m_defaultVideoSettings.m_NoiseReduction, 0.0f, 0.0f, 1.0f);
+    GetFloat(pElement, "sharpness", g_stSettings.m_defaultVideoSettings.m_Sharpness, 0.0f, -1.0f, 1.0f);
+    XMLUtils::GetBoolean(pElement, "outputtoallspeakers", g_stSettings.m_defaultVideoSettings.m_OutputToAllSpeakers);
+    XMLUtils::GetBoolean(pElement, "showsubtitles", g_stSettings.m_defaultVideoSettings.m_SubtitleOn);
+    GetFloat(pElement, "brightness", g_stSettings.m_defaultVideoSettings.m_Brightness, 50, 0, 100);
+    GetFloat(pElement, "contrast", g_stSettings.m_defaultVideoSettings.m_Contrast, 50, 0, 100);
+    GetFloat(pElement, "gamma", g_stSettings.m_defaultVideoSettings.m_Gamma, 20, 0, 100);
+    GetFloat(pElement, "audiodelay", g_stSettings.m_defaultVideoSettings.m_AudioDelay, 0.0f, -10.0f, 10.0f);
+    GetFloat(pElement, "subtitledelay", g_stSettings.m_defaultVideoSettings.m_SubtitleDelay, 0.0f, -10.0f, 10.0f);
 
-    m_defaultVideoSettings.m_SubtitleCached = false;
+    g_stSettings.m_defaultVideoSettings.m_SubtitleCached = false;
   }
   // audio settings
   pElement = pRootElement->FirstChildElement("audio");
   if (pElement)
   {
-    GetInteger(pElement, "volumelevel", m_nVolumeLevel, VOLUME_MAXIMUM, VOLUME_MINIMUM, VOLUME_MAXIMUM);
-    GetInteger(pElement, "dynamicrangecompression", m_dynamicRangeCompressionLevel, VOLUME_DRC_MINIMUM, VOLUME_DRC_MINIMUM, VOLUME_DRC_MAXIMUM);
+    GetInteger(pElement, "volumelevel", g_stSettings.m_nVolumeLevel, VOLUME_MAXIMUM, VOLUME_MINIMUM, VOLUME_MAXIMUM);
+    GetInteger(pElement, "dynamicrangecompression", g_stSettings.m_dynamicRangeCompressionLevel, VOLUME_DRC_MINIMUM, VOLUME_DRC_MINIMUM, VOLUME_DRC_MAXIMUM);
+    for (int i = 0; i < 4; i++)
+    {
+      CStdString setting;
+      setting.Format("karaoke%i", i);
+#ifndef HAS_XBOX_AUDIO
+#define XVOICE_MASK_PARAM_DISABLED (-1.0f)
+#endif
+      GetFloat(pElement, setting + "energy", g_stSettings.m_karaokeVoiceMask[i].energy, XVOICE_MASK_PARAM_DISABLED, XVOICE_MASK_PARAM_DISABLED, 1.0f);
+      GetFloat(pElement, setting + "pitch", g_stSettings.m_karaokeVoiceMask[i].pitch, XVOICE_MASK_PARAM_DISABLED, XVOICE_MASK_PARAM_DISABLED, 1.0f);
+      GetFloat(pElement, setting + "whisper", g_stSettings.m_karaokeVoiceMask[i].whisper, XVOICE_MASK_PARAM_DISABLED, XVOICE_MASK_PARAM_DISABLED, 1.0f);
+      GetFloat(pElement, setting + "robotic", g_stSettings.m_karaokeVoiceMask[i].robotic, XVOICE_MASK_PARAM_DISABLED, XVOICE_MASK_PARAM_DISABLED, 1.0f);
+    }
   }
 
   LoadCalibration(pRootElement, strSettingsFile);
@@ -730,22 +838,31 @@ bool CSettings::LoadSettings(const CStdString& strSettingsFile)
 
   // Configure the PlayerCoreFactory
   LoadPlayerCoreFactorySettings("special://xbmc/system/playercorefactory.xml", true);
-  LoadPlayerCoreFactorySettings(GetUserDataItem("playercorefactory.xml"), false);
+  LoadPlayerCoreFactorySettings(g_settings.GetUserDataItem("playercorefactory.xml"), false);
 
   // Advanced settings
   g_advancedSettings.Load();
 
   // Default players?
-  CLog::Log(LOGNOTICE, "Default DVD Player: %s", g_advancedSettings.m_videoDefaultDVDPlayer.c_str());
   CLog::Log(LOGNOTICE, "Default Video Player: %s", g_advancedSettings.m_videoDefaultPlayer.c_str());
   CLog::Log(LOGNOTICE, "Default Audio Player: %s", g_advancedSettings.m_audioDefaultPlayer.c_str());
 
-  // setup any logging...
-  if (g_guiSettings.GetBool("debug.showloginfo"))
+  // setup logging...
+  if (g_guiSettings.GetBool("debug.showloginfo") && g_advancedSettings.m_logLevel < LOG_LEVEL_DEBUG_FREEMEM)
   {
-    g_advancedSettings.m_logLevel = std::max(g_advancedSettings.m_logLevelHint, LOG_LEVEL_DEBUG_FREEMEM);
-    CLog::Log(LOGNOTICE, "Enabled debug logging due to GUI setting (%d)", g_advancedSettings.m_logLevel);
+    g_advancedSettings.m_logLevel = LOG_LEVEL_DEBUG_FREEMEM;
+    CLog::Log(LOGNOTICE, "Enabled debug logging due to GUI setting");
   }
+  
+  // Override settings with avpack settings
+  if ( m_vecProfiles[m_iLastLoadedProfileIndex].useAvpackSettings())
+  {
+    CLog::Log(LOGNOTICE, "Per AV pack settings are on");
+    LoadAvpackXML();
+  }
+  else
+    CLog::Log(LOGNOTICE, "Per AV pack settings are off");
+
   return true;
 }
 
@@ -768,6 +885,174 @@ bool CSettings::LoadPlayerCoreFactorySettings(const CStdString& fileStr, bool cl
   return CPlayerCoreFactory::LoadConfiguration(playerCoreFactoryXML.RootElement(), clear);
 }
 
+bool CSettings::LoadAvpackXML()
+{
+  CStdString avpackSettingsXML;
+  avpackSettingsXML  = GetAvpackSettingsFile();
+  TiXmlDocument avpackXML;
+  if (!CFile::Exists(avpackSettingsXML))
+  {
+    CLog::Log(LOGERROR, "Error loading AV pack settings : %s not found !", avpackSettingsXML.c_str());
+    return false;
+  }
+
+  CLog::Log(LOGNOTICE, "%s found : loading %s",
+    g_videoConfig.GetAVPack().c_str(), avpackSettingsXML.c_str());
+
+  if (!avpackXML.LoadFile(avpackSettingsXML.c_str()))
+  {
+    CLog::Log(LOGERROR, "Error loading %s, Line %d\n%s",
+      avpackSettingsXML.c_str(), avpackXML.ErrorRow(), avpackXML.ErrorDesc());
+    return false;
+  }
+
+  TiXmlElement *pMainElement = avpackXML.RootElement();
+  if (!pMainElement || strcmpi(pMainElement->Value(),"settings") != 0)
+  {
+    CLog::Log(LOGERROR, "Error loading %s, no <settings> node", avpackSettingsXML.c_str());
+    return false;
+  }
+
+  TiXmlElement *pRoot = pMainElement->FirstChildElement(g_videoConfig.GetAVPack());
+  if (!pRoot)
+  {
+    CLog::Log(LOGERROR, "Error loading %s, no <%s> node",
+      avpackSettingsXML.c_str(), g_videoConfig.GetAVPack().c_str());
+    return false;
+  }
+
+  // Load guisettings
+  g_guiSettings.LoadXML(pRoot);
+
+  // Load calibration
+  return LoadCalibration(pRoot, avpackSettingsXML);
+}
+
+// Save the avpack settings in the current 'avpacksettings.xml' file
+bool CSettings::SaveAvpackXML() const
+{
+  CStdString avpackSettingsXML;
+  avpackSettingsXML  = GetAvpackSettingsFile();
+
+  CLog::Log(LOGNOTICE, "Saving %s settings in %s",
+    g_videoConfig.GetAVPack().c_str(), avpackSettingsXML.c_str());
+
+  // The file does not exist : Save defaults
+  if (!CFile::Exists(avpackSettingsXML))
+    return SaveNewAvpackXML();
+
+  // The file already exists :
+  // We need to preserve other avpack settings
+
+  // First load the previous settings
+  TiXmlDocument xmlDoc;
+  if (!xmlDoc.LoadFile(avpackSettingsXML))
+  {
+    CLog::Log(LOGERROR, "SaveAvpackSettings : Error loading %s, Line %d\n%s\nCreating new file.",
+      avpackSettingsXML.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    return SaveNewAvpackXML();
+  }
+
+  // Get the main element
+  TiXmlElement *pMainElement = xmlDoc.RootElement();
+  if (!pMainElement || strcmpi(pMainElement->Value(),"settings") != 0)
+  {
+    CLog::Log(LOGERROR, "SaveAvpackSettings : Error loading %s, no <settings> node.\nCreating new file.",
+      avpackSettingsXML.c_str());
+    return SaveNewAvpackXML();
+  }
+
+  // Delete the plugged avpack root if it exists, then recreate it
+  // TODO : to support custom avpack settings, the two XMLs should
+  // be synchronized, not just overwrite the old one
+  TiXmlNode *pRoot = pMainElement->FirstChild(g_videoConfig.GetAVPack());
+  if (pRoot)
+    pMainElement->RemoveChild(pRoot);
+
+  TiXmlElement pluggedNode(g_videoConfig.GetAVPack());
+  pRoot = pMainElement->InsertEndChild(pluggedNode);
+  if (!pRoot) return false;
+
+  if (!SaveAvpackSettings(pRoot))
+    return false;
+
+  return xmlDoc.SaveFile(avpackSettingsXML);
+}
+
+// Create an 'avpacksettings.xml' file with in the current profile directory
+bool CSettings::SaveNewAvpackXML() const
+{
+  TiXmlDocument xmlDoc;
+  TiXmlElement xmlMainElement("settings");
+  TiXmlNode *pMain = xmlDoc.InsertEndChild(xmlMainElement);
+  if (!pMain) return false;
+
+  TiXmlElement pluggedNode(g_videoConfig.GetAVPack());
+  TiXmlNode *pRoot = pMain->InsertEndChild(pluggedNode);
+  if (!pRoot) return false;
+
+  if (!SaveAvpackSettings(pRoot))
+    return false;
+
+  return xmlDoc.SaveFile(GetAvpackSettingsFile());
+}
+
+// Save avpack settings in the provided xml node
+bool CSettings::SaveAvpackSettings(TiXmlNode *io_pRoot) const
+{
+  TiXmlElement programsNode("myprograms");
+  TiXmlNode *pNode = io_pRoot->InsertEndChild(programsNode);
+  if (!pNode) return false;
+  XMLUtils::SetBoolean(pNode, "gameautoregion", g_guiSettings.GetBool("myprograms.gameautoregion"));
+  XMLUtils::SetInt(pNode, "ntscmode", g_guiSettings.GetInt("myprograms.ntscmode"));
+
+  // default video settings
+  TiXmlElement videoSettingsNode("defaultvideosettings");
+  pNode = io_pRoot->InsertEndChild(videoSettingsNode);
+  if (!pNode) return false;
+  XMLUtils::SetInt(pNode, "interlacemethod", g_stSettings.m_defaultVideoSettings.m_InterlaceMethod);
+  XMLUtils::SetFloat(pNode, "filmgrain", g_stSettings.m_currentVideoSettings.m_FilmGrain);
+  XMLUtils::SetInt(pNode, "viewmode", g_stSettings.m_currentVideoSettings.m_ViewMode);
+  XMLUtils::SetFloat(pNode, "zoomamount", g_stSettings.m_currentVideoSettings.m_CustomZoomAmount);
+  XMLUtils::SetFloat(pNode, "pixelratio", g_stSettings.m_currentVideoSettings.m_CustomPixelRatio);
+  XMLUtils::SetFloat(pNode, "volumeamplification", g_stSettings.m_currentVideoSettings.m_VolumeAmplification);
+  XMLUtils::SetBoolean(pNode, "outputtoallspeakers", g_stSettings.m_currentVideoSettings.m_OutputToAllSpeakers);
+  XMLUtils::SetBoolean(pNode, "showsubtitles", g_stSettings.m_currentVideoSettings.m_SubtitleOn);
+  XMLUtils::SetFloat(pNode, "brightness", g_stSettings.m_currentVideoSettings.m_Brightness);
+  XMLUtils::SetFloat(pNode, "contrast", g_stSettings.m_currentVideoSettings.m_Contrast);
+  XMLUtils::SetFloat(pNode, "gamma", g_stSettings.m_currentVideoSettings.m_Gamma);
+
+  TiXmlElement audiooutputNode("audiooutput");
+  pNode = io_pRoot->InsertEndChild(audiooutputNode);
+  if (!pNode) return false;
+  XMLUtils::SetInt(pNode, "mode", g_guiSettings.GetInt("audiooutput.mode"));
+  XMLUtils::SetBoolean(pNode, "ac3passthrough", g_guiSettings.GetBool("audiooutput.ac3passthrough"));
+  XMLUtils::SetBoolean(pNode, "dtspassthrough", g_guiSettings.GetBool("audiooutput.dtspassthrough"));
+
+  TiXmlElement videooutputNode("videooutput");
+  pNode = io_pRoot->InsertEndChild(videooutputNode);
+  if (!pNode) return false;
+  XMLUtils::SetInt(pNode, "aspect", g_guiSettings.GetInt("videooutput.aspect"));
+  XMLUtils::SetBoolean(pNode, "hd480p", g_guiSettings.GetBool("videooutput.hd480p"));
+  XMLUtils::SetBoolean(pNode, "hd720p", g_guiSettings.GetBool("videooutput.hd720p"));
+  XMLUtils::SetBoolean(pNode, "hd1080i", g_guiSettings.GetBool("videooutput.hd1080i"));
+
+  TiXmlElement videoscreenNode("videoscreen");
+  pNode = io_pRoot->InsertEndChild(videoscreenNode);
+  if (!pNode) return false;
+  XMLUtils::SetInt(pNode, "flickerfilter", g_guiSettings.GetInt("videoscreen.flickerfilter"));
+  XMLUtils::SetInt(pNode, "resolution", g_guiSettings.GetInt("videoscreen.resolution"));
+  XMLUtils::SetBoolean(pNode, "soften", g_guiSettings.GetBool("videoscreen.soften"));
+
+  TiXmlElement videoplayerNode("videoplayer");
+  pNode = io_pRoot->InsertEndChild(videoplayerNode);
+  if (!pNode) return false;
+  XMLUtils::SetInt(pNode, "displayresolution", g_guiSettings.GetInt("videoplayer.displayresolution"));
+  XMLUtils::SetInt(pNode, "flicker", g_guiSettings.GetInt("videoplayer.flicker"));
+  XMLUtils::SetBoolean(pNode, "soften", g_guiSettings.GetBool("videoplayer.soften"));
+
+  return SaveCalibration(io_pRoot);
+}
 bool CSettings::SaveSettings(const CStdString& strSettingsFile, CGUISettings *localSettings /* = NULL */) const
 {
   TiXmlDocument xmlDoc;
@@ -784,44 +1069,41 @@ bool CSettings::SaveSettings(const CStdString& strSettingsFile, CGUISettings *lo
     TiXmlElement childNode("playlist");
     TiXmlNode *pChild = pNode->InsertEndChild(childNode);
     if (!pChild) return false;
-    XMLUtils::SetBoolean(pChild, "repeat", m_bMyMusicPlaylistRepeat);
-    XMLUtils::SetBoolean(pChild, "shuffle", m_bMyMusicPlaylistShuffle);
+    XMLUtils::SetBoolean(pChild, "repeat", g_stSettings.m_bMyMusicPlaylistRepeat);
+    XMLUtils::SetBoolean(pChild, "shuffle", g_stSettings.m_bMyMusicPlaylistShuffle);
   }
   {
     TiXmlElement childNode("scanning");
     TiXmlNode *pChild = pNode->InsertEndChild(childNode);
     if (!pChild) return false;
-    XMLUtils::SetBoolean(pChild, "isscanning", m_bMyMusicIsScanning);
+    XMLUtils::SetBoolean(pChild, "isscanning", g_stSettings.m_bMyMusicIsScanning);
   }
 
-  XMLUtils::SetInt(pNode, "startwindow", m_iMyMusicStartWindow);
-  XMLUtils::SetBoolean(pNode, "songinfoinvis", m_bMyMusicSongInfoInVis);
-  XMLUtils::SetBoolean(pNode, "songthumbinvis", m_bMyMusicSongThumbInVis);
-  XMLUtils::SetPath(pNode, "defaultlibview", m_defaultMusicLibSource);
+  XMLUtils::SetInt(pNode, "startwindow", g_stSettings.m_iMyMusicStartWindow);
+  XMLUtils::SetBoolean(pNode, "songinfoinvis", g_stSettings.m_bMyMusicSongInfoInVis);
+  XMLUtils::SetBoolean(pNode, "songthumbinvis", g_stSettings.m_bMyMusicSongThumbInVis);
+  XMLUtils::SetPath(pNode, "defaultlibview", g_settings.m_defaultMusicLibSource);
 
   // myvideos settings
   TiXmlElement videosNode("myvideos");
   pNode = pRoot->InsertEndChild(videosNode);
   if (!pNode) return false;
 
-  XMLUtils::SetInt(pNode, "startwindow", m_iVideoStartWindow);
+  XMLUtils::SetInt(pNode, "startwindow", g_stSettings.m_iVideoStartWindow);
 
-  XMLUtils::SetInt(pNode, "stackvideomode", m_iMyVideoStack);
+  XMLUtils::SetInt(pNode, "stackvideomode", g_stSettings.m_iMyVideoStack);
 
-  XMLUtils::SetPath(pNode, "defaultlibview", m_defaultVideoLibSource);
+  XMLUtils::SetPath(pNode, "defaultlibview", g_settings.m_defaultVideoLibSource);
 
-  XMLUtils::SetInt(pNode, "watchmodemovies", m_watchMode.find("movies")->second);
-  XMLUtils::SetInt(pNode, "watchmodetvshows", m_watchMode.find("tvshows")->second);
-  XMLUtils::SetInt(pNode, "watchmodemusicvideos", m_watchMode.find("musicvideos")->second);
-
-  XMLUtils::SetBoolean(pNode, "flatten", m_bMyVideoNavFlatten);
+  XMLUtils::SetInt(pNode, "watchmode", g_stSettings.m_iMyVideoWatchMode);
+  XMLUtils::SetBoolean(pNode, "flatten", g_stSettings.m_bMyVideoNavFlatten);
 
   { // playlist window
     TiXmlElement childNode("playlist");
     TiXmlNode *pChild = pNode->InsertEndChild(childNode);
     if (!pChild) return false;
-    XMLUtils::SetBoolean(pChild, "repeat", m_bMyVideoPlaylistRepeat);
-    XMLUtils::SetBoolean(pChild, "shuffle", m_bMyVideoPlaylistShuffle);
+    XMLUtils::SetBoolean(pChild, "repeat", g_stSettings.m_bMyVideoPlaylistRepeat);
+    XMLUtils::SetBoolean(pChild, "shuffle", g_stSettings.m_bMyVideoPlaylistShuffle);
   }
 
   // view states
@@ -829,64 +1111,70 @@ bool CSettings::SaveSettings(const CStdString& strSettingsFile, CGUISettings *lo
   pNode = pRoot->InsertEndChild(viewStateNode);
   if (pNode)
   {
-    SetViewState(pNode, "musicnavartists", m_viewStateMusicNavArtists);
-    SetViewState(pNode, "musicnavalbums", m_viewStateMusicNavAlbums);
-    SetViewState(pNode, "musicnavsongs", m_viewStateMusicNavSongs);
-    SetViewState(pNode, "musicshoutcast", m_viewStateMusicShoutcast);
-    SetViewState(pNode, "musiclastfm", m_viewStateMusicLastFM);
-    SetViewState(pNode, "videonavactors", m_viewStateVideoNavActors);
-    SetViewState(pNode, "videonavyears", m_viewStateVideoNavYears);
-    SetViewState(pNode, "videonavgenres", m_viewStateVideoNavGenres);
-    SetViewState(pNode, "videonavtitles", m_viewStateVideoNavTitles);
-    SetViewState(pNode, "videonavepisodes", m_viewStateVideoNavEpisodes);
-    SetViewState(pNode, "videonavseasons", m_viewStateVideoNavSeasons);
-    SetViewState(pNode, "videonavtvshows", m_viewStateVideoNavTvShows);
-    SetViewState(pNode, "videonavmusicvideos", m_viewStateVideoNavMusicVideos);
+    SetViewState(pNode, "musicnavartists", g_stSettings.m_viewStateMusicNavArtists);
+    SetViewState(pNode, "musicnavalbums", g_stSettings.m_viewStateMusicNavAlbums);
+    SetViewState(pNode, "musicnavsongs", g_stSettings.m_viewStateMusicNavSongs);
+    SetViewState(pNode, "musicshoutcast", g_stSettings.m_viewStateMusicShoutcast);
+    SetViewState(pNode, "musiclastfm", g_stSettings.m_viewStateMusicLastFM);
+    SetViewState(pNode, "videonavactors", g_stSettings.m_viewStateVideoNavActors);
+    SetViewState(pNode, "videonavyears", g_stSettings.m_viewStateVideoNavYears);
+    SetViewState(pNode, "videonavgenres", g_stSettings.m_viewStateVideoNavGenres);
+    SetViewState(pNode, "videonavtitles", g_stSettings.m_viewStateVideoNavTitles);
+    SetViewState(pNode, "videonavepisodes", g_stSettings.m_viewStateVideoNavEpisodes);
+    SetViewState(pNode, "videonavseasons", g_stSettings.m_viewStateVideoNavSeasons);
+    SetViewState(pNode, "videonavtvshows", g_stSettings.m_viewStateVideoNavTvShows);
+    SetViewState(pNode, "videonavmusicvideos", g_stSettings.m_viewStateVideoNavMusicVideos);
 
-    SetViewState(pNode, "programs", m_viewStatePrograms);
-    SetViewState(pNode, "pictures", m_viewStatePictures);
-    SetViewState(pNode, "videofiles", m_viewStateVideoFiles);
-    SetViewState(pNode, "musicfiles", m_viewStateMusicFiles);
+    SetViewState(pNode, "programs", g_stSettings.m_viewStatePrograms);
+    SetViewState(pNode, "pictures", g_stSettings.m_viewStatePictures);
+    SetViewState(pNode, "videofiles", g_stSettings.m_viewStateVideoFiles);
+    SetViewState(pNode, "musicfiles", g_stSettings.m_viewStateMusicFiles);
   }
 
   // general settings
   TiXmlElement generalNode("general");
   pNode = pRoot->InsertEndChild(generalNode);
   if (!pNode) return false;
-  XMLUtils::SetInt(pNode, "systemtotaluptime", m_iSystemTimeTotalUp);
-  XMLUtils::SetInt(pNode, "httpapibroadcastport", m_HttpApiBroadcastPort);
-  XMLUtils::SetInt(pNode, "httpapibroadcastlevel", m_HttpApiBroadcastLevel);
+  XMLUtils::SetInt(pNode, "systemtotaluptime", g_stSettings.m_iSystemTimeTotalUp);
+  XMLUtils::SetInt(pNode, "httpapibroadcastport", g_stSettings.m_HttpApiBroadcastPort);
+  XMLUtils::SetInt(pNode, "httpapibroadcastlevel", g_stSettings.m_HttpApiBroadcastLevel);
 
   // default video settings
   TiXmlElement videoSettingsNode("defaultvideosettings");
   pNode = pRoot->InsertEndChild(videoSettingsNode);
   if (!pNode) return false;
-  XMLUtils::SetInt(pNode, "interlacemethod", m_defaultVideoSettings.m_InterlaceMethod);
-  XMLUtils::SetInt(pNode, "scalingmethod", m_defaultVideoSettings.m_ScalingMethod);
-  XMLUtils::SetFloat(pNode, "noisereduction", m_defaultVideoSettings.m_NoiseReduction);
-  XMLUtils::SetFloat(pNode, "sharpness", m_defaultVideoSettings.m_Sharpness);
-  XMLUtils::SetInt(pNode, "viewmode", m_defaultVideoSettings.m_ViewMode);
-  XMLUtils::SetFloat(pNode, "zoomamount", m_defaultVideoSettings.m_CustomZoomAmount);
-  XMLUtils::SetFloat(pNode, "pixelratio", m_defaultVideoSettings.m_CustomPixelRatio);
-  XMLUtils::SetFloat(pNode, "volumeamplification", m_defaultVideoSettings.m_VolumeAmplification);
-  XMLUtils::SetBoolean(pNode, "outputtoallspeakers", m_defaultVideoSettings.m_OutputToAllSpeakers);
-  XMLUtils::SetBoolean(pNode, "showsubtitles", m_defaultVideoSettings.m_SubtitleOn);
-  XMLUtils::SetFloat(pNode, "brightness", m_defaultVideoSettings.m_Brightness);
-  XMLUtils::SetFloat(pNode, "contrast", m_defaultVideoSettings.m_Contrast);
-  XMLUtils::SetFloat(pNode, "gamma", m_defaultVideoSettings.m_Gamma);
-  XMLUtils::SetFloat(pNode, "audiodelay", m_defaultVideoSettings.m_AudioDelay);
-  XMLUtils::SetFloat(pNode, "subtitledelay", m_defaultVideoSettings.m_SubtitleDelay);
-  XMLUtils::SetBoolean(pNode, "autocrop", m_defaultVideoSettings.m_Crop); 
-  XMLUtils::SetBoolean(pNode, "nonlinstretch", m_defaultVideoSettings.m_CustomNonLinStretch);
-  XMLUtils::SetBoolean(pNode, "addonautoupdate", m_bAddonAutoUpdate);
+  XMLUtils::SetInt(pNode, "interlacemethod", g_stSettings.m_defaultVideoSettings.m_InterlaceMethod);
+  XMLUtils::SetFloat(pNode, "filmgrain", g_stSettings.m_defaultVideoSettings.m_FilmGrain);
+  XMLUtils::SetFloat(pNode, "noisereduction", g_stSettings.m_defaultVideoSettings.m_NoiseReduction);
+  XMLUtils::SetFloat(pNode, "sharpness", g_stSettings.m_defaultVideoSettings.m_Sharpness);
+  XMLUtils::SetInt(pNode, "viewmode", g_stSettings.m_defaultVideoSettings.m_ViewMode);
+  XMLUtils::SetFloat(pNode, "zoomamount", g_stSettings.m_defaultVideoSettings.m_CustomZoomAmount);
+  XMLUtils::SetFloat(pNode, "pixelratio", g_stSettings.m_defaultVideoSettings.m_CustomPixelRatio);
+  XMLUtils::SetFloat(pNode, "volumeamplification", g_stSettings.m_defaultVideoSettings.m_VolumeAmplification);
+  XMLUtils::SetBoolean(pNode, "outputtoallspeakers", g_stSettings.m_defaultVideoSettings.m_OutputToAllSpeakers);
+  XMLUtils::SetBoolean(pNode, "showsubtitles", g_stSettings.m_defaultVideoSettings.m_SubtitleOn);
+  XMLUtils::SetFloat(pNode, "brightness", g_stSettings.m_defaultVideoSettings.m_Brightness);
+  XMLUtils::SetFloat(pNode, "contrast", g_stSettings.m_defaultVideoSettings.m_Contrast);
+  XMLUtils::SetFloat(pNode, "gamma", g_stSettings.m_defaultVideoSettings.m_Gamma);
+  XMLUtils::SetFloat(pNode, "audiodelay", g_stSettings.m_defaultVideoSettings.m_AudioDelay);
+  XMLUtils::SetFloat(pNode, "subtitledelay", g_stSettings.m_defaultVideoSettings.m_SubtitleDelay);
 
 
   // audio settings
   TiXmlElement volumeNode("audio");
   pNode = pRoot->InsertEndChild(volumeNode);
   if (!pNode) return false;
-  XMLUtils::SetInt(pNode, "volumelevel", m_nVolumeLevel);
-  XMLUtils::SetInt(pNode, "dynamicrangecompression", m_dynamicRangeCompressionLevel);
+  XMLUtils::SetInt(pNode, "volumelevel", g_stSettings.m_nVolumeLevel);
+  XMLUtils::SetInt(pNode, "dynamicrangecompression", g_stSettings.m_dynamicRangeCompressionLevel);
+  for (int i = 0; i < 4; i++)
+  {
+    CStdString setting;
+    setting.Format("karaoke%i", i);
+    XMLUtils::SetFloat(pNode, setting + "energy", g_stSettings.m_karaokeVoiceMask[i].energy);
+    XMLUtils::SetFloat(pNode, setting + "pitch", g_stSettings.m_karaokeVoiceMask[i].pitch);
+    XMLUtils::SetFloat(pNode, setting + "whisper", g_stSettings.m_karaokeVoiceMask[i].whisper);
+    XMLUtils::SetFloat(pNode, setting + "robotic", g_stSettings.m_karaokeVoiceMask[i].robotic);
+  }
 
   SaveCalibration(pRoot);
 
@@ -897,24 +1185,29 @@ bool CSettings::SaveSettings(const CStdString& strSettingsFile, CGUISettings *lo
 
   SaveSkinSettings(pRoot);
 
+  if ( m_vecProfiles[m_iLastLoadedProfileIndex].useAvpackSettings())
+    SaveAvpackXML();
+
   // For mastercode
-  SaveProfiles( PROFILES_FILE );
+  SaveProfiles("Q:\\system\\profiles.xml");
 
   // save the file
   return xmlDoc.SaveFile(strSettingsFile);
 }
 
-bool CSettings::LoadProfile(unsigned int index)
+bool CSettings::LoadProfile(int index)
 {
-  unsigned int oldProfile = m_currentProfile;
-  m_currentProfile = index;
+  int iOldIndex = m_iLastLoadedProfileIndex;
+  m_iLastLoadedProfileIndex = index;
+  bool bSourcesXML=true;
   CStdString strOldSkin = g_guiSettings.GetString("lookandfeel.skin");
   CStdString strOldFont = g_guiSettings.GetString("lookandfeel.font");
   CStdString strOldTheme = g_guiSettings.GetString("lookandfeel.skintheme");
   CStdString strOldColors = g_guiSettings.GetString("lookandfeel.skincolors");
-  if (Load())
+  //int iOldRes = g_guiSettings.GetInt("videoscreen.resolution");
+  if (Load(bSourcesXML,bSourcesXML))
   {
-    CreateProfileFolders();
+    g_settings.CreateProfileFolders();
 
     // initialize our charset converter
     g_charsetConverter.reset();
@@ -928,33 +1221,48 @@ bool CSettings::LoadProfile(unsigned int index)
     CLog::Log(LOGINFO, "load language info file:%s", strLangInfoPath.c_str());
     g_langInfo.Load(strLangInfoPath);
 
+#ifdef _XBOX
+    CStdString strKeyboardLayoutConfigurationPath;
+    strKeyboardLayoutConfigurationPath.Format("special://xbmc/language/%s/keyboardmap.xml", strLanguage.c_str());
+    CLog::Log(LOGINFO, "load keyboard layout configuration info file: %s", strKeyboardLayoutConfigurationPath.c_str());
+    g_keyboardLayoutConfiguration.Load(strKeyboardLayoutConfigurationPath);
+#endif
+
     CStdString strLanguagePath;
     strLanguagePath.Format("special://xbmc/language/%s/strings.xml", strLanguage.c_str());
 
     CButtonTranslator::GetInstance().Load();
     g_localizeStrings.Load(strLanguagePath);
 
-    g_Mouse.SetEnabled(g_guiSettings.GetBool("input.enablemouse"));
-
     g_infoManager.ResetCache();
     g_infoManager.ResetLibraryBools();
 
     // always reload the skin - we need it for the new language strings
-    g_application.ReloadSkin();
+    g_application.LoadSkin(g_guiSettings.GetString("lookandfeel.skin"));
 
-    if (m_currentProfile != 0)
+    if (m_iLastLoadedProfileIndex != 0)
     {
       TiXmlDocument doc;
       if (doc.LoadFile(CUtil::AddFileToFolder(GetUserDataFolder(),"guisettings.xml")))
         g_guiSettings.LoadMasterLock(doc.RootElement());
     }
-
-    CPasswordManager::GetInstance().Clear();
+    
+#ifdef HAS_XBOX_HARDWARE
+    if (g_guiSettings.GetBool("system.autotemperature"))
+    {
+      CLog::Log(LOGNOTICE, "start fancontroller");
+      CFanController::Instance()->Start(g_guiSettings.GetInt("system.targettemperature"), g_guiSettings.GetInt("system.minfanspeed"));
+    }
+    else if (g_guiSettings.GetBool("system.fanspeedcontrol"))
+    {
+      CLog::Log(LOGNOTICE, "setting fanspeed");
+      CFanController::Instance()->SetFanSpeed(g_guiSettings.GetInt("system.fanspeed"));
+    }
+    g_application.StartLEDControl(false);
+#endif
 
     // to set labels - shares are reloaded
-#if !defined(_WIN32) && defined(HAS_DVD_DRIVE)
-    MEDIA_DETECT::CDetectDVDMedia::UpdateState();
-#endif
+    CDetectDVDMedia::UpdateState();
     // init windows
     CGUIMessage msg(GUI_MSG_NOTIFY_ALL,0,0,GUI_MSG_WINDOW_RESET);
     g_windowManager.SendMessage(msg);
@@ -965,15 +1273,14 @@ bool CSettings::LoadProfile(unsigned int index)
     return true;
   }
 
-  m_currentProfile = oldProfile;
+  m_iLastLoadedProfileIndex = iOldIndex;
 
   return false;
 }
 
-bool CSettings::DeleteProfile(unsigned int index)
+bool CSettings::DeleteProfile(int index)
 {
-  const CProfile *profile = GetProfile(index);
-  if (!profile)
+  if (index < 0 && index >= (int)g_settings.m_vecProfiles.size())
     return false;
 
   CGUIDialogYesNo* dlgYesNo = (CGUIDialogYesNo*)g_windowManager.GetWindow(WINDOW_DIALOG_YES_NO);
@@ -981,7 +1288,7 @@ bool CSettings::DeleteProfile(unsigned int index)
   {
     CStdString message;
     CStdString str = g_localizeStrings.Get(13201);
-    message.Format(str.c_str(), profile->getName());
+    message.Format(str.c_str(), g_settings.m_vecProfiles.at(index).getName());
     dlgYesNo->SetHeading(13200);
     dlgYesNo->SetLine(0, message);
     dlgYesNo->SetLine(1, "");
@@ -991,96 +1298,194 @@ bool CSettings::DeleteProfile(unsigned int index)
     if (dlgYesNo->IsConfirmed())
     {
       //delete profile
-      CStdString strDirectory = profile->getDirectory();
-      m_vecProfiles.erase(m_vecProfiles.begin()+index);
-      if (index == m_currentProfile)
+      CStdString strDirectory = g_settings.m_vecProfiles[index].getDirectory();
+      m_vecProfiles.erase(g_settings.m_vecProfiles.begin()+index);
+      if (index == g_settings.m_iLastLoadedProfileIndex)
       {
-        LoadProfile(0);
-        Save();
+        g_settings.LoadProfile(0);
+        g_settings.Save();
       }
 
-      CFileItemPtr item = CFileItemPtr(new CFileItem(CUtil::AddFileToFolder(GetUserDataFolder(), strDirectory)));
-      item->m_strPath = CUtil::AddFileToFolder(GetUserDataFolder(), strDirectory + "\\");
-      item->m_bIsFolder = true;
-      item->Select(true);
-      CFileUtils::DeleteItem(item);
+      CFileItem item(CUtil::AddFileToFolder(GetUserDataFolder(), strDirectory));
+      item.m_strPath = CUtil::AddFileToFolder(GetUserDataFolder(), strDirectory + "\\");
+      item.m_bIsFolder = true;
+      item.Select(true);
+      CGUIWindowFileManager::DeleteItem(&item);
     }
     else
       return false;
   }
 
-  SaveProfiles( PROFILES_FILE );
+  SaveProfiles("Q:\\system\\profiles.xml");
+  return true;
+}
+
+bool CSettings::SaveSettingsToProfile(int index)
+{
+  /*CProfile& profile = m_vecProfiles.at(index);
+  return SaveSettings(profile.getFileName(), false);*/
+  return true;
+}
+
+
+bool CSettings::LoadProfiles(const CStdString& strSettingsFile)
+{
+  TiXmlDocument profilesDoc;
+  if (!CFile::Exists(strSettingsFile))
+  { // set defaults, or assume no rss feeds??
+    return false;
+  }
+  if (!profilesDoc.LoadFile(strSettingsFile))
+  {
+    CLog::Log(LOGERROR, "Error loading %s, Line %d\n%s", strSettingsFile.c_str(), profilesDoc.ErrorRow(), profilesDoc.ErrorDesc());
+    return false;
+  }
+
+  TiXmlElement *pRootElement = profilesDoc.RootElement();
+  if (!pRootElement || strcmpi(pRootElement->Value(),"profiles") != 0)
+  {
+    CLog::Log(LOGERROR, "Error loading %s, no <profiles> node", strSettingsFile.c_str());
+    return false;
+  }
+  GetInteger(pRootElement,"lastloaded",m_iLastLoadedProfileIndex,0,0,1000);
+  if (m_iLastLoadedProfileIndex < 0)
+    m_iLastLoadedProfileIndex = 0;
+
+  XMLUtils::GetBoolean(pRootElement,"useloginscreen",bUseLoginScreen);
+
+  TiXmlElement* pProfile = pRootElement->FirstChildElement("profile");
+  CProfile profile;
+
+  while (pProfile)
+  {
+    profile.setName("Master user");
+    if (CDirectory::Exists("special://home/userdata"))
+      profile.setDirectory("special://home/userdata");
+    else
+      profile.setDirectory("special://xbmc/userdata");
+
+    CStdString strName;
+    XMLUtils::GetString(pProfile,"name",strName);
+    profile.setName(strName);
+
+    CStdString strDirectory;
+    XMLUtils::GetPath(pProfile,"directory",strDirectory);
+    profile.setDirectory(strDirectory);
+
+    CStdString strThumb;
+    XMLUtils::GetPath(pProfile,"thumbnail",strThumb);
+    profile.setThumb(strThumb);
+
+    bool bHas=true;
+    XMLUtils::GetBoolean(pProfile, "hasdatabases", bHas);
+    profile.setDatabases(bHas);
+
+    bHas = true;
+    XMLUtils::GetBoolean(pProfile, "canwritedatabases", bHas);
+    profile.setWriteDatabases(bHas);
+
+    bHas = true;
+    XMLUtils::GetBoolean(pProfile, "hassources", bHas);
+    profile.setSources(bHas);
+
+    bHas = true;
+    XMLUtils::GetBoolean(pProfile, "canwritesources", bHas);
+    profile.setWriteSources(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "locksettings", bHas);
+    profile.setSettingsLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "lockfiles", bHas);
+    profile.setFilesLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "lockmusic", bHas);
+    profile.setMusicLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "lockvideo", bHas);
+    profile.setVideoLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "lockpictures", bHas);
+    profile.setPicturesLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "lockprograms", bHas);
+    profile.setProgramsLocked(bHas);
+
+    bHas = false;
+    XMLUtils::GetBoolean(pProfile, "useavpacksettings", bHas);
+    profile.setUseAvpackSettings(bHas);
+    LockType iLockMode=LOCK_MODE_EVERYONE;
+    int lockMode;
+    XMLUtils::GetInt(pProfile,"lockmode",lockMode);
+    iLockMode = (LockType)lockMode;
+
+    if (iLockMode > LOCK_MODE_QWERTY || iLockMode < LOCK_MODE_EVERYONE)
+      iLockMode = LOCK_MODE_EVERYONE;
+    profile.setLockMode(iLockMode);
+
+    CStdString strLockCode;
+    XMLUtils::GetString(pProfile,"lockcode",strLockCode);
+    profile.setLockCode(strLockCode);
+
+    CStdString strDate;
+    XMLUtils::GetString(pProfile,"lastdate",strDate);
+    profile.setDate(strDate);
+
+    m_vecProfiles.push_back(profile);
+    pProfile = pProfile->NextSiblingElement("profile");
+  }
+
+  if (m_iLastLoadedProfileIndex >= (int)m_vecProfiles.size() || m_iLastLoadedProfileIndex < 0)
+    m_iLastLoadedProfileIndex = 0;
 
   return true;
 }
 
-void CSettings::LoadProfiles(const CStdString& profilesFile)
-{
-  // clear out our profiles
-  m_vecProfiles.clear();
-
-  TiXmlDocument profilesDoc;
-  if (CFile::Exists(profilesFile))
-  {
-    if (profilesDoc.LoadFile(profilesFile))
-    {
-      TiXmlElement *rootElement = profilesDoc.RootElement();
-      if (rootElement && strcmpi(rootElement->Value(),"profiles") == 0)
-      {
-        XMLUtils::GetUInt(rootElement, "lastloaded", m_lastUsedProfile);
-        XMLUtils::GetBoolean(rootElement, "useloginscreen", m_usingLoginScreen);
-
-        TiXmlElement* pProfile = rootElement->FirstChildElement("profile");
-        
-        CStdString defaultDir("special://home/userdata");
-        if (!CDirectory::Exists(defaultDir))
-          defaultDir = "special://xbmc/userdata";
-        while (pProfile)
-        {
-          CProfile profile(defaultDir);
-          profile.Load(pProfile);
-          m_vecProfiles.push_back(profile);
-          pProfile = pProfile->NextSiblingElement("profile");
-        }
-      }
-      else
-        CLog::Log(LOGERROR, "Error loading %s, no <profiles> node", profilesFile.c_str());
-    }
-    else
-      CLog::Log(LOGERROR, "Error loading %s, Line %d\n%s", profilesFile.c_str(), profilesDoc.ErrorRow(), profilesDoc.ErrorDesc());
-  }
-
-  if (m_vecProfiles.empty())
-  { // add the master user
-    CProfile profile("special://masterprofile/", "Master user");
-    m_vecProfiles.push_back(profile);
-  }
-
-  // check the validity of the previous profile index
-  if (m_lastUsedProfile >= m_vecProfiles.size())
-    m_lastUsedProfile = 0;
-
-  m_currentProfile = m_lastUsedProfile;
-
-  // the login screen runs as the master profile, so if we're using this, we need to ensure
-  // we switch to the master profile
-  if (m_usingLoginScreen)
-    m_currentProfile = 0;
-}
-
-bool CSettings::SaveProfiles(const CStdString& profilesFile) const
+bool CSettings::SaveProfiles(const CStdString& strSettingsFile) const
 {
   TiXmlDocument xmlDoc;
   TiXmlElement xmlRootElement("profiles");
   TiXmlNode *pRoot = xmlDoc.InsertEndChild(xmlRootElement);
   if (!pRoot) return false;
-  XMLUtils::SetInt(pRoot,"lastloaded", m_currentProfile);
-  XMLUtils::SetBoolean(pRoot,"useloginscreen",m_usingLoginScreen);
-  for (unsigned int i = 0; i < m_vecProfiles.size(); ++i)
-    m_vecProfiles[i].Save(pRoot);
+  XMLUtils::SetInt(pRoot,"lastloaded",m_iLastLoadedProfileIndex);
+  XMLUtils::SetBoolean(pRoot,"useloginscreen",bUseLoginScreen);
+  for (unsigned int iProfile=0;iProfile<g_settings.m_vecProfiles.size();++iProfile)
+  {
+    TiXmlElement profileNode("profile");
+    TiXmlNode *pNode = pRoot->InsertEndChild(profileNode);
+    XMLUtils::SetString(pNode,"name",g_settings.m_vecProfiles[iProfile].getName());
+    XMLUtils::SetPath(pNode,"directory",g_settings.m_vecProfiles[iProfile].getDirectory());
+    XMLUtils::SetPath(pNode,"thumbnail",g_settings.m_vecProfiles[iProfile].getThumb());
+    XMLUtils::SetString(pNode,"lastdate",g_settings.m_vecProfiles[iProfile].getDate());
+    XMLUtils::SetBoolean(pNode,"useavpacksettings",g_settings.m_vecProfiles[iProfile].useAvpackSettings());
 
+    if (g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
+    {
+      XMLUtils::SetInt(pNode,"lockmode",g_settings.m_vecProfiles[iProfile].getLockMode());
+      XMLUtils::SetString(pNode,"lockcode",g_settings.m_vecProfiles[iProfile].getLockCode());
+      XMLUtils::SetBoolean(pNode,"lockmusic",g_settings.m_vecProfiles[iProfile].musicLocked());
+      XMLUtils::SetBoolean(pNode,"lockvideo",g_settings.m_vecProfiles[iProfile].videoLocked());
+      XMLUtils::SetBoolean(pNode,"lockpictures",g_settings.m_vecProfiles[iProfile].picturesLocked());
+      XMLUtils::SetBoolean(pNode,"lockprograms",g_settings.m_vecProfiles[iProfile].programsLocked());
+      XMLUtils::SetBoolean(pNode,"locksettings",g_settings.m_vecProfiles[iProfile].settingsLocked());
+      XMLUtils::SetBoolean(pNode,"lockfiles",g_settings.m_vecProfiles[iProfile].filesLocked());
+    }
+
+    if (iProfile > 0)
+    {
+      XMLUtils::SetBoolean(pNode,"hasdatabases",g_settings.m_vecProfiles[iProfile].hasDatabases());
+      XMLUtils::SetBoolean(pNode,"canwritedatabases",g_settings.m_vecProfiles[iProfile].canWriteDatabases());
+      XMLUtils::SetBoolean(pNode,"hassources",g_settings.m_vecProfiles[iProfile].hasSources());
+      XMLUtils::SetBoolean(pNode,"canwritesources",g_settings.m_vecProfiles[iProfile].canWriteSources());
+    }
+  }
   // save the file
-  return xmlDoc.SaveFile(profilesFile);
+  return xmlDoc.SaveFile(strSettingsFile);
 }
 
 bool CSettings::LoadUPnPXml(const CStdString& strSettingsFile)
@@ -1106,15 +1511,15 @@ bool CSettings::LoadUPnPXml(const CStdString& strSettingsFile)
   // load settings
 
   // default values for ports
-  m_UPnPPortServer = 0;
-  m_UPnPPortRenderer = 0;
-  m_UPnPMaxReturnedItems = 0;
+  g_settings.m_UPnPPortServer = 0;
+  g_settings.m_UPnPPortRenderer = 0;
+  g_settings.m_UPnPMaxReturnedItems = 0;
 
-  XMLUtils::GetString(pRootElement, "UUID", m_UPnPUUIDServer);
-  XMLUtils::GetInt(pRootElement, "Port", m_UPnPPortServer);
-  XMLUtils::GetInt(pRootElement, "MaxReturnedItems", m_UPnPMaxReturnedItems);
-  XMLUtils::GetString(pRootElement, "UUIDRenderer", m_UPnPUUIDRenderer);
-  XMLUtils::GetInt(pRootElement, "PortRenderer", m_UPnPPortRenderer);
+  XMLUtils::GetString(pRootElement, "UUID", g_settings.m_UPnPUUIDServer);
+  XMLUtils::GetInt(pRootElement, "Port", g_settings.m_UPnPPortServer);
+  XMLUtils::GetInt(pRootElement, "MaxReturnedItems", g_settings.m_UPnPMaxReturnedItems);
+  XMLUtils::GetString(pRootElement, "UUIDRenderer", g_settings.m_UPnPUUIDRenderer);
+  XMLUtils::GetInt(pRootElement, "PortRenderer", g_settings.m_UPnPPortRenderer);
 
   return true;
 }
@@ -1127,11 +1532,11 @@ bool CSettings::SaveUPnPXml(const CStdString& strSettingsFile) const
   if (!pRoot) return false;
 
   // create a new Element for UUID
-  XMLUtils::SetString(pRoot, "UUID", m_UPnPUUIDServer);
-  XMLUtils::SetInt(pRoot, "Port", m_UPnPPortServer);
-  XMLUtils::SetInt(pRoot, "MaxReturnedItems", m_UPnPMaxReturnedItems);
-  XMLUtils::SetString(pRoot, "UUIDRenderer", m_UPnPUUIDRenderer);
-  XMLUtils::SetInt(pRoot, "PortRenderer", m_UPnPPortRenderer);
+  XMLUtils::SetString(pRoot, "UUID", g_settings.m_UPnPUUIDServer);
+  XMLUtils::SetInt(pRoot, "Port", g_settings.m_UPnPPortServer);
+  XMLUtils::SetInt(pRoot, "MaxReturnedItems", g_settings.m_UPnPMaxReturnedItems);
+  XMLUtils::SetString(pRoot, "UUIDRenderer", g_settings.m_UPnPUUIDRenderer);
+  XMLUtils::SetInt(pRoot, "PortRenderer", g_settings.m_UPnPPortRenderer);
 
   // save the file
   return xmlDoc.SaveFile(strSettingsFile);
@@ -1271,13 +1676,13 @@ bool CSettings::SaveSources()
   if (!pRoot) return false;
 
   // ok, now run through and save each sources section
-  SetSources(pRoot, "programs", m_programSources, m_defaultProgramSource);
-  SetSources(pRoot, "video", m_videoSources, m_defaultVideoSource);
-  SetSources(pRoot, "music", m_musicSources, m_defaultMusicSource);
-  SetSources(pRoot, "pictures", m_pictureSources, m_defaultPictureSource);
-  SetSources(pRoot, "files", m_fileSources, m_defaultFileSource);
+  SetSources(pRoot, "programs", g_settings.m_programSources, g_settings.m_defaultProgramSource);
+  SetSources(pRoot, "video", g_settings.m_videoSources, g_settings.m_defaultVideoSource);
+  SetSources(pRoot, "music", g_settings.m_musicSources, g_settings.m_defaultMusicSource);
+  SetSources(pRoot, "pictures", g_settings.m_pictureSources, g_settings.m_defaultPictureSource);
+  SetSources(pRoot, "files", g_settings.m_fileSources, g_settings.m_defaultFileSource);
 
-  return doc.SaveFile(GetSourcesFile());
+  return doc.SaveFile(g_settings.GetSourcesFile());
 }
 
 bool CSettings::SetSources(TiXmlNode *root, const char *section, const VECSOURCES &shares, const char *defaultPath)
@@ -1312,41 +1717,6 @@ bool CSettings::SetSources(TiXmlNode *root, const char *section, const VECSOURCE
     }
   }
   return true;
-}
-
-void CSettings::LoadSources()
-{
-  // clear sources
-  m_fileSources.clear();
-  m_musicSources.clear();
-  m_pictureSources.clear();
-  m_programSources.clear();
-  m_videoSources.clear();
-
-  CStdString strSourcesFile = GetSourcesFile();
-  CLog::Log(LOGNOTICE, "Loading media sources from %s", strSourcesFile.c_str());
-
-  // load xml file
-  TiXmlDocument xmlDoc;
-  TiXmlElement *pRootElement = NULL;
-  if (xmlDoc.LoadFile(strSourcesFile))
-  {
-    pRootElement = xmlDoc.RootElement();
-    if (pRootElement && strcmpi(pRootElement->Value(),"sources") != 0)
-      CLog::Log(LOGERROR, "%s sources.xml file does not contain <sources>", __FUNCTION__);
-  }
-  else if (CFile::Exists(strSourcesFile))
-    CLog::Log(LOGERROR, "%s Error loading %s: Line %d, %s", __FUNCTION__, strSourcesFile.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
-
-  // parse sources
-  if (pRootElement)
-  {
-    GetSources(pRootElement, "programs", m_programSources, m_defaultProgramSource);
-    GetSources(pRootElement, "pictures", m_pictureSources, m_defaultPictureSource);
-    GetSources(pRootElement, "files", m_fileSources, m_defaultFileSource);
-    GetSources(pRootElement, "music", m_musicSources, m_defaultMusicSource);
-    GetSources(pRootElement, "video", m_videoSources, m_defaultVideoSource);
-  }
 }
 
 void CSettings::LoadSkinSettings(const TiXmlElement* pRootElement)
@@ -1551,40 +1921,6 @@ void CSettings::ResetSkinSettings()
   g_infoManager.ResetCache();
 }
 
-static CStdString ToWatchContent(const CStdString &content)
-{
-  if (content == "seasons" || content == "episodes")
-   return "tvshows";
-  else
-    return content;
-}
-
-int CSettings::GetWatchMode(const CStdString& content) const
-{
-  std::map<CStdString, int>::iterator it = g_settings.m_watchMode.find(ToWatchContent(content));
-  if (it != g_settings.m_watchMode.end())
-    return it->second;
-  return VIDEO_SHOW_ALL;
-}
-
-void CSettings::SetWatchMode(const CStdString& content, int value)
-{
-  std::map<CStdString, int>::iterator it = g_settings.m_watchMode.find(ToWatchContent(content));
-  if (it != g_settings.m_watchMode.end())
-    it->second = value;
-}
-
-void CSettings::CycleWatchMode(const CStdString& content)
-{
-  std::map<CStdString, int>::iterator it = g_settings.m_watchMode.find(ToWatchContent(content));
-  if (it != g_settings.m_watchMode.end())
-  {
-    it->second++;
-    if (it->second > VIDEO_SHOW_WATCHED)
-      it->second = VIDEO_SHOW_ALL;
-  }
-}
-
 void CSettings::LoadUserFolderLayout()
 {
   // check them all
@@ -1603,10 +1939,10 @@ void CSettings::LoadUserFolderLayout()
 CStdString CSettings::GetProfileUserDataFolder() const
 {
   CStdString folder;
-  if (m_currentProfile == 0)
+  if (m_iLastLoadedProfileIndex == 0)
     return GetUserDataFolder();
 
-  CUtil::AddFileToFolder(GetUserDataFolder(),GetCurrentProfile().getDirectory(),folder);
+  CUtil::AddFileToFolder(GetUserDataFolder(),m_vecProfiles[m_iLastLoadedProfileIndex].getDirectory(),folder);
 
   return folder;
 }
@@ -1625,14 +1961,14 @@ CStdString CSettings::GetUserDataItem(const CStdString& strFile) const
 
 CStdString CSettings::GetUserDataFolder() const
 {
-  return GetMasterProfile().getDirectory();
+  return m_vecProfiles[0].getDirectory();
 }
 
 CStdString CSettings::GetDatabaseFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Database", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Database", folder);
   else
     CUtil::AddFileToFolder(GetUserDataFolder(), "Database", folder);
 
@@ -1642,8 +1978,8 @@ CStdString CSettings::GetDatabaseFolder() const
 CStdString CSettings::GetCDDBFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Database/CDDB", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Database/CDDB", folder);
   else
     CUtil::AddFileToFolder(GetUserDataFolder(), "Database/CDDB", folder);
 
@@ -1653,10 +1989,10 @@ CStdString CSettings::GetCDDBFolder() const
 CStdString CSettings::GetThumbnailsFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails", folder);
 
   return folder;
 }
@@ -1664,10 +2000,10 @@ CStdString CSettings::GetThumbnailsFolder() const
 CStdString CSettings::GetMusicThumbFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Music", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Music", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Music", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Music", folder);
 
   return folder;
 }
@@ -1675,10 +2011,10 @@ CStdString CSettings::GetMusicThumbFolder() const
 CStdString CSettings::GetLastFMThumbFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Music/LastFM", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Music/LastFM", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Music/LastFM", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Music/LastFM", folder);
 
   return folder;
 }
@@ -1686,10 +2022,10 @@ CStdString CSettings::GetLastFMThumbFolder() const
 CStdString CSettings::GetMusicArtistThumbFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Music/Artists", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Music/Artists", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Music/Artists", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Music/Artists", folder);
 
   return folder;
 }
@@ -1697,10 +2033,10 @@ CStdString CSettings::GetMusicArtistThumbFolder() const
 CStdString CSettings::GetVideoThumbFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Video", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Video", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Video", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Video", folder);
 
   return folder;
 }
@@ -1708,10 +2044,10 @@ CStdString CSettings::GetVideoThumbFolder() const
 CStdString CSettings::GetVideoFanartFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Video/Fanart", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Video/Fanart", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Video/Fanart", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Video/Fanart", folder);
 
   return folder;
 }
@@ -1719,10 +2055,10 @@ CStdString CSettings::GetVideoFanartFolder() const
 CStdString CSettings::GetMusicFanartFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Music/Fanart", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Music/Fanart", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Music/Fanart", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Music/Fanart", folder);
 
   return folder;
 }
@@ -1730,10 +2066,51 @@ CStdString CSettings::GetMusicFanartFolder() const
 CStdString CSettings::GetBookmarksThumbFolder() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasDatabases())
-    CUtil::AddFileToFolder(GetProfileUserDataFolder(), "Thumbnails/Video/Bookmarks", folder);
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Video/Bookmarks", folder);
   else
-    CUtil::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Video/Bookmarks", folder);
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Video/Bookmarks", folder);
+
+  return folder;
+}
+
+CStdString CSettings::GetPicturesThumbFolder() const
+{
+  CStdString folder;
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Pictures", folder);
+  else
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Pictures", folder);
+
+  return folder;
+}
+
+CStdString CSettings::GetProgramsThumbFolder() const
+{
+  CStdString folder;
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/Programs", folder);
+  else
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Programs", folder);
+
+  return folder;
+}
+
+CStdString CSettings::GetGameSaveThumbFolder() const
+{
+  CStdString folder;
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasDatabases())
+    CUtil::AddFileToFolder(g_settings.GetProfileUserDataFolder(), "Thumbnails/GameSaves", folder);
+  else
+    CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/GameSaves", folder);
+
+  return folder;
+}
+
+CStdString CSettings::GetProfilesThumbFolder() const
+{
+  CStdString folder;
+  CUtil::AddFileToFolder(g_settings.GetUserDataFolder(), "Thumbnails/Profiles", folder);
 
   return folder;
 }
@@ -1741,7 +2118,7 @@ CStdString CSettings::GetBookmarksThumbFolder() const
 CStdString CSettings::GetSourcesFile() const
 {
   CStdString folder;
-  if (GetCurrentProfile().hasSources())
+  if (m_vecProfiles[m_iLastLoadedProfileIndex].hasSources())
     CUtil::AddFileToFolder(GetProfileUserDataFolder(),"sources.xml",folder);
   else
     CUtil::AddFileToFolder(GetUserDataFolder(),"sources.xml",folder);
@@ -1802,7 +2179,7 @@ void CSettings::LoadRSSFeeds()
     return;
   }
 
-  m_mapRssUrls.clear();
+  g_settings.m_mapRssUrls.clear();
   TiXmlElement* pSet = pRootElement->FirstChildElement("set");
   while (pSet)
   {
@@ -1810,7 +2187,7 @@ void CSettings::LoadRSSFeeds()
     if (pSet->QueryIntAttribute("id", &iId) == TIXML_SUCCESS)
     {
       RssSet set;
-      set.rtl = pSet->Attribute("rtl") && strcasecmp(pSet->Attribute("rtl"),"true")==0;
+      set.rtl = pSet->Attribute("rtl") && stricmp(pSet->Attribute("rtl"),"true")==0;
       TiXmlElement* pFeed = pSet->FirstChildElement("feed");
       while (pFeed)
       {
@@ -1830,7 +2207,7 @@ void CSettings::LoadRSSFeeds()
         }
         pFeed = pFeed->NextSiblingElement("feed");
       }
-      m_mapRssUrls.insert(make_pair(iId,set));
+      g_settings.m_mapRssUrls.insert(make_pair(iId,set));
     }
     else
       CLog::Log(LOGERROR,"found rss url set with no id in RssFeeds.xml, ignored");
@@ -1842,11 +2219,21 @@ void CSettings::LoadRSSFeeds()
 CStdString CSettings::GetSettingsFile() const
 {
   CStdString settings;
-  if (m_currentProfile == 0)
+  if (g_settings.m_iLastLoadedProfileIndex == 0)
     settings = "special://masterprofile/guisettings.xml";
   else
     settings = "special://profile/guisettings.xml";
   return settings;
+}
+
+CStdString CSettings::GetAvpackSettingsFile() const
+{
+  CStdString  strAvpackSettingsFile;
+  if (g_settings.m_iLastLoadedProfileIndex == 0)
+    strAvpackSettingsFile = "T:\\avpacksettings.xml";
+  else
+    strAvpackSettingsFile = "P:\\avpacksettings.xml";
+  return strAvpackSettingsFile;
 }
 
 void CSettings::CreateProfileFolders()
@@ -1863,82 +2250,18 @@ void CSettings::CreateProfileFolders()
   CDirectory::Create(GetVideoFanartFolder());
   CDirectory::Create(GetMusicFanartFolder());
   CDirectory::Create(GetBookmarksThumbFolder());
-  CStdString generatedThumbsFolder = CUtil::AddFileToFolder(GetThumbnailsFolder(), "generated");
-  CDirectory::Create(generatedThumbsFolder);
+  CDirectory::Create(GetProgramsThumbFolder());
+  CDirectory::Create(GetPicturesThumbFolder());
+  CDirectory::Create(GetGameSaveThumbFolder());
   CLog::Log(LOGINFO, "thumbnails folder: %s", GetThumbnailsFolder().c_str());
   for (unsigned int hex=0; hex < 16; hex++)
   {
     CStdString strHex;
     strHex.Format("%x",hex);
+    CDirectory::Create(CUtil::AddFileToFolder(GetPicturesThumbFolder(), strHex));
     CDirectory::Create(CUtil::AddFileToFolder(GetMusicThumbFolder(), strHex));
     CDirectory::Create(CUtil::AddFileToFolder(GetVideoThumbFolder(), strHex));
-    CDirectory::Create(CUtil::AddFileToFolder(GetThumbnailsFolder(), strHex));
-    CDirectory::Create(CUtil::AddFileToFolder(generatedThumbsFolder, strHex));
+    CDirectory::Create(CUtil::AddFileToFolder(GetProgramsThumbFolder(), strHex));
   }
-  CDirectory::Create("special://profile/addon_data");
-  CDirectory::Create("special://profile/keymaps");
-}
-
-static CProfile emptyProfile;
-
-const CProfile &CSettings::GetMasterProfile() const
-{
-  if (GetNumProfiles())
-    return m_vecProfiles[0];
-  CLog::Log(LOGERROR, "%s - master profile requested while none exists", __FUNCTION__);
-  return emptyProfile;
-}
-
-const CProfile &CSettings::GetCurrentProfile() const
-{
-  if (m_currentProfile < m_vecProfiles.size())
-    return m_vecProfiles[m_currentProfile];
-  CLog::Log(LOGERROR, "%s - last profile index (%u) is outside the valid range (%ld)", __FUNCTION__, m_currentProfile, m_vecProfiles.size());
-  return emptyProfile;
-}
-
-void CSettings::UpdateCurrentProfileDate()
-{
-  if (m_currentProfile < m_vecProfiles.size())
-    m_vecProfiles[m_currentProfile].setDate();
-}
-
-const CProfile *CSettings::GetProfile(unsigned int index) const
-{
-  if (index < GetNumProfiles())
-    return &m_vecProfiles[index];
-  return NULL;
-}
-
-CProfile *CSettings::GetProfile(unsigned int index)
-{
-  if (index < GetNumProfiles())
-    return &m_vecProfiles[index];
-  return NULL;
-}
-
-unsigned int CSettings::GetNumProfiles() const
-{
-  return m_vecProfiles.size();
-}
-
-int CSettings::GetProfileIndex(const CStdString &name) const
-{
-  for (unsigned int i = 0; i < m_vecProfiles.size(); i++)
-    if (m_vecProfiles[i].getName().Equals(name))
-      return i;
-  return -1;
-}
-
-void CSettings::AddProfile(const CProfile &profile)
-{
-  m_vecProfiles.push_back(profile);
-}
-
-void CSettings::LoadMasterForLogin()
-{
-  // save the previous user
-  m_lastUsedProfile = m_currentProfile;
-  if (m_currentProfile != 0)
-    LoadProfile(0);
+  CDirectory::Create("special://profile/visualisations");
 }

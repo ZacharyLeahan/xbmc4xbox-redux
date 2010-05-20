@@ -20,6 +20,8 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
+#include "stdafx.h"
 #include "Util.h"
 #include "UPnPDirectory.h"
 #include "UPnP.h"
@@ -30,12 +32,12 @@
 #include "FileItem.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
-#include "utils/log.h"
 
 using namespace MUSIC_INFO;
+using namespace DIRECTORY;
 using namespace XFILE;
 
-namespace XFILE
+namespace DIRECTORY
 {
 /*----------------------------------------------------------------------
 |   CProtocolFinder
@@ -258,7 +260,7 @@ CUPnPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items)
                                       CProtocolFinder("xbmc-get"),
                                       resource);
 
-                    CLog::Log(LOGDEBUG, "CUPnPDirectory::GetDirectory - resource protocol info '%s'",
+                    CLog::Log(LOGDEBUG, "CUPnPDirectory::GetDirectory - resource protocol info '%s'", 
                         (const char*)(resource.m_ProtocolInfo.ToString()));
 
                     // if it's an item, path is the first url to the item
@@ -273,7 +275,7 @@ CUPnPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items)
 
                     // set a general content type
                     CStdString type = (const char*)(*entry)->m_ObjectClass.type.Left(21);
-                    if (type.Equals("object.item.videoitem"))
+                    if     (type.Equals("object.item.videoitem"))
                         pItem->SetContentType("video/octet-stream");
                     else if(type.Equals("object.item.audioitem"))
                         pItem->SetContentType("audio/octet-stream");
@@ -284,9 +286,9 @@ CUPnPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items)
                     if (resource.m_ProtocolInfo.IsValid()) {
                         if (resource.m_ProtocolInfo.GetContentType().Compare("application/octet-stream") != 0) {
                             pItem->SetContentType((const char*)resource.m_ProtocolInfo.GetContentType());
-                        }
-                    } else {
-                        CLog::Log(LOGERROR, "CUPnPDirectory::GetDirectory - invalid protocol info '%s'",
+                            }
+                        } else {
+                        CLog::Log(LOGERROR, "CUPnPDirectory::GetDirectory - invalid protocol info '%s'", 
                             (const char*)(resource.m_ProtocolInfo.ToString()));
                     }
 

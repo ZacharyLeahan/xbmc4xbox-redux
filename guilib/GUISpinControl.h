@@ -1,6 +1,6 @@
 /*!
 \file GUISpinControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_SPINCONTROL_H
@@ -31,7 +31,7 @@
 
 #include "GUIControl.h"
 #include "GUITexture.h"
-#include "GUILabel.h"
+#include "GUITextLayout.h"
 
 #define SPIN_CONTROL_TYPE_INT    1
 #define SPIN_CONTROL_TYPE_FLOAT  2
@@ -40,7 +40,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUISpinControl : public CGUIControl
 {
@@ -55,11 +55,13 @@ public:
   virtual void OnRight();
   virtual bool HitTest(const CPoint &point) const;
   virtual bool OnMouseOver(const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   virtual float GetWidth() const;
   void SetRange(int iStart, int iEnd);
@@ -74,7 +76,7 @@ public:
   void SetReverse(bool bOnOff);
   int GetMaximum() const;
   int GetMinimum() const;
-  void SetSpinAlign(uint32_t align, float offsetX) { m_label.GetLabelInfo().align = align; m_label.GetLabelInfo().offsetX = offsetX; };
+  void SetSpinAlign(uint32_t align, float offsetX) { m_label.align = align; m_label.offsetX = offsetX; };
   void SetType(int iType) { m_iType = iType; };
   float GetSpinWidth() const { return m_imgspinUp.GetWidth(); };
   float GetSpinHeight() const { return m_imgspinUp.GetHeight(); };
@@ -88,14 +90,7 @@ public:
   virtual bool IsVisible() const;
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
-  /*! \brief Render the spinner text
-   \param posX position of the left edge of the text
-   \param width width of the text
-   */
-  virtual void RenderText(float posX, float width);
-  CGUILabel::COLOR GetTextColor() const;
   void PageUp();
   void PageDown();
   bool CanMoveDown(bool bTestReverse = true);
@@ -119,7 +114,8 @@ protected:
   CGUITexture m_imgspinDown;
   CGUITexture m_imgspinUpFocus;
   CGUITexture m_imgspinDownFocus;
-  CGUILabel   m_label;
+  CGUITextLayout m_textLayout;
+  CLabelInfo m_label;
   bool m_bShowRange;
   char m_szTyped[10];
   int m_iTypedPos;

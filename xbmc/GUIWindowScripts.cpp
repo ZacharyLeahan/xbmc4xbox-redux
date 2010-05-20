@@ -19,34 +19,26 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowScripts.h"
 #include "Util.h"
-#ifdef HAS_PYTHON
 #include "lib/libPython/XBPython.h"
-#endif
-#include "GUIDialogTextViewer.h"
+#include "GUIWindowScriptsInfo.h"
 #include "GUIWindowManager.h"
+#include "GUIWindowFileManager.h"
 #include "FileSystem/File.h"
 #include "FileItem.h"
-#include "addons/AddonManager.h"
-#include "GUIDialogAddonSettings.h"
-#include "GUIUserMessages.h"
-#include "Settings.h"
+#include "ScriptSettings.h"
+#include "GUIDialogPluginSettings.h"
 #include "LocalizeStrings.h"
-#if defined(__APPLE__)
-#include "SpecialProtocol.h"
-#include "CocoaInterface.h"
-#endif
-#include "utils/FileUtils.h"
-#include "AddonDatabase.h"
 
 using namespace XFILE;
-using namespace ADDON;
 
 #define CONTROL_BTNVIEWASICONS     2
 #define CONTROL_BTNSORTBY          3
 #define CONTROL_BTNSORTASC         4
+#define CONTROL_LIST              50
+#define CONTROL_THUMBS            51
 #define CONTROL_LABELFILES        12
 
 CGUIWindowScripts::CGUIWindowScripts()
@@ -62,7 +54,7 @@ CGUIWindowScripts::~CGUIWindowScripts()
 
 bool CGUIWindowScripts::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SHOW_INFO)
+  if (action.id == ACTION_SHOW_INFO)
   {
     OnInfo();
     return true;
@@ -77,21 +69,10 @@ bool CGUIWindowScripts::OnMessage(CGUIMessage& message)
   case GUI_MSG_WINDOW_INIT:
     {
       if (m_vecItems->m_strPath == "?")
-        m_vecItems->m_strPath = g_settings.GetScriptsFolder();
+        m_vecItems->m_strPath = "Q:\\scripts"; //g_stSettings.m_szDefaultScripts;
+
       return CGUIMediaWindow::OnMessage(message);
     }
-    break;
-  case GUI_MSG_USER:
-      m_debug += message.GetLabel();
-      if (m_bViewOutput)
-      {
-        CGUIDialogTextViewer* pDlgInfo = (CGUIDialogTextViewer*)g_windowManager.GetWindow(WINDOW_DIALOG_TEXT_VIEWER);
-        pDlgInfo->SetText(m_debug);
-        CGUIMessage msg(GUI_MSG_NOTIFY_ALL, WINDOW_DIALOG_TEXT_VIEWER, 0, GUI_MSG_UPDATE);
-        g_windowManager.SendThreadMessage(msg);
-      }
-    break;
-  default:
     break;
   }
   return CGUIMediaWindow::OnMessage(message);
@@ -103,7 +84,6 @@ bool CGUIWindowScripts::Update(const CStdString &strDirectory)
   if (!CGUIMediaWindow::Update(strDirectory))
     return false;
 
-#ifdef HAS_PYTHON
   /* check if any python scripts are running. If true, place "(Running)" after the item.
    * since stopping a script can take up to 10 seconds or more,we display 'stopping'
    * after the filename for now.
@@ -121,17 +101,16 @@ bool CGUIWindowScripts::Update(const CStdString &strDirectory)
         CFileItemPtr pItem = m_vecItems->Get(i);
         if (pItem->m_strPath == filename)
         {
-          CStdString runningLabel = pItem->GetLabel() + " (";
-          if (g_pythonParser.isStopping(id))
-            runningLabel += g_localizeStrings.Get(23053) + ")";
+            CStdString runningLabel = pItem->GetLabel() + " (";
+            if (g_pythonParser.isStopping(id))
+                runningLabel += g_localizeStrings.Get(23053) + ")";
           else
-            runningLabel += g_localizeStrings.Get(23054) + ")";
-          pItem->SetLabel(runningLabel);
+                runningLabel += g_localizeStrings.Get(23054) + ")";
+            pItem->SetLabel(runningLabel);
         }
       }
     }
   }
-#endif
 
   return true;
 }
@@ -141,16 +120,6 @@ bool CGUIWindowScripts::OnPlayMedia(int iItem)
   CFileItemPtr pItem=m_vecItems->Get(iItem);
   CStdString strPath = pItem->m_strPath;
 
-#if defined(__APPLE__)
-  if (CUtil::GetExtension(pItem->m_strPath) == ".applescript")
-  {
-    CStdString osxPath = CSpecialProtocol::TranslatePath(pItem->m_strPath);
-    Cocoa_DoAppleScriptFile(osxPath.c_str());
-    return true;
-  }
-#endif
-
-#ifdef HAS_PYTHON
   /* execute script...
     * if script is already running do not run it again but stop it.
     */
@@ -172,27 +141,18 @@ bool CGUIWindowScripts::OnPlayMedia(int iItem)
     }
   }
   g_pythonParser.evalFile(strPath);
-#endif
 
   return true;
 }
 
 void CGUIWindowScripts::OnInfo()
 {
-  CGUIDialogTextViewer* pDlgInfo = (CGUIDialogTextViewer*)g_windowManager.GetWindow(WINDOW_DIALOG_TEXT_VIEWER);
-  if (pDlgInfo)
-  {
-    pDlgInfo->SetHeading(g_localizeStrings.Get(262));
-    pDlgInfo->SetText(m_debug);
-    m_bViewOutput = true;
-    pDlgInfo->DoModal();
-    m_bViewOutput = false;
-  }
+  CGUIWindowScriptsInfo* pDlgInfo = (CGUIWindowScriptsInfo*)g_windowManager.GetWindow(WINDOW_SCRIPTS_INFO);
+  if (pDlgInfo) pDlgInfo->DoModal();
 }
 
-void CGUIWindowScripts::FrameMove()
+void CGUIWindowScripts::Render()
 {
-#ifdef HAS_PYTHON
   // update control_list / control_thumbs if one or more scripts have stopped / started
   if (g_pythonParser.ScriptsSize() != m_scriptSize)
   {
@@ -201,27 +161,40 @@ void CGUIWindowScripts::FrameMove()
     m_viewControl.SetSelectedItem(selectedItem);
     m_scriptSize = g_pythonParser.ScriptsSize();
   }
-#endif
 
-  CGUIWindow::FrameMove();
+  CGUIWindow::Render();
 }
 
 bool CGUIWindowScripts::GetDirectory(const CStdString& strDirectory, CFileItemList& items)
 {
-  VECADDONS addons;
-  CAddonMgr::Get().GetAddons(ADDON_SCRIPT,addons);
-  
-  items.ClearItems();
-  for (unsigned i=0; i < addons.size(); i++)
+  if (!CGUIMediaWindow::GetDirectory(strDirectory,items))
+    return false;
+
+  // flatten any folders
+  for (int i = 0; i < items.Size(); i++)
   {
-    AddonPtr addon = addons[i];
-    CFileItemPtr pItem(new CFileItem(addon->Path()+addon->LibName(),false));
-    pItem->SetLabel(addon->Name());
-    pItem->SetLabel2(addon->Summary());
-    pItem->SetThumbnailImage(addon->Icon());
-    CAddonDatabase::SetPropertiesFromAddon(addon,pItem);
-    items.Add(pItem);
-  }  	
+    CFileItemPtr item = items[i];
+    if (item->m_bIsFolder && !item->IsParentFolder() && !item->m_bIsShareOrDrive && !item->GetLabel().Left(1).Equals("."))
+    { // folder item - let's check for a default.py file, and flatten if we have one
+      CStdString defaultPY;
+      CUtil::AddFileToFolder(item->m_strPath, "default.py", defaultPY);
+
+      if (CFile::Exists(defaultPY))
+      { // yes, format the item up
+        item->m_strPath = defaultPY;
+        item->m_bIsFolder = false;
+        item->FillInDefaultIcon();
+        item->SetLabelPreformated(true);
+      }
+    }
+    if (item->GetLabel().Equals("autoexec.py") || (item->GetLabel().Left(1).Equals(".") && !item->IsParentFolder()))
+    {
+      items.Remove(i);
+      i--;
+    }
+  }
+
+  items.SetProgramThumbs();
 
   return true;
 }
@@ -236,17 +209,12 @@ void CGUIWindowScripts::GetContextButtons(int itemNumber, CContextButtons &butto
   {
     CStdString path, filename;
     CUtil::Split(item->m_strPath, path, filename);
-    ADDON::AddonPtr script;
-    if (ADDON::CAddonMgr::Get().GetAddon(item->m_strPath, script, ADDON::ADDON_SCRIPT))
-    {
-      if (script->HasSettings())
-      {
-        buttons.Add(CONTEXT_BUTTON_SCRIPT_SETTINGS, 1049);
-      }
-    }
+    if (CScriptSettings::SettingsExist(path))
+      buttons.Add(CONTEXT_BUTTON_SCRIPT_SETTINGS, 1049);
   }
 
   buttons.Add(CONTEXT_BUTTON_INFO, 654);
+  buttons.Add(CONTEXT_BUTTON_DELETE, 117);
 }
 
 bool CGUIWindowScripts::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
@@ -260,15 +228,20 @@ bool CGUIWindowScripts::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   {
     CStdString path, filename;
     CUtil::Split(m_vecItems->Get(itemNumber)->m_strPath, path, filename);
-    ADDON::AddonPtr script;
-    if (ADDON::CAddonMgr::Get().GetAddon(m_vecItems->Get(itemNumber)->m_strPath, script, ADDON::ADDON_SCRIPT))
-    {
-      if (CGUIDialogAddonSettings::ShowAndGetInput(script))
-        Update(m_vecItems->m_strPath);
-    }
+    if(CGUIDialogPluginSettings::ShowAndGetInput(path))
+      Update(m_vecItems->m_strPath);
     return true;
   }
+  else if (button == CONTEXT_BUTTON_DELETE)
+  {
+    CStdString path;
+    CUtil::GetDirectory(m_vecItems->Get(itemNumber)->m_strPath,path);
+    CFileItem item2(path,true);
+    if (CGUIWindowFileManager::DeleteItem(&item2))
+      Update(m_vecItems->m_strPath);
 
+    return true;
+  }
   return CGUIMediaWindow::OnContextButton(itemNumber, button);
 }
 

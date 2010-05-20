@@ -1,6 +1,6 @@
 /*!
 \file GUIRadioButtonControl.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -30,7 +30,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIRadioButtonControl :
       public CGUIButtonControl
@@ -48,10 +48,10 @@ public:
   virtual void Render();
   virtual bool OnAction(const CAction &action) ;
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   virtual void SetWidth(float width);
   virtual void SetHeight(float height);

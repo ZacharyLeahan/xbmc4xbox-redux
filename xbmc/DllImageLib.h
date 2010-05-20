@@ -23,23 +23,16 @@
 
 #include "DynamicDll.h"
 
+#ifndef _XBOX
  #ifdef LoadImage
   #undef LoadImage
  #endif
-
-#ifdef _LINUX
-typedef struct tagRGBQUAD {
-   BYTE rgbBlue;
-   BYTE rgbGreen;
-   BYTE rgbRed;
-   BYTE rgbReserved;
-} RGBQUAD;
 #endif
 
 #define EXIF_MAX_COMMENT 1000
 
 typedef struct tag_ExifInfo {
-  char  Version      [5];
+	char  Version      [5];
   char  CameraMake   [32];
   char  CameraModel  [40];
   char  DateTime     [20];
@@ -59,21 +52,21 @@ typedef struct tag_ExifInfo {
   int   ExposureProgram;
   int   ISOequivalent;
   int   CompressionLevel;
-  float FocalplaneXRes;
-  float FocalplaneYRes;
-  float FocalplaneUnits;
-  float Xresolution;
-  float Yresolution;
-  float ResolutionUnit;
-  float Brightness;
+	float FocalplaneXRes;
+	float FocalplaneYRes;
+	float FocalplaneUnits;
+	float Xresolution;
+	float Yresolution;
+	float ResolutionUnit;
+	float Brightness;
   char  Comments[EXIF_MAX_COMMENT];
 
   unsigned char * ThumbnailPointer;  /* Pointer at the thumbnail */
   unsigned ThumbnailSize;     /* Size of thumbnail. */
 
-  bool  IsExif;
+	bool  IsExif;
 } EXIFINFO;
-
+  
 struct ImageInfo
 {
   unsigned int width;
@@ -101,7 +94,7 @@ public:
 
 class DllImageLib : public DllDynamic, DllImageLibInterface
 {
-  DECLARE_DLL_WRAPPER(DllImageLib, DLL_PATH_IMAGELIB)
+  DECLARE_DLL_WRAPPER(DllImageLib, Q:\\system\\ImageLib.dll)
   DEFINE_METHOD1(bool, ReleaseImage, (ImageInfo *p1))
   DEFINE_METHOD4(bool, LoadImage, (const char * p1, unsigned int p2, unsigned int p3, ImageInfo * p4))
   DEFINE_METHOD5(bool, CreateThumbnail, (const char * p1, const char * p2, int p3, int p4, bool p5))

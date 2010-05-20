@@ -23,7 +23,7 @@
 #include "QueryParams.h"
 #include "VideoDatabase.h"
 
-using namespace XFILE::VIDEODATABASEDIRECTORY;
+using namespace DIRECTORY::VIDEODATABASEDIRECTORY;
 
 CDirectoryNodeSets::CDirectoryNodeSets(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_SETS, strName, pParent)

@@ -21,12 +21,30 @@
  *
  */
 
-#include "StdString.h"
-#include "TextureBundleXPR.h"
-#include "TextureBundleXBT.h"
+class CAutoTexBuffer;
 
 class CTextureBundle
 {
+  struct FileHeader_t
+  {
+    DWORD Offset;
+    DWORD UnpackedSize;
+    DWORD PackedSize;
+  };
+
+  HANDLE m_hFile;
+  FILETIME m_TimeStamp;
+  OVERLAPPED m_Ovl[2];
+  std::map<CStdString, FileHeader_t> m_FileHeaders;
+  std::map<CStdString, FileHeader_t>::iterator m_CurFileHeader[2];
+  BYTE* m_PreLoadBuffer[2];
+  int m_PreloadIdx;
+  int m_LoadIdx;
+  bool m_themeBundle;
+
+  bool OpenBundle();
+  HRESULT LoadFile(const CStdString& Filename, CAutoTexBuffer& UnpackedBuf);
+
 public:
   CTextureBundle(void);
   ~CTextureBundle(void);
@@ -36,18 +54,13 @@ public:
   void SetThemeBundle(bool themeBundle);
   bool HasFile(const CStdString& Filename);
   void GetTexturesFromPath(const CStdString &path, std::vector<CStdString> &textures);
+  bool PreloadFile(const CStdString& Filename);
   static CStdString Normalize(const CStdString &name);
 
-  bool LoadTexture(const CStdString& Filename, CBaseTexture** ppTexture, int &width, int &height);
+  HRESULT LoadTexture(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filename, D3DXIMAGE_INFO* pInfo, LPDIRECT3DTEXTURE8* ppTexture,
+                      LPDIRECT3DPALETTE8* ppPalette);
 
-  int LoadAnim(const CStdString& Filename, CBaseTexture*** ppTextures, int &width, int &height, int& nLoops, int** ppDelays);
-
-private:
-  CTextureBundleXPR m_tbXPR;
-  CTextureBundleXBT m_tbXBT;
-
-  bool m_useXPR;
-  bool m_useXBT;
+  int LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filename, D3DXIMAGE_INFO* pInfo, LPDIRECT3DTEXTURE8** ppTextures,
+               LPDIRECT3DPALETTE8* ppPalette, int& nLoops, int** ppDelays);
 };
-
 

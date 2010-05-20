@@ -30,10 +30,9 @@ public:
   CGUIWindowOSD(void);
   virtual ~CGUIWindowOSD(void);
 
-  virtual void FrameMove();
+  virtual void Render();
   virtual bool OnMessage(CGUIMessage& message);
   virtual bool OnAction(const CAction &action);
-protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
+  virtual bool OnMouse(const CPoint &point);
   virtual void OnWindowLoaded();
 };

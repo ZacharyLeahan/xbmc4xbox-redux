@@ -29,9 +29,10 @@
 #include "StringUtils.h"
 #include "utils/CharsetConverter.h"
 #include "XMLUtils.h"
-#include "utils/log.h"
+#include "utils/strptime.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CDAVDirectory::CDAVDirectory(void) {}
 CDAVDirectory::~CDAVDirectory(void) {}
@@ -257,7 +258,6 @@ bool CDAVDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items
       strResponse.clear();
     }
   }
-
   dav.Close();
 
   return true;

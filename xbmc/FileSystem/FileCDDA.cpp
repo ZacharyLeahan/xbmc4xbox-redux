@@ -19,16 +19,12 @@
  *
  */
 
-#include "system.h"
-
-#ifdef HAS_DVD_DRIVE
-
+#include "stdafx.h"
 #include "FileCDDA.h"
 #include <sys/stat.h>
 #include "Util.h"
+#include "DetectDVDType.h"
 #include "URL.h"
-#include "MediaManager.h"
-#include "utils/log.h"
 
 using namespace MEDIA_DETECT;
 using namespace XFILE;
@@ -49,19 +45,11 @@ CFileCDDA::~CFileCDDA(void)
 
 bool CFileCDDA::Open(const CURL& url)
 {
-  CStdString strURL = url.GetWithoutFilename();
-
-  if (!g_mediaManager.IsDiscInDrive(strURL) || !IsValidFile(url))
+  if (!CDetectDVDMedia::IsDiscInDrive() || !IsValidFile(url))
     return false;
 
   // Open the dvd drive
-#ifdef _LINUX
-  m_pCdIo = m_cdio->cdio_open(g_mediaManager.TranslateDevicePath(strURL), DRIVER_UNKNOWN);
-#elif defined(_WIN32)
-  m_pCdIo = m_cdio->cdio_open_win32(g_mediaManager.TranslateDevicePath(strURL, true));
-#else
   m_pCdIo = m_cdio->cdio_open_win32("D:");
-#endif
   if (!m_pCdIo)
   {
     CLog::Log(LOGERROR, "file cdda: Opening the dvd drive failed");
@@ -114,9 +102,9 @@ int CFileCDDA::Stat(const CURL& url, struct __stat64* buffer)
   return -1;
 }
 
-unsigned int CFileCDDA::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileCDDA::Read(void* lpBuf, __int64 uiBufSize)
 {
-  if (!m_pCdIo || !g_mediaManager.IsDiscInDrive())
+  if (!m_pCdIo || !CDetectDVDMedia::IsDiscInDrive())
     return 0;
 
   int iSectorCount = (int)uiBufSize / CDIO_CD_FRAMESIZE_RAW;
@@ -139,7 +127,7 @@ unsigned int CFileCDDA::Read(void* lpBuf, int64_t uiBufSize)
   return iSectorCount*CDIO_CD_FRAMESIZE_RAW;
 }
 
-int64_t CFileCDDA::Seek(int64_t iFilePosition, int iWhence /*=SEEK_SET*/)
+__int64 CFileCDDA::Seek(__int64 iFilePosition, int iWhence /*=SEEK_SET*/)
 {
   if (!m_pCdIo)
     return -1;
@@ -176,7 +164,7 @@ void CFileCDDA::Close()
   }
 }
 
-int64_t CFileCDDA::GetPosition()
+__int64 CFileCDDA::GetPosition()
 {
   if (!m_pCdIo)
     return 0;
@@ -184,7 +172,7 @@ int64_t CFileCDDA::GetPosition()
   return ((m_lsnCurrent -m_lsnStart)*CDIO_CD_FRAMESIZE_RAW);
 }
 
-int64_t CFileCDDA::GetLength()
+__int64 CFileCDDA::GetLength()
 {
   if (!m_pCdIo)
     return 0;
@@ -210,11 +198,8 @@ int CFileCDDA::GetTrackNum(const CURL& url)
   return atoi(strFileName.substr(13, strFileName.size() - 13 - 5).c_str());
 }
 
-#define SECTOR_COUNT 52 // max. sectors that can be read at once
+#define SECTOR_COUNT 55 // max. sectors that can be read at once
 int CFileCDDA::GetChunkSize()
 {
   return SECTOR_COUNT*CDIO_CD_FRAMESIZE_RAW;
 }
-
-#endif
-

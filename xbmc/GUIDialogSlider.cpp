@@ -19,10 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSlider.h"
 #include "GUISliderControl.h"
 #include "GUIWindowManager.h"
-#include "LocalizeStrings.h"
 
 #define CONTROL_HEADING 10
 #define CONTROL_SLIDER  11
@@ -41,7 +41,7 @@ CGUIDialogSlider::~CGUIDialogSlider(void)
 
 bool CGUIDialogSlider::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SELECT_ITEM)
+  if (action.id == ACTION_SELECT_ITEM)
   {
     Close();
     return true;
@@ -109,7 +109,7 @@ void CGUIDialogSlider::ShowAndGetInput(const CStdString &label, float value, flo
   slider->DoModal();
 }
 
-void CGUIDialogSlider::Display(int label, float value, float min, float delta, float max, ISliderCallback *callback)
+void CGUIDialogSlider::Display(int label, float value, float min, float delta, float max, ISliderCallback *callback, void *callbackData)
 {
   // grab the slider dialog
   CGUIDialogSlider *slider = (CGUIDialogSlider *)g_windowManager.GetWindow(WINDOW_DIALOG_SLIDER);
@@ -119,6 +119,6 @@ void CGUIDialogSlider::Display(int label, float value, float min, float delta, f
   // set the label and value
   slider->Initialize();
   slider->SetAutoClose(1000);
-  slider->SetSlider(g_localizeStrings.Get(label), value, min, delta, max, callback, NULL);
+  slider->SetSlider(g_localizeStrings.Get(label), value, min, delta, max, callback, callbackData);
   slider->Show();
 }

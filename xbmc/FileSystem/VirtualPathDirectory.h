@@ -24,7 +24,7 @@
 
 class CMediaSource;
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CVirtualPathDirectory :
       public IDirectory

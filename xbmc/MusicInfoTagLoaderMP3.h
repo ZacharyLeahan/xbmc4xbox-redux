@@ -20,9 +20,9 @@
  *
  */
 
-#include <math.h>
 #include "ImusicInfoTagLoader.h"
 #include "cores/paplayer/ReplayGain.h"
+#include <math.h>
 
 namespace MUSIC_INFO
 {
@@ -40,10 +40,11 @@ public:
   };
   virtual ~CVBRMP3SeekHelper()
   {
-    delete[] m_SeekOffset;
+    if (m_SeekOffset)
+      delete[] m_SeekOffset;
   };
 
-  int64_t GetByteOffset(float fTime)
+  __int64 GetByteOffset(float fTime)
   {
     if (!m_iSeekOffsets) return 0;  // no seek info
     if (fTime > m_fTotalDuration)
@@ -53,10 +54,10 @@ public:
     if (iOffset > m_iSeekOffsets-1) iOffset = m_iSeekOffsets - 1;
     float fa = m_SeekOffset[iOffset];
     float fb = m_SeekOffset[iOffset + 1];
-    return (int64_t)(fa + (fb - fa) * (fOffset - iOffset));
+    return (__int64)(fa + (fb - fa) * (fOffset - iOffset));
   };
-
-  int64_t GetTimeOffset(int64_t iBytes)
+  
+  __int64 GetTimeOffset(__int64 iBytes)
   {
     if (!m_iSeekOffsets) return 0;  // no seek info
     float fBytes = (float)iBytes;
@@ -71,7 +72,7 @@ public:
     // iOffset will be the last of the two offsets and will be bigger than 1.
     float fTimeOffset = (float)iOffset - 1 + (fBytes - m_SeekOffset[iOffset - 1])/(m_SeekOffset[iOffset] - m_SeekOffset[iOffset - 1]);
     float fTime = fTimeOffset / m_iSeekOffsets * m_fTotalDuration;
-    return (int64_t)(fTime * 1000.0f);
+    return (__int64)(fTime * 1000.0f);
   };
 
   void SetDuration(float fDuration) { m_fTotalDuration = fDuration; };
@@ -80,7 +81,7 @@ public:
   void SetOffsets(int iSeekOffsets, const float *offsets)
   {
     m_iSeekOffsets = iSeekOffsets;
-    delete[] m_SeekOffset;
+    if (m_SeekOffset) delete[] m_SeekOffset;
     m_SeekOffset = NULL;
     if (m_iSeekOffsets <= 0)
       return;
@@ -93,7 +94,7 @@ public:
   const float *GetOffsets() const { return m_SeekOffset; };
 
   void SetSampleRange(int firstSample, int lastSample)
-  {
+  { 
     m_iFirstSample = firstSample;
     m_iLastSample = lastSample;
   };
@@ -120,7 +121,7 @@ public:
   static unsigned int IsID3v2Header(unsigned char* pBuf, size_t bufLen);
 protected:
   virtual int ReadDuration(const CStdString& strFileName);
-  bool ReadLAMETagInfo(unsigned char *p);
+  bool ReadLAMETagInfo(BYTE *p);
   int IsMp3FrameHeader(unsigned long head);
   virtual bool PrioritiseAPETags() const;
 

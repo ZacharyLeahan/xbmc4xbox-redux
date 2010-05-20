@@ -91,88 +91,6 @@
 			<Tool
 				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
-		<Configuration
-			Name="Debug (SDL)|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories=".\Platinum\ThirdParty\Neptune\Source\Core;.\Platinum\Source\Core;.\Platinum\Source\Devices\MediaServer;.\Platinum\ThirdParty\Neptune\Source\System\Win32"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libPlatinum_PCd.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Release (SDL)|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=".\Platinum\ThirdParty\Neptune\Source\Core;.\Platinum\Source\Core;.\Platinum\Source\Devices\MediaServer;.\Platinum\ThirdParty\Neptune\Source\System\Win32"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
-				EnableEnhancedInstructionSet="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libPlatinum_PC.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -537,6 +455,9 @@
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\Core\NptReferences.h">
 				</File>
 				<File
+					RelativePath=".\Platinum\ThirdParty\Neptune\Source\Core\NptResults.cpp">
+				</File>
+				<File
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\Core\NptResults.h">
 				</File>
 				<File
@@ -628,13 +549,10 @@
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Posix\NptPosixFile.cpp">
 				</File>
 				<File
-					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\StdC\NptStdcEnvironment.cpp">
-				</File>
-				<File
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32Debug.cpp">
 				</File>
 				<File
-					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32DynamicLibraries.cpp">
+					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32File.cpp">
 				</File>
 				<File
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32File.cpp">
@@ -643,13 +561,7 @@
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32Network.cpp">
 				</File>
 				<File
-					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32Network.h">
-				</File>
-				<File
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32Queue.cpp">
-				</File>
-				<File
-					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32SerialPort.cpp">
 				</File>
 				<File
 					RelativePath=".\Platinum\ThirdParty\Neptune\Source\System\Win32\NptWin32System.cpp">

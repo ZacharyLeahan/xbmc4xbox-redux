@@ -19,6 +19,7 @@
  *
  */
 
+#include "include.h"
 #include "GUIListItem.h"
 #include "GUIListItemLayout.h"
 #include "utils/Archive.h"
@@ -218,7 +219,7 @@ void CGUIListItem::Serialize(CArchive &ar)
     ar << m_strIcon;
     ar << m_bSelected;
     ar << m_overlayIcon;
-    ar << (int)m_mapProperties.size();
+    ar << m_mapProperties.size();
     for (std::map<CStdString, CStdString, icompare>::const_iterator it = m_mapProperties.begin(); it != m_mapProperties.end(); it++)
     {
       ar << it->first;
@@ -234,11 +235,7 @@ void CGUIListItem::Serialize(CArchive &ar)
     ar >> m_strThumbnailImage;
     ar >> m_strIcon;
     ar >> m_bSelected;
-
-    int overlayIcon;
-    ar >> overlayIcon;
-    m_overlayIcon = GUIIconOverlay(overlayIcon);
-
+    ar >> (int&)m_overlayIcon;
     int mapSize;
     ar >> mapSize;
     for (int i = 0; i < mapSize; i++)
@@ -259,17 +256,15 @@ void CGUIListItem::FreeIcons()
   SetInvalid();
 }
 
-void CGUIListItem::FreeMemory(bool immediately)
+void CGUIListItem::FreeMemory()
 {
   if (m_layout)
   {
-    m_layout->FreeResources(immediately);
     delete m_layout;
     m_layout = NULL;
   }
   if (m_focusedLayout)
   {
-    m_focusedLayout->FreeResources(immediately);
     delete m_focusedLayout;
     m_focusedLayout = NULL;
   }
@@ -277,7 +272,8 @@ void CGUIListItem::FreeMemory(bool immediately)
 
 void CGUIListItem::SetLayout(CGUIListItemLayout *layout)
 {
-  delete m_layout;
+  if (m_layout)
+    delete m_layout;
   m_layout = layout;
 }
 
@@ -288,7 +284,8 @@ CGUIListItemLayout *CGUIListItem::GetLayout()
 
 void CGUIListItem::SetFocusedLayout(CGUIListItemLayout *layout)
 {
-  delete m_focusedLayout;
+  if (m_focusedLayout)
+    delete m_focusedLayout;
   m_focusedLayout = layout;
 }
 
@@ -390,5 +387,4 @@ double CGUIListItem::GetPropertyDouble(const CStdString &strKey) const
 {
   return atof(GetProperty(strKey).c_str()) ;
 }
-
 

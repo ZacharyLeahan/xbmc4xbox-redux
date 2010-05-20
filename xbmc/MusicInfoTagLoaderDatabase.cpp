@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicInfoTagLoaderDatabase.h"
 #include "MusicDatabase.h"
 #include "FileSystem/MusicDatabaseDirectory.h"
@@ -40,8 +41,8 @@ bool CMusicInfoTagLoaderDatabase::Load(const CStdString& strFileName, CMusicInfo
   tag.SetLoaded(false);
   CMusicDatabase database;
   database.Open();
-  XFILE::MUSICDATABASEDIRECTORY::CQueryParams param;
-  XFILE::MUSICDATABASEDIRECTORY::CDirectoryNode::GetDatabaseInfo(strFileName,param);
+  DIRECTORY::MUSICDATABASEDIRECTORY::CQueryParams param;
+  DIRECTORY::MUSICDATABASEDIRECTORY::CDirectoryNode::GetDatabaseInfo(strFileName,param);
 
   CSong song;
   if (database.GetSongById(param.GetSongId(),song))

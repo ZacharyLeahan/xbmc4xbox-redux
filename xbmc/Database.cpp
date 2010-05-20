@@ -19,14 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "Database.h"
 #include "Util.h"
 #include "Settings.h"
-#include "AdvancedSettings.h"
 #include "Crc32.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "AutoPtrHandle.h"
-#include "utils/log.h"
 
 using namespace AUTOPTR;
 using namespace dbiplus;
@@ -37,7 +35,6 @@ CDatabase::CDatabase(void)
 {
   m_bOpen = false;
   m_iRefCount = 0;
-  m_sqlite = true;
 }
 
 CDatabase::~CDatabase(void)
@@ -60,11 +57,11 @@ void CDatabase::Split(const CStdString& strFileNameAndPath, CStdString& strPath,
   strFileName = strFileNameAndPath.Right(strFileNameAndPath.size() - i);
 }
 
-uint32_t CDatabase::ComputeCRC(const CStdString &text)
+DWORD CDatabase::ComputeCRC(const CStdString &text)
 {
   Crc32 crc;
   crc.ComputeFromLowerCase(text);
-  return crc;
+  return (DWORD)crc;
 }
 
 CStdString CDatabase::FormatSQL(CStdString strStmt, ...)
@@ -78,25 +75,13 @@ CStdString CDatabase::FormatSQL(CStdString strStmt, ...)
 
   va_list args;
   va_start(args, strStmt);
-  char *szSql = sqlite3_vmprintf(strStmt.c_str(), args);
+  auto_aptr<char> szStmt(sqlite3_vmprintf(strStmt.c_str(), args));
   va_end(args);
 
-  CStdString strResult;
-  if (szSql) {
-    strResult = szSql;
-    sqlite3_free(szSql);
-  }
-
-  return strResult;
+  return szStmt.get();
 }
 
 bool CDatabase::Open()
-{
-  DatabaseSettings db_fallback;
-  return Open(db_fallback);
-}
-
-bool CDatabase::Open(DatabaseSettings &dbSettings)
 {
   if (IsOpen())
   {
@@ -104,86 +89,24 @@ bool CDatabase::Open(DatabaseSettings &dbSettings)
     return true;
   }
 
-  m_sqlite = true;
-  
-  if ( dbSettings.type.Equals("mysql") )
-  {
-    // check we have all information before we cancel the fallback
-    if ( ! (dbSettings.host.IsEmpty() || dbSettings.user.IsEmpty() || dbSettings.pass.IsEmpty()) )
-      m_sqlite = false;
-    else
-      CLog::Log(LOGINFO, "essential mysql database information is missing (eg. host, user, pass)");
-  }
+  CStdString strDatabase;
+  CUtil::AddFileToFolder(g_settings.GetDatabaseFolder(), m_strDatabaseFile, strDatabase);
 
-  // set default database name if appropriate
-  if ( dbSettings.name.IsEmpty() )
-    dbSettings.name = GetDefaultDBName();
+  m_pDB.reset(new SqliteDatabase() ) ;
+  m_pDB->setDatabase(_P(strDatabase).c_str());
 
-  // always safely fallback to sqlite3
-  if (m_sqlite)
-  {
-    dbSettings.type = "sqlite3";
-    dbSettings.host = _P(g_settings.GetDatabaseFolder());
-  }
-
-  // create the appropriate database structure
-  if (dbSettings.type.Equals("sqlite3"))
-  {
-    m_pDB.reset( new SqliteDatabase() ) ;
-  }
-  else if (dbSettings.type.Equals("mysql"))
-  {
-    m_pDB.reset( new MysqlDatabase() ) ;
-  }
-  else
-  {
-    CLog::Log(LOGERROR, "Unable to determine database type: %s", dbSettings.type.c_str());
-    return false;
-  }
-
-  // host name is always required
-  m_pDB->setHostName(dbSettings.host.c_str());
-
-  if (!dbSettings.port.IsEmpty())
-    m_pDB->setPort(dbSettings.port.c_str());
-
-  if (!dbSettings.user.IsEmpty())
-    m_pDB->setLogin(dbSettings.user.c_str());
-
-  if (!dbSettings.pass.IsEmpty())
-    m_pDB->setPasswd(dbSettings.pass.c_str());
-
-  // database name is always required
-  m_pDB->setDatabase(dbSettings.name.c_str());
-
-  // create the datasets
   m_pDS.reset(m_pDB->CreateDataset());
   m_pDS2.reset(m_pDB->CreateDataset());
 
-  CLog::Log(LOGDEBUG, "CDatabase: Connecting to database %s at %s:%s",
-            dbSettings.name.c_str(), dbSettings.host.c_str(), dbSettings.port.c_str());
-
-  if (m_pDB->connect() != DB_CONNECTION_OK)
+  if ( m_pDB->connect() != DB_CONNECTION_OK)
   {
-    CLog::Log(LOGERROR, "Unable to open database at host: %s db: %s (old version?)", dbSettings.host.c_str(), dbSettings.name.c_str());
+    CLog::Log(LOGERROR, "Unable to open %s (old version?)", strDatabase.c_str());
     return false;
   }
-
+  
   // test if db already exists, if not we need to create the tables
   if (!m_pDB->exists())
   {
-    if (dbSettings.type.Equals("sqlite3"))
-    {
-      //  Modern file systems have a cluster/block size of 4k.
-      //  To gain better performance when performing write
-      //  operations to the database, set the page size of the
-      //  database file to 4k.
-      //  This needs to be done before any table is created.
-      m_pDS->exec("PRAGMA page_size=4096\n");
-
-      //  Also set the memory cache size to 16k
-      m_pDS->exec("PRAGMA default_cache_size=4096\n");
-    }
     CreateTables();
   }
 
@@ -198,30 +121,28 @@ bool CDatabase::Open(DatabaseSettings &dbSettings)
 
   if (version < GetMinVersion())
   {
-    CLog::Log(LOGNOTICE, "Attempting to update the database %s from version %i to %i", dbSettings.name.c_str(), version, GetMinVersion());
+    CLog::Log(LOGNOTICE, "Attempting to update the database %s from version %i to %i", m_strDatabaseFile.c_str(), version, GetMinVersion());
     if (UpdateOldVersion(version) && UpdateVersionNumber())
       CLog::Log(LOGINFO, "Update to version %i successfull", GetMinVersion());
     else
     {
-      CLog::Log(LOGERROR, "Can't update the database %s from version %i to %i", dbSettings.name.c_str(), version, GetMinVersion());
+      CLog::Log(LOGERROR, "Can't update the database %s from version %i to %i", m_strDatabaseFile.c_str(), version, GetMinVersion());
       Close();
       return false;
     }
   }
   else if (version > GetMinVersion())
   {
-    CLog::Log(LOGERROR, "Can't open the database %s as it is a NEWER version than what we were expecting!", dbSettings.name.c_str());
+    CLog::Log(LOGERROR, "Can't open the database %s as it is a NEWER version than what we were expecting!", m_strDatabaseFile.c_str());
     Close();
     return false;
   }
 
-  // sqlite3 post connection operations
-  if (dbSettings.type.Equals("sqlite3"))
-  {
-    m_pDS->exec("PRAGMA cache_size=4096\n");
-    m_pDS->exec("PRAGMA synchronous='NORMAL'\n");
-    m_pDS->exec("PRAGMA count_changes='OFF'\n");
-  }
+  m_pDS->exec("PRAGMA cache_size=16384\n");
+  m_pDS->exec("PRAGMA synchronous='NORMAL'\n");
+  m_pDS->exec("PRAGMA journal_mode='TRUNCATE'\n");
+//  m_pDS->exec("PRAGMA journal_mode='OFF'\n");
+  m_pDS->exec("PRAGMA count_changes='OFF'\n");
 
   m_iRefCount++;
   return true;
@@ -256,9 +177,7 @@ void CDatabase::Close()
 
 bool CDatabase::Compress(bool bForce /* =true */)
 {
-  if (!m_sqlite)
-    return true;
-
+  // compress database
   try
   {
     if (NULL == m_pDB.get()) return false;
@@ -284,7 +203,7 @@ bool CDatabase::Compress(bool bForce /* =true */)
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s - Compressing the database failed", __FUNCTION__);
+    CLog::Log(LOGERROR, "Compressing the database %s failed", m_strDatabaseFile.c_str());
     return false;
   }
   return true;
@@ -344,6 +263,16 @@ bool CDatabase::InTransaction()
 
 bool CDatabase::CreateTables()
 {
+    //  all fatx formatted partitions, except the utility drive,
+    //  have a cluster size of 16k. To gain better performance
+    //  when performing write operations to the database, set
+    //  the page size of the database file to 16k.
+    //  This needs to be done before any table is created.
+    CLog::Log(LOGINFO, "Set page size");
+    m_pDS->exec("PRAGMA page_size=16384\n");
+    //  Also set the memory cache size to 16k
+    CLog::Log(LOGINFO, "Set default cache size");
+    m_pDS->exec("PRAGMA default_cache_size=16384\n");
 
     CLog::Log(LOGINFO, "creating version table");
     m_pDS->exec("CREATE TABLE version (idVersion integer, iCompressCount integer)\n");

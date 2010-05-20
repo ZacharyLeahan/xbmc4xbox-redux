@@ -23,15 +23,11 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "stdafx.h"
 #include "FileRTV.h"
-#include "SectionLoader.h"
 #include "URL.h"
-#include "utils/log.h"
-#include <errno.h>
+
 #include <sys/stat.h>
-#ifdef _WIN32
-#include "PlatformDefs.h" //for PRIdS
-#endif
 extern "C"
 {
 #include "lib/libRTV/interface.h"
@@ -103,8 +99,8 @@ bool CFileRTV::Open(const char* strHostName, const char* strFileName, int iport)
     return false;
   }
   m_bOpened = true;
-
-  CLog::Log(LOGDEBUG, "%s - Opened %s on %s, Size %"PRIu64", Position %"PRIu64"", __FUNCTION__, strHostName, strFileName, m_fileSize, m_filePos);
+  
+  CLog::Log(LOGDEBUG, "%s - Opened %s on %s, Size %llu, Position %llu", __FUNCTION__, strHostName, strFileName, m_fileSize, m_filePos);
   return true;
 }
 
@@ -113,19 +109,9 @@ bool CFileRTV::Open(const CURL& url)
   return Open(url.GetHostName(), url.GetFileName(), url.GetPort());
 }
 
-bool CFileRTV::Exists(const CURL& url)
-{
-  return true;
-}
-
-int CFileRTV::Stat(const CURL& url, struct __stat64* buffer)
-{
-  errno = ENOENT;
-  return -1;
-}
 
 //*********************************************************************************************
-unsigned int CFileRTV::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileRTV::Read(void *lpBuf, __int64 uiBufSize)
 {
   size_t lenread;
 
@@ -144,7 +130,7 @@ unsigned int CFileRTV::Read(void *lpBuf, int64_t uiBufSize)
     lenread = (size_t)(m_fileSize - m_filePos);
     m_filePos = m_fileSize;
     return lenread;
-  }
+  }  
 
   // Increase the file position by the number of bytes we just read
   m_filePos += lenread;
@@ -167,7 +153,7 @@ void CFileRTV::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileRTV::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileRTV::Seek(__int64 iFilePosition, int iWhence)
 {
   UINT64 newpos;
 
@@ -217,14 +203,14 @@ int64_t CFileRTV::Seek(int64_t iFilePosition, int iWhence)
 }
 
 //*********************************************************************************************
-int64_t CFileRTV::GetLength()
+__int64 CFileRTV::GetLength()
 {
   if (!m_bOpened) return 0;
   return m_fileSize;
 }
 
 //*********************************************************************************************
-int64_t CFileRTV::GetPosition()
+__int64 CFileRTV::GetPosition()
 {
   if (!m_bOpened) return 0;
   return m_filePos;

@@ -22,14 +22,12 @@
 
 #include "IDirectory.h"
 #include "Directory.h"
-#include "utils/CriticalSection.h"
 
-#include <map>
 #include <set>
 
 class CFileItem;
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CDirectoryCache
   {
@@ -38,7 +36,7 @@ namespace XFILE
     public:
       CDir(DIR_CACHE_TYPE cacheType);
       virtual ~CDir();
-
+      
       void SetLastAccess(unsigned int &accessCounter);
       unsigned int GetLastAccess() const { return m_lastAccess; };
 
@@ -90,4 +88,4 @@ namespace XFILE
 #endif
   };
 }
-extern XFILE::CDirectoryCache g_directoryCache;
+extern DIRECTORY::CDirectoryCache g_directoryCache;

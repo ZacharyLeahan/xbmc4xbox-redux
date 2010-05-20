@@ -1,6 +1,6 @@
 /*!
 \file GUIControlGroup.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -27,7 +27,7 @@
  */
 
 #include "GUIControl.h"
-
+#include <map>
 /*!
  \ingroup controls
  \brief group of controls, useful for remembering last control + animating/hiding together
@@ -47,16 +47,17 @@ public:
   virtual bool SendControlMessage(CGUIMessage& message);
   virtual bool HasFocus() const;
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
   virtual bool CanFocus() const;
 
-  virtual EVENT_RESULT SendMouseEvent(const CPoint &point, const CMouseEvent &event);
+  virtual bool HitTest(const CPoint &point) const;
+  virtual bool CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const;
   virtual void UnfocusFromPoint(const CPoint &point);
 
   virtual void SetInitialVisibility();
 
-  virtual void DoRender(unsigned int currentTime);
+  virtual void DoRender(DWORD currentTime);
   virtual bool IsAnimating(ANIMATION_TYPE anim);
   virtual bool HasAnimation(ANIMATION_TYPE anim);
   virtual void QueueAnimation(ANIMATION_TYPE anim);
@@ -65,7 +66,6 @@ public:
 
   virtual bool HasID(int id) const;
   virtual bool HasVisibleID(int id) const;
-  virtual void SetInvalid();
 
   int GetFocusedControlID() const;
   CGUIControl *GetFocusedControl() const;
@@ -88,26 +88,10 @@ public:
   virtual void DumpTextureUse();
 #endif
 protected:
-  /*!
-   \brief Return the coordinates of the top left of the group, in the group's parent coordinates
-   \return The top left coordinates of the group
-   */
-  virtual CPoint GetPosition() const { return CPoint(m_posX, m_posY); };
-  
-  /*!
-   \brief Check whether a given control is valid
-   Runs through controls and returns whether this control is valid.  Only functional
-   for controls with non-zero id.
-   \param control to check
-   \return true if the control is valid, false otherwise.
-   */
-  bool IsValidControl(const CGUIControl *control) const;
-
   // sub controls
   std::vector<CGUIControl *> m_children;
   typedef std::vector<CGUIControl *>::iterator iControls;
   typedef std::vector<CGUIControl *>::const_iterator ciControls;
-  typedef std::vector<CGUIControl *>::reverse_iterator rControls;
   typedef std::vector<CGUIControl *>::const_reverse_iterator crControls;
 
   // fast lookup by id
@@ -123,6 +107,6 @@ protected:
   bool m_renderFocusedLast;
 
   // render time
-  unsigned int m_renderTime;
+  DWORD m_renderTime;
 };
 

@@ -19,11 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeAlbum.h"
 #include "QueryParams.h"
 #include "MusicDatabase.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeAlbum::CDirectoryNodeAlbum(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_ALBUM, strName, pParent)

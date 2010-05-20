@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "PartyModeManager.h"
 #include "PlayListPlayer.h"
 #include "MusicDatabase.h"
@@ -26,13 +27,9 @@
 #include "GUIWindowMusicPlaylist.h"
 #include "SmartPlaylist.h"
 #include "GUIDialogProgress.h"
-#include "GUIUserMessages.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogOK.h"
 #include "PlayList.h"
-#include "Settings.h"
-#include "utils/TimeUtils.h"
-#include "utils/log.h"
 
 using namespace std;
 using namespace PLAYLIST;
@@ -100,7 +97,7 @@ bool CPartyModeManager::Enable(PartyModeContext context /*= PARTYMODECONTEXT_MUS
   pDialog->StartModal();
 
   ClearState();
-  unsigned int time = CTimeUtils::GetTimeMS();
+  DWORD time = timeGetTime();
   vector< pair<int,int> > songIDs;
   if (m_type.Equals("songs") || m_type.Equals("mixed"))
   {
@@ -176,8 +173,7 @@ bool CPartyModeManager::Enable(PartyModeContext context /*= PARTYMODECONTEXT_MUS
     pDialog->Close();
     return false;
   }
-  CLog::Log(LOGDEBUG, "%s time for song fetch: %u",
-            __FUNCTION__, CTimeUtils::GetTimeMS() - time);
+  CLog::Log(LOGDEBUG, "%s time for song fetch: %lu", __FUNCTION__, timeGetTime() - time);
 
   // start playing
   g_playlistPlayer.SetCurrentPlaylist(iPlaylist);
@@ -487,7 +483,7 @@ void CPartyModeManager::Play(int iPos)
   Process();
 }
 
-void CPartyModeManager::OnError(int iError, const CStdString&  strLogMessage)
+void CPartyModeManager::OnError(int iError, CStdString& strLogMessage)
 {
   // open error dialog
   CGUIDialogOK::ShowAndGetInput(257, 16030, iError, 0);

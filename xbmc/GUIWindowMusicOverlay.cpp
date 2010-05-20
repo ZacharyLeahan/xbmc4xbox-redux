@@ -19,10 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowMusicOverlay.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIWindowManager.h"
-#include "MouseStat.h"
 
 #define CONTROL_LOGO_PIC    1
 
@@ -53,28 +53,37 @@ bool CGUIWindowMusicOverlay::OnMessage(CGUIMessage& message)
   return CGUIDialog::OnMessage(message);
 }
 
-EVENT_RESULT CGUIWindowMusicOverlay::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIWindowMusicOverlay::OnMouse(const CPoint &point)
 {
   CGUIControl *pControl = (CGUIControl *)GetControl(CONTROL_LOGO_PIC);
   if (pControl && pControl->HitTest(point))
   {
     // send highlight message
     g_Mouse.SetState(MOUSE_STATE_FOCUS);
-    if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
+    if (g_Mouse.bClick[MOUSE_LEFT_BUTTON])
     { // send mouse message
       CGUIMessage message(GUI_MSG_FULLSCREEN, CONTROL_LOGO_PIC, GetID());
       g_windowManager.SendMessage(message);
+      // reset the mouse button
+      g_Mouse.bClick[MOUSE_LEFT_BUTTON] = false;
     }
-    if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
+    if (g_Mouse.bClick[MOUSE_RIGHT_BUTTON])
     { // toggle the playlist window
       if (g_windowManager.GetActiveWindow() == WINDOW_MUSIC_PLAYLIST)
         g_windowManager.PreviousWindow();
       else
         g_windowManager.ActivateWindow(WINDOW_MUSIC_PLAYLIST);
+      // reset it so that we don't call other actions
+      g_Mouse.bClick[MOUSE_RIGHT_BUTTON] = false;
     }
-    return EVENT_RESULT_HANDLED;
+    return true;
   }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+void CGUIWindowMusicOverlay::Render()
+{
+  CGUIDialog::Render();
 }
 
 void CGUIWindowMusicOverlay::SetDefaults()

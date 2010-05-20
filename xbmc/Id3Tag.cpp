@@ -19,16 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "Id3Tag.h"
 #include "Util.h"
-#include "StringUtils.h"
 #include "Picture.h"
 #include "AdvancedSettings.h"
-#include "LocalizeStrings.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
-
-#include <set>
 
 using namespace std;
 using namespace MUSIC_INFO;
@@ -75,7 +70,8 @@ id3_ucs4_t* CID3Tag::StringCharsetToUcs4(const CStdString& str) const
 
 bool CID3Tag::Read(const CStdString& strFile)
 {
-  m_dll.Load();
+  if (!m_dll.IsLoaded())
+    m_dll.Load();
 
   CTag::Read(strFile);
 
@@ -182,7 +178,8 @@ bool CID3Tag::Parse()
     const BYTE* pPic = GetPictureData(pictype, &nBufSize );
     if (pPic != NULL && nBufSize > 0)
     {
-      if (CPicture::CreateThumbnailFromMemory(pPic, nBufSize, strExtension, strCoverArt))
+      CPicture pic;
+      if (pic.CreateThumbnailFromMemory(pPic, nBufSize, strExtension, strCoverArt))
       {
         CUtil::ThumbCacheAdd(strCoverArt, true);
       }
@@ -199,7 +196,8 @@ bool CID3Tag::Parse()
 
 bool CID3Tag::Write(const CStdString& strFile)
 {
-  m_dll.Load();
+  if (!m_dll.IsLoaded())
+    m_dll.Load();
 
   CTag::Read(strFile);
 
@@ -325,7 +323,7 @@ CStdString CID3Tag::GetLyrics() const
   union id3_field *field;
   frame = m_dll.id3_tag_findframe (m_tag, "USLT", 0);
   if (!frame) return "";
-
+  
   /* Find the encoding used, stored in frame 0 */
   field = m_dll.id3_frame_field (frame, 0);
 
@@ -336,7 +334,7 @@ CStdString CID3Tag::GetLyrics() const
   /* The last field contains the data */
   field = m_dll.id3_frame_field (frame, frame->nfields-1);
   if (!field) return "";
-
+   
   if(field->type != ID3_FIELD_TYPE_STRINGFULL) return "";
 
   ucs4 = m_dll.id3_field_getfullstring (field);
@@ -475,7 +473,8 @@ void CID3Tag::SetCompilation(bool compilation)
 
 CStdString CID3Tag::ParseMP3Genre(const CStdString& str) const
 {
-  m_dll.Load();
+  if (!m_dll.IsLoaded())
+    m_dll.Load();
 
   CStdString strTemp = str;
   set<CStdString> setGenres;
@@ -483,20 +482,23 @@ CStdString CID3Tag::ParseMP3Genre(const CStdString& str) const
   while (!strTemp.IsEmpty())
   {
     // remove any leading spaces
-    strTemp.TrimLeft();
+    int i = strTemp.find_first_not_of(" ");
+    if (i > 0) strTemp.erase(0, i);
+
+    // pull off the first character
+    char p = strTemp[0];
 
     // start off looking for (something)
-    if (strTemp[0] == '(')
+    if (p == '(')
     {
       strTemp.erase(0, 1);
-      if (strTemp.empty())
-        break;
 
       // now look for ((something))
-      if (strTemp[0] == '(')
+      p = strTemp[0];
+      if (p == '(')
       {
         // remove ((something))
-        int i = strTemp.find_first_of(')');
+        i = strTemp.find_first_of("))");
         strTemp.erase(0, i + 2);
       }
     }
@@ -507,20 +509,20 @@ CStdString CID3Tag::ParseMP3Genre(const CStdString& str) const
     else
     {
       CStdString t;
-      int i = strTemp.find_first_of("),;");
-      if (i != std::string::npos)
+      while ((!strTemp.IsEmpty()) && (p != ')') && (p != ',') && (p != ';'))
       {
-        t = strTemp.Left(i);
-        strTemp.erase(0, i + 1);
-      } else {
-        t = strTemp;
-        strTemp.clear();
+        strTemp.erase(0, 1);
+        t.push_back(p);
+        p = strTemp[0];
       }
-      
+      // loop exits when terminator is found
+      // be sure to remove the terminator
+      strTemp.erase(0, 1);
+
       // remove any leading or trailing white space
       // from temp string
       t.Trim();
-      if (!t.length()) continue;
+      if (!t.size()) continue;
 
       // if the temp string is natural number try to convert it to a genre string
       if (StringUtils::IsNaturalNumber(t))

@@ -38,37 +38,22 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <inttypes.h>
 
 #include "ccutil.h"
 
 #ifdef _XBOX
 #include <xtl.h>
-#elif defined(_LINUX)
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <inttypes.h>
-#include <netdb.h>
 #else
 #include <windows.h>
-#include <io.h>
-#include <time.h>
-#define snprintf _snprintf
 #endif /* _XBOX */
 
-//extern int errno;
+extern int errno;
 
 #ifndef PATH_MAX
 #define PATH_MAX 1024
 #endif /* ! PATH_MAX */
 
-#ifdef _LINUX
-#define CC_UINT_64_TYPE_NAME      uint64_t
-#else
-#define CC_UINT_64_TYPE_NAME	  UINT64
-#endif
+#define CC_UINT_64_TYPE_NAME      UINT64
 #define CC_UINT_64_PRINTF_FORMAT  "%lu"
 
 #endif /* CCINCLUDES_H_INCLUDED */

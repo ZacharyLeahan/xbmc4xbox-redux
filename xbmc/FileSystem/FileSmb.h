@@ -40,15 +40,12 @@
 
 #include "IFile.h"
 #include "URL.h"
-#include "utils/CriticalSection.h"
 
 #define NT_STATUS_CONNECTION_REFUSED long(0xC0000000 | 0x0236)
 #define NT_STATUS_INVALID_HANDLE long(0xC0000000 | 0x0008)
 #define NT_STATUS_ACCESS_DENIED long(0xC0000000 | 0x0022)
 #define NT_STATUS_OBJECT_NAME_NOT_FOUND long(0xC0000000 | 0x0034)
-#ifdef _LINUX
 #define NT_STATUS_INVALID_COMPUTER_NAME long(0xC0000000 | 0x0122)
-#endif
 
 struct _SMBCCTX;
 typedef _SMBCCTX SMBCCTX;
@@ -62,12 +59,7 @@ public:
   void Deinit();
   void Purge();
   void PurgeEx(const CURL& url);
-#ifdef _LINUX
-  void CheckIfIdle();
-  void SetActivityTime();
-  void AddActiveConnection();
-  void AddIdleConnection();
-#endif
+  
   CStdString URLEncode(const CStdString &value);
   CStdString URLEncode(const CURL &url);
 
@@ -76,10 +68,6 @@ private:
   SMBCCTX *m_context;
   CStdString m_strLastHost;
   CStdString m_strLastShare;
-#ifdef _LINUX
-  int m_OpenConnections;
-  int m_LastActive;
-#endif
 };
 
 extern CSMB smb;
@@ -93,15 +81,15 @@ public:
   int OpenFile(const CURL &url, CStdString& strAuth);
   virtual ~CFileSMB();
   virtual void Close();
-  virtual int64_t Seek(int64_t iFilePosition, int iWhence = SEEK_SET);
-  virtual unsigned int Read(void* lpBuf, int64_t uiBufSize);
+  virtual __int64 Seek(__int64 iFilePosition, int iWhence = SEEK_SET);
+  virtual unsigned int Read(void* lpBuf, __int64 uiBufSize);
   virtual bool Open(const CURL& url);
   virtual bool Exists(const CURL& url);
   virtual int Stat(const CURL& url, struct __stat64* buffer);
   virtual int Stat(struct __stat64* buffer);
-  virtual int64_t GetLength();
-  virtual int64_t GetPosition();
-  virtual int Write(const void* lpBuf, int64_t uiBufSize);
+  virtual __int64 GetLength();
+  virtual __int64 GetPosition();
+  virtual int Write(const void* lpBuf, __int64 uiBufSize);
 
   virtual bool OpenForWrite(const CURL& url, bool bOverWrite = false);
   virtual bool Delete(const CURL& url);
@@ -110,8 +98,7 @@ public:
 protected:
   CURL m_url;
   bool IsValidFile(const CStdString& strFileName);
-  CStdString GetAuthenticatedPath(const CURL &url);
-  int64_t m_fileSize;
+  __int64 m_fileSize;
   int m_fd;
 };
 }

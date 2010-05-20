@@ -19,6 +19,8 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "LastFMDirectory.h"
 #include "DirectoryCache.h"
 #include "Util.h"
@@ -31,12 +33,9 @@
 #include "GUISettings.h"
 #include "FileItem.h"
 #include "FileCurl.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace MUSIC_INFO;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 #define AUDIOSCROBBLER_BASE_URL      "http://ws.audioscrobbler.com/1.0/"
 
@@ -133,13 +132,14 @@ void CLastFMDirectory::AddEntry(int iString, CStdString strPath, CStdString strI
     pItem->SetCanQueue(false);
     pItem->SetExtraInfo("lastfmitem");
   }
-
+  
   items.Add(pItem);
 }
 
 void CLastFMDirectory::AddListEntry(const char *name, const char *artist, const char *count, const char *date, const char *icon, CStdString strPath, CFileItemList &items)
 {
   CStdString strName;
+  CStdString strCount;
   CFileItemPtr pItem(new CFileItem);
   CMusicInfoTag* musicinfotag = pItem->GetMusicInfoTag();
   musicinfotag->SetTitle(name);
@@ -176,7 +176,7 @@ void CLastFMDirectory::AddListEntry(const char *name, const char *artist, const 
 
     ft.dwLowDateTime = (DWORD)(ll & 0xFFFFFFFF);
     ft.dwHighDateTime = (DWORD)(ll >> 32);
-
+    
     pItem->m_dateTime=ft;
   }
 
@@ -392,7 +392,7 @@ bool CLastFMDirectory::ParseTrackList(CStdString url, CFileItemList &items)
     {
       if (artist)
         AddListEntry((name) ? name->FirstChild()->Value() : NULL,
-            (artist) ? artist->FirstChild()->Value() : NULL,
+            (artist) ? artist->FirstChild()->Value() : NULL, 
             (count) ? count->FirstChild()->Value() : ((date) ? date->FirstChild()->Value() : NULL),
             (date) ? date->Attribute("uts") : NULL,
             NULL, "lastfm://xbmc/artist/" + (CStdString)artist->FirstChild()->Value() + "/", items);
@@ -625,7 +625,7 @@ DIR_CACHE_TYPE CLastFMDirectory::GetCacheType(const CStdString& strPath) const
 {
   if (strPath == "lastfm://")
     return DIR_CACHE_ONCE;
-  return DIR_CACHE_ALWAYS;
+  return DIR_CACHE_ALWAYS; 
 }
 
 void CLastFMDirectory::Run()

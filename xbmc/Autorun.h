@@ -29,10 +29,6 @@
 //
 //
 
-#include "system.h" // for HAS_DVD_DRIVE
-
-#ifdef HAS_DVD_DRIVE
-
 #include "FileSystem/FactoryDirectory.h"
 
 namespace MEDIA_DETECT
@@ -47,13 +43,13 @@ public:
   void Enable();
   void Disable();
   void HandleAutorun();
-  static void ExecuteAutorun(bool bypassSettings = false, bool ignoreplaying=false);
 protected:
+  static void ExecuteXBE(const CStdString &xbeFile);
+  static void ExecuteAutorun(bool bypassSettings = false, bool ignoreplaying=false);
+  static void RunXboxCd(bool bypassSettings = false);
   static void RunCdda();
-  static void RunMedia(bool bypassSettings = false);
-  static bool RunDisc(XFILE::IDirectory* pDir, const CStdString& strDrive, int& nAddedToPlaylist, bool bRoot, bool bypassSettings = false);
+  static void RunISOMedia(bool bypassSettings = false);
+  static bool RunDisc(DIRECTORY::IDirectory* pDir, const CStdString& strDrive, int& nAddedToPlaylist, bool bRoot, bool bypassSettings = false);
   bool m_bEnable;
 };
 }
-
-#endif

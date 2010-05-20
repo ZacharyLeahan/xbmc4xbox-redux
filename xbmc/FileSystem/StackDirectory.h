@@ -24,7 +24,7 @@
 #include "IDirectory.h"
 #include "utils/RegExp.h"
 
-namespace XFILE
+namespace DIRECTORY 
 {
   class CStackDirectory : public IDirectory
   {

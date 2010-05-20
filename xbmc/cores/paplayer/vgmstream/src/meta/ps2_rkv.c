@@ -6,7 +6,8 @@ VGMSTREAM * init_vgmstream_ps2_rkv(STREAMFILE *streamFile) {
     VGMSTREAM * vgmstream = NULL;
     char filename[260];
     off_t start_offset;
-    int loop_flag;
+
+    int loop_flag = (read_32bitLE(0x10,streamFile)!=0);
 	int channel_count;
 
     /* check extension, case insensitive */
@@ -17,7 +18,7 @@ VGMSTREAM * init_vgmstream_ps2_rkv(STREAMFILE *streamFile) {
     if (read_32bitBE(0x00,streamFile) != 0x00000000) /* "\0000" */
         goto fail;
 
-	loop_flag = (read_32bitLE(0x10,streamFile)!=0);
+
     channel_count = 2;
     
 	/* build the VGMSTREAM */

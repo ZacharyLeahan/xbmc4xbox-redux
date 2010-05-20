@@ -19,10 +19,9 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowSettings.h"
 #include "GUIWindowManager.h"
-#include "Key.h"
 #ifdef HAS_CREDITS
 #include "Credits.h"
 #endif
@@ -40,7 +39,7 @@ CGUIWindowSettings::~CGUIWindowSettings(void)
 
 bool CGUIWindowSettings::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU || action.GetID() == ACTION_PARENT_DIR)
+  if (action.id == ACTION_PREVIOUS_MENU)
   {
     g_windowManager.PreviousWindow();
     return true;

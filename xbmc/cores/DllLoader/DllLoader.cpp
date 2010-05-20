@@ -18,16 +18,16 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DllLoader.h"
 #include "DllLoaderContainer.h"
 #include "FileSystem/SpecialProtocol.h"
 #include "dll_tracker.h"
 #include "dll_util.h"
 #include <limits>
-#include "utils/log.h"
 
-#ifdef _WIN32
+#ifdef _WIN32PC
 extern "C" FILE *fopen_utf8(const char *_Filename, const char *_Mode);
 #else
 #define fopen_utf8 fopen
@@ -58,13 +58,12 @@ typedef struct _UNICODE_STRING {
 #define DLL_THREAD_DETACH    3
 #define DLL_PROCESS_VERIFIER 4
 
-#ifdef _XBOX
 // uncomment this to enable symbol loading for dlls
 //#define ENABLE_SYMBOL_LOADING 1
 
 // uncomment this to enable symbol unloading for dlls
-// This is not working properly. If a dll is loaded
-// multiple times, vs.net will not link your solution
+// This is not working properly. If a dll is loaded 
+// multiple times, vs.net will not link your solution 
 // again until you restart vs.net.
 //#define ENABLE_SYMBOL_UNLOADING 1
 
@@ -113,9 +112,9 @@ int dmiOffsets[][2] = {
 
 // To get the checksum of xbdm.dll from an other xdk version then the ones above,
 // use dumpbin /HEADERS on it and look at the OPTIONAL HEADER VALUES for the checksum
-// To get the offset use dia2dump (installed with vs.net) and dump the xbdm.pdb
-// of your xdk version to a textfile. Open the textfile and search for
-// FFinishImageLoad until you get a result with an address in front of it,
+// To get the offset use dia2dump (installed with vs.net) and dump the xbdm.pdb 
+// of your xdk version to a textfile. Open the textfile and search for 
+// FFinishImageLoad until you get a result with an address in front of it, 
 // this is the offset you need.
 
 // Helper function to get the offset by using the checksum of the dll
@@ -142,8 +141,8 @@ int GetDmiOffset(int dllchecksum)
   return 0;
 }
 
-typedef void (WINAPI *fnFFinishImageLoad)(LPLDR_DATA_TABLE_ENTRY pldteT,
-                                          const char * szName,
+typedef void (WINAPI *fnFFinishImageLoad)(LPLDR_DATA_TABLE_ENTRY pldteT, 
+                                          const char * szName, 
                                           LPLDR_DATA_TABLE_ENTRY* ppldteout);
 
 
@@ -161,7 +160,7 @@ LPVOID GetXbdmBaseAddress()
     if (stricmp(modLoad.Name, "xbdm.dll")==0)
     {
       // ... and get its base address
-      // where the dll is loaded into
+      // where the dll is loaded into 
       // memory.
       pBaseAddress=modLoad.BaseAddress;
       break;
@@ -173,84 +172,52 @@ LPVOID GetXbdmBaseAddress()
   return pBaseAddress;
 }
 #endif
-#endif
-
-#ifndef APIENTRY
-#define APIENTRY __stdcall
-#endif
 
 //  Entry point of a dll (DllMain)
 typedef BOOL (APIENTRY *EntryFunc)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 
+// is it really needed?
+void* fs_seg = NULL;
 
-#ifdef _LINUX
-/*
- * This is a dirty hack.
- * The win32 DLLs contain an alloca routine, that first probes the soon
- * to be allocated new memory *below* the current stack pointer in 4KByte
- * increments.  After the mem probing below the current %esp,  the stack
- * pointer is finally decremented to make room for the "alloca"ed memory.
- * Maybe the probing code is intended to extend the stack on a windows box.
- * Anyway, the linux kernel does *not* extend the stack by simply accessing
- * memory below %esp;  it segfaults.
- * The extend_stack_for_dll_alloca() routine just preallocates a big chunk
- * of memory on the stack, for use by the DLLs alloca routine.
- * Added the noinline attribute as e.g. gcc 3.2.2 inlines this function
- * in a way that breaks it.
- */
-static void __attribute__((noinline)) extend_stack_for_dll_alloca(void)
-{
-    volatile int* mem =(volatile int*)alloca(0x20000);
-    *mem=0x1234;
-}
-#endif
-
-
-DllLoader::DllLoader(const char *sDll, bool bTrack, bool bSystemDll, bool bLoadSymbols, Export* exps) : LibraryLoader(sDll)
+DllLoader::DllLoader(const char *sDll, bool bTrack, bool bSystemDll, bool bLoadSymbols, Export* exports)
+  : LibraryLoader(sDll)
 {
   ImportDirTable = 0;
+  
   m_pExportHead = NULL;
-  m_pStaticExports = exps;
+  m_pStaticExports = exports;
   m_bTrack = bTrack;
   m_bSystemDll = bSystemDll;
   m_pDlls = NULL;
-
-
-  if(!bSystemDll)
+  
+  // Initialize FS segment, important for quicktime dll's
+#ifdef _XBOX
+  if (fs_seg == NULL)
   {
-    // Initialize FS segment, important for quicktime dll's
-#if defined(_XBOX)
-    // is it really needed?
-    static void* fs_seg = NULL;
-    if (fs_seg == NULL)
-    {
-      CLog::Log(LOGDEBUG, "Initializing FS_SEG..");
-      fs_seg = malloc(0x1000);
-      RtlZeroMemory(fs_seg, 0x1000);
-      __asm {
-        mov eax, fs_seg;
-        mov fs: [18h], eax;
-        xor eax, eax
-      }
-      CLog::Log(LOGDEBUG, "FS segment @ 0x%x", fs_seg);
+    CLog::Log(LOGDEBUG, "Initializing FS_SEG..");
+    fs_seg = malloc(0x1000);
+    RtlZeroMemory(fs_seg, 0x1000);
+    __asm {
+      mov eax, fs_seg;
+      mov fs: [18h], eax;
+      xor eax, eax
     }
-#elif defined(USE_LDT_KEEPER)
-    m_ldt_fs = Setup_LDT_Keeper();
-#endif
+    CLog::Log(LOGDEBUG, "FS segment @ 0x%x", fs_seg);
   }
+#endif
 
   DllLoaderContainer::RegisterDll(this);
   if (m_bTrack) tracker_dll_add(this);
   m_bLoadSymbols=bLoadSymbols;
 
   m_bUnloadSymbols=false;
-
+  
   /* system dll's are never loaded in any way, so let's just use the pointer */
   /* to this object as their base address */
   if (m_bSystemDll)
     hModule = (HMODULE)this;
 
-  if (stricmp(sDll, "special://xbmcbin/system/python/python24.dll")==0 ||
+  if (stricmp(sDll, "special://xbmc/system/python/python24.dll")==0 ||
       strstr(sDll, ".pyd") != NULL)
   {
     m_bLoadSymbols=true;
@@ -275,20 +242,15 @@ DllLoader::~DllLoader()
     if (entry->pDll) DllLoaderContainer::ReleaseModule(lib);
     delete entry;
   }
-
+  
   // can't unload a system dll, as this might be happing during xbmc destruction
   if(!m_bSystemDll)
-  {
     DllLoaderContainer::UnRegisterDll(this);
 
-#ifdef USE_LDT_KEEPER
-    Restore_LDT_Keeper(m_ldt_fs);
-#endif
-  }
   if (m_bTrack) tracker_dll_free(this);
 
   ImportDirTable = 0;
-
+  
   // hModule points to DllLoader in this case
   if (m_bSystemDll)
     hModule = NULL;
@@ -306,8 +268,7 @@ int DllLoader::Parse()
     if (CoffLoader::ParseCoff(fp))
     {
       if(WindowsHeader)
-        tracker_dll_set_addr(this, (uintptr_t)hModule,
-          (uintptr_t)hModule + WindowsHeader->SizeOfImage - 1);
+        tracker_dll_set_addr(this, (uintptr_t)hModule, (uintptr_t)hModule + WindowsHeader->SizeOfImage - 1);
       else
       {
         uintptr_t iMinAddr = std::numeric_limits<uintptr_t>::max();
@@ -315,11 +276,8 @@ int DllLoader::Parse()
         // dll is loaded now, this means we also know the base address of it and its size
         for (int i = 0; i < NumOfSections; ++i)
         {
-          iMinAddr = std::min<uintptr_t>(iMinAddr,
-                       (uintptr_t)SectionHeader[i].VirtualAddress);
-          iMaxAddr = std::max<uintptr_t>(iMaxAddr,
-                       (uintptr_t)(SectionHeader[i].VirtualAddress +
-                                   SectionHeader[i].VirtualSize));
+          iMinAddr = std::min(iMinAddr, (uintptr_t)SectionHeader[i].VirtualAddress);
+          iMaxAddr = std::max(iMaxAddr, (uintptr_t)(SectionHeader[i].VirtualAddress+SectionHeader[i].VirtualSize));
         }
         if(iMaxAddr > iMinAddr)
         {
@@ -375,13 +333,13 @@ void DllLoader::PrintImportTable(ImportDirTable_t *ImportDirTable)
     HavePrinted = 1;
 
     Name = (char*)RVA2Data(Imp->Name_RVA);
-
+    
     CLog::Log(LOGDEBUG, "    %s:\n", Name);
     CLog::Log(LOGDEBUG, "        ImportAddressTable:     %04lX\n", Imp->ImportAddressTable_RVA);
     CLog::Log(LOGDEBUG, "        ImportLookupTable:      %04lX\n", Imp->ImportLookupTable_RVA);
     CLog::Log(LOGDEBUG, "        TimeStamp:              %01lX\n", Imp->TimeStamp);
     CLog::Log(LOGDEBUG, "        Forwarder Chain:        %01lX\n", Imp->ForwarderChain);
-
+    
     PrintImportLookupTable(Imp->ImportLookupTable_RVA);
     CLog::Log(LOGDEBUG, "\n");
     Imp++;
@@ -431,7 +389,7 @@ int DllLoader::ResolveImports(void)
   if ( NumOfDirectories >= 2 && Directory[IMPORT_TABLE].Size > 0 )
   {
     ImportDirTable = (ImportDirTable_t*)RVA2Data(Directory[IMPORT_TABLE].RVA);
-
+                     
 #ifdef DUMPING_DATA
     PrintImportTable(ImportDirTable);
 #endif
@@ -447,7 +405,7 @@ int DllLoader::ResolveImports(void)
       char *Name = (char*)RVA2Data(Imp->Name_RVA);
 
       char* FileName=ResolveReferencedDll(Name);
-      //  If possible use the dll name WITH path to resolve exports. We could have loaded
+      //  If possible use the dll name WITH path to resolve exports. We could have loaded 
       //  a dll with the same name as another dll but from a different directory
       if (FileName) Name=FileName;
 
@@ -463,7 +421,7 @@ int DllLoader::ResolveImports(void)
           {
             bResult = 0;
             char szBuf[128];
-            CLog::Log(LOGDEBUG,"Unable to resolve ordinal %s %lu\n", Name, *Table&0x7ffffff);
+//            CLog::Log(LOGDEBUG,"Unable to resolve ordinal %s %lu\n", Name, *Table&0x7ffffff);
             sprintf(szBuf, "%lu", *Table&0x7ffffff);
             *Addr = create_dummy_function(Name, szBuf);
             tracker_dll_data_track(this, *Addr);
@@ -481,14 +439,10 @@ int DllLoader::ResolveImports(void)
           void *Fixup;
           if ( !ResolveName(Name, ImpName, &Fixup) )
           {
-            *Addr=get_win_function_address(Name, ImpName);
-            if(Addr == NULL)
-            {
-              CLog::Log(LOGDEBUG,"Unable to resolve %s %s\n", Name, ImpName);
-              *Addr = create_dummy_function(Name, ImpName);
-              tracker_dll_data_track(this, *Addr);
-              bResult = 0;
-            }
+//            CLog::Log(LOGDEBUG,"Unable to resolve %s %s", Name, ImpName);
+            *Addr = create_dummy_function(Name, ImpName);
+            tracker_dll_data_track(this, *Addr);
+            bResult = 0;
           }
           else
           {
@@ -564,16 +518,16 @@ int DllLoader::ResolveExport(const char *sName, void **pAddr)
 
     return 1;
   }
-
+  
   char* sDllName = strrchr(GetFileName(), '\\');
   if (sDllName) sDllName += 1;
   else sDllName = GetFileName();
-
+  
   CLog::Log(LOGWARNING, "Unable to resolve: %s %s", sDllName, sName);
   return 0;
 }
 
-int DllLoader::ResolveOrdinal(unsigned long ordinal, void **pAddr)
+int DllLoader::ResolveExport(unsigned long ordinal, void **pAddr)
 {
   Export* pExport=GetExportByOrdinal(ordinal);
 
@@ -586,11 +540,11 @@ int DllLoader::ResolveOrdinal(unsigned long ordinal, void **pAddr)
 
     return 1;
   }
-
+  
   char* sDllName = strrchr(GetFileName(), '\\');
   if (sDllName) sDllName += 1;
   else sDllName = GetFileName();
-
+  
   CLog::Log(LOGWARNING, "Unable to resolve: %s %lu", sDllName, ordinal);
   return 0;
 }
@@ -598,7 +552,7 @@ int DllLoader::ResolveOrdinal(unsigned long ordinal, void **pAddr)
 Export* DllLoader::GetExportByOrdinal(unsigned long ordinal)
 {
   ExportEntry* entry = m_pExportHead;
-
+  
   while (entry)
   {
     if (ordinal == entry->exp.ordinal)
@@ -625,7 +579,7 @@ Export* DllLoader::GetExportByOrdinal(unsigned long ordinal)
 Export* DllLoader::GetExportByFunctionName(const char* sFunctionName)
 {
   ExportEntry* entry = m_pExportHead;
-
+  
   while (entry)
   {
     if (entry->exp.name && strcmp(sFunctionName, entry->exp.name) == 0)
@@ -648,7 +602,7 @@ Export* DllLoader::GetExportByFunctionName(const char* sFunctionName)
 
   return NULL;
 }
-
+  
 int DllLoader::ResolveOrdinal(char *sName, unsigned long ordinal, void **fixup)
 {
   DllLoader* pDll = (DllLoader*) DllLoaderContainer::GetModule(sName);
@@ -697,7 +651,7 @@ void DllLoader::AddExport(unsigned long ordinal, void* function, void* track_fun
   entry->exp.ordinal = ordinal;
   entry->exp.track_function = track_function;
   entry->exp.name = NULL;
-
+  
   entry->next = m_pExportHead;
   m_pExportHead = entry;
 }
@@ -712,7 +666,7 @@ void DllLoader::AddExport(char* sFunctionName, unsigned long ordinal, void* func
   entry->exp.track_function = track_function;
   entry->exp.name = ((char*)(entry)) + len;
   strcpy((char*)entry->exp.name, sFunctionName);
-
+  
   entry->next = m_pExportHead;
   m_pExportHead = entry;
 }
@@ -727,7 +681,7 @@ void DllLoader::AddExport(char* sFunctionName, void* function, void* track_funct
   entry->exp.track_function = track_function;
   entry->exp.name = ((char*)(entry)) + len;
   strcpy((char*)entry->exp.name, sFunctionName);
-
+  
   entry->next = m_pExportHead;
   m_pExportHead = entry;
 }
@@ -739,9 +693,9 @@ bool DllLoader::Load()
     CLog::Log(LOGERROR, "Unable to open dll %s", GetFileName());
     return false;
   }
-
+  
   ResolveImports();
-  LoadSymbols();
+  LoadSymbols();  
 
   // only execute DllMain if no EntryPoint is found
   if (!EntryAddress)
@@ -751,25 +705,20 @@ bool DllLoader::Load()
   if (strstr(GetName(), "QuickTime.qts"))
   {
     int i;
-    uintptr_t dispatch_addr;
-    uintptr_t imagebase_addr;
-    uintptr_t dispatch_rva;
+    DWORD dispatch_addr;
+    DWORD imagebase_addr;
+    DWORD dispatch_rva;
 
     ResolveExport("theQuickTimeDispatcher", (void **)&dispatch_addr);
-    imagebase_addr = (uintptr_t)hModule;
-    CLog::Log(LOGDEBUG,
-              "Virtual Address of theQuickTimeDispatcher = %p",
-              (void *)dispatch_addr);
-    CLog::Log(LOGDEBUG, "ImageBase of %s = %p",
-              GetName(), (void *)imagebase_addr);
+    imagebase_addr = (DWORD)hModule;
+    CLog::Log(LOGDEBUG, "Virtual Address of theQuickTimeDispatcher = 0x%lx", dispatch_addr);
+    CLog::Log(LOGDEBUG, "ImageBase of %s = 0x%lx", GetName(), imagebase_addr);
 
     dispatch_rva = dispatch_addr - imagebase_addr;
 
-    CLog::Log(LOGDEBUG,
-              "Relative Virtual Address of theQuickTimeDispatcher = %p",
-              (void *)dispatch_rva);
+    CLog::Log(LOGDEBUG, "Relative Virtual Address of theQuickTimeDispatcher = %lu", dispatch_rva);
 
-    uintptr_t base = imagebase_addr;
+    DWORD base = imagebase_addr;
     if (dispatch_rva == 0x124C30)
     {
       CLog::Log(LOGINFO, "QuickTime5 DLLs found\n");
@@ -808,16 +757,13 @@ bool DllLoader::Load()
 #ifdef LOGALL
   CLog::Log(LOGDEBUG, "Executing EntryPoint with DLL_PROCESS_ATTACH at: 0x%x - Dll: %s", pLoader->EntryAddress, sName);
 #endif
-
+  
   if(EntryAddress)
   {
     EntryFunc initdll = (EntryFunc)EntryAddress;
     /* since we are handing execution over to unknown code, safeguard here */
-    try
+    try 
     {
-#ifdef _LINUX
-	extend_stack_for_dll_alloca();
-#endif
       initdll((HINSTANCE)hModule, DLL_PROCESS_ATTACH , 0); //call "DllMain" with DLL_PROCESS_ATTACH
 
 #ifdef LOGALL
@@ -846,7 +792,7 @@ bool DllLoader::Load()
     }
 
     // init function may have fixed up the export table
-    // this is what I expect should happens on PECompact2
+    // this is what I expect should happens on PECompact2 
     // dll's if export table is compressed.
     if(!m_pExportHead)
       LoadExports();
@@ -876,9 +822,9 @@ void DllLoader::Unload()
     UnloadSymbols();
 }
 
-// This function is a hack to get symbols loaded for
-// dlls. The function FFinishImageLoad internally allocates
-// memory which is/can never be freed. And the dll can not be
+// This function is a hack to get symbols loaded for 
+// dlls. The function FFinishImageLoad internally allocates 
+// memory which is/can never be freed. And the dll can not be 
 // unloaded.
 void DllLoader::LoadSymbols()
 {
@@ -920,7 +866,7 @@ void DllLoader::LoadSymbols()
 
       try
       {
-        // Call FFinishImageLoad to register this dll to the debugger and load its symbols.
+        // Call FFinishImageLoad to register this dll to the debugger and load its symbols. 
         FFinishImageLoad(&ldte, szName, &pldteout);
       }
       catch(...)

@@ -19,26 +19,9 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-    #include <python2.6/structmember.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-    #include <python2.5/structmember.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-    #include <python2.4/structmember.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-  #include "lib/libPython/Python/Include/structmember.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
+#include "lib/libPython/Python/structmember.h"
 #include "../XBPythonDll.h"
 #include "control.h"
 #include "window.h"
@@ -54,10 +37,6 @@
 #pragma data_seg("PY_DATA")
 #pragma bss_seg("PY_BSS")
 #pragma const_seg("PY_RDATA")
-#endif
-
-#if defined(__GNUG__) && (__GNUC__>4) || (__GNUC__==4 && __GNUC_MINOR__>=2)
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
 
 #ifdef __cplusplus
@@ -142,8 +121,11 @@ namespace PYXBMC
       "");
 
   PyMODINIT_FUNC
-  InitGUITypes(void)
+  initxbmcgui(void)
   {
+    // init xbmc gui modules
+    PyObject* pXbmcGuiModule;
+
     initWindow_Type();
     initWindowDialog_Type();
     initWindowXML_Type();
@@ -157,7 +139,6 @@ namespace PYXBMC
     initControlButton_Type();
     initControlCheckMark_Type();
     initControlProgress_Type();
-    initControlSlider_Type();
     initControlList_Type();
     initControlImage_Type();
     initControlGroup_Type();
@@ -165,6 +146,9 @@ namespace PYXBMC
     initDialogProgress_Type();
     initAction_Type();
     initControlRadioButton_Type();
+
+    DialogProgress_Type.tp_new = PyType_GenericNew;
+    Dialog_Type.tp_new = PyType_GenericNew;
 
     if (PyType_Ready(&Window_Type) < 0 ||
         PyType_Ready(&WindowDialog_Type) < 0 ||
@@ -184,25 +168,9 @@ namespace PYXBMC
         PyType_Ready(&ControlGroup_Type) < 0 ||
         PyType_Ready(&Dialog_Type) < 0 ||
         PyType_Ready(&DialogProgress_Type) < 0 ||
-        PyType_Ready(&ControlSlider_Type) < 0 ||
         PyType_Ready(&ControlRadioButton_Type) < 0 ||
         PyType_Ready(&Action_Type) < 0)
       return;
-
-  }
-
-  PyMODINIT_FUNC
-  DeinitGUIModule(void)
-  {
-    // no need to Py_DECREF our objects (see InitGUIModule()) as they were created only
-    // so that they could be added to the module, which steals a reference.
-  }
-
-  PyMODINIT_FUNC
-  InitGUIModule(void)
-  {
-    // init xbmc gui modules
-    PyObject* pXbmcGuiModule;
 
     Py_INCREF(&Window_Type);
     Py_INCREF(&WindowDialog_Type);
@@ -219,7 +187,6 @@ namespace PYXBMC
     Py_INCREF(&ControlList_Type);
     Py_INCREF(&ControlImage_Type);
     Py_INCREF(&ControlProgress_Type);
-    Py_INCREF(&ControlSlider_Type);  
     Py_INCREF(&ControlGroup_Type);
     Py_INCREF(&Dialog_Type);
     Py_INCREF(&DialogProgress_Type);
@@ -245,7 +212,6 @@ namespace PYXBMC
     PyModule_AddObject(pXbmcGuiModule, (char*)"ControlList", (PyObject*)&ControlList_Type);
     PyModule_AddObject(pXbmcGuiModule, (char*)"ControlImage", (PyObject*)&  ControlImage_Type);
     PyModule_AddObject(pXbmcGuiModule, (char*)"ControlProgress", (PyObject*)& ControlProgress_Type);
-    PyModule_AddObject(pXbmcGuiModule, (char*)"ControlSlider", (PyObject*)& ControlSlider_Type);  
     PyModule_AddObject(pXbmcGuiModule, (char*)"ControlGroup", (PyObject*)& ControlGroup_Type);
     PyModule_AddObject(pXbmcGuiModule, (char*)"Dialog", (PyObject *)&Dialog_Type);
     PyModule_AddObject(pXbmcGuiModule, (char*)"DialogProgress", (PyObject *)&DialogProgress_Type);

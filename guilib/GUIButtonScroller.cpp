@@ -19,17 +19,14 @@
  *
  */
 
+#include "include.h"
 #include "GUIButtonScroller.h"
 #include "GUITextLayout.h"
 #include "LocalizeStrings.h"
 #include "GUIWindowManager.h"
 #include "utils/CharsetConverter.h"
 #include "utils/GUIInfoManager.h"
-#include "addons/Skin.h"
-#include "StringUtils.h"
-#include "GUIControlFactory.h"
-#include "tinyXML/tinyxml.h"
-#include "Key.h"
+#include "SkinInfo.h"
 
 using namespace std;
 
@@ -114,28 +111,28 @@ CGUIButtonScroller::~CGUIButtonScroller(void)
 
 bool CGUIButtonScroller::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SELECT_ITEM)
+  if (action.id == ACTION_SELECT_ITEM)
   {
     // send the appropriate message to the parent window
-    vector<CGUIActionDescriptor> actions = m_vecButtons[GetActiveButton()]->clickActions;
+    vector<CStdString> actions = m_vecButtons[GetActiveButton()]->clickActions;
     for (unsigned int i = 0; i < actions.size(); i++)
     {
       CGUIMessage message(GUI_MSG_EXECUTE, GetID(), GetParentID());
       // find our currently highlighted item
-      message.SetAction(actions[i]);
+      message.SetStringParam(actions[i]);
       g_windowManager.SendMessage(message);
     }
     return true;
   }
-  if (action.GetID() == ACTION_CONTEXT_MENU)
+  if (action.id == ACTION_CONTEXT_MENU)
   { // send a click message to our parent
-    SEND_CLICK_MESSAGE(GetID(), GetParentID(), action.GetID());
+    SEND_CLICK_MESSAGE(GetID(), GetParentID(), action.id);
     return true;
   }
   // smooth scrolling (for analog controls)
-  if (action.GetID() == ACTION_SCROLL_UP)
+  if (action.id == ACTION_SCROLL_UP)
   {
-    m_fAnalogScrollSpeed += action.GetAmount() * action.GetAmount();
+    m_fAnalogScrollSpeed += action.amount1 * action.amount1;
     bool handled = false;
     while (m_fAnalogScrollSpeed > ANALOG_SCROLL_START)
     {
@@ -147,9 +144,9 @@ bool CGUIButtonScroller::OnAction(const CAction &action)
     }
     return handled;
   }
-  if (action.GetID() == ACTION_SCROLL_DOWN)
+  if (action.id == ACTION_SCROLL_DOWN)
   {
-    m_fAnalogScrollSpeed += action.GetAmount() * action.GetAmount();
+    m_fAnalogScrollSpeed += action.amount1 * action.amount1;
     bool handled = false;
     while (m_fAnalogScrollSpeed > ANALOG_SCROLL_START)
     {
@@ -205,13 +202,13 @@ void CGUIButtonScroller::LoadButtons(TiXmlNode *node)
   if (!buttons) return;
 
   // resolve includes
-  g_SkinInfo->ResolveIncludes(buttons);
+  g_SkinInfo.ResolveIncludes(buttons);
 
   TiXmlElement *buttonNode = buttons->FirstChildElement("button");
   while (buttonNode)
   {
     // resolve includes
-    g_SkinInfo->ResolveIncludes(buttonNode);
+    g_SkinInfo.ResolveIncludes(buttonNode);
     CButton *button = new CButton;
     buttonNode->Attribute("id", &button->id);
     const TiXmlNode *childNode = buttonNode->FirstChild("label");
@@ -230,22 +227,14 @@ void CGUIButtonScroller::LoadButtons(TiXmlNode *node)
     // get info
     childNode = buttonNode->FirstChild("info");
     if (childNode && childNode->FirstChild())
-    {
       button->info = g_infoManager.TranslateString(childNode->FirstChild()->Value());
-    }
     childNode = buttonNode->FirstChild("execute");
     if (childNode && childNode->FirstChild())
-    {
-      CGUIActionDescriptor action;
-      CGUIControlFactory::GetAction((const TiXmlElement*) childNode, action);
-      button->clickActions.push_back(action);
-    }
+      button->clickActions.push_back(childNode->FirstChild()->Value());
     childNode = buttonNode->FirstChild("onclick");
     while (childNode && childNode->FirstChild())
     {
-      CGUIActionDescriptor action;
-      CGUIControlFactory::GetAction((const TiXmlElement*) childNode, action);
-      button->clickActions.push_back(action);
+      button->clickActions.push_back(childNode->FirstChild()->Value());
       childNode = childNode->NextSibling("onclick");
     }
     childNode = buttonNode->FirstChild("texturefocus");
@@ -257,6 +246,13 @@ void CGUIButtonScroller::LoadButtons(TiXmlNode *node)
     m_vecButtons.push_back(button);
     buttonNode = buttonNode->NextSiblingElement("button");
   }
+}
+
+void CGUIButtonScroller::PreAllocResources()
+{
+  CGUIControl::PreAllocResources();
+  m_imgFocus.PreAllocResources();
+  m_imgNoFocus.PreAllocResources();
 }
 
 void CGUIButtonScroller::AllocResources()
@@ -292,11 +288,11 @@ void CGUIButtonScroller::AllocResources()
   SetActiveButton(0);
 }
 
-void CGUIButtonScroller::FreeResources(bool immediately)
+void CGUIButtonScroller::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
-  m_imgFocus.FreeResources(immediately);
-  m_imgNoFocus.FreeResources(immediately);
+  CGUIControl::FreeResources();
+  m_imgFocus.FreeResources();
+  m_imgNoFocus.FreeResources();
   ClearButtons();
 }
 
@@ -305,13 +301,6 @@ void CGUIButtonScroller::DynamicResourceAlloc(bool bOnOff)
   CGUIControl::DynamicResourceAlloc(bOnOff);
   m_imgFocus.DynamicResourceAlloc(bOnOff);
   m_imgNoFocus.DynamicResourceAlloc(bOnOff);
-}
-
-void CGUIButtonScroller::SetInvalid()
-{
-  CGUIControl::SetInvalid();
-  m_imgFocus.SetInvalid();
-  m_imgNoFocus.SetInvalid();
 }
 
 void CGUIButtonScroller::Render()
@@ -886,36 +875,59 @@ bool CGUIButtonScroller::OnMouseOver(const CPoint &point)
   return CGUIControl::OnMouseOver(point);
 }
 
-EVENT_RESULT CGUIButtonScroller::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIButtonScroller::OnMouseClick(int button, const CPoint &point)
 {
+  if (button != MOUSE_LEFT_BUTTON && button != MOUSE_RIGHT_BUTTON) return false;
+  // check if we are in the clickable button zone
+  float fStartAlpha, fEndAlpha;
+  GetScrollZone(fStartAlpha, fEndAlpha);
+  if (m_bHorizontal)
+  {
+    if (point.x >= fStartAlpha && point.x <= fEndAlpha)
+    { // click the appropriate item
+      m_iCurrentSlot = (int)((point.x - m_posX) / (m_imgFocus.GetWidth() + m_buttonGap));
+      CAction action;
+      if (button == MOUSE_LEFT_BUTTON)
+        action.id = ACTION_SELECT_ITEM;
+      if (button == MOUSE_RIGHT_BUTTON)
+        action.id = ACTION_CONTEXT_MENU;
+      OnAction(action);
+      return true;
+    }
+  }
+  else
+  {
+    if (point.y >= fStartAlpha && point.y <= fEndAlpha)
+    {
+      m_iCurrentSlot = (int)((point.y - m_posY) / (m_imgFocus.GetHeight() + m_buttonGap));
+      CAction action;
+      if (button == MOUSE_LEFT_BUTTON)
+        action.id = ACTION_SELECT_ITEM;
+      if (button == MOUSE_RIGHT_BUTTON)
+        action.id = ACTION_CONTEXT_MENU;
+      OnAction(action);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool CGUIButtonScroller::OnMouseWheel(char wheel, const CPoint &point)
+{
+  // check if we are within the clickable button zone
   float fStartAlpha, fEndAlpha;
   GetScrollZone(fStartAlpha, fEndAlpha);
   if ((m_bHorizontal && point.x >= fStartAlpha && point.x <= fEndAlpha) ||
-     (!m_bHorizontal && point.y >= fStartAlpha && point.y <= fEndAlpha))
+      (!m_bHorizontal && point.y >= fStartAlpha && point.y <= fEndAlpha))
   {
-    if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-    {
-      if (m_bHorizontal)
-        m_iCurrentSlot = (int)((point.x - m_posX) / (m_imgFocus.GetWidth() + m_buttonGap));
-      else
-        m_iCurrentSlot = (int)((point.y - m_posY) / (m_imgFocus.GetHeight() + m_buttonGap));
-      OnAction(CAction(ACTION_SELECT_ITEM));
-      return EVENT_RESULT_HANDLED;
-    }
-    else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-    {
+    if (wheel > 0)
       m_bScrollDown = true;
-      m_fScrollSpeed = SCROLL_SPEED;
-      return EVENT_RESULT_HANDLED;
-    }
-    else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-    {
+    else
       m_bScrollUp = true;
-      m_fScrollSpeed = SCROLL_SPEED;
-      return EVENT_RESULT_HANDLED;
-    }
+    m_fScrollSpeed = SCROLL_SPEED;
+    return true;
   }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
 }
 
 CStdString CGUIButtonScroller::GetDescription() const

@@ -1,6 +1,6 @@
 /*!
 \file GUISliderControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUISettingsSliderCONTROL_H
@@ -38,7 +38,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUISettingsSliderControl :
       public CGUISliderControl
@@ -50,10 +50,10 @@ public:
 
   virtual void Render();
   virtual bool OnAction(const CAction &action);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   virtual float GetWidth() const { return m_buttonControl.GetWidth();};
   virtual void SetWidth(float width);
@@ -66,12 +66,9 @@ public:
   virtual float GetYPosition() const { return m_buttonControl.GetYPosition();};
   virtual CStdString GetDescription() const;
   virtual bool HitTest(const CPoint &point) const { return m_buttonControl.HitTest(point); };
-
 protected:
   virtual void UpdateColors();
-  
-private:
   CGUIButtonControl m_buttonControl;
-  CGUILabel m_label;
+  CGUITextLayout m_textLayout;
 };
 #endif

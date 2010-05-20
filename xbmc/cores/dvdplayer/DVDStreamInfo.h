@@ -21,27 +21,8 @@
 
 #pragma once
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#ifndef _LINUX
 enum StreamType;
 enum CodecID;
-#else
-#include "DVDDemuxers/DVDDemux.h"
-extern "C" {
-#if (defined USE_EXTERNAL_FFMPEG)
-  #if (defined HAVE_LIBAVCODEC_AVCODEC_H)
-    #include <libavcodec/avcodec.h>
-  #elif (defined HAVE_FFMPEG_AVCODEC_H)
-    #include <ffmpeg/avcodec.h>
-  #endif
-#else
-  #include "libavcodec/avcodec.h"
-#endif
-}
-#endif
-
 class CDemuxStream;
 
 class CDVDStreamInfo
@@ -62,8 +43,6 @@ public:
 
   CodecID codec;
   StreamType type;
-  bool software;  //force software decoding
-
 
   // VIDEO
   int fpsscale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
@@ -72,9 +51,6 @@ public:
   int width; // width of the stream reported by the demuxer
   float aspect; // display aspect as reported by demuxer
   bool vfr; // variable framerate
-  bool stills; // there may be odd still frames in video
-  int level; // encoder level of the stream reported by the decoder. used to qualify hw decoders.
-  int profile; // encoder profile of the stream reported by the decoder. used to qualify hw decoders.
 
   // AUDIO
   int channels;

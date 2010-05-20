@@ -23,7 +23,7 @@
 
 #include "MusicFileDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class COGGFileDirectory : public CMusicFileDirectory
   {

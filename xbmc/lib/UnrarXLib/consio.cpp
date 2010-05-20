@@ -1,4 +1,4 @@
-#if !defined(_XBOX) && !defined(_LINUX) && !defined(_XBMC)
+#if !defined(_XBOX) && !defined(XBMC)
 #include "rar.hpp"
 
 #ifndef GUI

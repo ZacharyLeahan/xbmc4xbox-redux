@@ -96,7 +96,7 @@ protected:
 protected:
   bool WaitForNetwork() const;
 
-  XFILE::CVirtualDirectory m_rootDir;
+  DIRECTORY::CVirtualDirectory m_rootDir;
   CGUIViewControl m_viewControl;
 
   // current path and history

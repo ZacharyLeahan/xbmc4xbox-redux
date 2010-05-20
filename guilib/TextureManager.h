@@ -21,99 +21,109 @@
 
 /*!
 \file TextureManager.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_TEXTUREMANAGER_H
 #define GUILIB_TEXTUREMANAGER_H
 
 #include <vector>
+#include <list>
 #include "TextureBundle.h"
 
 #pragma once
 
-/************************************************************************/
-/*                                                                      */
-/************************************************************************/
-class CTextureArray
+
+// currently just used as a transport from texture manager to rest of app
+class CTexture
 {
 public:
-  CTextureArray(int width, int height, int loops, bool texCoordsArePixels = false);
-  CTextureArray();
-
-  virtual ~CTextureArray();
-
-  void Reset();
-
-  void Add(CBaseTexture *texture, int delay);
-  void Set(CBaseTexture *texture, int width, int height);
+  CTexture()
+  {
+    Reset();
+  };
+  void Reset()
+  {
+    m_textures.clear();
+    m_delays.clear();
+    m_palette = NULL;
+    m_width = 0;
+    m_height = 0;
+    m_loops = 0;
+    m_texWidth = 0;
+    m_texHeight = 0;
+    m_texCoordsArePixels = false;
+    m_packed = false;
+  };
+  CTexture(int width, int height, int loops, LPDIRECT3DPALETTE8 palette = NULL, bool packed = false, bool texCoordsArePixels = false);
+  void Add(LPDIRECT3DTEXTURE8 texture, int delay);
+  void Set(LPDIRECT3DTEXTURE8 texture, int width, int height);
   void Free();
   unsigned int size() const;
 
-  std::vector<CBaseTexture* > m_textures;
+  std::vector<LPDIRECT3DTEXTURE8> m_textures;
+  LPDIRECT3DPALETTE8 m_palette;
   std::vector<int> m_delays;
   int m_width;
   int m_height;
-  int m_orientation;
   int m_loops;
   int m_texWidth;
   int m_texHeight;
   bool m_texCoordsArePixels;
+  bool m_packed;
 };
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
-/************************************************************************/
-/*                                                                      */
-/************************************************************************/
 class CTextureMap
 {
 public:
   CTextureMap();
-  CTextureMap(const CStdString& textureName, int width, int height, int loops);
   virtual ~CTextureMap();
 
-  void Add(CBaseTexture* texture, int delay);
+  CTextureMap(const CStdString& textureName, int width, int height, int loops, LPDIRECT3DPALETTE8 palette, bool packed);
+  void Add(LPDIRECT3DTEXTURE8 pTexture, int delay);
   bool Release();
 
   const CStdString& GetName() const;
-  const CTextureArray& GetTexture();
+  const CTexture &GetTexture();
   void Dump() const;
-  uint32_t GetMemoryUsage() const;
+  unsigned int GetMemoryUsage() const;
   void Flush();
   bool IsEmpty() const;
 protected:
   void FreeTexture();
 
   CStdString m_textureName;
-  CTextureArray m_texture;
+  CTexture m_texture;
   unsigned int m_referenceCount;
-  uint32_t m_memUsage;
+  unsigned int m_memUsage;
 };
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
-/************************************************************************/
-/*                                                                      */
-/************************************************************************/
 class CGUITextureManager
 {
 public:
   CGUITextureManager(void);
   virtual ~CGUITextureManager(void);
 
+  void StartPreLoad();
+  void PreLoad(const CStdString& strTextureName);
+  void EndPreLoad();
+  void FlushPreLoad();
   bool HasTexture(const CStdString &textureName, CStdString *path = NULL, int *bundle = NULL, int *size = NULL);
   bool CanLoad(const CStdString &texturePath) const; ///< Returns true if the texture manager can load this texture
   int Load(const CStdString& strTextureName, bool checkBundleOnly = false);
-  const CTextureArray& GetTexture(const CStdString& strTextureName);
+  const CTexture &GetTexture(const CStdString& strTextureName);
   void ReleaseTexture(const CStdString& strTextureName);
   void Cleanup();
   void Dump() const;
-  uint32_t GetMemoryUsage() const;
+  unsigned int GetMemoryUsage() const;
   void Flush();
   CStdString GetTexturePath(const CStdString& textureName, bool directory = false);
   void GetBundledTexturesFromPath(const CStdString& texturePath, std::vector<CStdString> &items);
@@ -122,20 +132,20 @@ public:
   void SetTexturePath(const CStdString &texturePath);    ///< Set a single path as the path to check when loading media (clear then add)
   void RemoveTexturePath(const CStdString &texturePath); ///< Remove a path from the paths to check when loading media
 
-  void FreeUnusedTextures(); ///< Free textures (called from app thread only)
 protected:
   std::vector<CTextureMap*> m_vecTextures;
-  std::vector<CTextureMap*> m_unusedTextures;
   typedef std::vector<CTextureMap*>::iterator ivecTextures;
   // we have 2 texture bundles (one for the base textures, one for the theme)
   CTextureBundle m_TexBundle[2];
+  std::list<CStdString> m_PreLoadNames[2];
+  std::list<CStdString>::iterator m_iNextPreload[2];
 
   std::vector<CStdString> m_texturePaths;
 };
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
 extern CGUITextureManager g_TextureManager;
 #endif

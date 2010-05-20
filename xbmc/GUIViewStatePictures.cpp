@@ -19,22 +19,20 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIViewStatePictures.h"
 #include "GUIBaseContainer.h"
 #include "FileItem.h"
 #include "ViewState.h"
-#include "GUISettings.h"
-#include "AdvancedSettings.h"
 #include "Settings.h"
+#include "AdvancedSettings.h"
 #include "FileSystem/Directory.h"
 #include "FileSystem/PluginDirectory.h"
 #include "Util.h"
-#include "LocalizeStrings.h"
-#include "Key.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
-CGUIViewStateWindowPictures::CGUIViewStateWindowPictures(const CFileItemList& items) : CGUIViewState(items, CONTENT_IMAGE)
+CGUIViewStateWindowPictures::CGUIViewStateWindowPictures(const CFileItemList& items) : CGUIViewState(items)
 {
   if (items.IsVirtualDirectoryRoot())
   {
@@ -53,16 +51,16 @@ CGUIViewStateWindowPictures::CGUIViewStateWindowPictures(const CFileItemList& it
     AddSortMethod(SORT_METHOD_DATE, 552, LABEL_MASKS("%L", "%J", "%L", "%J"));  // Filename, Date | Foldername, Date
     AddSortMethod(SORT_METHOD_FILE, 561, LABEL_MASKS("%L", "%I", "%L", ""));  // Filename, Size | FolderName, empty
 
-    SetSortMethod(g_settings.m_viewStatePictures.m_sortMethod);
-    SetViewAsControl(g_settings.m_viewStatePictures.m_viewMode);
-    SetSortOrder(g_settings.m_viewStatePictures.m_sortOrder);
+    SetSortMethod(g_stSettings.m_viewStatePictures.m_sortMethod);
+    SetViewAsControl(g_stSettings.m_viewStatePictures.m_viewMode);
+    SetSortOrder(g_stSettings.m_viewStatePictures.m_sortOrder);
   }
   LoadViewState(items.m_strPath, WINDOW_PICTURES);
 }
 
 void CGUIViewStateWindowPictures::SaveViewState()
 {
-  SaveViewToDb(m_items.m_strPath, WINDOW_PICTURES, &g_settings.m_viewStatePictures);
+    SaveViewToDb(m_items.m_strPath, WINDOW_PICTURES, &g_stSettings.m_viewStatePictures);
 }
 
 CStdString CGUIViewStateWindowPictures::GetLockType()
@@ -70,17 +68,31 @@ CStdString CGUIViewStateWindowPictures::GetLockType()
   return "pictures";
 }
 
+bool CGUIViewStateWindowPictures::UnrollArchives()
+{
+  return g_guiSettings.GetBool("filelists.unrollarchives");
+}
+
 CStdString CGUIViewStateWindowPictures::GetExtensions()
 {
   if (g_guiSettings.GetBool("pictures.showvideos"))
-    return g_settings.m_pictureExtensions+"|"+g_settings.m_videoExtensions;
+    return g_stSettings.m_pictureExtensions+"|"+g_stSettings.m_videoExtensions;
 
-  return g_settings.m_pictureExtensions;
+  return g_stSettings.m_pictureExtensions;
 }
 
 VECSOURCES& CGUIViewStateWindowPictures::GetSources()
 {
-  AddOrReplace(g_settings.m_pictureSources, CGUIViewState::GetSources());
-  return g_settings.m_pictureSources;
+  // plugins share
+  if (CPluginDirectory::HasPlugins("pictures") && g_advancedSettings.m_bVirtualShares)
+  {
+    CMediaSource share;
+    share.strName = g_localizeStrings.Get(1039); // Picture Plugins
+    share.strPath = "plugin://pictures/";
+    share.m_strThumbnailImage = CUtil::GetDefaultFolderThumb("DefaultPicturePlugins.png");
+    share.m_ignore = true;
+    AddOrReplace(g_settings.m_pictureSources,share);
+  }
+  return g_settings.m_pictureSources; 
 }
 

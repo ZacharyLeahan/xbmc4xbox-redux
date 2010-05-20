@@ -20,18 +20,14 @@
  */
 
 #pragma once
-#include "utils/Thread.h"
+#include "../../utils/Thread.h"
 
 #include "DVDAudio.h"
 #include "DVDClock.h"
 #include "DVDMessageQueue.h"
 #include "DVDDemuxers/DVDDemuxUtils.h"
 #include "DVDStreamInfo.h"
-#include "BitstreamStats.h"
-#include "DVDPlayerAudioResampler.h"
-
-#include <list>
-#include <queue>
+#include "../../utils/BitstreamStats.h"
 
 class CDVDPlayer;
 class CDVDAudioCodec;
@@ -54,7 +50,6 @@ typedef struct stDVDAudioFrame
   unsigned int size;
 
   int channels;
-  enum PCMChannels *channel_map;
   int bits_per_sample;
   int sample_rate;
   bool passthrough;
@@ -124,7 +119,6 @@ public:
   double GetCurrentPts()                            { return m_ptsOutput.Current(); }
 
   bool IsStalled()                                  { return m_stalled;  }
-  bool IsPassthrough() const;
 protected:
 
   virtual void OnStartup();
@@ -177,29 +171,13 @@ protected:
   bool    m_started;
   double  m_duration; // last packets duration
 
-  CDVDPlayerResampler m_resampler;
-
   bool OutputPacket(DVDAudioFrame &audioframe);
-
-  //SYNC_DISCON, SYNC_SKIPDUP, SYNC_RESAMPLE
-  int    m_synctype;
-  int    m_setsynctype;
-  int    m_prevsynctype; //so we can print to the log
-
   double m_error;    //last average error
-
   int64_t m_errortime; //timestamp of last time we measured
   int64_t m_freq;
-
-  void   SetSyncType(bool passthrough);
   void   HandleSyncError(double duration);
   double m_errorbuff; //place to store average errors
   int    m_errorcount;//number of errors stored
   bool   m_syncclock;
-
-  double m_integral; //integral correction for resampler
-  int    m_skipdupcount; //counter for skip/duplicate synctype
-  bool   m_prevskipped;
-  double m_maxspeedadjust;
 };
 

@@ -19,13 +19,14 @@
  *
  */
 
+#include "include.h"
 #include "GUIDialog.h"
 #include "GUIWindowManager.h"
 #include "GUILabelControl.h"
 #include "GUIAudioManager.h"
 #include "utils/SingleLock.h"
-#include "utils/TimeUtils.h"
 #include "Application.h"
+#include "ApplicationMessenger.h"
 
 CGUIDialog::CGUIDialog(int id, const CStdString &xmlFile)
     : CGUIWindow(id, xmlFile)
@@ -35,7 +36,6 @@ CGUIDialog::CGUIDialog(int id, const CStdString &xmlFile)
   m_dialogClosing = false;
   m_renderOrder = 1;
   m_autoClosing = false;
-  m_enableSound = true;
 }
 
 CGUIDialog::~CGUIDialog(void)
@@ -44,7 +44,7 @@ CGUIDialog::~CGUIDialog(void)
 void CGUIDialog::OnWindowLoaded()
 {
   CGUIWindow::OnWindowLoaded();
-
+  
   // Clip labels to extents
   if (m_children.size())
   {
@@ -60,6 +60,7 @@ void CGUIDialog::OnWindowLoaded()
         {
           float spacing = (pLabel->GetXPosition() - pBase->GetXPosition()) * 2;
           pLabel->SetWidth(pBase->GetWidth() - spacing);
+          pLabel->SetTruncate(true);
         }
       }
     }
@@ -68,7 +69,7 @@ void CGUIDialog::OnWindowLoaded()
 
 bool CGUIDialog::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_CLOSE_DIALOG || action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_CLOSE_DIALOG || action.id == ACTION_PREVIOUS_MENU)
   {
     Close();
     return true;
@@ -100,7 +101,7 @@ bool CGUIDialog::OnMessage(CGUIMessage& message)
   case GUI_MSG_WINDOW_INIT:
     {
       CGUIWindow::OnMessage(message);
-      m_showStartTime = CTimeUtils::GetFrameTime();
+      m_showStartTime = timeGetTime();
       return true;
     }
   }
@@ -108,7 +109,7 @@ bool CGUIDialog::OnMessage(CGUIMessage& message)
   return CGUIWindow::OnMessage(message);
 }
 
-void CGUIDialog::Close_Internal(bool forceClose /*= false*/)
+void CGUIDialog::Close(bool forceClose /*= false*/)
 {
   //Lock graphic context here as it is sometimes called from non rendering threads
   //maybe we should have a critical section per window instead??
@@ -117,7 +118,7 @@ void CGUIDialog::Close_Internal(bool forceClose /*= false*/)
   if (!m_bRunning) return;
 
   //  Play the window specific deinit sound
-  if(!m_dialogClosing && m_enableSound)
+  if(!m_dialogClosing)
     g_audioManager.PlayWindowSound(GetID(), SOUND_DEINIT);
 
   // don't close if we should be animating
@@ -151,8 +152,7 @@ void CGUIDialog::DoModal_Internal(int iWindowID /*= WINDOW_INVALID */, const CSt
   g_windowManager.RouteToWindow(this);
 
   //  Play the window specific init sound
-  if (m_enableSound)
-    g_audioManager.PlayWindowSound(GetID(), SOUND_INIT);
+  g_audioManager.PlayWindowSound(GetID(), SOUND_INIT);
 
   // active this window...
   CGUIMessage msg(GUI_MSG_WINDOW_INIT, 0, 0, WINDOW_INVALID, iWindowID);
@@ -172,6 +172,16 @@ void CGUIDialog::DoModal_Internal(int iWindowID /*= WINDOW_INVALID */, const CSt
   }
 }
 
+void CGUIDialog::DoModalThreadSafe()
+{
+  // we make sure we're threadsafe by sending via the application messenger
+  ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, GetID(), g_windowManager.GetActiveWindow()};
+  // first ensure we don't hold the graphics lock
+  int numLocks = ExitCriticalSection(g_graphicsContext);
+  g_applicationMessenger.SendMessage(tMsg, true);
+  RestoreCriticalSection(g_graphicsContext, numLocks);
+}
+
 void CGUIDialog::Show_Internal()
 {
   //Lock graphic context here as it is sometimes called from non rendering threads
@@ -181,7 +191,7 @@ void CGUIDialog::Show_Internal()
   if (m_bRunning && !m_dialogClosing && !IsAnimating(ANIM_TYPE_WINDOW_CLOSE)) return;
 
   m_bModal = false;
-
+  
   // set running before it's added to the window manager, else the auto-show code
   // could show it as well if we are in a different thread from
   // the main rendering thread (this should really be handled via
@@ -191,8 +201,7 @@ void CGUIDialog::Show_Internal()
   g_windowManager.AddModeless(this);
 
   //  Play the window specific init sound
-  if (m_enableSound)
-    g_audioManager.PlayWindowSound(GetID(), SOUND_INIT);
+  g_audioManager.PlayWindowSound(GetID(), SOUND_INIT);
 
   // active this window...
   CGUIMessage msg(GUI_MSG_WINDOW_INIT, 0, 0);
@@ -201,40 +210,20 @@ void CGUIDialog::Show_Internal()
 //  m_bRunning = true;
 }
 
-void CGUIDialog::Close(bool forceClose /* = false */)
-{
-  if (!g_application.IsCurrentThread())
-  {
-    // make sure graphics lock is not held
-    int nCount = ExitCriticalSection(g_graphicsContext);
-    g_application.getApplicationMessenger().Close(this, forceClose);
-    RestoreCriticalSection(g_graphicsContext, nCount);
-  }
-  else
-    g_application.getApplicationMessenger().Close(this, forceClose);
-}
-
 void CGUIDialog::DoModal(int iWindowID /*= WINDOW_INVALID */, const CStdString &param)
 {
-  g_application.getApplicationMessenger().DoModal(this, iWindowID, param);
+  DoModal_Internal(iWindowID, param);
 }
 
 void CGUIDialog::Show()
 {
-  g_application.getApplicationMessenger().Show(this);
+  Show_Internal();
 }
 
-bool CGUIDialog::RenderAnimation(unsigned int time)
+bool CGUIDialog::RenderAnimation(DWORD time)
 {
   CGUIWindow::RenderAnimation(time);
   return m_bRunning;
-}
-
-void CGUIDialog::FrameMove()
-{
-  if (m_autoClosing && m_showStartTime + m_showDuration < CTimeUtils::GetFrameTime() && !m_dialogClosing)
-    Close();
-  CGUIWindow::FrameMove();
 }
 
 void CGUIDialog::Render()
@@ -247,6 +236,11 @@ void CGUIDialog::Render()
   if (m_dialogClosing && !CGUIWindow::IsAnimating(ANIM_TYPE_WINDOW_CLOSE))
   {
     Close(true);
+  }
+    
+  if (m_autoClosing && m_showStartTime + m_showDuration < timeGetTime() && !m_dialogClosing)
+  {
+    Close();
   }
 }
 
@@ -268,7 +262,7 @@ void CGUIDialog::SetAutoClose(unsigned int timeoutMs)
    m_autoClosing = true;
    m_showDuration = timeoutMs;
    if (m_bRunning)
-     m_showStartTime = CTimeUtils::GetFrameTime();
+     m_showStartTime = timeGetTime();
 }
 
 

@@ -19,8 +19,8 @@
  *
  */
 
+#include "include.h"
 #include "GUIControlGroup.h"
-#include "GUIControlProfiler.h"
 
 using namespace std;
 
@@ -78,13 +78,13 @@ void CGUIControlGroup::AllocResources()
   }
 }
 
-void CGUIControlGroup::FreeResources(bool immediately)
+void CGUIControlGroup::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
+  CGUIControl::FreeResources();
   for (iControls it = m_children.begin(); it != m_children.end(); ++it)
   {
     CGUIControl *control = *it;
-    control->FreeResources(immediately);
+    control->FreeResources();
   }
 }
 
@@ -99,15 +99,12 @@ void CGUIControlGroup::DynamicResourceAlloc(bool bOnOff)
 
 void CGUIControlGroup::Render()
 {
-  CPoint pos(GetPosition());
-  g_graphicsContext.SetOrigin(pos.x, pos.y);
+  g_graphicsContext.SetOrigin(m_posX, m_posY);
   CGUIControl *focusedControl = NULL;
   for (iControls it = m_children.begin(); it != m_children.end(); ++it)
   {
     CGUIControl *control = *it;
-    GUIPROFILER_VISIBILITY_BEGIN(control);
     control->UpdateVisibility();
-    GUIPROFILER_VISIBILITY_END(control);
     if (m_renderFocusedLast && control->HasFocus())
       focusedControl = control;
     else
@@ -283,7 +280,7 @@ bool CGUIControlGroup::CanFocus() const
   return false;
 }
 
-void CGUIControlGroup::DoRender(unsigned int currentTime)
+void CGUIControlGroup::DoRender(DWORD currentTime)
 {
   m_renderTime = currentTime;
   CGUIControl::DoRender(currentTime);
@@ -357,43 +354,40 @@ bool CGUIControlGroup::HasAnimation(ANIMATION_TYPE animType)
   return false;
 }
 
-EVENT_RESULT CGUIControlGroup::SendMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIControlGroup::HitTest(const CPoint &point) const
 {
-  // transform our position into child coordinates
-  CPoint childPoint(point);
-  m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
-
-  if (CGUIControl::CanFocus())
+  for (ciControls it = m_children.begin(); it != m_children.end(); ++it)
   {
-    CPoint pos(GetPosition());
-    // run through our controls in reverse order (so that last rendered is checked first)
-    for (rControls i = m_children.rbegin(); i != m_children.rend(); ++i)
-    {
-      CGUIControl *child = *i;
-      EVENT_RESULT ret = child->SendMouseEvent(childPoint - pos, event);
-      if (ret)
-      { // we've handled the action, and/or have focused an item
-        return ret;
-      }
-    }
-    // none of our children want the event, but we may want it.
-    EVENT_RESULT ret;
-    if (HitTest(childPoint) && (ret = OnMouseEvent(childPoint, event)))
-      return ret;
+    CGUIControl *child = *it;
+    if (child->HitTest(point - CPoint(m_posX, m_posX)))
+      return true;
   }
-  m_focusedControl = 0;
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+bool CGUIControlGroup::CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const
+{
+  if (!CGUIControl::CanFocus()) return false;
+  CPoint controlCoords(point);
+  m_transform.InverseTransformPosition(controlCoords.x, controlCoords.y);
+  for (crControls it = m_children.rbegin(); it != m_children.rend(); ++it)
+  {
+    CGUIControl *child = *it;
+    if (child->CanFocusFromPoint(controlCoords - CPoint(m_posX, m_posY), control, controlPoint))
+      return true;
+  }
+  *control = NULL;
+  return false;
 }
 
 void CGUIControlGroup::UnfocusFromPoint(const CPoint &point)
 {
   CPoint controlCoords(point);
   m_transform.InverseTransformPosition(controlCoords.x, controlCoords.y);
-  controlCoords -= GetPosition();
   for (iControls it = m_children.begin(); it != m_children.end(); ++it)
   {
     CGUIControl *child = *it;
-    child->UnfocusFromPoint(controlCoords);
+    child->UnfocusFromPoint(controlCoords - CPoint(m_posX, m_posY));
   }
   CGUIControl::UnfocusFromPoint(point);
 }
@@ -548,19 +542,6 @@ void CGUIControlGroup::RemoveLookup(CGUIControl *control)
     ((CGUIControlGroup *)m_parentControl)->RemoveLookup(control);
 }
 
-bool CGUIControlGroup::IsValidControl(const CGUIControl *control) const
-{
-  if (control->GetID())
-  {
-    for (LookupMap::const_iterator it = m_lookup.begin(); it != m_lookup.end(); it++)
-    {
-      if (control == it->second)
-        return true;
-    }
-  }
-  return false;
-}
-
 bool CGUIControlGroup::InsertControl(CGUIControl *control, const CGUIControl *insertPoint)
 {
   // find our position
@@ -631,12 +612,6 @@ void CGUIControlGroup::GetContainers(vector<CGUIControl *> &containers) const
     else if ((*it)->IsGroup())
       ((CGUIControlGroup *)(*it))->GetContainers(containers);
   }
-}
-
-void CGUIControlGroup::SetInvalid()
-{
-  for (iControls it = m_children.begin(); it != m_children.end(); ++it)
-    (*it)->SetInvalid();
 }
 
 #ifdef _DEBUG

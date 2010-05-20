@@ -20,10 +20,6 @@
  *
  */
 
-#include "StdString.h"
-
-class CFileItem;
-
 namespace PLAYLIST
 {
   class CPlayList;

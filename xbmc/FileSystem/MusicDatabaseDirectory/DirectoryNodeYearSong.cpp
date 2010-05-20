@@ -19,11 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeYearSong.h"
 #include "QueryParams.h"
 #include "MusicDatabase.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeYearSong::CDirectoryNodeYearSong(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_YEAR_SONG, strName, pParent)

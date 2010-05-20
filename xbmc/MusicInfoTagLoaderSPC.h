@@ -24,13 +24,12 @@
 
 namespace MUSIC_INFO
 {
-  class CMusicInfoTagLoaderSPC: public IMusicInfoTagLoader
-  {
-    public:
-      CMusicInfoTagLoaderSPC(void);
-      virtual ~CMusicInfoTagLoaderSPC();
+	class CMusicInfoTagLoaderSPC: public IMusicInfoTagLoader
+	{
+	public:
+		CMusicInfoTagLoaderSPC(void);
+		virtual ~CMusicInfoTagLoaderSPC();
 
-      virtual bool Load(const CStdString& strFileName, CMusicInfoTag& tag);
-  };
+		virtual bool Load(const CStdString& strFileName, CMusicInfoTag& tag);
+	};
 }
-

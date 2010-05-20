@@ -19,15 +19,19 @@
  *
  */
 
-#include "system.h"
-
-#ifdef HAS_CDDA_RIPPER
-
+#include "stdafx.h"
 #include "CDDAReader.h"
-#include <cdio/cdio.h>
-#include "utils/log.h"
+#include "lib/libcdio/cdio.h"
 
-#define SECTOR_COUNT 52
+#define SECTOR_COUNT 55
+
+#ifndef PRId64
+#ifdef _MSC_VER
+#define PRId64 "I64d"
+#else
+#define PRId64 "lld"
+#endif
+#endif
 
 CCDDAReader::CCDDAReader()
 {
@@ -147,5 +151,3 @@ int CCDDAReader::GetData(BYTE** stream, long& lBytes)
   SetEvent(m_hReadEvent);
   return iError;
 }
-
-#endif

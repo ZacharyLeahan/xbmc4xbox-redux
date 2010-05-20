@@ -19,22 +19,7 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "GUIPythonWindow.h"
 #include "GUIPythonWindowXML.h"
@@ -56,17 +41,17 @@
 #define WindowXMLDialog_Check(op) PyObject_TypeCheck(op, &WindowXMLDialog_Type)
 #define WindowXMLDialog_CheckExact(op) ((op)->ob_type == &WindowXMLDialog_Type)
 
-#define PyObject_HEAD_XBMC_WINDOW \
-    PyObject_HEAD                 \
-    int iWindowId;                \
-    int iOldWindowId;             \
-    int iCurrentControlId;        \
-    bool bIsPythonWindow;         \
-    bool bModal;                  \
-    bool bUsingXML;               \
-    std::string sXMLFileName;     \
-    std::string sFallBackPath;    \
-    CGUIWindow* pWindow;          \
+#define PyObject_HEAD_XBMC_WINDOW		\
+    PyObject_HEAD \
+    int iWindowId; \
+    int iOldWindowId; \
+    int iCurrentControlId; \
+    bool bIsPythonWindow; \
+    bool bModal; \
+    bool bUsingXML; \
+    std::string sXMLFileName; \
+    std::string sFallBackPath; \
+    CGUIWindow* pWindow; \
     std::vector<Control*> vecControls;
 
 #ifdef __cplusplus

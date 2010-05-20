@@ -19,19 +19,16 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogKaiToast.h"
 #include "GUISliderControl.h"
 #include "GUIImage.h"
 #include "GUIAudioManager.h"
-#include "utils/SingleLock.h"
-#include "utils/TimeUtils.h"
+#include "SingleLock.h"
 
 #define POPUP_ICON                400
 #define POPUP_CAPTION_TEXT        401
 #define POPUP_NOTIFICATION_BUTTON 402
-#define POPUP_ICON_INFO           403
-#define POPUP_ICON_WARNING        404
-#define POPUP_ICON_ERROR          405
 
 CGUIDialogKaiToast::CGUIDialogKaiToast(void)
 : CGUIDialog(WINDOW_DIALOG_KAI_TOAST, "DialogKaiToast.xml")
@@ -72,30 +69,12 @@ void CGUIDialogKaiToast::OnWindowLoaded()
     m_defaultIcon = image->GetFileName();
 }
 
-void CGUIDialogKaiToast::QueueNotification(eMessageType eType, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime /*= TOAST_DISPLAY_TIME*/, bool withSound /*= true*/)
-{
-  CGUIImage *image    = NULL;
-
-  if (eType == Info)
-    image = (CGUIImage *)GetControl(POPUP_ICON_INFO);
-  else if (eType == Warning)
-    image = (CGUIImage *)GetControl(POPUP_ICON_WARNING);
-  else if (eType == Error)
-    image = (CGUIImage *)GetControl(POPUP_ICON_ERROR);
-
-  CStdString strImage;
-  if (image)
-    strImage = image->GetFileName();
-
-  QueueNotification(strImage, aCaption, aDescription, displayTime, withSound);
-}
-
 void CGUIDialogKaiToast::QueueNotification(const CStdString& aCaption, const CStdString& aDescription)
 {
   QueueNotification("", aCaption, aDescription);
 }
 
-void CGUIDialogKaiToast::QueueNotification(const CStdString& aImageFile, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime /*= TOAST_DISPLAY_TIME*/, bool withSound /*= true*/)
+void CGUIDialogKaiToast::QueueNotification(const CStdString& aImageFile, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime /*= TOAST_DISPLAY_TIME*/)
 {
   CSingleLock lock(m_critical);
 
@@ -104,7 +83,6 @@ void CGUIDialogKaiToast::QueueNotification(const CStdString& aImageFile, const C
   toast.caption = aCaption;
   toast.description = aDescription;
   toast.displayTime = displayTime > TOAST_MESSAGE_TIME + 500 ? displayTime : TOAST_MESSAGE_TIME + 500;
-  toast.withSound = withSound;
 
   m_notifications.push(toast);
 }
@@ -113,8 +91,8 @@ bool CGUIDialogKaiToast::DoWork()
 {
   CSingleLock lock(m_critical);
 
-  if (m_notifications.size() > 0 &&
-      CTimeUtils::GetFrameTime() - m_timer > TOAST_MESSAGE_TIME)
+  if (m_notifications.size() > 0 && 
+      timeGetTime() - m_dwTimer > TOAST_MESSAGE_TIME)
   {
     Notification toast = m_notifications.front();
     m_notifications.pop();
@@ -141,7 +119,7 @@ bool CGUIDialogKaiToast::DoWork()
     }
 
     //  Play the window specific init sound for each notification queued
-    SetSound(toast.withSound);
+    g_audioManager.PlayWindowSound(GetID(), SOUND_INIT);
 
     ResetTimer();
     return true;
@@ -153,18 +131,18 @@ bool CGUIDialogKaiToast::DoWork()
 
 void CGUIDialogKaiToast::ResetTimer()
 {
-  m_timer = CTimeUtils::GetFrameTime();
+  m_dwTimer = timeGetTime();
 }
 
-void CGUIDialogKaiToast::FrameMove()
+void CGUIDialogKaiToast::Render()
 {
+  CGUIDialog::Render();
+
   //  Fading does not count as display time
   if (IsAnimating(ANIM_TYPE_WINDOW_OPEN))
     ResetTimer();
 
   // now check if we should exit
-  if (CTimeUtils::GetFrameTime() - m_timer > m_toastDisplayTime)
+  if (timeGetTime() - m_dwTimer > m_toastDisplayTime)
     Close();
-  
-  CGUIDialog::FrameMove();
 }

@@ -55,7 +55,6 @@ public:
                         FIELD_DIRECTOR,
                         FIELD_ACTOR,
                         FIELD_STUDIO,
-                        FIELD_COUNTRY,
                         FIELD_MPAA,
                         FIELD_TOP250,
                         FIELD_NUMEPISODES,
@@ -109,7 +108,7 @@ public:
                     BOOLEAN_FIELD,
                     TEXTIN_FIELD
                   };
-
+ 
   CStdString GetWhereClause(const CStdString& strType);
   void TranslateStrings(const char *field, const char *oper, const char *parameter);
   static DATABASE_FIELD TranslateField(const char *field);
@@ -131,7 +130,7 @@ public:
   CStdString         m_parameter;
 private:
   SEARCH_OPERATOR    TranslateOperator(const char *oper);
-
+  
   CStdString GetVideoResolutionQuery(void);
 };
 

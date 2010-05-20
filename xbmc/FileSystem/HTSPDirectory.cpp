@@ -19,15 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "HTSPDirectory.h"
 #include "URL.h"
 #include "FileItem.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
+#include "Settings.h"
 #include "cores/dvdplayer/DVDInputStreams/DVDInputStreamHTSP.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 extern "C" {
 #include "lib/libhts/htsmsg.h"
@@ -35,6 +32,7 @@ extern "C" {
 }
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace HTSP;
 
 struct SSession
@@ -56,9 +54,9 @@ struct SSession
 
 struct STimedOut
 {
-  STimedOut(DWORD idle) : m_idle(idle)
-  {
-    m_time = CTimeUtils::GetTimeMS();
+  STimedOut(DWORD idle) : m_idle(idle) 
+  { 
+    m_time = GetTickCount(); 
   }
   bool operator()(SSession& data)
   {
@@ -131,7 +129,7 @@ void CHTSPDirectorySession::Release(CHTSPDirectorySession* &session)
     if(it->session == session)
     {
       it->refs--;
-      it->last = CTimeUtils::GetTimeMS();
+      it->last = GetTickCount();
       return;
     }
   }

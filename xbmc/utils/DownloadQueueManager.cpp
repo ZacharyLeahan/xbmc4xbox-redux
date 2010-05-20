@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "DownloadQueueManager.h"
 
 #include <assert.h>
@@ -41,7 +42,7 @@ VOID CDownloadQueueManager::Initialize()
 }
 
 
-TICKET CDownloadQueueManager::RequestContent(const CStdString& aUrl, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueueManager::RequestContent(CStdString& aUrl, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
   TICKET ticket = GetNextDownloadQueue()->RequestContent(aUrl, aObserver);
@@ -49,7 +50,7 @@ TICKET CDownloadQueueManager::RequestContent(const CStdString& aUrl, IDownloadQu
   return ticket;
 }
 
-TICKET CDownloadQueueManager::RequestFile(const CStdString& aUrl, const CStdString& aFilePath, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueueManager::RequestFile(CStdString& aUrl, CStdString& aFilePath, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
   TICKET ticket = GetNextDownloadQueue()->RequestFile(aUrl, aFilePath, aObserver);
@@ -57,7 +58,7 @@ TICKET CDownloadQueueManager::RequestFile(const CStdString& aUrl, const CStdStri
   return ticket;
 }
 
-TICKET CDownloadQueueManager::RequestFile(const CStdString& aUrl, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueueManager::RequestFile(CStdString& aUrl, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
   TICKET ticket = GetNextDownloadQueue()->RequestFile(aUrl, aObserver);

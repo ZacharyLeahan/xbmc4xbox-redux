@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 
 #ifdef HAS_EVENT_SERVER
 
@@ -29,10 +29,9 @@
 #include "Socket.h"
 #include "CriticalSection.h"
 #include "Application.h"
-#include "Builtins.h"
+#include "Util.h"
 #include "ButtonTranslator.h"
 #include "SingleLock.h"
-#include "Zeroconf.h"
 #include "GUIAudioManager.h"
 #include <map>
 #include <queue>
@@ -52,6 +51,7 @@ CEventServer::CEventServer()
   m_pSocket       = NULL;
   m_pPacketBuffer = NULL;
   m_bStop         = false;
+  m_pThread       = NULL;
   m_bRunning      = false;
   m_bRefreshSettings = false;
 
@@ -80,14 +80,24 @@ CEventServer* CEventServer::GetInstance()
 void CEventServer::StartServer()
 {
   CSingleLock lock(m_critSection);
-  if(m_bRunning)
+  if (m_pThread)
     return;
 
   // set default port
   string port = (const char*)g_guiSettings.GetString("services.esport");
-  assert(port.length());
-  m_iPort = atoi(port.c_str());
-  assert(m_iPort <= 65535 && m_iPort >= 1);
+  if (port.length() == 0)
+  {
+    m_iPort = 9777;
+  }
+  else
+  {
+    m_iPort = atoi(port.c_str());
+  }
+  if (m_iPort > 65535 || m_iPort < 1)
+  {
+    CLog::Log(LOGERROR, "ES: Invalid port specified %d, defaulting to 9777", m_iPort);
+    m_iPort = 9777;
+  }
 
   // max clients
   m_iMaxClients = g_guiSettings.GetInt("services.esmaxclients");
@@ -101,10 +111,9 @@ void CEventServer::StartServer()
   CThread::SetName("EventServer");
 }
 
-void CEventServer::StopServer(bool bWait)
+void CEventServer::StopServer()
 {
-  CZeroconf::GetInstance()->RemoveService("services.eventserver");
-  StopThread(bWait);
+  StopThread();
 }
 
 void CEventServer::Cleanup()
@@ -142,16 +151,6 @@ int CEventServer::GetNumberOfClients()
 }
 
 void CEventServer::Process()
-{
-  while(!m_bStop)
-  {
-    Run();
-    if (!m_bStop)
-      Sleep(1000);
-  }
-}
-
-void CEventServer::Run()
 {
   CAddress any_addr;
   CSocketListener listener;
@@ -194,12 +193,6 @@ void CEventServer::Run()
     return;
   }
 
-  // publish service
-  CZeroconf::GetInstance()->PublishService("servers.eventserver",
-                               "_xbmc-events._udp",
-                               "XBMC Event Server",
-                               m_iPort);
-
   // add our socket to the 'select' listener
   listener.AddSocket(m_pSocket);
 
@@ -207,22 +200,14 @@ void CEventServer::Run()
 
   while (!m_bStop)
   {
-    try
+    // start listening until we timeout
+    if (listener.Listen(m_iListenTimeout))
     {
-      // start listening until we timeout
-      if (listener.Listen(m_iListenTimeout))
+      CAddress addr;
+      if ((packetSize = m_pSocket->Read(addr, PACKET_SIZE, (void *)m_pPacketBuffer)) > -1)
       {
-        CAddress addr;
-        if ((packetSize = m_pSocket->Read(addr, PACKET_SIZE, (void *)m_pPacketBuffer)) > -1)
-        {
-          ProcessPacket(addr, packetSize);
-        }
+        ProcessPacket(addr, packetSize);
       }
-    }
-    catch (...)
-    {
-      CLog::Log(LOGERROR, "ES: Exception caught while listening for socket");
-      break;
     }
 
     // process events and queue the necessary actions and button codes
@@ -332,9 +317,10 @@ void CEventServer::ProcessEvents()
 
 bool CEventServer::ExecuteNextAction()
 {
-  EnterCriticalSection(&m_critSection);
+  EnterCriticalSection(m_critSection);
 
   CEventAction actionEvent;
+  CAction action;
   map<unsigned long, CEventClient*>::iterator iter = m_clients.begin();
 
   while (iter != m_clients.end())
@@ -342,28 +328,28 @@ bool CEventServer::ExecuteNextAction()
     if (iter->second->GetNextAction(actionEvent))
     {
       // Leave critical section before processing action
-      LeaveCriticalSection(&m_critSection);
+      LeaveCriticalSection(m_critSection);
       switch(actionEvent.actionType)
       {
       case AT_EXEC_BUILTIN:
-        CBuiltins::Execute(actionEvent.actionName);
+        CUtil::ExecBuiltIn(actionEvent.actionName);
         break;
 
       case AT_BUTTON:
-        {
-          int actionID;
-          CButtonTranslator::TranslateActionString(actionEvent.actionName.c_str(), actionID);
-          CAction action(actionID, 1.0f, 0.0f, actionEvent.actionName);
-          g_audioManager.PlayActionSound(action);
-          g_application.OnAction(action);
-        }
+        CButtonTranslator::TranslateActionString(actionEvent.actionName.c_str(), action.id);
+        action.strAction = actionEvent.actionName;
+        action.repeat  = 0.0f;
+        action.amount1 = 1.0f;
+        action.amount2 = 1.0f;
+        g_audioManager.PlayActionSound(action);
+        g_application.OnAction(action);
         break;
       }
       return true;
     }
     iter++;
   }
-  LeaveCriticalSection(&m_critSection);
+  LeaveCriticalSection(m_critSection);
   return false;
 }
 

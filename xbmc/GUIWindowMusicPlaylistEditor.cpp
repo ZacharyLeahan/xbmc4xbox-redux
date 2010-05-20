@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowMusicPlaylistEditor.h"
 #include "Util.h"
 #include "utils/GUIInfoManager.h"
@@ -32,13 +32,11 @@
 #include "GUIWindowManager.h"
 #include "GUIDialogKeyboard.h"
 #include "FileItem.h"
-#include "GUISettings.h"
-#include "GUIUserMessages.h"
-#include "LocalizeStrings.h"
-#include "AutoPtrHandle.h"
 
 using namespace AUTOPTR;
+using namespace MEDIA_DETECT;
 
+#define CONTROL_LIST              50
 #define CONTROL_LABELFILES        12
 
 #define CONTROL_LOAD_PLAYLIST      6
@@ -63,7 +61,7 @@ CGUIWindowMusicPlaylistEditor::~CGUIWindowMusicPlaylistEditor(void)
 
 bool CGUIWindowMusicPlaylistEditor::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PARENT_DIR && !m_viewControl.HasControl(GetFocusedControlID()))
+  if (action.id == ACTION_PARENT_DIR && !m_viewControl.HasControl(GetFocusedControlID()))
   { // don't go to parent folder unless we're on the list in question
     g_windowManager.PreviousWindow();
     return true;
@@ -214,11 +212,9 @@ void CGUIWindowMusicPlaylistEditor::PlayItem(int iItem)
   if (m_vecItems->IsVirtualDirectoryRoot() && !m_vecItems->Get(iItem)->IsDVD())
     return;
 
-#ifdef HAS_DVD_DRIVE
   if (m_vecItems->Get(iItem)->IsDVD())
-    MEDIA_DETECT::CAutorun::PlayDisc();
+    CAutorun::PlayDisc();
   else
-#endif
     CGUIWindowMusicBase::PlayItem(iItem);
 }
 
@@ -381,7 +377,7 @@ void CGUIWindowMusicPlaylistEditor::OnLoadPlaylist()
   share.strName = g_localizeStrings.Get(20011);
   share.strPath = "special://musicplaylists/";
   if (find(shares.begin(), shares.end(), share) == shares.end())
-    shares.push_back(share);
+  shares.push_back(share);
   if (CGUIDialogFileBrowser::ShowAndGetFile(shares, ".m3u|.pls|.b4s|.wpl", g_localizeStrings.Get(656), playlist))
     LoadPlaylist(playlist);
 }
@@ -395,7 +391,7 @@ void CGUIWindowMusicPlaylistEditor::LoadPlaylist(const CStdString &playlist)
     return;
   }
 
-  XFILE::CPlaylistFileDirectory dir;
+  DIRECTORY::CPlaylistFileDirectory dir;
   CFileItemList items;
   if (dir.GetDirectory(playlist, items))
   {

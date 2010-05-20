@@ -1,6 +1,6 @@
 /*!
 \file GUIRESIZEControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIRESIZECONTROL_H
@@ -40,7 +40,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIResizeControl : public CGUIControl
 {
@@ -58,23 +58,24 @@ public:
   virtual void OnDown();
   virtual void OnLeft();
   virtual void OnRight();
+  virtual bool OnMouseDrag(const CPoint &offset, const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   void SetLimits(float x1, float y1, float x2, float y2);
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   void SetAlpha(unsigned char alpha);
   void UpdateSpeed(int nDirection);
   void Resize(float x, float y);
   CGUITexture m_imgFocus;
   CGUITexture m_imgNoFocus;
-  unsigned int m_frameCounter;
-  unsigned int m_lastMoveTime;
+  DWORD m_dwFrameCounter;
+  DWORD m_dwLastMoveTime;
   int m_nDirection;
   float m_fSpeed;
   float m_fAnalogSpeed;

@@ -25,14 +25,10 @@
 #include "utils/Thread.h"
 #include "AudioDecoder.h"
 #include "cores/ssrc.h"
-#include "cores/AudioRenderers/IAudioRenderer.h"
 
 class CFileItem;
-#ifndef _LINUX
+
 #define PACKET_COUNT  20 // number of packets of size PACKET_SIZE (defined in AudioDecoder.h)
-#else
-#define PACKET_COUNT  1
-#endif
 
 #define STATUS_NO_FILE  0
 #define STATUS_QUEUING  1
@@ -65,6 +61,7 @@ public:
   virtual bool IsPaused() const { return m_bPaused; }
   virtual bool HasVideo() const { return false; }
   virtual bool HasAudio() const { return true; }
+  virtual void ToggleFrameDrop() {}
   virtual bool CanSeek();
   virtual void Seek(bool bPlus = true, bool bLargeStep = false);
   virtual void SeekPercentage(float fPercent = 0.0f);
@@ -75,8 +72,10 @@ public:
   virtual void GetVideoInfo( CStdString& strVideoInfo) {}
   virtual void GetGeneralInfo( CStdString& strVideoInfo) {}
   virtual void Update(bool bPauseDrawing = false) {}
+  virtual void GetVideoRect(RECT& SrcRect, RECT& DestRect){}
+  virtual void GetVideoAspectRatio(float& fAR) {}
   virtual void ToFFRW(int iSpeed = 0);
-  virtual int GetCacheLevel() const;
+  virtual int GetCacheLevel() const; 
   virtual int GetTotalTime();
   __int64 GetTotalTime64();
   virtual int GetAudioBitrate();
@@ -124,65 +123,54 @@ protected:
   int m_iSpeed;   // current playing speed
 
 private:
-
+  
   bool ProcessPAP();    // does the actual reading and decode from our PAP dll
 
   __int64 m_SeekTime;
   int     m_IsFFwdRewding;
-  __int64 m_timeOffset;
+  __int64 m_timeOffset; 
   bool    m_forceFadeToNext;
 
   int m_currentDecoder;
   CAudioDecoder m_decoder[2]; // our 2 audiodecoders (for crossfading + precaching)
 
-#ifndef _LINUX
   void SetupDirectSound(int channels);
-#endif
 
   // Our directsoundstream
-  friend void CALLBACK StaticStreamCallback( LPVOID pStreamContext, LPVOID pPacketContext, DWORD dwStatus );
+  friend static void CALLBACK StaticStreamCallback( LPVOID pStreamContext, LPVOID pPacketContext, DWORD dwStatus );
   bool AddPacketsToStream(int stream, CAudioDecoder &dec);
   bool FindFreePacket(int stream, DWORD *pdwPacket );     // Looks for a free packet
   void FreeStream(int stream);
-#if defined(_LINUX) || defined(_WIN32)
-  void DrainStream(int stream);
-#endif
-  bool CreateStream(int stream, unsigned int channels, unsigned int samplerate, unsigned int bitspersample, CStdString codec = "");
+  bool CreateStream(int stream, int channels, int samplerate, int bitspersample, CStdString codec = "");
   void FlushStreams();
   void WaitForStream();
   void SetStreamVolume(int stream, long nVolume);
-
+  
   void UpdateCrossFadingTime(const CFileItem& file);
   bool QueueNextFile(const CFileItem &file, bool checkCrossFading);
   void UpdateCacheLevel();
 
   int m_currentStream;
 
-  IAudioRenderer*   m_pAudioDecoder[2];
-  float             m_latency[2];
-  unsigned char*    m_pcmBuffer[2];
-  int               m_bufferPos[2];
-  unsigned int      m_Chunklen[2];
-
-  unsigned int     m_SampleRate;
-  unsigned int     m_Channels;
-  unsigned int     m_BitsPerSample;
-
-  unsigned int     m_SampleRateOutput;
-  unsigned int     m_BitsPerSampleOutput;
+#ifdef HAS_XBOX_AUDIO
+  IDirectSoundStream *m_pStream[2];
+#else
+  LPDIRECTSOUNDBUFFER m_pStream[2];
+#endif
 
   AudioPacket      m_packet[2][PACKET_COUNT];
 
-  IAudioCallback*  m_pCallback;
 
   __int64          m_bytesSentOut;
 
   // format (this should be stored/retrieved from the audio device object probably)
-  unsigned int     m_channelCount[2];
-  enum PCMChannels*m_channelMap[2];
-  unsigned int     m_sampleRate[2];
-  unsigned int     m_bitsPerSample[2];
+  unsigned int     m_SampleRate;
+  unsigned int     m_Channels;
+  unsigned int     m_BitsPerSample;
   unsigned int     m_BytesPerSecond;
+
+  unsigned int     m_SampleRateOutput;
+  unsigned int     m_BitsPerSampleOutput;
 
   unsigned int     m_CacheLevel;
   unsigned int     m_LastCacheLevelCheck;
@@ -196,8 +184,7 @@ private:
   CFileItem*        m_nextFile;
 
   // stuff for visualisation
+  BYTE             m_visBuffer[PACKET_SIZE];
   unsigned int     m_visBufferLength;
-  short            m_visBuffer[PACKET_SIZE+2];
-
+  IAudioCallback*  m_pCallback;
 };
-

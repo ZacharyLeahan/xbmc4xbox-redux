@@ -1,6 +1,6 @@
 /*!
 \file gui3d.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUI3D_H
@@ -28,13 +28,32 @@
  *
  */
 
-#include "system.h" // for WIN32 types
+#ifdef _XBOX
+#define HAS_XBOX_D3D
+#define GAMMA_RAMP_FLAG  D3DSGR_IMMEDIATE
+
+#include <xgraphics.h>
+#include <d3d8.h>
+#include <d3dx8.h>
+
+#define LPD3DXBUFFER XGBuffer*
+#define D3DXAssembleShader(str, len, flags, constants, shader, errors) XGAssembleShader("UNKNOWN", str, len, flags, constants, shader, errors, NULL, NULL, NULL, NULL)
+
+// sadly D3DXCreateTexture won't consider linear formats with non power of 2 textures as valid, thus we use standard instead
+#define D3DXCreateTexture(device, width, height, levels, usage, format, pool, texture) (device)->CreateTexture(width, height, levels, usage, format, pool, texture)
+
+#else
 
 #define GAMMA_RAMP_FLAG  D3DSGR_CALIBRATE
 
-#define D3DPRESENTFLAG_INTERLACED 1
-#define D3DPRESENTFLAG_WIDESCREEN 2
-#define D3DPRESENTFLAG_PROGRESSIVE 4
+#undef HAS_XBOX_D3D
+
+ #include "D3D8.h"
+ #include "D3DX8.h"
+
+#define D3DPRESENTFLAG_INTERLACED 0
+#define D3DPRESENTFLAG_WIDESCREEN 0
+#define D3DPRESENTFLAG_PROGRESSIVE 0
 
 #define D3DFMT_LIN_A8R8G8B8 D3DFMT_A8R8G8B8
 #define D3DFMT_LIN_X8R8G8B8 D3DFMT_X8R8G8B8
@@ -44,7 +63,7 @@
 
 #define D3DPIXELSHADERDEF DWORD
 
-struct D3DTexture
+struct D3DTexture 
 {
   DWORD Common;
   DWORD Data;
@@ -66,40 +85,6 @@ struct D3DPalette
 
 typedef D3DPalette* LPDIRECT3DPALETTE8;
 
-#if defined(HAS_GL) || defined(HAS_GLES)
-
-namespace XBMC
-{
-  typedef void*  DevicePtr;
-  typedef GLuint SurfacePtr;
-  typedef GLuint TexturePtr;
-  typedef void* PalettePtr; // elis change it
-  typedef GLint PixelFormat; // elis change it
-}
-
-#if defined(_LINUX) && !defined(GL_GLEXT_PROTOTYPES)
-#define GL_GLEXT_PROTOTYPES
 #endif
 
-#endif // HAS_GL
-
-#ifdef HAS_DX
-
-namespace XBMC
-{
-  typedef LPDIRECT3DDEVICE9  DevicePtr;
-  typedef LPDIRECT3DTEXTURE9 TexturePtr;
-  typedef LPDIRECT3DSURFACE9 SurfacePtr;
-  typedef LPDIRECT3DPALETTE8 PalettePtr;
-};
-
-#define DELETE_TEXTURE(texture) texture->Release()
-
-#endif // HAS_DX
-
-#ifdef HAS_GLES
-
-#define GLchar char
-
 #endif
-#endif // GUILIB_GUI3D_H

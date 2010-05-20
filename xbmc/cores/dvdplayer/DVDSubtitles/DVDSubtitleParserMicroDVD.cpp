@@ -18,7 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDSubtitleParserMicroDVD.h"
 #include "DVDCodecs/Overlay/DVDOverlayText.h"
 #include "DVDClock.h"
@@ -50,7 +51,7 @@ bool CDVDSubtitleParserMicroDVD::Open(CDVDStreamInfo &hints)
   {
     m_framerate = (double)hints.fpsscale / (double)hints.fpsrate;
     m_framerate *= DVD_TIME_BASE;
-  }
+  } 
   else
     m_framerate = DVD_TIME_BASE / 25.0;
 
@@ -60,7 +61,7 @@ bool CDVDSubtitleParserMicroDVD::Open(CDVDStreamInfo &hints)
   if (!reg.RegComp("\\{([0-9]+)\\}\\{([0-9]+)\\}([^|]*?)(\\|([^|]*?))?$"))//(\\|([^|]*?))?$"))
     return false;
 
-  while (m_pStream->ReadLine(line, sizeof(line)))
+  while (m_stringstream.getline(line, sizeof(line)))
   {
     if (reg.RegFind(line) > -1)
     {

@@ -32,7 +32,7 @@ public:
   CGUIDialogKeyboard(void);
   virtual ~CGUIDialogKeyboard(void);
 
-  virtual void FrameMove();
+  virtual void Render();
   void SetHeading(const CStdString& strHeading) {m_strHeading = strHeading;} ;
   void SetText(const CStdString& aTextString);
   CStdString GetText() const;
@@ -85,7 +85,7 @@ private:
   enum FILTERING { FILTERING_NONE = 0, FILTERING_CURRENT, FILTERING_SEARCH };
   FILTERING m_filtering;
 
-  unsigned int m_lastRemoteClickTime;
+  DWORD m_lastRemoteClickTime;
   WORD m_lastRemoteKeyClicked;
   int m_indexInSeries;
   CStdString m_strHeading;

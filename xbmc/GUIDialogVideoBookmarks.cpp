@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIDialogVideoBookmarks.h"
 #include "VideoDatabase.h"
 #include "Application.h"
@@ -34,10 +34,7 @@
 #include "Settings.h"
 #include "AdvancedSettings.h"
 #include "FileItem.h"
-#include "Texture.h"
 #include "Crc32.h"
-#include "LocalizeStrings.h"
-#include "StringUtils.h"
 #include "utils/SingleLock.h"
 
 using namespace std;
@@ -146,7 +143,7 @@ void CGUIDialogVideoBookmarks::Update()
   /* push in the resume mark first */
   if( videoDatabase.GetResumeBookMark(g_application.CurrentFile(), resumemark) )
     m_bookmarks.insert(m_bookmarks.begin(), resumemark);
-
+  
   if (g_application.CurrentFileItem().HasVideoInfoTag() && g_application.CurrentFileItem().GetVideoInfoTag()->m_iEpisode > -1)
   {
     vector<CVideoInfoTag> episodes;
@@ -248,21 +245,30 @@ void CGUIDialogVideoBookmarks::AddBookmark(CVideoInfoTag* tag)
     height = BOOKMARK_THUMB_WIDTH;
     width = (int)(BOOKMARK_THUMB_WIDTH * aspectRatio);
   }
+  CSingleLock lock(g_graphicsContext);
+  LPDIRECT3DTEXTURE8 texture = NULL;
+  if (D3D_OK == D3DXCreateTexture(g_graphicsContext.Get3DDevice(), width, height, 1, 0, D3DFMT_LIN_A8R8G8B8, D3DPOOL_MANAGED, &texture))
   {
-    CSingleLock lock(g_graphicsContext);
-    // we're really just using the CTexture here as a pixel buffer
-    CTexture texture(width, height, XB_FMT_A8R8G8B8);
+    LPDIRECT3DSURFACE8 surface = NULL;
+    texture->GetSurfaceLevel(0, &surface);
 #ifdef HAS_VIDEO_PLAYBACK
-    g_renderManager.CreateThumbnail(&texture, width, height);
+    g_renderManager.CreateThumbnail(surface, width, height);
 #endif
+    D3DLOCKED_RECT lockedRect;
+    surface->LockRect(&lockedRect, NULL, NULL);
+    // compute the thumb name + create the thumb image
     Crc32 crc;
     crc.ComputeFromLowerCase(g_application.CurrentFile());
     bookmark.thumbNailImage.Format("%08x_%i.jpg", (unsigned __int32) crc, m_vecItems->Size() + 1);
     bookmark.thumbNailImage = CUtil::AddFileToFolder(g_settings.GetBookmarksThumbFolder(), bookmark.thumbNailImage);
-    if (!CPicture::CreateThumbnailFromSurface(texture.GetPixels(), width, height, texture.GetPitch(),
-                                        bookmark.thumbNailImage))
+    CPicture pic;
+    if (!pic.CreateThumbnailFromSurface((BYTE *)lockedRect.pBits, width, height, lockedRect.Pitch, bookmark.thumbNailImage))
       bookmark.thumbNailImage.Empty();
+    surface->UnlockRect();
+    surface->Release();
+    texture->Release();
   }
+  lock.Leave();
   videoDatabase.Open();
   if (tag)
     videoDatabase.AddBookMarkForEpisode(*tag, bookmark);
@@ -297,12 +303,12 @@ void CGUIDialogVideoBookmarks::AddEpisodeBookmark()
 {
   vector<CVideoInfoTag> episodes;
   CVideoDatabase videoDatabase;
+  CPoint pos;
   videoDatabase.Open();
   videoDatabase.GetEpisodesByFile(g_application.CurrentFile(), episodes);
   videoDatabase.Close();
   if(episodes.size() > 0)
   {
-    CPoint pos;
     CGUIDialogContextMenu *pMenu = (CGUIDialogContextMenu *)g_windowManager.GetWindow(WINDOW_DIALOG_CONTEXT_MENU);
     map<int, CVideoInfoTag*> buttons;
     const CGUIControl *pList = GetControl(CONTROL_ADD_EPISODE_BOOKMARK);
@@ -327,5 +333,4 @@ void CGUIDialogVideoBookmarks::AddEpisodeBookmark()
     }
   }
 }
-
 

@@ -4,7 +4,7 @@
 <!--Email: Masternoob@gmx.at-->
 <!--Date of translation: 12/29/2009-->
 <!--$Revision$-->
-<!--Based on english strings version 25744-->
+<!--Based on english strings version 25464-->
 <strings>
   <string id="0">Programme</string>
   <string id="1">Bilder</string>
@@ -102,7 +102,7 @@
   <string id="154">Laufwerke</string>
   <string id="155">Laufwerk</string>
   <string id="156">Frei</string>
-  <string id="157">Video</string>
+  <string id="157">Bildschirm</string>
   <string id="158">Freier Hauptspeicher</string>
   <string id="159">Keine Verbindung</string>
   <string id="160">Frei</string>
@@ -496,7 +496,7 @@
   <string id="560">ID</string>
   <string id="561">Datei</string>
   <string id="562">Jahr</string>
-  <string id="563">Prädikat</string>
+  <string id="563">Bewertung</string>
   <string id="564">Typ</string>
   <string id="565">Gebrauch</string>
   <string id="566">Album-Interpret</string>
@@ -626,7 +626,7 @@
   <string id="746">Bitte wieder zur Datei-Ansicht wechseln</string>
   <string id="747">Fehler beim Laden des Bildes</string>
   <string id="748">Pfad bearbeiten</string>
-  <string id="749">Spiegelbild</string>
+  <string id="749">Quelle hinzufügen</string>
   <string id="750">Sicher?</string>
   <string id="751">Quelle entfernen</string>
   <string id="752">
@@ -1317,36 +1317,21 @@
   <string id="14093">Sicherheit</string>
   <string id="14094">Eingabegeräte</string>
   <string id="14095">Energiesparen</string>
-  <string id="15000">
-  </string>
-  <string id="15001">
-  </string>
-  <string id="15002">
-  </string>
-  <string id="15003">
-  </string>
-  <string id="15004">
-  </string>
-  <string id="15005">
-  </string>
-  <string id="15006">
-  </string>
-  <string id="15007">
-  </string>
-  <string id="15008">
-  </string>
-  <string id="15009">
-  </string>
-  <string id="15010">
-  </string>
-  <string id="15011">
-  </string>
-  <string id="15012">
-  </string>
-  <string id="15013">
-  </string>
-  <string id="15014">
-  </string>
+  <string id="15000">XLink-Kai</string>
+  <string id="15001">Es besteht keine Verbindung zu XLink-Kai. Möchten</string>
+  <string id="15002">Sie jetzt versuchen eine Verbindung aufzubauen?</string>
+  <string id="15003">Bitte geben Sie eine Nachricht ein</string>
+  <string id="15004">Sie wurden eingeladen %s zu spielen.</string>
+  <string id="15005">Datum: %s</string>
+  <string id="15006">Von: %s</string>
+  <string id="15007">Einladung</string>
+  <string id="15008">Sie wurden eingeladen %s beizutreten.</string>
+  <string id="15009">Offline</string>
+  <string id="15010">Freunde</string>
+  <string id="15011">Ansicht: Freunde</string>
+  <string id="15012">Beitreten</string>
+  <string id="15013">Gespräch</string>
+  <string id="15014">Einladen</string>
   <string id="15015">Entfernen</string>
   <string id="15016">Spiele</string>
   <string id="15017">
@@ -1354,70 +1339,38 @@
   <string id="15018">
   </string>
   <string id="15019">Hinzufügen</string>
-  <string id="15020">
-  </string>
-  <string id="15021">
-  </string>
-  <string id="15022">
-  </string>
-  <string id="15023">
-  </string>
-  <string id="15024">
-  </string>
-  <string id="15025">
-  </string>
-  <string id="15026">
-  </string>
-  <string id="15027">
-  </string>
-  <string id="15028">
-  </string>
-  <string id="15029">
-  </string>
-  <string id="15030">
-  </string>
-  <string id="15031">
-  </string>
-  <string id="15032">
-  </string>
-  <string id="15033">
-  </string>
-  <string id="15034">
-  </string>
-  <string id="15035">
-  </string>
-  <string id="15036">
-  </string>
-  <string id="15037">
-  </string>
-  <string id="15038">
-  </string>
-  <string id="15039">
-  </string>
-  <string id="15040">
-  </string>
-  <string id="15041">
-  </string>
-  <string id="15042">
-  </string>
-  <string id="15043">
-  </string>
-  <string id="15044">
-  </string>
-  <string id="15045">
-  </string>
-  <string id="15046">
-  </string>
-  <string id="15047">
-  </string>
-  <string id="15048">
-  </string>
-  <string id="15049">
-  </string>
-  <string id="15050">
-  </string>
-  <string id="15051">
-  </string>
+  <string id="15020">Moderieren</string>
+  <string id="15021">Arenen</string>
+  <string id="15022">Ansicht: Arenen</string>
+  <string id="15023">Spielen</string>
+  <string id="15024">Hinzufügen</string>
+  <string id="15025">Moderieren</string>
+  <string id="15026">Chat</string>
+  <string id="15027">Ansicht: Chat</string>
+  <string id="15028">Tastatur</string>
+  <string id="15029">Es wird ein Passwort benötigt, um dieser Arena beizutreten.</string>
+  <string id="15030">Verbindung zu XLink-Kai unterbrochen.</string>
+  <string id="15031">XLink-Kai-Authentifikation</string>
+  <string id="15032">Ihr Benutzername und/oder Passwort wurde vom</string>
+  <string id="15033">Orbital-Server abgelehnt. Bitte überprüfen Sie die Konfiguration.</string>
+  <string id="15034">hat sich angemeldet</string>
+  <string id="15035">hat einen Voice-Chat initiiert</string>
+  <string id="15036">hat Ihnen eine Einladung gesendet</string>
+  <string id="15037">XBMC konnte das XLink-Kai Netzwerk nicht erreichen!</string>
+  <string id="15038">Sie könnten Probleme haben über XLink-Kai zu spielen.</string>
+  <string id="15039">Das Spiel konnte nicht automatisch gefunden werden.</string>
+  <string id="15040">Bitte legen Sie die DVD in die XBOX ein oder wählen Sie</string>
+  <string id="15041">'Abbrechen' um das Spiel manuell zu starten.</string>
+  <string id="15042">Zugriff verweigert</string>
+  <string id="15043">%s ist dem Chat beigetreten.</string>
+  <string id="15044">%s hat den Chat verlassen.</string>
+  <string id="15045">Bitte geben Sie eine persönliche Nachricht ein</string>
+  <string id="15046">Diese Arena</string>
+  <string id="15047">Bitte geben Sie ein Passwort für Ihre Arena ein</string>
+  <string id="15048">Bitte geben Sie eine Beschreibung für Ihre Arena ein</string>
+  <string id="15049">Spiel moderieren</string>
+  <string id="15050">Private Arena moderieren</string>
+  <string id="15051">Spieler-Anzahl</string>
   <string id="15052">Passwort</string>
   <string id="15053">
   </string>
@@ -1612,10 +1565,8 @@
   <string id="20017">Lokales Cover</string>
   <string id="20018">Kein Cover</string>
   <string id="20019">Thumbnail wählen</string>
-  <string id="20020">
-  </string>
-  <string id="20021">
-  </string>
+  <string id="20020">Trainer können nicht zusammen mit XLink verwendet werden!</string>
+  <string id="20021">Wählen Sie bitte was Sie verwenden möchten.</string>
   <string id="20022">
   </string>
   <string id="20023">Konflikt</string>
@@ -1660,7 +1611,7 @@
   <string id="20071">Mit neuen Medien-Quellen beginnen</string>
   <string id="20072">Bitte sicherstellen, dass der gewählte Ordner beschreibbar ist</string>
   <string id="20073">und dass der neue Ordnername gültig ist.</string>
-  <string id="20074">FSK</string>
+  <string id="20074">Altersfreigabe</string>
   <string id="20075">Bitte das Master-Passwort eingeben</string>
   <string id="20076">Master-Passwort beim Start abfragen</string>
   <string id="20077">Skin-Optionen</string>
@@ -2060,7 +2011,7 @@
   <string id="21836">Messmodus</string>
   <string id="21837">ISO</string>
   <string id="21838">Digitalzoom</string>
-  <string id="21839">CCD-Weite</string>
+  <string id="21839">CCD Weite</string>
   <string id="21840">GPS-Breitengrad</string>
   <string id="21841">GPS-Längengrad</string>
   <string id="21842">GPS-Höhe</string>
@@ -2146,7 +2097,6 @@
   <string id="22043">schwarz/weiß</string>
   <string id="23000">Wetter-Plugin</string>
   <string id="23001">Plugin Einstellungen</string>
-  <string id="23049">Videotext nicht verfügbar</string>
   <string id="23050">Videotext aktivieren</string>
   <string id="23051">Teil</string>
   <string id="23052">Zwischenspeichern - %i Bytes</string>

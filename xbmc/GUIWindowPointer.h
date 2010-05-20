@@ -29,10 +29,11 @@ class CGUIWindowPointer :
 public:
   CGUIWindowPointer(void);
   virtual ~CGUIWindowPointer(void);
+  void Move(int x, int y);
+  void SetPointer(DWORD dwPointer);
   virtual void Render();
 protected:
-  void SetPointer(int pointer);
   virtual void OnWindowLoaded();
 private:
-  int m_pointer;
+  DWORD m_dwPointer;
 };

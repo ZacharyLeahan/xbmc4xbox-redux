@@ -19,10 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogMuteBug.h"
 #include "GUIWindowManager.h"
 #include "LocalizeStrings.h"
-#include "GUIUserMessages.h"
+
 
 // the MuteBug is a true modeless dialog
 

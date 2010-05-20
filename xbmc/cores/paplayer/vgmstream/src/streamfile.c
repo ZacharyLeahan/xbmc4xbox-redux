@@ -4,12 +4,6 @@
 #include "streamfile.h"
 #include "util.h"
 
-#ifdef _WIN32
-#define IS_VALID_STREAM(stream)     (stream != NULL && (stream->_ptr != NULL))
-#else
-#define IS_VALID_STREAM(stream)     (stream)
-#endif
-
 typedef struct {
     STREAMFILE sf;
     FILE * infile;
@@ -103,14 +97,7 @@ static size_t read_stdio(STDIOSTREAMFILE *streamfile,uint8_t * dest, off_t offse
         return length;
     }
 
-    {
-        size_t length_read = read_the_rest(dest,offset,length,streamfile);
-#if PROFILE_STREAMFILE
-        if (length_read < length) 
-            streamfile->error_count++;
-#endif
-        return length_read;
-    }
+    return read_the_rest(dest,offset,length,streamfile);
 }
 
 static void close_stdio(STDIOSTREAMFILE * streamfile) {
@@ -150,7 +137,7 @@ static STREAMFILE *open_stdio(STDIOSTREAMFILE *streamFile,const char * const fil
         return NULL;
     // if same name, duplicate the file pointer we already have open
     if (!strcmp(streamFile->name,filename)) {
-        if (IS_VALID_STREAM(streamFile->infile) && ((newfd = dup(fileno(streamFile->infile))) >= 0) &&
+        if (((newfd = dup(fileno(streamFile->infile))) >= 0) &&
             (newfile = fdopen( newfd, "rb" ))) 
         {
             newstreamFile = open_stdio_streamfile_buffer_by_FILE(newfile,filename,buffersize);

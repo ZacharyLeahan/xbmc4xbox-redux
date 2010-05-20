@@ -18,6 +18,7 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "File.h"
 #include "FileFactory.h"
 #include "Application.h"
@@ -25,14 +26,12 @@
 #include "DirectoryCache.h"
 #include "FileCache.h"
 #include "FileItem.h"
-#include "utils/log.h"
 
-#ifndef _LINUX
 #include "utils/Win32Exception.h"
-#endif
 #include "URL.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////
@@ -182,6 +181,11 @@ bool CFile::Cache(const CStdString& strFileName, const CStdString& strDest, XFIL
     /* larger then 1 meg, let's do rendering async */
     // Async render cannot be done in SDL builds because of the resulting ThreadMessage deadlock
     // we should call CAsyncFileCopy::Copy() instead.
+#if defined(_XBOX)
+    if( file.GetLength() > 1024*1024 )
+      helper = new CAsyncFileCallback(pCallback, pContext);
+#endif
+
     // 128k is optimal for xbox
     int iBufferSize = 128 * 1024;
 
@@ -305,36 +309,8 @@ bool CFile::Open(const CStdString& strFileName, unsigned int flags)
     if (!m_pFile)
       return false;
 
-    try
+    if (!m_pFile->Open(url))
     {
-      if (!m_pFile->Open(url))
-      {
-        SAFE_DELETE(m_pFile);
-        return false;
-      }
-    }
-    catch (CRedirectException *pRedirectEx)
-    {
-      // the file implementation decided this item should use a different implementation.
-      // the exception will contain the new implementation.
-
-      CLog::Log(LOGDEBUG,"File::Open - redirecting implementation for %s", strFileName.c_str());
-      SAFE_DELETE(m_pFile);
-      if (pRedirectEx && pRedirectEx->m_pNewFileImp)
-      {
-        m_pFile = pRedirectEx->m_pNewFileImp;
-        delete pRedirectEx;
-
-        if (!m_pFile->Open(url))
-        {
-          SAFE_DELETE(m_pFile);
-          return false;
-        }
-      }
-    }
-    catch (...)
-    {
-      CLog::Log(LOGERROR, "File::Open - unknown exception when opening %s", strFileName.c_str());
       SAFE_DELETE(m_pFile);
       return false;
     }
@@ -424,13 +400,13 @@ bool CFile::Exists(const CStdString& strFileName, bool bUseCache /* = true */)
   {
     if (strFileName.IsEmpty()) return false;
 
+    bool bPathInCache;
     if (bUseCache)
     {
-      bool bPathInCache;
-      if (g_directoryCache.FileExists(strFileName, bPathInCache) )
-        return true;
-      if (bPathInCache)
-        return false;
+    if (g_directoryCache.FileExists(strFileName, bPathInCache) )
+      return true;
+    if (bPathInCache)
+      return false;
     }
 
     CURL url(strFileName);
@@ -484,7 +460,7 @@ int CFile::Stat(const CStdString& strFileName, struct __stat64* buffer)
   return -1;
 }
 
-unsigned int CFile::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFile::Read(void *lpBuf, __int64 uiBufSize)
 {
   if (!m_pFile)
     return 0;
@@ -591,7 +567,7 @@ void CFile::Flush()
 }
 
 //*********************************************************************************************
-int64_t CFile::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFile::Seek(__int64 iFilePosition, int iWhence)
 {
   if (!m_pFile)
     return -1;
@@ -610,7 +586,7 @@ int64_t CFile::Seek(int64_t iFilePosition, int iWhence)
   {
     if(iWhence == SEEK_POSSIBLE)
     {
-      int64_t ret = m_pFile->Seek(iFilePosition, iWhence);
+      __int64 ret = m_pFile->Seek(iFilePosition, iWhence);
       if(ret >= 0)
         return ret;
       else
@@ -638,7 +614,7 @@ int64_t CFile::Seek(int64_t iFilePosition, int iWhence)
 }
 
 //*********************************************************************************************
-int64_t CFile::GetLength()
+__int64 CFile::GetLength()
 {
   try
   {
@@ -659,7 +635,7 @@ int64_t CFile::GetLength()
 }
 
 //*********************************************************************************************
-int64_t CFile::GetPosition()
+__int64 CFile::GetPosition()
 {
   if (!m_pFile)
     return -1;
@@ -751,7 +727,7 @@ bool CFile::ReadString(char *szLine, int iLineLength)
   return false;
 }
 
-int CFile::Write(const void* lpBuf, int64_t uiBufSize)
+int CFile::Write(const void* lpBuf, __int64 uiBufSize)
 {
   try
   {
@@ -831,24 +807,6 @@ bool CFile::Rename(const CStdString& strFileName, const CStdString& strNewFileNa
     CLog::Log(LOGERROR, "%s - Unhandled exception ", __FUNCTION__);
   }
   CLog::Log(LOGERROR, "%s - Error renaming file %s", __FUNCTION__, strFileName.c_str());
-  return false;
-}
-
-bool CFile::SetHidden(const CStdString& fileName, bool hidden)
-{
-  try
-  {
-    CURL url(fileName);
-
-    auto_ptr<IFile> pFile(CFileFactory::CreateLoader(url));
-    if (!pFile.get()) return false;
-
-    return pFile->SetHidden(url, hidden);
-  }
-  catch(...)
-  {
-    CLog::Log(LOGERROR, "%s(%s) - Unhandled exception", __FUNCTION__, fileName.c_str());
-  }
   return false;
 }
 
@@ -958,7 +916,7 @@ CFileStreamBuffer::pos_type CFileStreamBuffer::seekoff(
   setg(0,0,0);
   setp(0,0);
 
-  int64_t position = -1;
+  __int64 position = -1;
 #ifndef _LINUX
   try
   {
@@ -1025,7 +983,7 @@ bool CFileStream::Open(const CURL& filename)
   return false;
 }
 
-int64_t CFileStream::GetLength()
+__int64 CFileStream::GetLength()
 {
   return m_file->GetLength();
 }
@@ -1043,17 +1001,3 @@ bool CFileStream::Open(const CStdString& filename)
 {
   return Open(CURL(filename));
 }
-
-#ifdef _ARMEL
-char* CFileStream::ReadFile()
-{
-  if(!m_file)
-    return NULL;
-
-  int64_t length = m_file->GetLength();
-  char *str = new char[length+1];
-  m_file->Read(str, length);
-  str[length] = '\0';
-  return str;
-}
-#endif

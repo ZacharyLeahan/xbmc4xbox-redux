@@ -1,6 +1,6 @@
 /*!
 \file GUIWindowManager.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_CGUIWindowManager_H
@@ -39,7 +39,7 @@ class CGUIDialog;
 
 /*!
  \ingroup winman
- \brief
+ \brief 
  */
 class CGUIWindowManager
 {
@@ -67,18 +67,8 @@ public:
   // currently focused window(s).  Returns true only if the message is handled.
   bool OnAction(const CAction &action);
 
-  /*! \brief Rendering of the current window
-   Render is called every frame to draw the current window and any dialogs.
-   It should only be called from the application thread.
-   */
   void Render();
-
-  /*! \brief Per-frame updating of the current window and any dialogs
-   FrameMove is called every frame to update the current window and any dialogs
-   on screen. It should only be called from the application thread.
-   */
-  void FrameMove();
-  
+  void RenderDialogs();
   CGUIWindow* GetWindow(int id) const;
   void Process(bool renderOnly = false);
   void SetCallback(IWindowManagerCallback& callback);
@@ -120,6 +110,8 @@ private:
 
   friend class CApplicationMessenger;
   void ActivateWindow_Internal(int windowID, const std::vector<CStdString> &params, bool swappingWindows);
+  void Process_Internal(bool renderOnly = false);
+  void Render_Internal();
 
   typedef std::map<int, CGUIWindow *> WindowMap;
   WindowMap m_mapWindows;
@@ -142,7 +134,7 @@ private:
 
 /*!
  \ingroup winman
- \brief
+ \brief 
  */
 extern CGUIWindowManager g_windowManager;
 #endif

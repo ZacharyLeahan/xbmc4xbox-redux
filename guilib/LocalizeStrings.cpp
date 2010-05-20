@@ -19,15 +19,15 @@
  *
  */
 
-#include "system.h"
+#include "include.h"
 #include "LocalizeStrings.h"
 #include "utils/CharsetConverter.h"
-#include "utils/log.h"
 #include "FileSystem/SpecialProtocol.h"
 #include "XMLUtils.h"
 
 CLocalizeStrings g_localizeStrings;
 CLocalizeStrings g_localizeStringsTemp;
+extern CStdString g_LoadErrorStr;
 
 CLocalizeStrings::CLocalizeStrings(void)
 {
@@ -59,8 +59,8 @@ bool CLocalizeStrings::LoadSkinStrings(const CStdString& path, const CStdString&
 {
   ClearSkinStrings();
   // load the skin strings in.
-  CStdString encoding;
-  if (!LoadXML(path, encoding))
+  CStdString encoding, error;
+  if (!LoadXML(path, encoding, error))
   {
     if (path == fallbackPath) // no fallback, nothing to do
       return false;
@@ -68,27 +68,29 @@ bool CLocalizeStrings::LoadSkinStrings(const CStdString& path, const CStdString&
 
   // load the fallback
   if (path != fallbackPath)
-    LoadXML(fallbackPath, encoding);
+    LoadXML(fallbackPath, encoding, error);
 
   return true;
 }
 
-bool CLocalizeStrings::LoadXML(const CStdString &filename, CStdString &encoding, uint32_t offset /* = 0 */)
+bool CLocalizeStrings::LoadXML(const CStdString &filename, CStdString &encoding, CStdString &error, uint32_t offset /* = 0 */)
 {
   TiXmlDocument xmlDoc;
-  if (!xmlDoc.LoadFile(PTH_IC(filename)))
+  if (!xmlDoc.LoadFile(filename))
   {
     CLog::Log(LOGDEBUG, "unable to load %s: %s at line %d", filename.c_str(), xmlDoc.ErrorDesc(), xmlDoc.ErrorRow());
+    error.Format("Unable to load %s: %s at line %d", filename.c_str(), xmlDoc.ErrorDesc(), xmlDoc.ErrorRow());
     return false;
   }
 
   XMLUtils::GetEncoding(&xmlDoc, encoding);
 
   TiXmlElement* pRootElement = xmlDoc.RootElement();
-  if (!pRootElement || pRootElement->NoChildren() ||
+  if (!pRootElement || pRootElement->NoChildren() || 
        pRootElement->ValueStr()!=CStdString("strings"))
   {
     CLog::Log(LOGERROR, "%s Doesn't contain <strings>", filename.c_str());
+    error.Format("%s\nDoesnt start with <strings>", filename.c_str());
     return false;
   }
 
@@ -112,20 +114,22 @@ bool CLocalizeStrings::Load(const CStdString& strFileName, const CStdString& str
 {
   bool bLoadFallback = !strFileName.Equals(strFallbackFileName);
 
-  CStdString encoding;
+  CStdString encoding, error;
   Clear();
 
-  if (!LoadXML(strFileName, encoding))
+  if (!LoadXML(strFileName, encoding, error))
   {
     // try loading the fallback
-    if (!bLoadFallback || !LoadXML(strFallbackFileName, encoding))
+    if (!bLoadFallback || !LoadXML(strFallbackFileName, encoding, error))
+    {
+      g_LoadErrorStr = error;
       return false;
-
+    }
     bLoadFallback = false;
   }
 
   if (bLoadFallback)
-    LoadXML(strFallbackFileName, encoding);
+    LoadXML(strFallbackFileName, encoding, error);
 
   // fill in the constant strings
   m_strings[20022] = "";
@@ -133,9 +137,9 @@ bool CLocalizeStrings::Load(const CStdString& strFileName, const CStdString& str
   m_strings[20028] = ToUTF8(encoding, "K");
   m_strings[20029] = ToUTF8(encoding, "°C");
   m_strings[20030] = ToUTF8(encoding, "°Ré");
-  m_strings[20031] = ToUTF8(encoding, "°Ra");
-  m_strings[20032] = ToUTF8(encoding, "°Rø");
-  m_strings[20033] = ToUTF8(encoding, "°De");
+  m_strings[20031] = ToUTF8(encoding, "°Ra"); 
+  m_strings[20032] = ToUTF8(encoding, "°Rø"); 
+  m_strings[20033] = ToUTF8(encoding, "°De"); 
   m_strings[20034] = ToUTF8(encoding, "°N");
 
   m_strings[20200] = ToUTF8(encoding, "km/h");
@@ -194,8 +198,8 @@ uint32_t CLocalizeStrings::LoadBlock(const CStdString &id, const CStdString &pat
   m_blocks.insert(make_pair(id, offset));
 
   // load the strings
-  CStdString encoding;
-  bool success = LoadXML(path, encoding, offset);
+  CStdString encoding, error;
+  bool success = LoadXML(path, encoding, error, offset);
   if (!success)
   {
     if (path == fallbackPath) // no fallback, nothing to do
@@ -204,7 +208,7 @@ uint32_t CLocalizeStrings::LoadBlock(const CStdString &id, const CStdString &pat
 
   // load the fallback
   if (path != fallbackPath)
-    success |= LoadXML(fallbackPath, encoding, offset);
+    success |= LoadXML(fallbackPath, encoding, error, offset);
 
   return success ? offset : 0;
 }
@@ -217,7 +221,7 @@ void CLocalizeStrings::ClearBlock(const CStdString &id)
     CLog::Log(LOGERROR, "%s: Trying to clear non existent block %s", __FUNCTION__, id.c_str());
     return; // doesn't exist
   }
-
+  
   // clear our block
   Clear(it->second, it->second + block_size);
   m_blocks.erase(it);

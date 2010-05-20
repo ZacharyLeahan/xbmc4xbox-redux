@@ -26,12 +26,13 @@
  *
  **********************************************************************/
 
+
+#include "stdafx.h"
 #include <iostream>
 #include <string>
 
 #include "sqlitedataset.h"
 #include "utils/log.h"
-#include "system.h" // for Sleep(), OutputDebugString() and GetLastError()
 
 using namespace std;
 
@@ -167,63 +168,24 @@ const char *SqliteDatabase::getErrorMsg() {
 }
 
 int SqliteDatabase::connect() {
-  if (host.empty() || db.empty())
-    return DB_CONNECTION_NONE;
-  
-  string db_fullpath;
-  // hostname is the relative folder to the database, ensure it's slash terminated
-  if (host[host.length()-1] != '/' && host[host.length()-1] != '\\')
-    db_fullpath = host + "/";
-  else
-    db_fullpath = host;
-
-  // db is the filename for the database, ensure it's not slash prefixed
-  if (db[0] == '/' || db[0] == '\\')
-    db_fullpath += db.substr(1);
-  else
-    db_fullpath += db;
-
-  // ensure the fully qualified path has slashes in the correct direction
-  if ( (db_fullpath[1] == ':') && isalpha(db_fullpath[0]))
-  {
-    size_t pos = 0;
-    while ( (pos = db_fullpath.find("/", pos)) != string::npos )
-      db_fullpath.replace(pos++, 1, "\\");
-  }
-  else
-  {
-    size_t pos = 0;
-    while ( (pos = db_fullpath.find("\\", pos)) != string::npos )
-      db_fullpath.replace(pos++, 1, "/");
-  }
-
-  // ensure the ".db" extension is appended to the end
-  if ( db_fullpath.find(".db") != (db_fullpath.length()-3) )
-    db_fullpath += ".db";
-
-  try
-  {
-
+  try {
     disconnect();
-    if (sqlite3_open(db_fullpath.c_str(), &conn)==SQLITE_OK)
-    {
-      sqlite3_busy_handler(conn, busy_callback, NULL);
+    if (sqlite3_open(db.c_str(),&conn/*,NULL*/)==SQLITE_OK) {
+      //cout << "Connected!\n";
+      sqlite3_busy_handler(conn, busy_callback,NULL);
       char* err=NULL;
-      if (setErr(sqlite3_exec(getHandle(),"PRAGMA empty_result_callbacks=ON",NULL,NULL,&err),"PRAGMA empty_result_callbacks=ON") != SQLITE_OK)
-      {
+      if (setErr(sqlite3_exec(getHandle(),"PRAGMA empty_result_callbacks=ON",NULL,NULL,&err),"PRAGMA empty_result_callbacks=ON") != SQLITE_OK) {
         throw DbErrors(getErrorMsg());
       }
       active = true;
       return DB_CONNECTION_OK;
     }
-
-    CLog::Log(LOGERROR, "Unable to open database: %s (%u)", db_fullpath.c_str(), GetLastError());
+    CLog::Log(LOGERROR, "Unable to open database: %s (%lu)", db.c_str(),GetLastError());
     return DB_CONNECTION_NONE;
   }
   catch(...)
   {
-    CLog::Log(LOGERROR, "Unable to open database: %s (%u)",
-              db_fullpath.c_str(), GetLastError());
+    CLog::Log(LOGERROR, "Unable to open database: %s (%lu)", db.c_str(),GetLastError());
   }
   return DB_CONNECTION_NONE;
 }
@@ -272,19 +234,19 @@ long SqliteDatabase::nextid(const char* sname) {
   result_set res;
   char sqlcmd[512];
   sprintf(sqlcmd,"select nextid from %s where seq_name = '%s'",sequence_table.c_str(), sname);
-  if ((last_err = sqlite3_exec(getHandle(),sqlcmd,&callback,&res,NULL)) != SQLITE_OK) {
+  if (last_err = sqlite3_exec(getHandle(),sqlcmd,&callback,&res,NULL) != SQLITE_OK) {
     return DB_UNEXPECTED_RESULT;
     }
   if (res.records.size() == 0) {
     id = 1;
     sprintf(sqlcmd,"insert into %s (nextid,seq_name) values (%d,'%s')",sequence_table.c_str(),id,sname);
-    if ((last_err = sqlite3_exec(conn,sqlcmd,NULL,NULL,NULL)) != SQLITE_OK) return DB_UNEXPECTED_RESULT;
+    if (last_err = sqlite3_exec(conn,sqlcmd,NULL,NULL,NULL) != SQLITE_OK) return DB_UNEXPECTED_RESULT;
     return id;
   }
   else {
     id = res.records[0]->at(0).get_asInt()+1;
     sprintf(sqlcmd,"update %s set nextid=%d where seq_name = '%s'",sequence_table.c_str(),id,sname);
-    if ((last_err = sqlite3_exec(conn,sqlcmd,NULL,NULL,NULL) != SQLITE_OK)) return DB_UNEXPECTED_RESULT;
+    if (last_err = sqlite3_exec(conn,sqlcmd,NULL,NULL,NULL) != SQLITE_OK) return DB_UNEXPECTED_RESULT;
     return id;
   }
   return DB_UNEXPECTED_RESULT;
@@ -442,7 +404,7 @@ int SqliteDataset::exec(const string &sql) {
   if (!handle()) throw DbErrors("No Database Connection");
   int res;
   exec_res.clear();
-  if((res = db->setErr(sqlite3_exec(handle(),sql.c_str(),&callback,&exec_res,&errmsg),sql.c_str())) == SQLITE_OK)
+  if(res = db->setErr(sqlite3_exec(handle(),sql.c_str(),&callback,&exec_res,&errmsg),sql.c_str()) == SQLITE_OK)
     return res;
   else
     {
@@ -470,11 +432,7 @@ bool SqliteDataset::query(const char *query) {
   close();
 
   sqlite3_stmt *stmt = NULL;
-  #ifdef __APPLE__
   if (db->setErr(sqlite3_prepare(handle(),query,-1,&stmt, NULL),query) != SQLITE_OK)
-  #else
-  if (db->setErr(sqlite3_prepare_v2(handle(),query,-1,&stmt, NULL),query) != SQLITE_OK)
-  #endif
     throw DbErrors(db->getErrorMsg());
 
   // column headers

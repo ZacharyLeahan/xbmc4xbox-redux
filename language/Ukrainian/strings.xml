@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <!--Language file translated with Team XBMC Translator-->
 <!--Translator: TigerHeart [ua]-->
 <!--Email: admin@irt.pl.ua-->
@@ -113,6 +113,7 @@
   <string id="183">Огляд</string>
   <string id="184">Оновити</string>
   <string id="185">Пошук альбому</string>
+  <string id="186">OK</string>
   <string id="187">Альбомів не знайдено!</string>
   <string id="188">Вибрати все</string>
   <string id="189">Сканування інформації</string>
@@ -174,6 +175,7 @@
   <string id="252">Виводити стерео на всі динаміки</string>
   <string id="253">Кількість каналів</string>
   <string id="254">- виводити звук в форматі DTS®</string>
+  <string id="255">CDDB</string>
   <string id="256">Запит інформації про CD</string>
   <string id="257">Помилка</string>
   <string id="258">Читати інформацію з тегів</string>
@@ -273,6 +275,7 @@
   <string id="365">Сорт.по: Назві</string>
   <string id="366">Сорт.по: Року</string>
   <string id="367">Сорт.по: Рейтингу</string>
+  <string id="368">IMDb</string>
   <string id="369">Назва</string>
   <string id="370">грози</string>
   <string id="371">місцями</string>
@@ -339,6 +342,7 @@
   <string id="438">Відкриття файла</string>
   <string id="439">Кєш</string>
   <string id="440">Жорсткий диск</string>
+  <string id="441">UDF</string>
   <string id="442">Локальна мережа</string>
   <string id="444">Відео</string>
   <string id="445">Аудіо</string>
@@ -800,6 +804,18 @@
   <string id="12022">Продовжувати з %s</string>
   <string id="12023">Перевірка існуючих трейнерів...</string>
   <string id="12024">Автоматично створювати ескізи для відео без обкладинки</string>
+  <string id="12310">0</string>
+  <string id="12311">1</string>
+  <string id="12312">2</string>
+  <string id="12313">3</string>
+  <string id="12314">4</string>
+  <string id="12315">5</string>
+  <string id="12316">6</string>
+  <string id="12317">7</string>
+  <string id="12318">8</string>
+  <string id="12319">9</string>
+  <string id="12320">c</string>
+  <string id="12322">*</string>
   <string id="12325">Заблоковано! Впишіть код...</string>
   <string id="12326">Впишіть пароль</string>
   <string id="12327">Введіть код захисту</string>
@@ -1180,6 +1196,7 @@
   <string id="15109">Стандартне оформлення</string>
   <string id="15111">- Тема оформлення</string>
   <string id="15112">Стандартна тема</string>
+  <string id="15200">Last.FM</string>
   <string id="15201">Відправляти статистику на Last.fm</string>
   <string id="15202">Ім'я користувача для Last.fm</string>
   <string id="15203">Пароль для Last.fm</string>

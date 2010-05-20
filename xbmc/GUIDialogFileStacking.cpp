@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogFileStacking.h"
 #include "LocalizeStrings.h"
 #include "FileItem.h"

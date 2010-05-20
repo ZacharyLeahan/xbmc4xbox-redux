@@ -19,14 +19,13 @@
  *
  */
  
+#include "stdafx.h"
 #include "dlgcache.h"
-#include "Application.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 #include "utils/SingleLock.h"
-#include "utils/TimeUtils.h"
+
+extern "C" void mplayer_exit_player(void);
 
 CDlgCache::CDlgCache(DWORD dwDelay, const CStdString& strHeader, const CStdString& strMsg)
 {
@@ -43,7 +42,7 @@ CDlgCache::CDlgCache(DWORD dwDelay, const CStdString& strHeader, const CStdStrin
   if(dwDelay == 0)
     OpenDialog();    
   else
-    m_dwTimeStamp = CTimeUtils::GetTimeMS() + dwDelay;
+    m_dwTimeStamp = GetTickCount() + dwDelay;
 
   Create(true);
 }
@@ -52,10 +51,8 @@ void CDlgCache::Close(bool bForceClose)
 {
   bSentCancel = true;
 
-  // we cannot wait for the app thread to process the close message
-  // as this might happen during player startup which leads to a deadlock
   if (m_pDlg->IsDialogRunning())
-    g_application.getApplicationMessenger().Close(m_pDlg,bForceClose,false);
+    m_pDlg->Close(bForceClose);
 
   //Set stop, this will kill this object, when thread stops  
   CThread::m_bStop = true;
@@ -131,8 +128,11 @@ void CDlgCache::Process()
         if(m_pDlg->IsCanceled())
         {
           bSentCancel = true;
+#ifdef _XBOX
+          mplayer_exit_player(); 
+#endif
         }
-        else if( !m_pDlg->IsDialogRunning() && CTimeUtils::GetTimeMS() > m_dwTimeStamp 
+        else if( !m_pDlg->IsDialogRunning() && GetTickCount() > m_dwTimeStamp 
               && !g_windowManager.IsWindowActive(WINDOW_DIALOG_YES_NO) )
           OpenDialog();
       }

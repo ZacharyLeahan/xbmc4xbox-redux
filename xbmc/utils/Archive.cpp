@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "Archive.h"
 #include "FileSystem/File.h"
 
@@ -40,7 +41,9 @@ CArchive::CArchive(CFile* pFile, int mode)
 CArchive::~CArchive()
 {
   FlushBuffer();
-  delete[] m_pBuffer;
+  if (m_pBuffer != NULL)
+    delete[] m_pBuffer;
+
   m_BufferPos = 0;
 }
 

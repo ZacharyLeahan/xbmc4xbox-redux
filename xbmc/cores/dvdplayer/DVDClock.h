@@ -21,10 +21,7 @@
  *
  */
 
-#include "system.h"
 #include "utils/SharedSection.h"
-#include "utils/CriticalSection.h"
-
 #define DVD_TIME_BASE 1000000
 #define DVD_NOPTS_VALUE    (-1LL<<52) // should be possible to represent in both double and __int64
 
@@ -55,7 +52,7 @@ public:
 
   /* delay should say how long in the future we expect to display this frame */
   void Discontinuity(ClockDiscontinuityType type, double currentPts = 0LL, double delay = 0LL);
-
+  
   /* will return how close we are to a discontinuity */
   double DistanceToDisc();
 
@@ -63,28 +60,15 @@ public:
   void Resume();
   void SetSpeed(int iSpeed);
 
-  /* tells clock at what framerate video is, to  *
-   * allow it to adjust speed for a better match */
-  int UpdateFramerate(double fps);
-
-  bool   SetMaxSpeedAdjust(double speed);
-
   static double GetAbsoluteClock();
-  static double GetFrequency() { return (double)m_systemFrequency ; }
-  static double WaitAbsoluteClock(double target);
+  static double GetFrequency() { return (double)m_systemFrequency.QuadPart ; }
 protected:
   CSharedSection m_critSection;
-  int64_t m_systemUsed;
-  int64_t m_startClock;
-  int64_t m_pauseClock;
+  LARGE_INTEGER m_systemUsed;  
+  LARGE_INTEGER m_startClock;
+  LARGE_INTEGER m_pauseClock;
   double m_iDisc;
   bool m_bReset;
-
-  static int64_t m_systemFrequency;
-  static int64_t m_systemOffset;
-  static CCriticalSection m_systemsection;
-
-  double           m_maxspeedadjust;
-  bool             m_speedadjust;
-  CCriticalSection m_speedsection;
+  
+  static LARGE_INTEGER m_systemFrequency;
 };

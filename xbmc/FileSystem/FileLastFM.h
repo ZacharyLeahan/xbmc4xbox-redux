@@ -21,7 +21,6 @@
  */
 
 #include "FileCurl.h"
-#include "RingBuffer.h"
 
 namespace XFILE
 {

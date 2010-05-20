@@ -19,15 +19,14 @@
  *
  */
 
+#include "stdafx.h"
 #include "DVDAudioCodecLibFaad.h"
 #include "DVDStreamInfo.h"
-#include "GUISettings.h"
-#include "utils/log.h"
 
 CDVDAudioCodecLibFaad::CDVDAudioCodecLibFaad() : CDVDAudioCodec()
 {
   m_bInitializedDecoder = false;
-
+  
   m_pHandle = NULL;
 }
 
@@ -40,13 +39,13 @@ bool CDVDAudioCodecLibFaad::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
 {
   // for safety
   if (m_pHandle) Dispose();
-
+  
   if (!m_dll.Load())
     return false;
-
+  
   memset(&m_frameInfo, 0, sizeof(m_frameInfo));
-
-  if (!OpenDecoder() )
+  
+  if (!OpenDecoder() ) 
     return false;
 
   m_bRawAACStream = true;;
@@ -65,7 +64,7 @@ bool CDVDAudioCodecLibFaad::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
     m_iSourceSampleRate = samplerate;
     m_iSourceChannels = channels;
     m_iSourceBitrate = 0;
-
+  
     m_bInitializedDecoder = true;
   }
   return true;
@@ -79,7 +78,7 @@ void CDVDAudioCodecLibFaad::Dispose()
 bool CDVDAudioCodecLibFaad::SyncStream()
 {
   BYTE* p = m_InputBuffer;
-
+  
   while (m_InputBufferSize > 4)
   {
     // Check if an ADIF or ADTS header is present
@@ -97,51 +96,27 @@ bool CDVDAudioCodecLibFaad::SyncStream()
     p++;
     m_InputBufferSize--;
   }
-
+  
   // no sync found
   CLog::Log(LOGWARNING, "CDVDAudioCodecLibFaad::SyncStream(), no sync found (ADIF or ADTS header) in stream");
   return false;
 }
 
-enum PCMChannels* CDVDAudioCodecLibFaad::GetChannelMap()
-{
-  int index = 0;
-  for(int i = 0; i < m_iSourceChannels; ++i)
-    switch(m_frameInfo.channel_position[i])
-    {
-      case FRONT_CHANNEL_CENTER: m_pChannelMap[index++] = PCM_FRONT_CENTER ; break;
-      case FRONT_CHANNEL_LEFT  : m_pChannelMap[index++] = PCM_FRONT_LEFT   ; break;
-      case FRONT_CHANNEL_RIGHT : m_pChannelMap[index++] = PCM_FRONT_RIGHT  ; break;
-      case SIDE_CHANNEL_LEFT   : m_pChannelMap[index++] = PCM_SIDE_LEFT    ; break;
-      case SIDE_CHANNEL_RIGHT  : m_pChannelMap[index++] = PCM_SIDE_RIGHT   ; break;
-      case BACK_CHANNEL_LEFT   : m_pChannelMap[index++] = PCM_BACK_LEFT    ; break;
-      case BACK_CHANNEL_RIGHT  : m_pChannelMap[index++] = PCM_BACK_RIGHT   ; break;
-      case BACK_CHANNEL_CENTER : m_pChannelMap[index++] = PCM_BACK_CENTER  ; break;
-      case LFE_CHANNEL         : m_pChannelMap[index++] = PCM_LOW_FREQUENCY; break;
-    }
-
-  if (index < m_iSourceChannels)
-    return NULL;
-
-  assert(index == m_iSourceChannels);
-  return m_pChannelMap;
-}
-
 int CDVDAudioCodecLibFaad::Decode(BYTE* pData, int iSize)
 {
   m_DecodedDataSize = 0;
-
+  
   if (!m_pHandle)
     return -1;
 
   int iBytesToCopy = std::min(iSize, LIBFAAD_INPUT_SIZE - m_InputBufferSize);
   memcpy(m_InputBuffer + m_InputBufferSize, pData, iBytesToCopy);
   m_InputBufferSize += iBytesToCopy;
-
+  
   // if the caller does not supply enough data, return
   if (m_InputBufferSize < FAAD_MIN_STREAMSIZE)
     return iBytesToCopy;
-
+    
   if(m_bRawAACStream)
   {
     // attempt to sync stream
@@ -153,7 +128,7 @@ int CDVDAudioCodecLibFaad::Decode(BYTE* pData, int iSize)
     {
       unsigned long samplerate;
       unsigned char channels;
-
+      
       int res = m_dll.faacDecInit(m_pHandle, m_InputBuffer, m_InputBufferSize, &samplerate, &channels);
       if(res < 0)
       {
@@ -184,7 +159,7 @@ int CDVDAudioCodecLibFaad::Decode(BYTE* pData, int iSize)
   m_DecodedDataSize = m_frameInfo.samples * sizeof(short);
 
   if (m_frameInfo.error)
-  {
+  {    
     char* strError = m_dll.faacDecGetErrorMessage(m_frameInfo.error);
     m_dll.faacDecPostSeekReset(m_pHandle, 0);
     CLog::Log(LOGERROR, "CDVDAudioCodecLibFaad() : %s", strError);
@@ -192,15 +167,15 @@ int CDVDAudioCodecLibFaad::Decode(BYTE* pData, int iSize)
     return iBytesToCopy;
   }
 
-  // we set this info again, it could be this info changed
+  // we set this info again, it could be this info changed 
   m_iSourceSampleRate = m_frameInfo.samplerate;
   m_iSourceChannels = m_frameInfo.channels;
   m_iSourceBitrate = 0;
-
+            
   // move remaining data along
   m_InputBufferSize -= m_frameInfo.bytesconsumed;
   memcpy(m_InputBuffer, m_InputBuffer+m_frameInfo.bytesconsumed, m_InputBufferSize);
-
+  
   return iBytesToCopy;
 }
 
@@ -232,18 +207,18 @@ bool CDVDAudioCodecLibFaad::OpenDecoder()
     CLog::Log(LOGWARNING, "CDVDAudioCodecLibFaad : Decoder already opened");
     return false;
   }
-
+  
   m_bInitializedDecoder = false;
-
+  
   m_InputBufferSize = 0;
   m_DecodedDataSize = 0;
-
+  
   m_iSourceSampleRate = 0;
   m_iSourceChannels = 0;
   m_iSourceBitrate = 0;
-
+  
   m_pHandle = m_dll.faacDecOpen();
-
+  
   if (m_pHandle)
   {
     faacDecConfigurationPtr pConfiguration;
@@ -251,16 +226,12 @@ bool CDVDAudioCodecLibFaad::OpenDecoder()
 
     // modify some stuff here
     pConfiguration->outputFormat = FAAD_FMT_16BIT; // already default
-#ifdef __APPLE__
-    pConfiguration->downMatrix   = g_guiSettings.GetBool("audiooutput.downmixmultichannel") ? 1 : 0;
-#else
-    pConfiguration->downMatrix   = 0;
-#endif
+    pConfiguration->downMatrix = 1;
 
     m_dll.faacDecSetConfiguration(m_pHandle, pConfiguration);
 
     return true;
   }
-
+  
   return false;
 }

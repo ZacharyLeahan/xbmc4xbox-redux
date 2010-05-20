@@ -21,10 +21,6 @@
  *
  */
 
-#include "system.h"
-
-#include <vector>
-
 // when modifying these structures, make sure you update all codecs accordingly
 #define FRAME_TYPE_UNDEF 0
 #define FRAME_TYPE_I 1
@@ -32,36 +28,18 @@
 #define FRAME_TYPE_B 3
 #define FRAME_TYPE_D 4
 
-namespace DXVA { class CProcessor; }
-namespace VAAPI { class CHolder; }
-class CVDPAU;
 
 // should be entirely filled by all codecs
 struct DVDVideoPicture
-{
+{  
   double pts; // timestamp in seconds, used in the CDVDPlayer class to keep track of pts
   double dts;
 
-  union
-  {
-    struct {
-      BYTE* data[4];      // [4] = alpha channel, currently not used
-      int iLineSize[4];   // [4] = alpha channel, currently not used
-    };
-    struct {
-      DXVA::CProcessor* proc;
-      int64_t           proc_id;
-    };
-    struct {
-      CVDPAU* vdpau;
-    };
-    struct {
-      VAAPI::CHolder* vaapi;
-    };
-  };
+  BYTE* data[4];      // [4] = alpha channel, currently not used
+  int iLineSize[4];   // [4] = alpha channel, currently not used
 
   unsigned int iFlags;
-
+  
   double       iRepeatPicture;
   double       iDuration;
   unsigned int iFrameType         : 4; // see defines above // 1->I, 2->P, 3->B, 0->Undef
@@ -77,11 +55,6 @@ struct DVDVideoPicture
   enum EFormat {
     FMT_YUV420P = 0,
     FMT_VDPAU,
-    FMT_NV12,
-    FMT_UYVY,       // place holder for future expansion
-    FMT_YUY2,       //place holder for future expansion
-    FMT_DXVA,
-    FMT_VAAPI,
   } format;
 };
 
@@ -98,6 +71,7 @@ struct DVDVideoUserData
 
 #define DVP_FLAG_NOSKIP             0x00000010 // indicate this picture should never be dropped
 #define DVP_FLAG_DROPPED            0x00000020 // indicate that this picture has been dropped in decoder stage, will have no data
+#define DVP_FLAG_NOAUTOSYNC         0x00000040 // disregard any smooth syncing on this picture
 
 // DVP_FLAG 0x00000100 - 0x00000f00 is in use by libmpeg2!
 
@@ -117,29 +91,29 @@ public:
 
   CDVDVideoCodec() {}
   virtual ~CDVDVideoCodec() {}
-
+  
   /*
    * Open the decoder, returns true on success
    */
   virtual bool Open(CDVDStreamInfo &hints, CDVDCodecOptions &options) = 0;
-
+  
   /*
    * Dispose, Free all resources
    */
   virtual void Dispose() = 0;
-
+  
   /*
    * returns one or a combination of VC_ messages
    * pData and iSize can be NULL, this means we should flush the rest of the data.
    */
   virtual int Decode(BYTE* pData, int iSize, double dts, double pts) = 0;
-
+  
  /*
    * Reset the decoder.
    * Should be the same as calling Dispose and Open after each other
    */
   virtual void Reset() = 0;
-
+  
   /*
    * returns true if successfull
    * the data is valid until the next Decode call
@@ -157,7 +131,7 @@ public:
     pDvdVideoUserData->size = 0;
     return false;
   }
-
+   
   /*
    * will be called by video player indicating if a frame will eventually be dropped
    * codec can then skip actually decoding the data, just consume the data set picture headers
@@ -169,15 +143,4 @@ public:
    * should return codecs name
    */
   virtual const char* GetName() = 0;
-
-  /*
-   *
-   * How many packets should player remember, so codec
-   * can recover should something cause it to flush
-   * outside of players control
-   */
-  virtual unsigned GetConvergeCount()
-  {
-    return 0;
-  }
 };

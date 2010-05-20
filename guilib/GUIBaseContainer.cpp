@@ -19,19 +19,15 @@
  *
  */
 
+#include "include.h"
 #include "GUIBaseContainer.h"
-#include "GUIControlFactory.h"
+#include "GuiControlFactory.h"
 #include "GUIWindowManager.h"
 #include "utils/CharsetConverter.h"
 #include "utils/GUIInfoManager.h"
-#include "utils/TimeUtils.h"
-#include "utils/log.h"
 #include "XMLUtils.h"
-#include "addons/Skin.h"
-#include "StringUtils.h"
-#include "GUIStaticItem.h"
-#include "Key.h"
-#include "MathUtils.h"
+#include "SkinInfo.h"
+#include "FileItem.h"
 
 using namespace std;
 
@@ -87,8 +83,9 @@ void CGUIBaseContainer::Render()
     FreeMemory(CorrectOffset(offset - cacheBefore, 0), CorrectOffset(offset + m_itemsPerPage + 1 + cacheAfter, 0));
 
   g_graphicsContext.SetClipRegion(m_posX, m_posY, m_width, m_height);
-  CPoint origin = CPoint(m_posX, m_posY) + m_renderOffset;
-  float pos = (m_orientation == VERTICAL) ? origin.y : origin.x;
+  float posX = m_posX + m_renderOffset.x;
+  float posY = m_posY + m_renderOffset.y;
+  float pos = (m_orientation == VERTICAL) ? posY : posX;
   float end = (m_orientation == VERTICAL) ? m_posY + m_height : m_posX + m_width;
 
   // we offset our draw position to take into account scrolling and whether or not our focused
@@ -120,9 +117,9 @@ void CGUIBaseContainer::Render()
       else
       {
         if (m_orientation == VERTICAL)
-          RenderItem(origin.x, pos, item.get(), false);
+          RenderItem(posX, pos, item.get(), false);
         else
-          RenderItem(pos, origin.y, item.get(), false);
+          RenderItem(pos, posY, item.get(), false);
       }
     }
     // increment our position
@@ -133,9 +130,9 @@ void CGUIBaseContainer::Render()
   if (focusedItem)
   {
     if (m_orientation == VERTICAL)
-      RenderItem(origin.x, focusedPos, focusedItem.get(), true);
+      RenderItem(posX, focusedPos, focusedItem.get(), true);
     else
-      RenderItem(focusedPos, origin.y, focusedItem.get(), true);
+      RenderItem(focusedPos, posY, focusedItem.get(), true);
   }
 
   g_graphicsContext.RestoreClipRegion();
@@ -170,7 +167,7 @@ void CGUIBaseContainer::RenderItem(float posX, float posY, CGUIListItem *item, b
       }
       if (item != m_lastItem && HasFocus())
       {
-        item->GetFocusedLayout()->ResetAnimation(ANIM_TYPE_UNFOCUS);
+        item->GetFocusedLayout()->ResetAnimation(ANIM_TYPE_UNFOCUS);      
         unsigned int subItem = 1;
         if (m_lastItem && m_lastItem->GetFocusedLayout())
           subItem = m_lastItem->GetFocusedLayout()->GetFocusedItem();
@@ -199,13 +196,13 @@ void CGUIBaseContainer::RenderItem(float posX, float posY, CGUIListItem *item, b
 
 bool CGUIBaseContainer::OnAction(const CAction &action)
 {
-  if (action.GetID() >= KEY_ASCII)
+  if (action.id >= KEY_ASCII)
   {
-    OnJumpLetter((char)(action.GetID() & 0xff));
+    OnJumpLetter((char)(action.id & 0xff));
     return true;
   }
 
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_MOVE_LEFT:
   case ACTION_MOVE_RIGHT:
@@ -213,16 +210,16 @@ bool CGUIBaseContainer::OnAction(const CAction &action)
   case ACTION_MOVE_UP:
     {
       if (!HasFocus()) return false;
-      if (action.GetHoldTime() > HOLD_TIME_START &&
-        ((m_orientation == VERTICAL && (action.GetID() == ACTION_MOVE_UP || action.GetID() == ACTION_MOVE_DOWN)) ||
-         (m_orientation == HORIZONTAL && (action.GetID() == ACTION_MOVE_LEFT || action.GetID() == ACTION_MOVE_RIGHT))))
+      if (action.holdTime > HOLD_TIME_START && 
+        ((m_orientation == VERTICAL && (action.id == ACTION_MOVE_UP || action.id == ACTION_MOVE_DOWN)) ||
+         (m_orientation == HORIZONTAL && (action.id == ACTION_MOVE_LEFT || action.id == ACTION_MOVE_RIGHT))))
       { // action is held down - repeat a number of times
-        float speed = std::min(1.0f, (float)(action.GetHoldTime() - HOLD_TIME_START) / (HOLD_TIME_END - HOLD_TIME_START));
+        float speed = min(1.0f, (float)(action.holdTime - HOLD_TIME_START) / (HOLD_TIME_END - HOLD_TIME_START));
         unsigned int itemsPerFrame = 1;
         if (m_lastHoldTime) // number of rows/10 items/second max speed
-          itemsPerFrame = std::max((unsigned int)1, (unsigned int)(speed * 0.0001f * GetRows() * (CTimeUtils::GetFrameTime() - m_lastHoldTime)));
-        m_lastHoldTime = CTimeUtils::GetFrameTime();
-        if (action.GetID() == ACTION_MOVE_LEFT || action.GetID() == ACTION_MOVE_UP)
+          itemsPerFrame = max((unsigned int)1, (unsigned int)(speed * 0.0001f * GetRows() * (timeGetTime() - m_lastHoldTime)));
+        m_lastHoldTime = timeGetTime();
+        if (action.id == ACTION_MOVE_LEFT || action.id == ACTION_MOVE_UP)
           while (itemsPerFrame--) MoveUp(false);
         else
           while (itemsPerFrame--) MoveDown(false);
@@ -266,15 +263,15 @@ bool CGUIBaseContainer::OnAction(const CAction &action)
   case ACTION_JUMP_SMS8:
   case ACTION_JUMP_SMS9:
     {
-      OnJumpSMS(action.GetID() - ACTION_JUMP_SMS2 + 2);
+      OnJumpSMS(action.id - ACTION_JUMP_SMS2 + 2);
       return true;
     }
     break;
 
   default:
-    if (action.GetID())
-    {
-      return OnClick(action.GetID());
+    if (action.id)
+    { 
+      return OnClick(action.id);
     }
   }
   return false;
@@ -536,6 +533,40 @@ CGUIListItemLayout *CGUIBaseContainer::GetFocusedLayout() const
   return NULL;
 }
 
+bool CGUIBaseContainer::SelectItemFromPoint(const CPoint &point)
+{
+  if (!m_focusedLayout || !m_layout)
+    return false;
+
+  int row = 0;
+  float pos = (m_orientation == VERTICAL) ? point.y : point.x;
+  while (row < m_itemsPerPage + 1)  // 1 more to ensure we get the (possible) half item at the end.
+  {
+    const CGUIListItemLayout *layout = (row == m_cursor) ? m_focusedLayout : m_layout;
+    if (pos < layout->Size(m_orientation) && row + m_offset < (int)m_items.size())
+    { // found correct "row" -> check horizontal
+      if (!InsideLayout(layout, point))
+        return false;
+
+      MoveToItem(row);
+      CGUIListItemLayout *focusedLayout = GetFocusedLayout();
+      if (focusedLayout)
+      {
+        CPoint pt(point);
+        if (m_orientation == VERTICAL)
+          pt.y = pos;
+        else
+          pt.x = pos;
+        focusedLayout->SelectItemFromPoint(pt);
+      }
+      return true;
+    }
+    row++;
+    pos -= layout->Size(m_orientation);
+  }
+  return false;
+}
+
 bool CGUIBaseContainer::OnMouseOver(const CPoint &point)
 {
   // select the item under the pointer
@@ -543,61 +574,24 @@ bool CGUIBaseContainer::OnMouseOver(const CPoint &point)
   return CGUIControl::OnMouseOver(point);
 }
 
-EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIBaseContainer::OnMouseClick(int button, const CPoint &point)
 {
-  if (event.m_id >= ACTION_MOUSE_LEFT_CLICK && event.m_id <= ACTION_MOUSE_DOUBLE_CLICK)
-  {
-    if (SelectItemFromPoint(point - CPoint(m_posX, m_posY)))
-    {
-      OnClick(event.m_id);
-      return EVENT_RESULT_HANDLED;
-    }
+  if (SelectItemFromPoint(point - CPoint(m_posX, m_posY)))
+  { // send click message to window
+    OnClick(ACTION_MOUSE_CLICK + button);
+    return true;
   }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    Scroll(-1);
-    return EVENT_RESULT_HANDLED;
+  return false;
+}
+
+bool CGUIBaseContainer::OnMouseDoubleClick(int button, const CPoint &point)
+{
+  if (SelectItemFromPoint(point - CPoint(m_posX, m_posY)))
+  { // send double click message to window
+    OnClick(ACTION_MOUSE_DOUBLE_CLICK + button);
+    return true;
   }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    Scroll(1);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_NOTIFY)
-  {
-    return (m_orientation == HORIZONTAL) ? EVENT_RESULT_PAN_HORIZONTAL : EVENT_RESULT_PAN_VERTICAL;
-  }
-  else if (event.m_id == ACTION_GESTURE_BEGIN)
-  { // grab exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_PAN)
-  { // do the drag and validate our offset (corrects for end of scroll)
-    m_scrollOffset -= (m_orientation == HORIZONTAL) ? event.m_offsetX : event.m_offsetY;
-    float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
-    int offset = (int)MathUtils::round_int(m_scrollOffset / size);
-    m_offset = offset;
-    ValidateOffset();
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_END)
-  { // release exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-    SendWindowMessage(msg);
-    // and compute the nearest offset from this and scroll there
-    float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
-    float offset = m_scrollOffset / size;
-    int toOffset = (int)MathUtils::round_int(offset);
-    if (toOffset < offset)
-      m_offset = toOffset+1;
-    else
-      m_offset = toOffset-1;
-    ScrollToOffset(toOffset);
-    return EVENT_RESULT_HANDLED;
-  }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
 }
 
 bool CGUIBaseContainer::OnClick(int actionID)
@@ -633,6 +627,12 @@ bool CGUIBaseContainer::OnClick(int actionID)
   // Don't know what to do, so send to our parent window.
   CGUIMessage msg(GUI_MSG_CLICKED, GetID(), GetParentID(), actionID, subItem);
   return SendWindowMessage(msg);
+}
+
+bool CGUIBaseContainer::OnMouseWheel(char wheel, const CPoint &point)
+{
+  Scroll(-wheel);
+  return true;
 }
 
 CStdString CGUIBaseContainer::GetDescription() const
@@ -674,7 +674,7 @@ void CGUIBaseContainer::ValidateOffset()
 {
 }
 
-void CGUIBaseContainer::DoRender(unsigned int currentTime)
+void CGUIBaseContainer::DoRender(DWORD currentTime)
 {
   m_renderTime = currentTime;
   CGUIControl::DoRender(currentTime);
@@ -688,9 +688,9 @@ void CGUIBaseContainer::AllocResources()
   CalculateLayout();
 }
 
-void CGUIBaseContainer::FreeResources(bool immediately)
+void CGUIBaseContainer::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
+  CGUIControl::FreeResources();
   if (m_staticContent)
   { // free any static content
     Reset();
@@ -752,15 +752,15 @@ void CGUIBaseContainer::UpdateVisibility(const CGUIListItem *item)
     Reset();
     bool updateItems = false;
     if (!m_staticUpdateTime)
-      m_staticUpdateTime = CTimeUtils::GetFrameTime();
-    if (CTimeUtils::GetFrameTime() - m_staticUpdateTime > 1000)
+      m_staticUpdateTime = timeGetTime();
+    if (timeGetTime() - m_staticUpdateTime > 1000)
     {
-      m_staticUpdateTime = CTimeUtils::GetFrameTime();
+      m_staticUpdateTime = timeGetTime();
       updateItems = true;
     }
     for (unsigned int i = 0; i < m_staticItems.size(); ++i)
     {
-      CGUIStaticItemPtr item = boost::static_pointer_cast<CGUIStaticItem>(m_staticItems[i]);
+      CFileItemPtr item = boost::static_pointer_cast<CFileItem>(m_staticItems[i]);
       // m_idepth is used to store the visibility condition
       if (!item->m_idepth || g_infoManager.GetBool(item->m_idepth, GetParentID()))
       {
@@ -768,9 +768,17 @@ void CGUIBaseContainer::UpdateVisibility(const CGUIListItem *item)
         if (item.get() == lastItem)
           m_lastItem = lastItem;
       }
-      // update any properties
-      if (updateItems)
-        item->UpdateProperties(GetParentID());
+      if (updateItems && item->HasProperties()) 
+      { // has info, so update it
+        CStdString info = item->GetProperty("label");
+        if (!info.IsEmpty()) item->SetLabel(CGUIInfoLabel::GetLabel(info, GetParentID()));
+        info = item->GetProperty("label2");
+        if (!info.IsEmpty()) item->SetLabel2(CGUIInfoLabel::GetLabel(info, GetParentID()));
+        info = item->GetProperty("icon");
+        if (!info.IsEmpty()) item->SetIconImage(CGUIInfoLabel::GetLabel(info, GetParentID(), true));
+        info = item->GetProperty("thumb");
+        if (!info.IsEmpty()) item->SetThumbnailImage(CGUIInfoLabel::GetLabel(info, GetParentID(), true));
+      }
     }
     UpdateScrollByLetter();
   }
@@ -844,19 +852,13 @@ void CGUIBaseContainer::ScrollToOffset(int offset)
   m_scrollSpeed = (offset * size - m_scrollOffset) / m_scrollTime;
   if (!m_wasReset)
   {
-    SetContainerMoving(offset - m_offset);
+    g_infoManager.SetContainerMoving(GetID(), offset - m_offset);
     if (m_scrollSpeed)
       m_scrollTimer.Start();
     else
       m_scrollTimer.Stop();
   }
   m_offset = offset;
-}
-
-void CGUIBaseContainer::SetContainerMoving(int direction)
-{
-  if (direction)
-    g_infoManager.SetContainerMoving(GetID(), direction > 0, m_scrollSpeed != 0);
 }
 
 void CGUIBaseContainer::UpdateScrollOffset()
@@ -910,16 +912,74 @@ void CGUIBaseContainer::LoadContent(TiXmlElement *content)
   if (!root)
     return;
 
-  g_SkinInfo->ResolveIncludes(root);
+  g_SkinInfo.ResolveIncludes(root);
 
   vector<CGUIListItemPtr> items;
   TiXmlElement *item = root->FirstChildElement("item");
   while (item)
   {
-    g_SkinInfo->ResolveIncludes(item);
+    // format:
+    // <item label="Cool Video" label2="" thumb="mythumb.png">PlayMedia(c:\videos\cool_video.avi)</item>
+    // <item label="My Album" label2="" thumb="whatever.jpg">ActivateWindow(MyMusic,c:\music\my album)</item>
+    // <item label="Apple Movie Trailers" label2="Bob" thumb="foo.tbn">RunScript(special://xbmc/scripts/apple movie trailers/default.py)</item>
+
+    // OR the more verbose, but includes-friendly:
+    // <item>
+    //   <label>blah</label>
+    //   <label2>foo</label2>
+    //   <thumb>bar.png</thumb>
+    //   <icon>foo.jpg</icon>
+    //   <onclick>ActivateWindow(Home)</onclick>
+    // </item>
+    g_SkinInfo.ResolveIncludes(item);
     if (item->FirstChild())
     {
-      CGUIStaticItemPtr newItem(new CGUIStaticItem(item, GetParentID()));
+      CFileItemPtr newItem;
+      // check whether we're using the more verbose method...
+      TiXmlNode *click = item->FirstChild("onclick");
+      if (click && click->FirstChild())
+      {
+        CStdString label, label2, thumb, icon;
+        XMLUtils::GetString(item, "label", label);   label  = CGUIControlFactory::FilterLabel(label);
+        XMLUtils::GetString(item, "label2", label2); label2 = CGUIControlFactory::FilterLabel(label2);
+        XMLUtils::GetString(item, "thumb", thumb);   thumb  = CGUIControlFactory::FilterLabel(thumb);
+        XMLUtils::GetString(item, "icon", icon);     icon   = CGUIControlFactory::FilterLabel(icon);
+        const char *id = item->Attribute("id");
+        int visibleCondition = 0;
+        CGUIControlFactory::GetConditionalVisibility(item, visibleCondition);
+        newItem.reset(new CFileItem(CGUIInfoLabel::GetLabel(label, GetParentID())));
+        // multiple action strings are concat'd together, separated with " , "
+        vector<CStdString> actions;
+        CGUIControlFactory::GetMultipleString(item, "onclick", actions);
+        for (vector<CStdString>::iterator it = actions.begin(); it != actions.end(); ++it)
+          (*it).Replace(",", ",,");
+        StringUtils::JoinString(actions, " , ", newItem->m_strPath);
+        newItem->SetLabel2(CGUIInfoLabel::GetLabel(label2, GetParentID()));
+        newItem->SetThumbnailImage(CGUIInfoLabel::GetLabel(thumb, GetParentID(), true));
+        newItem->SetIconImage(CGUIInfoLabel::GetLabel(icon, GetParentID(), true));
+        if (label.Find("$INFO") >= 0) newItem->SetProperty("label", label);
+        if (label2.Find("$INFO") >= 0) newItem->SetProperty("label2", label2);
+        if (icon.Find("$INFO") >= 0) newItem->SetProperty("icon", icon);
+        if (thumb.Find("$INFO") >= 0) newItem->SetProperty("thumb", thumb);
+        if (id) newItem->m_iprogramCount = atoi(id);
+        newItem->m_idepth = visibleCondition;
+      }
+      else
+      {
+        CStdString label, label2, thumb, icon;
+        label  = item->Attribute("label");  label  = CGUIControlFactory::FilterLabel(label);
+        label2 = item->Attribute("label2"); label2 = CGUIControlFactory::FilterLabel(label2);
+        thumb  = item->Attribute("thumb");  thumb  = CGUIControlFactory::FilterLabel(thumb);
+        icon   = item->Attribute("icon");   icon   = CGUIControlFactory::FilterLabel(icon);
+        const char *id = item->Attribute("id");
+        newItem.reset(new CFileItem(CGUIInfoLabel::GetLabel(label, GetParentID())));
+        newItem->m_strPath = item->FirstChild()->Value();
+        newItem->SetLabel2(CGUIInfoLabel::GetLabel(label2, GetParentID()));
+        newItem->SetThumbnailImage(CGUIInfoLabel::GetLabel(thumb, GetParentID(), true));
+        newItem->SetIconImage(CGUIInfoLabel::GetLabel(icon, GetParentID(), true));
+        if (id) newItem->m_iprogramCount = atoi(id);
+        newItem->m_idepth = 0;  // no visibility condition
+      }
       items.push_back(newItem);
     }
     item = item->NextSiblingElement("item");
@@ -947,6 +1007,12 @@ void CGUIBaseContainer::SetType(VIEW_TYPE type, const CStdString &label)
   m_label = label;
 }
 
+void CGUIBaseContainer::MoveToItem(int item)
+{
+  g_infoManager.SetContainerMoving(GetID(), item - m_cursor);
+  m_cursor = item;
+}
+
 void CGUIBaseContainer::FreeMemory(int keepStart, int keepEnd)
 {
   if (keepStart < keepEnd)
@@ -963,11 +1029,11 @@ void CGUIBaseContainer::FreeMemory(int keepStart, int keepEnd)
   }
 }
 
-bool CGUIBaseContainer::InsideLayout(const CGUIListItemLayout *layout, const CPoint &point) const
+bool CGUIBaseContainer::InsideLayout(const CGUIListItemLayout *layout, const CPoint &point)
 {
   if (!layout) return false;
-  if ((m_orientation == VERTICAL && (layout->Size(HORIZONTAL) > 1) && point.x > layout->Size(HORIZONTAL)) ||
-      (m_orientation == HORIZONTAL && (layout->Size(VERTICAL) > 1)&& point.y > layout->Size(VERTICAL)))
+  if ((m_orientation == VERTICAL && layout->Size(HORIZONTAL) && point.x > layout->Size(HORIZONTAL)) ||
+      (m_orientation == HORIZONTAL && layout->Size(VERTICAL) && point.y > layout->Size(VERTICAL)))
     return false;
   return true;
 }

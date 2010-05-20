@@ -1,11 +1,9 @@
-#ifdef _LINUX
-#undef EMULATE_INTTYPES
-#else
+
 #define EMULATE_INTTYPES
-#endif /* _LINUX */
+
 
 #ifndef EMULATE_INTTYPES
-#   include <stdint.h>
+#   include <inttypes.h>
 #else
     typedef signed char  int8_t;
     typedef signed short int16_t;
@@ -17,9 +15,6 @@
 #   ifdef CONFIG_WIN32
         typedef signed __int64   int64_t;
         typedef unsigned __int64 uint64_t;
-#   elif __WORDSIZE == 64
-        typedef long int                int64_t;
-        typedef unsigned long int       uint64_t;
 #   else /* other OS */
         typedef signed long long   int64_t;
         typedef unsigned long long uint64_t;

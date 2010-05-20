@@ -25,16 +25,15 @@
 #include "utils/Event.h"
 #include "URL.h"
 #include "HTSPSession.h"
-#include "boost/shared_ptr.hpp"
 
 class CFileItem; typedef boost::shared_ptr<CFileItem> CFileItemPtr;
 
 namespace HTSP
 {
-  class CHTSPDirectorySession
+  class CHTSPDirectorySession 
       : public CThread
   {
-    public:
+    public: 
       bool                    GetEvent(SEvent& event, uint32_t id);
       SChannels               GetChannels();
       SChannels               GetChannels(int tag);
@@ -74,7 +73,7 @@ namespace HTSP
   };
 }
 
-namespace XFILE
+namespace DIRECTORY
 {
 
   class CHTSPDirectory : public IDirectory

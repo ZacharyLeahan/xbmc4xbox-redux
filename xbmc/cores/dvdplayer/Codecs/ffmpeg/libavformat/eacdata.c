@@ -22,7 +22,7 @@
 /**
  * @file libavformat/eacdata.c
  * Electronic Arts cdata Format Demuxer
- * by Peter Ross (pross@xvid.org)
+ * by Peter Ross (suxen_drol at hotmail dot com)
  *
  * Technical details here:
  *  http://wiki.multimedia.cx/index.php?title=EA_Command_And_Conquer_3_Audio_Codec

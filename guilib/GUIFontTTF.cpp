@@ -19,39 +19,59 @@
  *
  */
 
+#include "include.h"
 #include "GUIFont.h"
 #include "GUIFontTTF.h"
 #include "GUIFontManager.h"
-#include "Texture.h"
 #include "GraphicContext.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "MathUtils.h"
-#include "utils/log.h"
-#include "WindowingFactory.h"
-
-#include <math.h>
+#include "Util.h"
 
 // stuff for freetype
-#ifndef _LINUX
 #include "ft2build.h"
-#else
-#include <ft2build.h>
-#endif
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
 #define USE_RELEASE_LIBS
 
+// our free type library (debug)
+#ifdef _XBOX
+#if defined(_DEBUG) && !defined(USE_RELEASE_LIBS)
+  #pragma comment (lib,"guilib/freetype2/freetype221_D.lib")
+#else
+  #pragma comment (lib,"guilib/freetype2/freetype221.lib")
+#endif
+#else
+#if defined(_DEBUG) && !defined(USE_RELEASE_LIBS)
+  #pragma comment (lib,"../../guilib/freetype2/freetype221_D.lib")
+#elif !defined(__GNUC__)
+  #pragma comment (lib,"../../guilib/freetype2/freetype221.lib")
+#endif
+#endif
+
 using namespace std;
 
+#define ROUND(x) (float)(MathUtils::round_int(x))
+
+#ifdef HAS_XBOX_D3D
+#define ROUND_TO_PIXEL(x) (float)(MathUtils::round_int(x))
+#define TRUNC_TO_PIXEL(x) (float)(MathUtils::truncate_int(x))
+#else
+#define ROUND_TO_PIXEL(x) (float)(MathUtils::round_int(x)) - 0.5f
+#define TRUNC_TO_PIXEL(x) (float)(MathUtils::truncate_int(x)) - 0.5f
+#endif
+
+#define TEXT_RENDER_LIMIT 1024
 
 #define CHARS_PER_TEXTURE_LINE 20 // number of characters to cache per texture line
 #define CHAR_CHUNK    64      // 64 chars allocated at a time (1024 bytes)
 
-int CGUIFontTTFBase::justification_word_weight = 6;   // weight of word spacing over letter spacing when justifying.
+int CGUIFontTTF::justification_word_weight = 6;   // weight of word spacing over letter spacing when justifying.
                                                   // A larger number means more of the "dead space" is placed between
                                                   // words rather than between letters.
+
+unsigned int CGUIFontTTF::max_texture_size = 4096;         // max texture size - 4096 for xbox
 
 class CFreeTypeLibrary
 {
@@ -85,7 +105,7 @@ public:
       return NULL;
 
     unsigned int ydpi = GetDPI();
-    unsigned int xdpi = (unsigned int)MathUtils::round_int(ydpi * aspect);
+    unsigned int xdpi = (unsigned int)ROUND(ydpi * aspect);
 
     // we set our screen res currently to 96dpi in both directions (windows default)
     // we cache our characters (for rendering speed) so it's probably
@@ -117,44 +137,31 @@ private:
 
 CFreeTypeLibrary g_freeTypeLibrary; // our freetype library
 
-CGUIFontTTFBase::CGUIFontTTFBase(const CStdString& strFileName)
+CGUIFontTTF::CGUIFontTTF(const CStdString& strFileName)
 {
   m_texture = NULL;
   m_char = NULL;
   m_maxChars = 0;
   m_nestedBeginCount = 0;
-
-  m_bTextureLoaded = false;
-  m_vertex_size   = 4*1024;
-  m_vertex        = (SVertex*)malloc(m_vertex_size * sizeof(SVertex));
-
   m_face = NULL;
   memset(m_charquick, 0, sizeof(m_charquick));
   m_strFileName = strFileName;
   m_referenceCount = 0;
-  m_originX = m_originY = 0.0f;
-  m_cellBaseLine = m_cellHeight = 0;
-  m_numChars = 0;
-  m_posX = m_posY = 0;
-  m_textureHeight = m_textureWidth = 0;
-  m_textureScaleX = m_textureScaleY = 0.0;
-  m_ellipsesWidth = m_height = 0.0f;
-  m_color = 0;
-  m_vertex_count = 0;
-  m_nTexture = 0;
+
+  m_numCharactersRendered = 0;
 }
 
-CGUIFontTTFBase::~CGUIFontTTFBase(void)
+CGUIFontTTF::~CGUIFontTTF(void)
 {
   Clear();
 }
 
-void CGUIFontTTFBase::AddReference()
+void CGUIFontTTF::AddReference()
 {
   m_referenceCount++;
 }
 
-void CGUIFontTTFBase::RemoveReference()
+void CGUIFontTTF::RemoveReference()
 {
   // delete this object when it's reference count hits zero
   m_referenceCount--;
@@ -162,15 +169,13 @@ void CGUIFontTTFBase::RemoveReference()
     g_fontManager.FreeFontFile(this);
 }
 
-
-void CGUIFontTTFBase::ClearCharacterCache()
+void CGUIFontTTF::ClearCharacterCache()
 {
-  delete(m_texture);
-
-  DeleteHardwareTexture();
-
+  if (m_texture)
+    m_texture->Release();
   m_texture = NULL;
-  delete[] m_char;
+  if (m_char)
+    delete[] m_char;
   m_char = new Character[CHAR_CHUNK];
   memset(m_charquick, 0, sizeof(m_charquick));
   m_numChars = 0;
@@ -181,11 +186,13 @@ void CGUIFontTTFBase::ClearCharacterCache()
   m_textureHeight = 0;
 }
 
-void CGUIFontTTFBase::Clear()
+void CGUIFontTTF::Clear()
 {
-  delete(m_texture);
+  if (m_texture)
+    m_texture->Release();
   m_texture = NULL;
-  delete[] m_char;
+  if (m_char)
+    delete[] m_char;
   memset(m_charquick, 0, sizeof(m_charquick));
   m_char = NULL;
   m_maxChars = 0;
@@ -197,14 +204,13 @@ void CGUIFontTTFBase::Clear()
   if (m_face)
     g_freeTypeLibrary.ReleaseFont(m_face);
   m_face = NULL;
-
-  free(m_vertex);
-  m_vertex = NULL;
-  m_vertex_count = 0;
 }
 
-bool CGUIFontTTFBase::Load(const CStdString& strFilename, float height, float aspect, float lineSpacing)
+bool CGUIFontTTF::Load(const CStdString& strFilename, float height, float aspect, float lineSpacing)
 {
+  // create our character texture + font shader
+  m_pD3DDevice = g_graphicsContext.Get3DDevice();
+
   // we now know that this object is unique - only the GUIFont objects are non-unique, so no need
   // for reference tracking these fonts
   m_face = g_freeTypeLibrary.GetFont(strFilename, height, aspect);
@@ -218,7 +224,7 @@ bool CGUIFontTTFBase::Load(const CStdString& strFilename, float height, float as
   m_cellBaseLine = m_face->bbox.yMax;
 
   unsigned int ydpi = g_freeTypeLibrary.GetDPI();
-  unsigned int xdpi = (unsigned int)MathUtils::round_int(ydpi * aspect);
+  unsigned int xdpi = (unsigned int)ROUND(ydpi * aspect);
 
   m_cellWidth *= (unsigned int)(height * xdpi);
   m_cellWidth /= (72 * m_face->units_per_EM);
@@ -239,9 +245,11 @@ bool CGUIFontTTFBase::Load(const CStdString& strFilename, float height, float as
 
   m_height = height;
 
-  delete(m_texture);
+  if (m_texture)
+    m_texture->Release();
   m_texture = NULL;
-  delete[] m_char;
+  if (m_char)
+    delete[] m_char;
   m_char = NULL;
 
   m_maxChars = 0;
@@ -251,11 +259,7 @@ bool CGUIFontTTFBase::Load(const CStdString& strFilename, float height, float as
 
   m_textureHeight = 0;
   m_textureWidth = ((m_cellHeight * CHARS_PER_TEXTURE_LINE) & ~63) + 64;
-
-  m_textureWidth = CBaseTexture::PadPow2(m_textureWidth);
-
-  if (m_textureWidth > g_Windowing.GetMaxTextureSize())
-    m_textureWidth = g_Windowing.GetMaxTextureSize();
+  if (m_textureWidth > max_texture_size) m_textureWidth = max_texture_size;
 
   // set the posX and posY so that our texture will be created on first character write.
   m_posX = m_textureWidth;
@@ -268,7 +272,7 @@ bool CGUIFontTTFBase::Load(const CStdString& strFilename, float height, float as
   return true;
 }
 
-void CGUIFontTTFBase::DrawTextInternal(float x, float y, const vecColors &colors, const vecText &text, uint32_t alignment, float maxPixelWidth, bool scrolling)
+void CGUIFontTTF::DrawTextInternal(float x, float y, const vecColors &colors, const vecText &text, uint32_t alignment, float maxPixelWidth, bool scrolling)
 {
   Begin();
 
@@ -297,9 +301,9 @@ void CGUIFontTTFBase::DrawTextInternal(float x, float y, const vecColors &colors
     // Get the extent of this line
     float w = GetTextWidthInternal( text.begin(), text.end() );
 
-    if ( alignment & XBFONT_TRUNCATED && w > maxPixelWidth + 0.5f ) // + 0.5f due to rounding issues
+    if ( alignment & XBFONT_TRUNCATED && w > maxPixelWidth )
       w = maxPixelWidth;
-
+      
     if ( alignment & XBFONT_CENTER_X)
       w *= 0.5f;
     // Offset this line's starting position
@@ -308,7 +312,7 @@ void CGUIFontTTFBase::DrawTextInternal(float x, float y, const vecColors &colors
 
   float spacePerLetter = 0; // for justification effects
   if ( alignment & XBFONT_JUSTIFIED )
-  {
+  { 
     // first compute the size of the text to render in both characters and pixels
     unsigned int lineChars = 0;
     float linePixels = 0;
@@ -377,7 +381,7 @@ void CGUIFontTTFBase::DrawTextInternal(float x, float y, const vecColors &colors
 }
 
 // this routine assumes a single line (i.e. it was called from GUITextLayout)
-float CGUIFontTTFBase::GetTextWidthInternal(vecText::const_iterator start, vecText::const_iterator end)
+float CGUIFontTTF::GetTextWidthInternal(vecText::const_iterator start, vecText::const_iterator end)
 {
   float width = 0;
   while (start != end)
@@ -388,26 +392,26 @@ float CGUIFontTTFBase::GetTextWidthInternal(vecText::const_iterator start, vecTe
   return width;
 }
 
-float CGUIFontTTFBase::GetCharWidthInternal(character_t ch)
+float CGUIFontTTF::GetCharWidthInternal(character_t ch)
 {
   Character *c = GetCharacter(ch);
   if (c) return c->advance;
   return 0;
 }
 
-float CGUIFontTTFBase::GetTextHeight(float lineSpacing, int numLines) const
+float CGUIFontTTF::GetTextHeight(float lineSpacing, int numLines) const
 {
   return (float)(numLines - 1) * GetLineHeight(lineSpacing) + (m_cellHeight - 2); // -2 as we increment this for space in our texture
 }
 
-float CGUIFontTTFBase::GetLineHeight(float lineSpacing) const
+float CGUIFontTTF::GetLineHeight(float lineSpacing) const
 {
   if (m_face)
     return lineSpacing * m_face->size->metrics.height / 64.0f;
   return 0.0f;
 }
 
-CGUIFontTTFBase::Character* CGUIFontTTFBase::GetCharacter(character_t chr)
+CGUIFontTTF::Character* CGUIFontTTF::GetCharacter(character_t chr)
 {
   wchar_t letter = (wchar_t)(chr & 0xffff);
   character_t style = (chr & 0x3000000) >> 24;
@@ -495,7 +499,7 @@ CGUIFontTTFBase::Character* CGUIFontTTFBase::GetCharacter(character_t chr)
   return m_char + low;
 }
 
-bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *ch)
+bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character *ch)
 {
   int glyph_index = FT_Get_Char_Index( m_face, letter );
 
@@ -539,22 +543,45 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
     if(m_posY + m_cellHeight >= m_textureHeight)
     {
       // create the new larger texture
-      unsigned int newHeight = m_posY + m_cellHeight;
-      // check for max height
-      if (newHeight > g_Windowing.GetMaxTextureSize())
+      unsigned newHeight = m_posY + m_cellHeight;
+      LPDIRECT3DTEXTURE8 newTexture;
+      // check for max height (can't be more than max_texture_size texels
+      if (newHeight > max_texture_size)
       {
-        CLog::Log(LOGDEBUG, "GUIFontTTF::CacheCharacter: New cache texture is too large (%u > %u pixels long)", newHeight, g_Windowing.GetMaxTextureSize());
+        CLog::Log(LOGDEBUG, "GUIFontTTF::CacheCharacter: New cache texture is too large (%u > %u pixels long)", newHeight, max_texture_size);
         FT_Done_Glyph(glyph);
         return false;
       }
-
-      CBaseTexture* newTexture = NULL;
-      newTexture = ReallocTexture(newHeight);
-      if(newTexture == NULL)
+      if (D3D_OK != D3DXCreateTexture(m_pD3DDevice, m_textureWidth, newHeight, 1, 0, D3DFMT_LIN_A8, D3DPOOL_MANAGED, &newTexture))
       {
+        CLog::Log(LOGDEBUG, "GUIFontTTF::CacheCharacter: Error creating new cache texture for size %f", m_height);
         FT_Done_Glyph(glyph);
         CLog::Log(LOGDEBUG, "GUIFontTTF::CacheCharacter: Failed to allocate new texture of height %u", newHeight);
         return false;
+      }
+      // correct texture sizes
+      D3DSURFACE_DESC desc;
+      newTexture->GetLevelDesc(0, &desc);
+      m_textureHeight = desc.Height;
+      m_textureWidth = desc.Width;
+
+      // clear texture, doesn't cost much
+      D3DLOCKED_RECT rect;
+      newTexture->LockRect(0, &rect, NULL, 0);
+      memset(rect.pBits, 0, rect.Pitch * m_textureHeight);
+      newTexture->UnlockRect(0);
+
+      if (m_texture)
+      { // copy across from our current one using gpu
+        LPDIRECT3DSURFACE8 pTarget, pSource;
+        newTexture->GetSurfaceLevel(0, &pTarget);
+        m_texture->GetSurfaceLevel(0, &pSource);
+
+        m_pD3DDevice->CopyRects(pSource, NULL, 0, pTarget, NULL);
+
+        SAFE_RELEASE(pTarget);
+        SAFE_RELEASE(pSource);
+        SAFE_RELEASE(m_texture);
       }
       m_texture = newTexture;
     }
@@ -574,18 +601,30 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
   ch->top = (float)m_posY + ch->offsetY;
   ch->right = ch->left + bitmap.width;
   ch->bottom = ch->top + bitmap.rows;
-  ch->advance = (float)MathUtils::round_int( (float)m_face->glyph->advance.x / 64 );
+  ch->advance = ROUND( (float)m_face->glyph->advance.x / 64 );
 
   // we need only render if we actually have some pixels
   if (bitmap.width * bitmap.rows)
   {
-    CopyCharToTexture(bitGlyph, ch);
+    // render this onto our normal texture using gpu
+    LPDIRECT3DSURFACE8 target;
+    m_texture->GetSurfaceLevel(0, &target);
+
+    RECT sourcerect = { 0, 0, bitmap.width, bitmap.rows };
+    RECT targetrect;
+    targetrect.top = m_posY + ch->offsetY;
+    targetrect.left = m_posX + bitGlyph->left;
+    targetrect.bottom = targetrect.top + bitmap.rows;
+    targetrect.right = targetrect.left + bitmap.width;
+
+    D3DXLoadSurfaceFromMemory( target, NULL, &targetrect, 
+      bitmap.buffer, D3DFMT_LIN_A8, bitmap.pitch, NULL, &sourcerect, 
+      D3DX_FILTER_NONE, 0x00000000);
+
+    SAFE_RELEASE(target);
   }
   m_posX += 1 + (unsigned short)max(ch->right - ch->left + ch->offsetX, ch->advance);
   m_numChars++;
-
-  m_textureScaleX = 1.0f / m_textureWidth;
-  m_textureScaleY = 1.0f / m_textureHeight;
 
   // free the glyph
   FT_Done_Glyph(glyph);
@@ -593,7 +632,66 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
   return true;
 }
 
-void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *ch, color_t color, bool roundX)
+void CGUIFontTTF::Begin()
+{
+  if (m_nestedBeginCount == 0)
+  {
+    // just have to blit from our texture.
+    m_pD3DDevice->SetTexture( 0, m_texture );
+
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 ); // only use diffuse
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+    m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+
+    // no other texture stages needed
+    m_pD3DDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+    m_pD3DDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
+    m_pD3DDevice->SetRenderState( D3DRS_FOGENABLE, FALSE );
+    m_pD3DDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+    m_pD3DDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_NONE );
+    m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+    m_pD3DDevice->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
+    m_pD3DDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+    m_pD3DDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
+
+    m_pD3DDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+
+#ifdef HAS_XBOX_D3D
+    // Render the image
+    m_pD3DDevice->SetScreenSpaceOffset(-0.5f, -0.5f);
+    m_pD3DDevice->Begin(D3DPT_QUADLIST);
+#endif
+  }
+  // Keep track of the nested begin/end calls.
+  m_nestedBeginCount++;
+}
+
+void CGUIFontTTF::End()
+{
+  if (m_nestedBeginCount == 0)
+    return;
+
+  if (--m_nestedBeginCount > 0)
+    return;
+
+#ifdef HAS_XBOX_D3D
+  m_pD3DDevice->End();
+  m_pD3DDevice->SetScreenSpaceOffset(0, 0);
+#endif
+  m_pD3DDevice->SetTexture(0, NULL);
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
+
+  m_numCharactersRendered = 0;
+}
+
+void CGUIFontTTF::RenderCharacter(float posX, float posY, const Character *ch, D3DCOLOR dwColor, bool roundX)
 {
   // actual image width isn't same as the character width as that is
   // just baseline width and height should include the descent
@@ -627,10 +725,10 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
     // altering the width of thin characters substantially.  This only really works for positive
     // coordinates (due to the direction of truncation for negatives) but this is the only case that
     // really interests us anyway.
-    float rx0 = (float)MathUtils::round_int(x[0]);
-    float rx3 = (float)MathUtils::round_int(x[3]);
-    x[1] = (float)MathUtils::truncate_int(x[1]);
-    x[2] = (float)MathUtils::truncate_int(x[2]);
+    float rx0 = ROUND_TO_PIXEL(x[0]);
+    float rx3 = ROUND_TO_PIXEL(x[3]);
+    x[1] = TRUNC_TO_PIXEL(x[1]);
+    x[2] = TRUNC_TO_PIXEL(x[2]);
     if (rx0 > x[0])
       x[1] += 1;
     if (rx3 > x[3])
@@ -639,98 +737,64 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
     x[3] = rx3;
   }
 
-  float y1 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalYCoord(vertex.x1, vertex.y1));
-  float y2 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalYCoord(vertex.x2, vertex.y1));
-  float y3 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalYCoord(vertex.x2, vertex.y2));
-  float y4 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalYCoord(vertex.x1, vertex.y2));
+  float y1 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalYCoord(vertex.x1, vertex.y1));
+  float z1 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalZCoord(vertex.x1, vertex.y1));
 
-  float z1 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalZCoord(vertex.x1, vertex.y1));
-  float z2 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalZCoord(vertex.x2, vertex.y1));
-  float z3 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalZCoord(vertex.x2, vertex.y2));
-  float z4 = (float)MathUtils::round_int(g_graphicsContext.ScaleFinalZCoord(vertex.x1, vertex.y2));
+  float y2 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalYCoord(vertex.x2, vertex.y1));
+  float z2 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalZCoord(vertex.x2, vertex.y1));
+
+  float y3 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalYCoord(vertex.x2, vertex.y2));
+  float z3 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalZCoord(vertex.x2, vertex.y2));
+
+  float y4 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalYCoord(vertex.x1, vertex.y2));
+  float z4 = ROUND_TO_PIXEL(g_graphicsContext.ScaleFinalZCoord(vertex.x1, vertex.y2));
+
+  m_numCharactersRendered++;
+
+#ifdef HAS_XBOX_D3D
+  if (m_numCharactersRendered >= TEXT_RENDER_LIMIT)
+  { // we're pushing the (undocumented) limits of xbox here
+    m_pD3DDevice->End();
+    m_pD3DDevice->Begin(D3DPT_QUADLIST);
+    m_numCharactersRendered = 1;
+  }
+  m_pD3DDevice->SetVertexDataColor( D3DVSDE_DIFFUSE, dwColor);
+
+  m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD0, texture.x1, texture.y1);
+  m_pD3DDevice->SetVertexData4f( D3DVSDE_VERTEX, x[0], y1, z1, 1);
+  m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD0, texture.x2, texture.y1);
+  m_pD3DDevice->SetVertexData4f( D3DVSDE_VERTEX, x[1], y2, z2, 1);
+  m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD0, texture.x2, texture.y2);
+  m_pD3DDevice->SetVertexData4f( D3DVSDE_VERTEX, x[2], y3, z3, 1);
+  m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD0, texture.x1, texture.y2);
+  m_pD3DDevice->SetVertexData4f( D3DVSDE_VERTEX, x[3], y4, z4, 1);
+
+#else
+struct CUSTOMVERTEX {
+      FLOAT x, y, z;
+      DWORD color;
+      FLOAT tu, tv;   // Texture coordinates
+  };
 
   // tex coords converted to 0..1 range
-  float tl = texture.x1 * m_textureScaleX;
-  float tr = texture.x2 * m_textureScaleX;
-  float tt = texture.y1 * m_textureScaleY;
-  float tb = texture.y2 * m_textureScaleY;
+  float tl = texture.x1 / m_textureWidth;
+  float tr = texture.x2 / m_textureWidth;
+  float tt = texture.y1 / m_textureHeight;
+  float tb = texture.y2 / m_textureHeight;
 
-  // grow the vertex buffer if required
-  if(m_vertex_count >= m_vertex_size)
-  {
-    m_vertex_size *= 2;
-    m_vertex       = (SVertex*)realloc(m_vertex, m_vertex_size * sizeof(SVertex));
-  }
+  CUSTOMVERTEX verts[4] =  {
+    { x[0], y1, z1, dwColor, tl, tt},
+    { x[1], y2, z2, dwColor, tr, tt},
+    { x[2], y3, z3, dwColor, tr, tb},
+    { x[3], y4, z4, dwColor, tl, tb}
+  };
 
-  m_color = color;
-  SVertex* v = m_vertex + m_vertex_count;
-
-  for(int i = 0; i < 4; i++)
-  {
-    v[i].r = GET_R(color);
-    v[i].g = GET_G(color);
-    v[i].b = GET_B(color);
-    v[i].a = GET_A(color);
-  }
-
-#if defined(HAS_GL) || defined(HAS_DX)
-  v[0].u = tl;
-  v[0].v = tt;
-  v[0].x = x[0];
-  v[0].y = y1;
-  v[0].z = z1;
-
-  v[1].u = tr;
-  v[1].v = tt;
-  v[1].x = x[1];
-  v[1].y = y2;
-  v[1].z = z2;
-
-  v[2].u = tr;
-  v[2].v = tb;
-  v[2].x = x[2];
-  v[2].y = y3;
-  v[2].z = z3;
-
-  v[3].u = tl;
-  v[3].v = tb;
-  v[3].x = x[3];
-  v[3].y = y4;
-  v[3].z = z4;
-#else
-  // GLES uses triangle strips, not quads, so have to rearrange the vertex order
-  v[0].u = tl;
-  v[0].v = tt;
-  v[0].x = x[0];
-  v[0].y = y1;
-  v[0].z = z1;
-
-  v[1].u = tl;
-  v[1].v = tb;
-  v[1].x = x[3];
-  v[1].y = y4;
-  v[1].z = z4;
-
-  v[2].u = tr;
-  v[2].v = tt;
-  v[2].x = x[1];
-  v[2].y = y2;
-  v[2].z = z2;
-
-  v[3].u = tr;
-  v[3].v = tb;
-  v[3].x = x[2];
-  v[3].y = y3;
-  v[3].z = z3;
+  m_pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(CUSTOMVERTEX));
 #endif
-
-  RenderInternal(v);
-
-  m_vertex_count+=4;
 }
 
 // Oblique code - original taken from freetype2 (ftsynth.c)
-void CGUIFontTTFBase::ObliqueGlyph(FT_GlyphSlot slot)
+void CGUIFontTTF::ObliqueGlyph(FT_GlyphSlot slot)
 {
   /* only oblique outline glyphs */
   if ( slot->format != FT_GLYPH_FORMAT_OUTLINE )
@@ -753,7 +817,7 @@ void CGUIFontTTFBase::ObliqueGlyph(FT_GlyphSlot slot)
 
 
 // Embolden code - original taken from freetype2 (ftsynth.c)
-void CGUIFontTTFBase::EmboldenGlyph(FT_GlyphSlot slot)
+void CGUIFontTTF::EmboldenGlyph(FT_GlyphSlot slot)
 {
   if ( slot->format != FT_GLYPH_FORMAT_OUTLINE )
     return;
@@ -784,5 +848,3 @@ void CGUIFontTTFBase::EmboldenGlyph(FT_GlyphSlot slot)
   slot->metrics.vertBearingY += dy;
   slot->metrics.vertAdvance  += dy;
 }
-
-

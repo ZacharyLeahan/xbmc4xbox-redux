@@ -19,6 +19,8 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "MultiPathDirectory.h"
 #include "Directory.h"
 #include "Util.h"
@@ -26,12 +28,9 @@
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
 #include "FileItem.h"
-#include "StringUtils.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 //
 // multipath://{path1}/{path2}/{path3}/.../{path-N}
@@ -54,14 +53,14 @@ bool CMultiPathDirectory::GetDirectory(const CStdString& strPath, CFileItemList 
   if (!GetPaths(strPath, vecPaths))
     return false;
 
-  unsigned int progressTime = CTimeUtils::GetTimeMS() + 3000L;   // 3 seconds before showing progress bar
+  DWORD progressTime = timeGetTime() + 3000L;   // 3 seconds before showing progress bar
   CGUIDialogProgress* dlgProgress = NULL;
-
+  
   unsigned int iFailures = 0;
   for (unsigned int i = 0; i < vecPaths.size(); ++i)
   {
     // show the progress dialog if we have passed our time limit
-    if (CTimeUtils::GetTimeMS() > progressTime && !dlgProgress)
+    if (timeGetTime() > progressTime && !dlgProgress)
     {
       dlgProgress = (CGUIDialogProgress *)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
       if (dlgProgress)
@@ -224,7 +223,7 @@ void CMultiPathDirectory::AddToMultiPath(CStdString& strMultiPath, const CStdStr
   CStdString strPath1 = strPath;
   CUtil::AddSlashAtEnd(strMultiPath);
   //CLog::Log(LOGDEBUG, "-- adding path: %s", strPath.c_str());
-  CUtil::URLEncode(strPath1);
+  CUtil::URLEncode(strPath1);  
   strMultiPath += strPath1;
   strMultiPath += "/";
 }
@@ -245,7 +244,7 @@ CStdString CMultiPathDirectory::ConstructMultiPath(const vector<CStdString> &vec
 void CMultiPathDirectory::MergeItems(CFileItemList &items)
 {
   CLog::Log(LOGDEBUG, "CMultiPathDirectory::MergeItems, items = %i", (int)items.Size());
-  unsigned int time = CTimeUtils::GetTimeMS();
+  DWORD dwTime=GetTickCount();
   if (items.Size() == 0)
     return;
   // sort items by label
@@ -300,9 +299,7 @@ void CMultiPathDirectory::MergeItems(CFileItemList &items)
     i++;
   }
 
-  CLog::Log(LOGDEBUG,
-            "CMultiPathDirectory::MergeItems, items = %i,  took %d ms",
-            items.Size(), CTimeUtils::GetTimeMS() - time);
+  CLog::Log(LOGDEBUG, "CMultiPathDirectory::MergeItems, items = %i,  took %ld ms", items.Size(), GetTickCount()-dwTime);
 }
 
 bool CMultiPathDirectory::SupportsFileOperations(const CStdString &strPath)

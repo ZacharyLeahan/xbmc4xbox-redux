@@ -19,10 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "PythonSettings.h"
 #include "pyutil.h"
-#include "addons/AddonManager.h"
-#include "GUIDialogAddonSettings.h"
+#include "GUIDialogPluginSettings.h"
 
 #ifndef __GNUC__
 #pragma code_seg("PY_TEXT")
@@ -35,9 +35,6 @@
 extern "C" {
 #endif
 
-using ADDON::AddonPtr;
-using ADDON::CAddonMgr;
-
 namespace PYXBMC
 {
   PyObject* Settings_New(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -47,8 +44,8 @@ namespace PYXBMC
     self = (Settings*)type->tp_alloc(type, 0);
     if (!self) return NULL;
 
-    static const char *keywords[] = { "id", NULL };
-    char *cScriptID = NULL;
+    static const char *keywords[] = { "path", NULL };
+    char *cScriptPath = NULL;
 
     // parse arguments
     if (!PyArg_ParseTupleAndKeywords(
@@ -56,34 +53,33 @@ namespace PYXBMC
       kwds,
       (char*)"s",
       (char**)keywords,
-      &cScriptID
+      &cScriptPath
       ))
     {
       Py_DECREF(self);
       return NULL;
     };
 
-    AddonPtr addon;
-    if (!CAddonMgr::Get().GetAddon(CStdString(cScriptID), self->pAddon, ADDON::ADDON_SCRIPT) || !self->pAddon)
-    {
-      PyErr_SetString(PyExc_Exception, "Could not get AddonPtr!");
-      return NULL;
-    }
-
-    if (!self->pAddon->HasSettings())
+    if (!CScriptSettings::SettingsExist(cScriptPath))
     {
       PyErr_SetString(PyExc_Exception, "No settings.xml file could be found!");
       return NULL;
     }
 
-    self->pAddon->LoadSettings();
+    self->pSettings = new CScriptSettings();
+    self->pSettings->Clear();
+    self->pSettings->Load(cScriptPath);
 
     return (PyObject*)self;
   }
 
   void Settings_Dealloc(Settings* self)
   {
-    //TODO is there anything that should be freed here, other than the AddonPtr?
+    if (self->pSettings)
+    {
+      self->pSettings->Clear();
+      delete self->pSettings;
+    }
     self->ob_type->tp_free((PyObject*)self);
   }
 
@@ -112,7 +108,7 @@ namespace PYXBMC
       return NULL;
     };
 
-    return Py_BuildValue((char*)"s", self->pAddon->GetSetting(id).c_str());
+    return Py_BuildValue((char*)"s", self->pSettings->Get(id).c_str());
   }
 
   PyDoc_STRVAR(setSetting__doc__,
@@ -150,9 +146,9 @@ namespace PYXBMC
       PyErr_SetString(PyExc_ValueError, "Invalid id or value!");
       return NULL;
     }
-
-    self->pAddon->UpdateSetting(id, "", value);
-    self->pAddon->SaveSettings();
+    
+    self->pSettings->Set(id, value);
+    self->pSettings->Save();
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -167,11 +163,11 @@ namespace PYXBMC
   PyObject* Settings_OpenSettings(Settings *self, PyObject *args, PyObject *kwds)
   {
     // show settings dialog
-    AddonPtr addon(self->pAddon);
-    CGUIDialogAddonSettings::ShowAndGetInput(addon);
+    CStdString path = self->pSettings->getPath();
+    CGUIDialogPluginSettings::ShowAndGetInput(path);
 
     // reload settings
-    self->pAddon->LoadSettings();
+    self->pSettings->Load(path);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -184,21 +180,20 @@ namespace PYXBMC
     {NULL, NULL, 0, NULL}
   };
 
-  //FIXME!! incomplete docs
   PyDoc_STRVAR(settings__doc__,
     "Settings class.\n"
     "\n"
-    "Settings(uuid) -- Creates a new Settings class.\n"
+    "Settings(path) -- Creates a new Settings class.\n"
     "\n"
-    "uuid           : string - UUID of this script.\n"
+    "path            : string - path to script. (eg special://home/scripts/Apple Movie Trailers)\n"
     "\n"
-    "*Note, settings folder structure must match (resources/settings.xml)\n"
+    "*Note, settings folder structure is eg(resources/settings.xml)\n"
     "\n"
     "       You can use the above as keywords for arguments and skip certain optional arguments.\n"
     "       Once you use a keyword, all following arguments require the keyword.\n"
     "\n"
     "example:\n"
-    " - self.Settings = xbmc.Settings(uuid=os.uuid())\n");
+    " - self.Settings = xbmc.Settings(path=os.getcwd())\n");
 
 // Restore code and data sections to normal.
 #ifndef __GNUC__

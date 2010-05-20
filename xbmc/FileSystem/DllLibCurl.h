@@ -21,13 +21,12 @@
  */
 
 #include "DynamicDll.h"
-#include "utils/CriticalSection.h"
 
 /* put types of curl in namespace to avoid namespace pollution */
 namespace XCURL
 {
   #define CURL CURL_HANDLE
-  #include <curl/curl.h>
+  #include "curl/curl.h"
   #undef CURL
 
   class DllLibCurlInterface
@@ -57,7 +56,7 @@ namespace XCURL
 
   class DllLibCurl : public DllDynamic, DllLibCurlInterface
   {
-    DECLARE_DLL_WRAPPER(DllLibCurl, DLL_PATH_LIBCURL)
+    DECLARE_DLL_WRAPPER(DllLibCurl, Q:\\system\\libcurl.dll)
     DEFINE_METHOD1(CURLcode, global_init, (long p1))
     DEFINE_METHOD0(void, global_cleanup)
     DEFINE_METHOD0(CURL_HANDLE *, easy_init)
@@ -118,7 +117,7 @@ namespace XCURL
     /* structure holding a session info */
     typedef struct SSession
     {
-      unsigned int  m_idletimestamp;  // timestamp of when this object when idle
+      DWORD         m_idletimestamp;  // timestamp of when this object when idle
       CStdString    m_protocol;
       CStdString    m_hostname;
       bool          m_busy;
@@ -127,8 +126,8 @@ namespace XCURL
     } SSession;
 
     typedef std::vector<SSession> VEC_CURLSESSIONS;
-
-    VEC_CURLSESSIONS m_sessions;
+    
+    VEC_CURLSESSIONS m_sessions;  
     CCriticalSection m_critSection;
   };
 }

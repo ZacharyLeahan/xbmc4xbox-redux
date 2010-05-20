@@ -19,16 +19,14 @@
  *
  */
 
+#include "stdafx.h"
 #include "FileItem.h"
 #include "AdvancedSettings.h"
 #include "Picture.h"
 #include "VideoInfoTag.h"
 #include "Util.h"
 #include "FileSystem/StackDirectory.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
-#include "DVDClock.h"
 #include "DVDFileInfo.h"
 #include "DVDStreamInfo.h"
 #include "DVDInputStreams/DVDInputStream.h"
@@ -45,8 +43,8 @@
 #include "Codecs/DllAvFormat.h"
 #include "Codecs/DllAvCodec.h"
 #include "Codecs/DllSwScale.h"
-#include "FileSystem/File.h"
-
+#include "Filesystem/File.h"
+#include "TimeUtils.h"
 
 bool CDVDFileInfo::GetFileDuration(const CStdString &path, int& duration)
 {
@@ -75,11 +73,11 @@ bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, const CStdString &str
 {
   CStdString strFile;
   if (CUtil::IsStack(strPath))
-    strFile = XFILE::CStackDirectory::GetFirstStackedFile(strPath);
+    strFile = DIRECTORY::CStackDirectory::GetFirstStackedFile(strPath);
   else
     strFile = strPath;
 
-  int nTime = CTimeUtils::GetTimeMS();
+  int nTime = timeGetTime();
   CDVDInputStream *pInputStream = CDVDFactoryInputStream::CreateInputStream(NULL, strFile, "");
   if (!pInputStream)
   {
@@ -146,12 +144,11 @@ bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, const CStdString &str
     CDVDVideoCodec *pVideoCodec;
 
     CDVDStreamInfo hint(*pDemuxer->GetStream(nVideoStream), true);
-    hint.software = true;
-
+    
     if (hint.codec == CODEC_ID_MPEG2VIDEO || hint.codec == CODEC_ID_MPEG1VIDEO)
     {
-      // libmpeg2 is not thread safe so use ffmepg for mpeg2/mpeg1 thumb extraction
-      CDVDCodecOptions dvdOptions;
+      // libmpeg2 is not thread safe so use ffmepg for mpeg2/mpeg1 thumb extraction 
+    CDVDCodecOptions dvdOptions;
       pVideoCodec = CDVDFactoryCodec::OpenCodec(new CDVDVideoCodecFFmpeg(), hint, dvdOptions);
     }
     else
@@ -226,7 +223,8 @@ bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, const CStdString &str
               dllSwScale.sws_scale(context, src, srcStride, 0, picture.iHeight, dst, dstStride);
               dllSwScale.sws_freeContext(context);
 
-              CPicture::CreateThumbnailFromSurface(pOutBuf, nWidth, nHeight, nWidth * 4, strTarget);
+                  CPicture out;
+                  out.CreateThumbnailFromSurface(pOutBuf, nWidth, nHeight, nWidth * 4, strTarget);
               bOk = true;
             }
 
@@ -301,7 +299,7 @@ void CDVDFileInfo::GetFileMetaData(const CStdString &strPath, CFileItem *pItem)
     return ;
   }
 
-  AVFormatContext *pContext = pDemuxer->m_pFormatContext;
+  AVFormatContext *pContext = pDemuxer->m_pFormatContext; 
   if (pContext)
   {
     int nLenMsec = pDemuxer->GetStreamLength();
@@ -328,7 +326,7 @@ void CDVDFileInfo::GetFileMetaData(const CStdString &strPath, CFileItem *pItem)
   delete pDemuxer;
   pInputStream->Close();
   delete pInputStream;
-
+  
 }
 
 /**
@@ -345,7 +343,7 @@ bool CDVDFileInfo::GetFileStreamDetails(CFileItem *pItem)
   {
     strFileNameAndPath = pItem->GetVideoInfoTag()->m_strFileNameAndPath;
     if (CUtil::IsStack(strFileNameAndPath))
-      strFileNameAndPath = XFILE::CStackDirectory::GetFirstStackedFile(strFileNameAndPath);
+      strFileNameAndPath = DIRECTORY::CStackDirectory::GetFirstStackedFile(strFileNameAndPath);
   }
   else
     return false;

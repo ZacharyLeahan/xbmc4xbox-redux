@@ -19,32 +19,27 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogFileBrowser.h"
 #include "Util.h"
+#include "DetectDVDType.h"
 #include "GUIDialogNetworkSetup.h"
 #include "GUIDialogMediaSource.h"
 #include "GUIDialogContextMenu.h"
 #include "MediaManager.h"
 #include "AutoSwitch.h"
-#include "utils/Network.h"
+#include "xbox/network.h"
 #include "GUIPassword.h"
 #include "GUIWindowManager.h"
-#include "Application.h"
 #include "GUIDialogOK.h"
 #include "GUIDialogYesNo.h"
 #include "GUIDialogKeyboard.h"
-#include "GUIUserMessages.h"
 #include "FileSystem/Directory.h"
 #include "FileSystem/File.h"
 #include "FileItem.h"
-#include "FileSystem/MultiPathDirectory.h"
-#include "AdvancedSettings.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 #define CONTROL_LIST          450
 #define CONTROL_THUMBS        451
@@ -79,15 +74,12 @@ CGUIDialogFileBrowser::~CGUIDialogFileBrowser()
 
 bool CGUIDialogFileBrowser::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PARENT_DIR)
+  if (action.id == ACTION_PARENT_DIR)
   {
-    if (m_vecItems->IsVirtualDirectoryRoot() && g_advancedSettings.m_bUseEvilB)
-      Close();
-    else
-      GoParentFolder();
+    GoParentFolder();
     return true;
   }
-  if ((action.GetID() == ACTION_CONTEXT_MENU || action.GetID() == ACTION_MOUSE_RIGHT_CLICK) && m_Directory->m_strPath.IsEmpty())
+  if ((action.id == ACTION_CONTEXT_MENU || action.id == ACTION_MOUSE_RIGHT_CLICK) && m_Directory->m_strPath.IsEmpty())
   {
     int iItem = m_viewControl.GetSelectedItem();
     if ((!m_addSourceType.IsEmpty() && iItem != m_vecItems->Size()-1))
@@ -145,7 +137,7 @@ bool CGUIDialogFileBrowser::OnMessage(CGUIMessage& message)
           if (m_shares[iSource].strPath.Equals(m_selectedPath))
             bFool = false;
         }
-
+      
         if (bFool && !CDirectory::Exists(m_selectedPath))
           m_selectedPath.Empty();
       }
@@ -275,19 +267,6 @@ bool CGUIDialogFileBrowser::OnMessage(CGUIMessage& message)
         }
         return true;
       }
-      else if (message.GetParam1()==GUI_MSG_UPDATE_PATH)
-      {
-        if (IsActive())
-        {
-          if((message.GetStringParam() == m_Directory->m_strPath) ||
-             (m_Directory->IsMultiPath() && XFILE::CMultiPathDirectory::HasPath(m_Directory->m_strPath, message.GetStringParam())))
-          {
-            int iItem = m_viewControl.GetSelectedItem();
-            Update(m_Directory->m_strPath);
-            m_viewControl.SetSelectedItem(iItem);
-          }
-        }
-      }
     }
     break;
 
@@ -329,7 +308,36 @@ void CGUIDialogFileBrowser::Update(const CStdString &strDirectory)
   {
     CFileItemList items;
     CStdString strParentPath;
+    bool bParentExists = CUtil::GetParentPath(strDirectory, strParentPath);
 
+    // check if current directory is a root share
+/*    if (g_guiSettings.GetBool("filelists.showarentdiritems"))
+    {*/
+      if ( !m_rootDir.IsSource(strDirectory))
+      {
+        // no, do we got a parent dir?
+        if (bParentExists)
+        {
+          // yes
+          CFileItemPtr pItem(new CFileItem(".."));
+          pItem->m_strPath = strParentPath;
+          pItem->m_bIsFolder = true;
+          pItem->m_bIsShareOrDrive = false;
+          items.Add(pItem);
+        }
+      }
+      else
+      {
+        // yes, this is the root of a share
+        // add parent path to the virtual directory
+        CFileItemPtr pItem(new CFileItem(".."));
+        pItem->m_strPath = "";
+        pItem->m_bIsShareOrDrive = false;
+        pItem->m_bIsFolder = true;
+        items.Add(pItem);
+        strParentPath = "";
+      }
+    //}
     if (!m_rootDir.GetDirectory(strDirectory, items,m_useFileDirectories))
     {
       CLog::Log(LOGERROR,"CGUIDialogFileBrowser::GetDirectory(%s) failed", strDirectory.c_str());
@@ -338,32 +346,8 @@ void CGUIDialogFileBrowser::Update(const CStdString &strDirectory)
       // directory again
       CStdString strParentPath = m_history.GetParentPath();
       m_history.RemoveParentPath();
-      Update(strParentPath);
-      return;
-    }
-
-    // check if current directory is a root share
-    if (!m_rootDir.IsSource(strDirectory))
-    {
-      if (CUtil::GetParentPath(strDirectory, strParentPath))
-      {
-        CFileItemPtr pItem(new CFileItem(".."));
-        pItem->m_strPath = strParentPath;
-        pItem->m_bIsFolder = true;
-        pItem->m_bIsShareOrDrive = false;
-        items.AddFront(pItem, 0);
-      }
-    }
-    else
-    {
-      // yes, this is the root of a share
-      // add parent path to the virtual directory
-      CFileItemPtr pItem(new CFileItem(".."));
-      pItem->m_strPath = "";
-      pItem->m_bIsShareOrDrive = false;
-      pItem->m_bIsFolder = true;
-      items.AddFront(pItem, 0);
-      strParentPath = "";
+      Update(strParentPath);  
+      return;  
     }
 
     ClearFileItems();
@@ -371,12 +355,12 @@ void CGUIDialogFileBrowser::Update(const CStdString &strDirectory)
     m_Directory->m_strPath = strDirectory;
     m_strParentPath = strParentPath;
   }
-
+  
   // if we're getting the root source listing
   // make sure the path history is clean
   if (strDirectory.IsEmpty())
     m_history.ClearPathHistory();
-
+    
   // some evil stuff don't work with the '/' mask, e.g. shoutcast directory - make sure no files are in there
   if (m_browsingForFolders)
   {
@@ -395,8 +379,8 @@ void CGUIDialogFileBrowser::Update(const CStdString &strDirectory)
   OnSort();
 
   if (m_Directory->m_strPath.IsEmpty() && m_addNetworkShareEnabled &&
-     (g_settings.GetMasterProfile().getLockMode() == LOCK_MODE_EVERYONE ||
-      g_settings.IsMasterUser() || g_passwordManager.bMasterUser))
+     (g_settings.m_vecProfiles[0].getLockMode() == LOCK_MODE_EVERYONE ||
+     (g_settings.m_iLastLoadedProfileIndex == 0) || g_passwordManager.bMasterUser))
   { // we are in the virtual directory - add the "Add Network Location" item
     CFileItemPtr pItem(new CFileItem(g_localizeStrings.Get(1032)));
     pItem->m_strPath = "net://";
@@ -427,22 +411,14 @@ void CGUIDialogFileBrowser::Update(const CStdString &strDirectory)
     if (strPath2 == strSelectedItem)
     {
       m_viewControl.SetSelectedItem(i);
-      bSelectedFound = true;
       break;
     }
   }
-
-  // if we haven't found the selected item, select the first item
-  if (!bSelectedFound)
-    m_viewControl.SetSelectedItem(0);
-
-  m_history.AddPath(m_Directory->m_strPath);
-
   if (m_browsingForImages)
     m_thumbLoader.Load(*m_vecItems);
 }
 
-void CGUIDialogFileBrowser::FrameMove()
+void CGUIDialogFileBrowser::Render()
 {
   int item = m_viewControl.GetSelectedItem();
   if (item >= 0)
@@ -489,7 +465,7 @@ void CGUIDialogFileBrowser::FrameMove()
       CONTROL_DISABLE(CONTROL_FLIP);
     }
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
 void CGUIDialogFileBrowser::OnClick(int iItem)
@@ -534,7 +510,8 @@ bool CGUIDialogFileBrowser::HaveDiscOrConnection( CStdString& strPath, int iDriv
 {
   if ( iDriveType == CMediaSource::SOURCE_TYPE_DVD )
   {
-    if ( !g_mediaManager.IsDiscInDrive() )
+    MEDIA_DETECT::CDetectDVDMedia::WaitMediaReady();
+    if ( !MEDIA_DETECT::CDetectDVDMedia::IsDiscInDrive() )
     {
       CGUIDialogOK::ShowAndGetInput(218, 219, 0, 0);
       return false;
@@ -543,7 +520,7 @@ bool CGUIDialogFileBrowser::HaveDiscOrConnection( CStdString& strPath, int iDriv
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
     // TODO: Handle not connected to a remote share
-    if ( !g_application.getNetwork().IsConnected() )
+    if ( !g_network.IsEthernetConnected() )
     {
       CGUIDialogOK::ShowAndGetInput(220, 221, 0, 0);
       return false;
@@ -598,7 +575,7 @@ bool CGUIDialogFileBrowser::ShowAndGetImage(const CFileItemList &items, const VE
   }
   browser->SetHeading(heading);
   browser->m_flipEnabled = flip?true:false;
-  browser->DoModal();
+  browser->DoModalThreadSafe();
   bool confirmed(browser->IsConfirmed());
   if (confirmed)
   {
@@ -670,7 +647,7 @@ bool CGUIDialogFileBrowser::ShowAndGetFile(const VECSOURCES &shares, const CStdS
   browser->m_rootDir.SetMask(strMask);
   browser->m_selectedPath = path;
   browser->m_addNetworkShareEnabled = false;
-  browser->DoModal();
+  browser->DoModalThreadSafe();
   bool confirmed(browser->IsConfirmed());
   if (confirmed)
     path = browser->m_selectedPath;
@@ -680,7 +657,7 @@ bool CGUIDialogFileBrowser::ShowAndGetFile(const VECSOURCES &shares, const CStdS
 }
 
 // same as above, starting in a single directory
-bool CGUIDialogFileBrowser::ShowAndGetFile(const CStdString &directory, const CStdString &mask, const CStdString &heading, CStdString &path, bool useThumbs /* = false */, bool useFileDirectories /* = false */, bool singleList /* = false */)
+bool CGUIDialogFileBrowser::ShowAndGetFile(const CStdString &directory, const CStdString &mask, const CStdString &heading, CStdString &path, bool useThumbs /* = false */, bool useFileDirectories /* = false */)
 {
   CGUIDialogFileBrowser *browser = new CGUIDialogFileBrowser();
   if (!browser)
@@ -688,29 +665,16 @@ bool CGUIDialogFileBrowser::ShowAndGetFile(const CStdString &directory, const CS
   g_windowManager.AddUniqueInstance(browser);
 
   browser->m_useFileDirectories = useFileDirectories;
-  browser->m_browsingForImages = useThumbs;
-  browser->SetHeading(heading);
 
   // add a single share for this directory
-  if (!singleList)
-  {
-    VECSOURCES shares;
-    CMediaSource share;
-    share.strPath = directory;
-    CUtil::RemoveSlashAtEnd(share.strPath); // this is needed for the dodgy code in WINDOW_INIT
-    shares.push_back(share);
-    browser->SetSources(shares);
-  }
-  else
-  {
-    browser->m_vecItems->Clear();
-    CDirectory::GetDirectory(directory,*browser->m_vecItems);
-    CFileItemPtr item(new CFileItem("file://Browse", false));
-    item->SetLabel(g_localizeStrings.Get(20153));
-    item->SetIconImage("DefaultFolder.png");
-    browser->m_vecItems->Add(item);
-    browser->m_singleList = true;
-  }
+  VECSOURCES shares;
+  CMediaSource share;
+  share.strPath = directory;
+  CUtil::RemoveSlashAtEnd(share.strPath); // this is needed for the dodgy code in WINDOW_INIT
+  shares.push_back(share);
+  browser->m_browsingForImages = useThumbs;
+  browser->SetHeading(heading);
+  browser->SetSources(shares);
   CStdString strMask = mask;
   if (mask == "/")
     browser->m_browsingForFolders=1;
@@ -726,19 +690,10 @@ bool CGUIDialogFileBrowser::ShowAndGetFile(const CStdString &directory, const CS
   browser->m_rootDir.SetMask(strMask);
   browser->m_selectedPath = directory;
   browser->m_addNetworkShareEnabled = false;
-  browser->DoModal();
+  browser->DoModalThreadSafe();
   bool confirmed(browser->IsConfirmed());
   if (confirmed)
     path = browser->m_selectedPath;
-  if (path == "file://Browse")
-  { // "Browse for thumb"
-    g_windowManager.Remove(browser->GetID());
-    delete browser;
-    VECSOURCES shares;
-    g_mediaManager.GetLocalDrives(shares);
-
-    return ShowAndGetFile(shares, mask, heading, path, useThumbs,useFileDirectories);
-  }
   g_windowManager.Remove(browser->GetID());
   delete browser;
   return confirmed;
@@ -805,7 +760,7 @@ bool CGUIDialogFileBrowser::ShowAndGetSource(CStdString &path, bool allowNetwork
   browser->m_browsingForFolders = 1;
   browser->m_addNetworkShareEnabled = allowNetworkShares;
   browser->m_selectedPath = "";
-  browser->DoModal();
+  browser->DoModalThreadSafe();
   bool confirmed = browser->IsConfirmed();
   if (confirmed)
     path = browser->m_selectedPath;

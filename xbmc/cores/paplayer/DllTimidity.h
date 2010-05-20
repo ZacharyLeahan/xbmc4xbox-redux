@@ -26,7 +26,7 @@
 class DllTimidityInterface
 {
 public:
-    virtual ~DllTimidityInterface() {}
+    virtual ~DllTimidityInterface() {} 
     virtual int Init()=0;
     virtual int LoadMID(const char* szFileName)=0;
     virtual void FreeMID(int mid)=0;
@@ -39,7 +39,7 @@ public:
 
 class DllTimidity : public DllDynamic, DllTimidityInterface
 {
-  DECLARE_DLL_WRAPPER(DllTimidity, DLL_PATH_MID_CODEC)
+  DECLARE_DLL_WRAPPER(DllTimidity, q:\\system\\players\\paplayer\\timidity.dll)
   DEFINE_METHOD0(int, Init)
   DEFINE_METHOD1(int, LoadMID, (const char* p1))
   DEFINE_METHOD1(void, FreeMID, (int p1))
@@ -59,4 +59,3 @@ class DllTimidity : public DllDynamic, DllTimidityInterface
     RESOLVE_METHOD_RENAME(DLL_GetLength, GetLength)
   END_METHOD_RESOLVE()
 };
-

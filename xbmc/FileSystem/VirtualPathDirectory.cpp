@@ -19,6 +19,8 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "VirtualPathDirectory.h"
 #include "Directory.h"
 #include "Settings.h"
@@ -27,11 +29,9 @@
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
 #include "FileItem.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 // virtualpath://type/sourcename
 
@@ -49,14 +49,14 @@ bool CVirtualPathDirectory::GetDirectory(const CStdString& strPath, CFileItemLis
   if (!GetMatchingSource(strPath, share))
     return false;
 
-  unsigned int progressTime = CTimeUtils::GetTimeMS() + 3000L;   // 3 seconds before showing progress bar
+  DWORD progressTime = timeGetTime() + 3000L;   // 3 seconds before showing progress bar
   CGUIDialogProgress* dlgProgress = NULL;
-
+  
   unsigned int iFailures = 0;
   for (int i = 0; i < (int)share.vecPaths.size(); ++i)
   {
     // show the progress dialog if we have passed our time limit
-    if (CTimeUtils::GetTimeMS() > progressTime && !dlgProgress)
+    if (timeGetTime() > progressTime && !dlgProgress)
     {
       dlgProgress = (CGUIDialogProgress *)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
       if (dlgProgress)
@@ -81,7 +81,7 @@ bool CVirtualPathDirectory::GetDirectory(const CStdString& strPath, CFileItemLis
 
     CFileItemList tempItems;
     CLog::Log(LOGDEBUG,"Getting Directory (%s)", share.vecPaths[i].c_str());
-    if (CDirectory::GetDirectory(share.vecPaths[i], tempItems, m_strFileMask, m_useFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo, true))
+    if (CDirectory::GetDirectory(share.vecPaths[i], tempItems, m_strFileMask, m_useFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo))
       items.Append(tempItems);
     else
     {

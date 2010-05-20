@@ -19,38 +19,26 @@
  *
  */
 
+
 #include "ShoutcastRipFile.h"
 #include "Id3Tag.h"
 #include "GUISettings.h"
-
-// prevent inclusion of config.h from libshout
-#define __SRCONFIG_H__
-#include "lib/libshout/rip_manager.h"
-#undef __SRCONFIG_H__
 
 using namespace MUSIC_INFO;
 
 #define MAX_RECORDED_TRACKS 999
 
-#ifndef _LINUX
 #if !defined(WIN32)
 #define WIN32 1
 #endif
-#endif
 
-#ifdef _WIN32
+#ifdef _WIN32PC
 extern "C" FILE *fopen_utf8(const char *_Filename, const char *_Mode);
 #else
 #define fopen_utf8 fopen
 #endif
 
-namespace SHOUTCAST
-{
-// prevent inclusion of config.h from libshout
-#define __SRCONFIG_H__
 #include "lib/libshout/rip_manager.h"
-#undef __SRCONFIG_H__
-}
 
 CShoutcastRipFile::CShoutcastRipFile()
 {
@@ -159,11 +147,7 @@ bool CShoutcastRipFile::Record()
   {
     char logFilename[1024];
     CStdString strHomePath = g_guiSettings.GetString("audiocds.recordingpath");
-#ifndef _LINUX
     sprintf(logFilename, "%s\\recordings.log", strHomePath.c_str() );
-#else
-    sprintf(logFilename, "%s/recordings.log", strHomePath.c_str() );
-#endif
     m_logFile = fopen_utf8( logFilename, "at+");
   }
 
@@ -278,11 +262,7 @@ void CShoutcastRipFile::PrepareRecording( )
 
     CStdString strHomePath = g_guiSettings.GetString("audiocds.recordingpath");
     char szFilePath[1024];
-#ifndef _LINUX
     sprintf( szFilePath, "%s\\%s", strHomePath.c_str(), directoryName );
-#else
-    sprintf( szFilePath, "%s/%s", strHomePath.c_str(), directoryName );
-#endif
     SetFilename( szFilePath, m_szFilteredFileName );
     //get the artist and trackname
     char szArtist[1124];
@@ -335,18 +315,17 @@ void CShoutcastRipFile::PrepareRecording( )
     char szTitle[1124];             //i.e.
 
     //Set the filename
-#ifndef _LINUX
     sprintf( szFilePath, "%s\\%s", strHomePath.c_str(), directoryName );
-#else
-    sprintf( szFilePath, "%s/%s", strHomePath.c_str(), directoryName );
-#endif
     SetFilename( szFilePath, directoryName ); //file name like Directory
 
     //set the remaining tags
-    sprintf( szTitle, "%s %i", directoryName, m_iTrackCount );
-    m_Tag.SetTitle( szTitle );       //Jazzmusique 3
-    m_Tag.SetAlbum( directoryName );      //Jazzmusique (Album is like Directory)
-    m_Tag.SetArtist( "Shoutcast" );     //Shoutcast
+    char szTemp[1124];
+    strcpy(szTemp, directoryName );
+    strcat(szTemp, " %i");
+    sprintf(szTitle, szTemp, m_iTrackCount);
+    m_Tag.SetTitle(szTitle );       //Jazzmusique 3
+    m_Tag.SetAlbum(directoryName );      //Jazzmusique (Album is like Directory)
+    m_Tag.SetArtist("Shoutcast");     //Shoutcast
   }
 }
 
@@ -388,20 +367,12 @@ void CShoutcastRipFile::SetFilename( const char* filePath, const char* fileName 
   {
     if ( m_recState.bHasMetaData )
     {
-#ifndef _LINUX
       strcat( szTempFilePath, "\\%i - %s.mp3" );  //will be "TRACKNUMBER - FILENAME.mp3"
-#else
-      strcat( szTempFilePath, "/%i - %s.mp3" );  //will be "TRACKNUMBER - FILENAME.mp3"
-#endif
       sprintf(szNewFileName, szTempFilePath, i, szMaxFileName );
     }
     else
     {
-#ifndef _LINUX
       strcat( szTempFilePath, "\\%s - %i.mp3" );  //will be "FILENAME - TRACKNUMBER.mp3"
-#else
-      strcat( szTempFilePath, "/%s - %i.mp3" );  //will be "FILENAME - TRACKNUMBER.mp3"
-#endif
       sprintf(szNewFileName, szTempFilePath, szMaxFileName, i );
     }
     memset(&wfd, 0, sizeof(wfd));

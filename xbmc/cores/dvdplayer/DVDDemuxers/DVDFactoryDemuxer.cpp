@@ -18,8 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "system.h"
+ 
+#include "stdafx.h"
 #include "DVDFactoryDemuxer.h"
 
 #include "DVDInputStreams/DVDInputStream.h"
@@ -27,9 +27,7 @@
 
 #include "DVDDemuxFFmpeg.h"
 #include "DVDDemuxShoutcast.h"
-#ifdef HAS_FILESYSTEM_HTSP
 #include "DVDDemuxHTSP.h"
-#endif
 
 using namespace std;
 
@@ -51,7 +49,6 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(CDVDInputStream* pInputStream)
     }
   }
 
-#ifdef HAS_FILESYSTEM_HTSP
   if (pInputStream->IsStreamType(DVDSTREAM_TYPE_HTSP))
   {
     auto_ptr<CDVDDemuxHTSP> demuxer(new CDVDDemuxHTSP());
@@ -60,7 +57,6 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(CDVDInputStream* pInputStream)
     else
       return NULL;
   }
-#endif
 
   auto_ptr<CDVDDemuxFFmpeg> demuxer(new CDVDDemuxFFmpeg());
   if(demuxer->Open(pInputStream))

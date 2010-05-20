@@ -19,17 +19,14 @@
  *
  */
 
+#include "stdafx.h"
 #include "SettingsControls.h"
-#include "GUIRadioButtonControl.h"
-#include "GUISpinControlEx.h"
-#include "GUIEditControl.h"
 #include "GUIDialogNumeric.h"
 #include "Util.h"
 #include "GUIDialogOK.h"
 #include "GUIDialogKeyboard.h"
 #include "GUISettings.h"
 #include "GUIImage.h"
-#include "LocalizeStrings.h"
 
 CBaseSettingControl::CBaseSettingControl(int id, CSetting *pSetting)
 {
@@ -116,15 +113,10 @@ bool CSpinExSettingControl::OnClick()
     ((CSettingFloat *)m_pSetting)->SetData(m_pSpin->GetFloatValue());
   else
   {
-    if (m_pSetting->GetType() == SETTINGS_TYPE_INT)
+    if (m_pSetting->GetType() != SETTINGS_TYPE_STRING)
     {
       CSettingInt *pSettingInt = (CSettingInt *)m_pSetting;
       pSettingInt->SetData(m_pSpin->GetValue());
-    }
-    else if (m_pSetting->GetType() == SETTINGS_TYPE_ADDON)
-    {
-      CSettingAddon *pSettingAddon = (CSettingAddon *)m_pSetting;
-      pSettingAddon->SetData(m_pSpin->GetValue());
     }
   }
   return true;
@@ -141,11 +133,6 @@ void CSpinExSettingControl::Update()
   {
     CSettingInt *pSettingInt = (CSettingInt *)m_pSetting;
     m_pSpin->SetValue(pSettingInt->GetData());
-  }
-  else if (m_pSetting->GetType() == SETTINGS_TYPE_ADDON)
-  {
-    CSettingAddon *pSettingAddon = (CSettingAddon *)m_pSetting;
-    m_pSpin->SetValue(pSettingAddon->GetPos());
   }
 }
 
@@ -191,8 +178,6 @@ CEditSettingControl::CEditSettingControl(CGUIEditControl *pEdit, int id, CSettin
   if (heading < 0) heading = 0;
   if (pSetting->GetControlType() == EDIT_CONTROL_HIDDEN_INPUT)
     m_pEdit->SetInputType(CGUIEditControl::INPUT_TYPE_PASSWORD, heading);
-  else if (pSetting->GetControlType() == EDIT_CONTROL_MD5_INPUT)
-    m_pEdit->SetInputType(CGUIEditControl::INPUT_TYPE_PASSWORD_MD5, heading);    
   else if (pSetting->GetControlType() == EDIT_CONTROL_IP_INPUT)
     m_pEdit->SetInputType(CGUIEditControl::INPUT_TYPE_IPADDRESS, heading);
   else if (pSetting->GetControlType() == EDIT_CONTROL_NUMBER_INPUT)
@@ -217,8 +202,7 @@ bool CEditSettingControl::OnClick()
 
 void CEditSettingControl::Update()
 {
-  if (!m_needsUpdate)
-    m_pEdit->SetLabel2(((CSettingString *)m_pSetting)->GetData());
+  m_pEdit->SetLabel2(((CSettingString *)m_pSetting)->GetData());
 }
 
 bool CEditSettingControl::IsValidIPAddress(const CStdString &strIP)

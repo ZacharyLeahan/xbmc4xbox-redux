@@ -19,15 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogVideoScan.h"
 #include "GUIProgressControl.h"
-#include "GUIUserMessages.h"
 #include "Util.h"
 #include "GUIWindowManager.h"
 #include "GUISettings.h"
-#include "Application.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 
 #define CONTROL_LABELSTATUS       401
 #define CONTROL_LABELDIRECTORY    402
@@ -70,12 +67,12 @@ bool CGUIDialogVideoScan::OnMessage(CGUIMessage& message)
   return CGUIDialog::OnMessage(message);
 }
 
-void CGUIDialogVideoScan::FrameMove()
+void CGUIDialogVideoScan::Render()
 {
   if (m_bRunning)
     UpdateState();
 
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
 void CGUIDialogVideoScan::OnDirectoryChanged(const CStdString& strDirectory)
@@ -115,7 +112,7 @@ void CGUIDialogVideoScan::OnSetTitle(const CStdString& strTitle)
   m_strTitle = strTitle;
 }
 
-void CGUIDialogVideoScan::StartScanning(const CStdString& strDirectory, bool bUpdateAll)
+void CGUIDialogVideoScan::StartScanning(const CStdString& strDirectory, const SScraperInfo& info, const SScanSettings& settings, bool bUpdateAll)
 {
   m_ScanState = PREPARING;
 
@@ -124,7 +121,7 @@ void CGUIDialogVideoScan::StartScanning(const CStdString& strDirectory, bool bUp
     Show();
   }
 
-  m_videoInfoScanner.Start(strDirectory,bUpdateAll);
+  m_videoInfoScanner.Start(strDirectory, info, settings, bUpdateAll);
 }
 
 void CGUIDialogVideoScan::StopScanning()
@@ -159,7 +156,7 @@ void CGUIDialogVideoScan::OnFinished()
 
   if (!g_guiSettings.GetBool("videolibrary.backgroundupdate"))
   {
-    g_application.getApplicationMessenger().Close(this,false,false);
+    Close();
   }
 }
 

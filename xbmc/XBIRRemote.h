@@ -1,28 +1,6 @@
-/*
- *      Copyright (C) 2005-2010 Team XBMC
- *      http://www.xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
- *
- */
 
 #ifndef XBIRREMOTE_H
 #define XBIRREMOTE_H
-
-#include "system.h"
 
 #define XINPUT_IR_REMOTE_DISPLAY      213
 #define XINPUT_IR_REMOTE_REVERSE      226
@@ -41,10 +19,6 @@
 #define XINPUT_IR_REMOTE_RIGHT        168
 
 #define XINPUT_IR_REMOTE_SELECT       11
-#define XINPUT_IR_REMOTE_ENTER        22
-
-#define XINPUT_IR_REMOTE_SUBTITLE     44
-#define XINPUT_IR_REMOTE_LANGUAGE     45
 
 #define XINPUT_IR_REMOTE_MENU         247
 #define XINPUT_IR_REMOTE_BACK         216
@@ -81,13 +55,6 @@
 #define XINPUT_IR_REMOTE_STAR           40
 #define XINPUT_IR_REMOTE_HASH           41
 #define XINPUT_IR_REMOTE_CLEAR          249
-
-// additional keys not defined by xbox remotes but present on generic remotes
-#define XINPUT_IR_REMOTE_TELETEXT       250
-#define XINPUT_IR_REMOTE_RED            251
-#define XINPUT_IR_REMOTE_GREEN          252
-#define XINPUT_IR_REMOTE_YELLOW         253
-#define XINPUT_IR_REMOTE_BLUE           254
 
 typedef struct _XINPUT_IR_REMOTE
 {

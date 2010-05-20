@@ -19,13 +19,12 @@
  *
  */
 
-#include "system.h" // for HAS_DVD_DRIVE
+#include "stdafx.h"
 #include "MusicInfoTagLoaderCDDA.h"
 #include "FileSystem/cddb.h"
+#include "DetectDVDType.h"
 #include "MusicInfoTag.h"
 #include "Settings.h"
-#include "MediaManager.h"
-#include "utils/log.h"
 
 using namespace MEDIA_DETECT;
 using namespace MUSIC_INFO;
@@ -41,14 +40,13 @@ CMusicInfoTagLoaderCDDA::~CMusicInfoTagLoaderCDDA()
 
 bool CMusicInfoTagLoaderCDDA::Load(const CStdString& strFileName, CMusicInfoTag& tag)
 {
-#ifdef HAS_DVD_DRIVE
   try
   {
     tag.SetURL(strFileName);
     bool bResult = false;
 
     // Get information for the inserted disc
-    CCdInfo* pCdInfo = g_mediaManager.GetCdInfo();
+    CCdInfo* pCdInfo = CDetectDVDMedia::GetCdInfo();
     if (pCdInfo == NULL)
       return bResult;
 
@@ -88,11 +86,6 @@ bool CMusicInfoTagLoaderCDDA::Load(const CStdString& strFileName, CMusicInfoTag&
           CStdString strAlbum;
           cddb.getDiskTitle( strAlbum );
           tag.SetAlbum(strAlbum);
-
-          // Album Artist
-          CStdString strAlbumArtist;
-          cddb.getDiskArtist(strAlbumArtist);
-          tag.SetAlbumArtist(strAlbumArtist);
 
           // Year
           SYSTEMTIME dateTime;
@@ -151,9 +144,6 @@ bool CMusicInfoTagLoaderCDDA::Load(const CStdString& strFileName, CMusicInfoTag&
     CLog::Log(LOGERROR, "Tag loader CDDB: exception in file %s", strFileName.c_str());
   }
 
-#endif
-
   tag.SetLoaded(false);
-
   return false;
 }

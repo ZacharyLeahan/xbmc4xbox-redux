@@ -19,8 +19,8 @@
  *
  */
 
+#include "include.h"
 #include "GUIScrollBarControl.h"
-#include "Key.h"
 
 #define MIN_NIB_SIZE 4.0f
 
@@ -89,7 +89,7 @@ bool CGUIScrollBar::OnMessage(CGUIMessage& message)
 
 bool CGUIScrollBar::OnAction(const CAction &action)
 {
-  switch ( action.GetID() )
+  switch ( action.id )
   {
   case ACTION_MOVE_LEFT:
     if (m_orientation == HORIZONTAL)
@@ -149,14 +149,14 @@ void CGUIScrollBar::SetValue(int value)
   SetInvalid();
 }
 
-void CGUIScrollBar::FreeResources(bool immediately)
+void CGUIScrollBar::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
-  m_guiBackground.FreeResources(immediately);
-  m_guiBarNoFocus.FreeResources(immediately);
-  m_guiBarFocus.FreeResources(immediately);
-  m_guiNibNoFocus.FreeResources(immediately);
-  m_guiNibFocus.FreeResources(immediately);
+  CGUIControl::FreeResources();
+  m_guiBackground.FreeResources();
+  m_guiBarNoFocus.FreeResources();
+  m_guiBarFocus.FreeResources();
+  m_guiNibNoFocus.FreeResources();
+  m_guiNibFocus.FreeResources();
 }
 
 void CGUIScrollBar::DynamicResourceAlloc(bool bOnOff)
@@ -169,6 +169,16 @@ void CGUIScrollBar::DynamicResourceAlloc(bool bOnOff)
   m_guiNibFocus.DynamicResourceAlloc(bOnOff);
 }
 
+void CGUIScrollBar::PreAllocResources()
+{
+  CGUIControl::PreAllocResources();
+  m_guiBackground.PreAllocResources();
+  m_guiBarNoFocus.PreAllocResources();
+  m_guiBarFocus.PreAllocResources();
+  m_guiNibNoFocus.PreAllocResources();
+  m_guiNibFocus.PreAllocResources();
+}
+
 void CGUIScrollBar::AllocResources()
 {
   CGUIControl::AllocResources();
@@ -177,16 +187,6 @@ void CGUIScrollBar::AllocResources()
   m_guiBarFocus.AllocResources();
   m_guiNibNoFocus.AllocResources();
   m_guiNibFocus.AllocResources();
-}
-
-void CGUIScrollBar::SetInvalid()
-{
-  CGUIControl::SetInvalid();
-  m_guiBackground.SetInvalid();
-  m_guiBarFocus.SetInvalid();
-  m_guiBarFocus.SetInvalid();
-  m_guiNibNoFocus.SetInvalid();
-  m_guiNibFocus.SetInvalid();
 }
 
 void CGUIScrollBar::UpdateBarSize()
@@ -205,7 +205,7 @@ void CGUIScrollBar::UpdateBarSize()
     m_guiNibNoFocus.SetHeight(nibSize);
     m_guiNibFocus.SetHeight(nibSize);
     // nibSize may be altered by the border size of the nib (and bar).
-    nibSize = std::max(m_guiBarFocus.GetHeight(), m_guiNibFocus.GetHeight());
+    nibSize = max(m_guiBarFocus.GetHeight(), m_guiNibFocus.GetHeight());
 
     // and the position
     percent = (m_numItems == m_pageSize) ? 0 : (float)m_offset / (m_numItems - m_pageSize);
@@ -264,39 +264,33 @@ void CGUIScrollBar::SetFromPosition(const CPoint &point)
   SetInvalid();
 }
 
-EVENT_RESULT CGUIScrollBar::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIScrollBar::OnMouseClick(int button, const CPoint &point)
 {
-  if (event.m_id == ACTION_MOUSE_DRAG)
-  {
-    if (event.m_state == 1)
-    { // we want exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-      SendWindowMessage(msg);
-    }
-    else if (event.m_state == 3)
-    { // we're done with exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-      SendWindowMessage(msg);
-    }
+  g_Mouse.SetState(MOUSE_STATE_CLICK);
+  // turn off any exclusive access, if it's on...
+  g_Mouse.EndExclusiveAccess(GetID(), GetParentID());
+  if (m_guiBackground.HitTest(point))
+  { // set the position
     SetFromPosition(point);
-    return EVENT_RESULT_HANDLED;
+    return true;
   }
-  else if (event.m_id == ACTION_MOUSE_LEFT_CLICK && m_guiBackground.HitTest(point))
-  {
-    SetFromPosition(point);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    Move(-1);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    Move(1);
-    return EVENT_RESULT_HANDLED;
-  }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+bool CGUIScrollBar::OnMouseDrag(const CPoint &offset, const CPoint &point)
+{
+  g_Mouse.SetState(MOUSE_STATE_DRAG);
+  // get exclusive access to the mouse
+  g_Mouse.SetExclusiveAccess(GetID(), GetParentID(), point);
+  // get the position of the mouse
+  SetFromPosition(point);
+  return true;
+}
+
+bool CGUIScrollBar::OnMouseWheel(char wheel, const CPoint &point)
+{
+  Move(-wheel);
+  return true;
 }
 
 CStdString CGUIScrollBar::GetDescription() const

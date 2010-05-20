@@ -67,8 +67,9 @@ CXHandle::~CXHandle()
     SDL_DestroyCond(m_hCond);
   }
 
-  if (m_threadValid) {
-    pthread_join(m_hThread,NULL);
+  if (m_hThread) {
+    //SDL_WaitThread should only be called once (here, when destructing) since it will destroy the thread object.
+    SDL_WaitThread(m_hThread,NULL);
   }
 
   if ( fd != 0 ) {
@@ -82,7 +83,7 @@ void CXHandle::Init()
   fd=0;
   m_hSem=NULL;
   m_hMutex=NULL;
-  m_threadValid=false;
+  m_hThread=NULL;
   m_hCond=NULL;
   m_type = HND_NULL;
   RecursionCount=0;

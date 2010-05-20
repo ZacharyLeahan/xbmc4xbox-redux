@@ -1,3 +1,6 @@
+#ifndef BUTTON_TRANSLATOR_H
+#define BUTTON_TRANSLATOR_H
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,25 +22,14 @@
  *
  */
 
-#ifndef BUTTON_TRANSLATOR_H
-#define BUTTON_TRANSLATOR_H
-
-#pragma once
-
-#include <map>
-#include "system.h" // for HAS_EVENT_SERVER, HAS_SDL_JOYSTICK, HAS_LIRC
-
 #ifdef HAS_EVENT_SERVER
 #include "utils/EventClient.h"
-#endif
-
-#if defined(HAS_SDL_JOYSTICK) || defined(HAS_EVENT_SERVER)
-#include "../guilib/common/SDLJoystick.h"
 #endif
 
 class CKey;
 class CAction;
 class TiXmlNode;
+class TiXmlElement;
 
 struct CButtonAction
 {
@@ -52,7 +44,6 @@ class CButtonTranslator
 #ifdef HAS_EVENT_SERVER
   friend class EVENTCLIENT::CEventButtonState;
 #endif
-
 private:
   //private construction, and no assignements; use the provided singleton methods
   CButtonTranslator();
@@ -69,61 +60,39 @@ public:
   /// clears the maps
   void Clear();
 
-  CAction GetAction(int window, const CKey &key, bool fallback = true);
+  void GetAction(int window, const CKey &key, CAction &action);
 
-  /*! \brief Translate between a window name and it's id
-   \param window name of the window
-   \return id of the window, or WINDOW_INVALID if not found
-   */
-  static int TranslateWindow(const CStdString &window);
-
-  /*! \brief Translate between a window id and it's name
-   \param window id of the window
-   \return name of the window, or an empty string if not found
-   */
-  static CStdString TranslateWindow(int window);
-
+  //static helpers
+  static int TranslateWindowString(const char *szWindow);
   static bool TranslateActionString(const char *szAction, int &action);
 
-#if defined(HAS_LIRC) || defined(HAS_IRSERVERSUITE)
-  int TranslateLircRemoteString(const char* szDevice, const char *szButton);
-#endif
 #if defined(HAS_SDL_JOYSTICK) || defined(HAS_EVENT_SERVER)
   bool TranslateJoystickString(int window, const char* szDevice, int id,
-                               short inputType, int& action, CStdString& strAction,
+                               bool axis, int& action, CStdString& strAction,
                                bool &fullrange);
 #endif
 
 private:
-  typedef std::multimap<uint32_t, CButtonAction> buttonMap; // our button map to fill in
+  typedef std::multimap<int, CButtonAction> buttonMap; // our button map to fill in
   std::map<int, buttonMap> translatorMap;       // mapping of windows to button maps
   int GetActionCode(int window, const CKey &key, CStdString &strAction);
 
-  static uint32_t TranslateGamepadString(const char *szButton);
-  static uint32_t TranslateRemoteString(const char *szButton);
-  static uint32_t TranslateUniversalRemoteString(const char *szButton);
-
-  static uint32_t TranslateKeyboardString(const char *szButton);
-  static uint32_t TranslateKeyboardButton(TiXmlElement *pButton);
+  static int TranslateGamepadString(const char *szButton);
+  static int TranslateRemoteString(const char *szButton);
+  static int TranslateUniversalRemoteString(const char *szButton);
+  static int TranslateKeyboardString(const char *szButton);
+  static int TranslateKeyboardButton(TiXmlElement *pButton);
 
   void MapWindowActions(TiXmlNode *pWindow, int wWindowID);
-  void MapAction(uint32_t buttonCode, const char *szAction, buttonMap &map);
+  void MapAction(int buttonCode, const char *szAction, buttonMap &map);
 
   bool LoadKeymap(const CStdString &keymapPath);
-#if defined(HAS_LIRC) || defined(HAS_IRSERVERSUITE)
-  bool LoadLircMap(const CStdString &lircmapPath);
-  void MapRemote(TiXmlNode *pRemote, const char* szDevice);
-  typedef std::map<CStdString, CStdString> lircButtonMap;
-  std::map<CStdString, lircButtonMap> lircRemotesMap;
-#endif
-
 #if defined(HAS_SDL_JOYSTICK) || defined(HAS_EVENT_SERVER)
   void MapJoystickActions(int windowID, TiXmlNode *pJoystick);
 
   typedef std::map<int, std::map<int, std::string> > JoystickMap; // <window, <button/axis, action> >
   std::map<std::string, JoystickMap> m_joystickButtonMap;      // <joy name, button map>
   std::map<std::string, JoystickMap> m_joystickAxisMap;        // <joy name, axis map>
-  std::map<std::string, JoystickMap> m_joystickHatMap;        // <joy name, hat map>
 #endif
 };
 

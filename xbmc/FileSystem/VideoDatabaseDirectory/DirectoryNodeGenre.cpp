@@ -19,11 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeGenre.h"
 #include "QueryParams.h"
 #include "VideoDatabase.h"
 
-using namespace XFILE::VIDEODATABASEDIRECTORY;
+using namespace DIRECTORY::VIDEODATABASEDIRECTORY;
 
 CDirectoryNodeGenre::CDirectoryNodeGenre(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_GENRE, strName, pParent)

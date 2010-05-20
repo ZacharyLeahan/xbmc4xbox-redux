@@ -1,9 +1,5 @@
 #pragma once
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
 #include "DynamicDll.h"
-#include "utils/log.h"
 
 extern "C" {
 #define HAVE_MMX
@@ -17,21 +13,8 @@ extern "C" {
 #pragma warning(disable:4244)
 #endif
   
-#if (defined USE_EXTERNAL_FFMPEG)
-  #if (defined HAVE_LIBAVUTIL_AVUTIL_H)
-    #include <libavutil/avutil.h>
-  #elif (defined HAVE_FFMPEG_AVUTIL_H)
-    #include <ffmpeg/avutil.h>
-  #endif
-  #if (defined HAVE_LIBPOSTPROC_POSTPROCESS_H)
-    #include <libpostproc/postprocess.h>
-  #elif (defined HAVE_POSTPROC_POSTPROCESS_H)
-    #include <postproc/postprocess.h>
-  #endif
-#else
-  #include "libavutil/avutil.h"
-  #include "libpostproc/postprocess.h"
-#endif
+#include "Codecs/ffmpeg/libavutil/avutil.h"
+#include "Codecs/ffmpeg/libpostproc/postprocess.h"
 }
 
 class DllPostProcInterface
@@ -75,7 +58,7 @@ public:
 #else
 class DllPostProc : public DllDynamic, DllPostProcInterface
 {
-  DECLARE_DLL_WRAPPER(DllPostProc, DLL_PATH_LIBPOSTPROC)
+  DECLARE_DLL_WRAPPER(DllPostProc, Q:\\system\\players\\dvdplayer\\postproc-51.dll)
   DEFINE_METHOD11(void, pp_postprocess, (uint8_t* p1[3], int p2[3], uint8_t * p3[3], int p4[3],
                       int p5, int p6, QP_STORE_T *p7,  int p8,
                       pp_mode_t *p9, pp_context_t *p10, int p11))

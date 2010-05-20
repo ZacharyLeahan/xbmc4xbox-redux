@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicDatabaseDirectory.h"
 #include "Util.h"
 #include "MusicDatabaseDirectory/QueryParams.h"
@@ -27,11 +28,10 @@
 #include "FileItem.h"
 #include "Crc32.h"
 #include "TextureManager.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace std;
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace MUSICDATABASEDIRECTORY;
 
 CMusicDatabaseDirectory::CMusicDatabaseDirectory(void)
@@ -108,7 +108,7 @@ bool CMusicDatabaseDirectory::IsArtistDir(const CStdString& strDirectory)
 bool CMusicDatabaseDirectory::HasAlbumInfo(const CStdString& strDirectory)
 {
   NODE_TYPE node=GetDirectoryType(strDirectory);
-  return (node!=NODE_TYPE_OVERVIEW && node!=NODE_TYPE_TOP100 &&
+  return (node!=NODE_TYPE_OVERVIEW && node!=NODE_TYPE_TOP100 && 
           node!=NODE_TYPE_GENRE && node!=NODE_TYPE_ARTIST && node!=NODE_TYPE_YEAR);
 }
 
@@ -241,7 +241,7 @@ bool CMusicDatabaseDirectory::ContainsSongs(const CStdString &path)
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_SONG) return true;
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_SINGLES) return true;
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_ALBUM_RECENTLY_ADDED_SONGS) return true;
-  if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_ALBUM_RECENTLY_PLAYED_SONGS) return true;
+  if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_ALBUM_RECENTLY_PLAYED_SONGS) return true; 
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_ALBUM_COMPILATIONS_SONGS) return true;
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_ALBUM_TOP100_SONGS) return true;
   if (type == MUSICDATABASEDIRECTORY::NODE_TYPE_SONG_TOP100) return true;

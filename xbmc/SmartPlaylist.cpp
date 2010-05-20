@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "SmartPlaylist.h"
 #include "utils/log.h"
 #include "StringUtils.h"
@@ -30,9 +31,9 @@
 #include "VideoDatabase.h"
 #include "Util.h"
 #include "DateTime.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
+using namespace DIRECTORY;
 using namespace XFILE;
 
 typedef struct
@@ -43,7 +44,7 @@ typedef struct
   int localizedString;
 } translateField;
 
-static const translateField fields[] = { { "none", CSmartPlaylistRule::FIELD_NONE, CSmartPlaylistRule::TEXT_FIELD, 231 },
+static const translateField fields[] = { { "none", CSmartPlaylistRule::FIELD_NONE, CSmartPlaylistRule::TEXT_FIELD, 231 }, 
                                          { "genre", CSmartPlaylistRule::FIELD_GENRE, CSmartPlaylistRule::BROWSEABLE_FIELD, 515 },
                                          { "album", CSmartPlaylistRule::FIELD_ALBUM, CSmartPlaylistRule::BROWSEABLE_FIELD, 558 },
                                          { "albumartist", CSmartPlaylistRule::FIELD_ALBUMARTIST, CSmartPlaylistRule::BROWSEABLE_FIELD, 566 },
@@ -69,7 +70,6 @@ static const translateField fields[] = { { "none", CSmartPlaylistRule::FIELD_NON
                                          { "director", CSmartPlaylistRule::FIELD_DIRECTOR, CSmartPlaylistRule::BROWSEABLE_FIELD, 20339 },
                                          { "actor", CSmartPlaylistRule::FIELD_ACTOR, CSmartPlaylistRule::BROWSEABLE_FIELD, 20337 },
                                          { "studio", CSmartPlaylistRule::FIELD_STUDIO, CSmartPlaylistRule::BROWSEABLE_FIELD, 572 },
-                                         { "country", CSmartPlaylistRule::FIELD_COUNTRY, CSmartPlaylistRule::BROWSEABLE_FIELD, 574 },
                                          { "numepisodes", CSmartPlaylistRule::FIELD_NUMEPISODES, CSmartPlaylistRule::NUMERIC_FIELD, 20360 },
                                          { "numwatched", CSmartPlaylistRule::FIELD_NUMWATCHED, CSmartPlaylistRule::NUMERIC_FIELD, 21441 },
                                          { "writers", CSmartPlaylistRule::FIELD_WRITER, CSmartPlaylistRule::BROWSEABLE_FIELD, 20417 },
@@ -285,7 +285,6 @@ vector<CSmartPlaylistRule::DATABASE_FIELD> CSmartPlaylistRule::GetFields(const C
     fields.push_back(FIELD_PLAYCOUNT);
     fields.push_back(FIELD_LASTPLAYED);
     fields.push_back(FIELD_GENRE);
-    fields.push_back(FIELD_COUNTRY);
     fields.push_back(FIELD_YEAR); // premiered
     fields.push_back(FIELD_DIRECTOR);
     if (!sortOrders)
@@ -352,13 +351,13 @@ CStdString CSmartPlaylistRule::GetVideoResolutionQuery(void)
 {
   CStdString retVal(" in (select distinct idFile from streamdetails where iVideoWidth ");
   int iRes = atoi(m_parameter.c_str());
-
+  
   int min, max;
   if (iRes >= 1080)     { min = 1281; max = INT_MAX; }
   else if (iRes >= 720) { min =  961; max = 1280; }
   else if (iRes >= 540) { min =  721; max =  960; }
   else                  { min =    0; max =  720; }
-
+  
   switch (m_operator)
   {
     case OPERATOR_EQUALS:
@@ -407,7 +406,7 @@ CStdString CSmartPlaylistRule::GetWhereClause(const CStdString& strType)
     if (op == OPERATOR_DOES_NOT_EQUAL)
       negate = " NOT";
   }
-  else
+  else 
   {
     // the comparison piece
     switch (op)
@@ -442,7 +441,7 @@ CStdString CSmartPlaylistRule::GetWhereClause(const CStdString& strType)
 
     parameter = CDatabase::FormatSQL(operatorString.c_str(), m_parameter.c_str());
   }
-
+  
   if (m_field == FIELD_LASTPLAYED)
   {
     if (m_operator == OPERATOR_IN_THE_LAST || m_operator == OPERATOR_NOT_IN_THE_LAST)
@@ -496,8 +495,6 @@ CStdString CSmartPlaylistRule::GetWhereClause(const CStdString& strType)
       query = "idmovie" + negate + " in (select idmovie from writerlinkmovie join actors on actors.idactor=writerlinkmovie.idwriter where actors.strActor" + parameter + ")";
     else if (m_field == FIELD_STUDIO)
       query = "idmovie" + negate + " in (select idmovie from studiolinkmovie join studio on studio.idstudio=studiolinkmovie.idstudio where studio.strStudio" + parameter + ")";
-    else if (m_field == FIELD_COUNTRY)
-      query = "idmovie" + negate + " in (select idmovie from countrylinkmovie join country on country.idcountry=countrylinkmovie.idcountry where country.strCountry" + parameter + ")";
     else if (m_field == FIELD_HASTRAILER)
       query = negate + GetDatabaseField(m_field, strType) + "!= ''";
     else if (m_field == FIELD_LASTPLAYED && (m_operator == OPERATOR_LESS_THAN || m_operator == OPERATOR_BEFORE || m_operator == OPERATOR_NOT_IN_THE_LAST))
@@ -647,7 +644,6 @@ CStdString CSmartPlaylistRule::GetDatabaseField(DATABASE_FIELD field, const CStd
     else if (field == FIELD_MPAA) result.Format("c%02d", VIDEODB_ID_MPAA);
     else if (field == FIELD_TOP250) result.Format("c%02d", VIDEODB_ID_TOP250);
     else if (field == FIELD_STUDIO) result.Format("c%02d", VIDEODB_ID_STUDIOS);   // join required
-    else if (field == FIELD_COUNTRY) result.Format("c%02d", VIDEODB_ID_COUNTRY);    // join required
     else if (field == FIELD_HASTRAILER) result.Format("c%02d", VIDEODB_ID_TRAILER);
     else if (field == FIELD_FILENAME) result = "strFilename";
     else if (field == FIELD_PATH) result = "strPath";
@@ -720,7 +716,7 @@ CStdString CSmartPlaylistRule::GetDatabaseField(DATABASE_FIELD field, const CStd
     else if (field == FIELD_DATEADDED) result = "idshow";       // only used for order clauses
     return result;
   }
-
+  
   return "";
 }
 
@@ -766,7 +762,7 @@ TiXmlElement *CSmartPlaylist::OpenAndReadName(const CStdString &path)
     m_playlistType = "songs";
   if (m_playlistType == "video")
     m_playlistType = "musicvideos";
-
+  
   // load the playlist name
   TiXmlHandle name = ((TiXmlHandle)root->FirstChild("name")).FirstChild();
   if (name.Node())

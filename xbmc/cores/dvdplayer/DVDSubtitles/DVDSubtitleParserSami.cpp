@@ -18,15 +18,13 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDSubtitleParserSami.h"
 #include "DVDCodecs/Overlay/DVDOverlayText.h"
 #include "DVDClock.h"
 #include "utils/RegExp.h"
 #include "DVDStreamInfo.h"
-#include "StdString.h"
-#include "SamiTagConvertor.h"
-#include "Util.h"
 
 using namespace std;
 
@@ -52,31 +50,12 @@ bool CDVDSubtitleParserSami::Open(CDVDStreamInfo &hints)
   if (!reg.RegComp("<SYNC START=([0-9]+)>"))
     return false;
 
-  CStdString strFileName;
-  CStdString strClassID;
-  strFileName = CUtil::GetFileName(m_filename);
-
-  SamiTagConvertor TagConv;
-  if (!TagConv.Init())
+  CRegExp tags(true);
+  if (!tags.RegComp("<[^>]*>"))
     return false;
-  TagConv.LoadHead(m_pStream);
-  if (TagConv.m_Langclass.size() >= 2)
-  {
-    for (unsigned int i = 0; i < TagConv.m_Langclass.size(); i++)
-    {
-      if (strFileName.Find(TagConv.m_Langclass[i].Name, 9) == 9)
-      {
-        strClassID = TagConv.m_Langclass[i].ID.ToLower();
-        break;
-      }
-    }
-  }
-  const char *lang = NULL;
-  if (!strClassID.IsEmpty())
-    lang = strClassID.c_str();
 
   CDVDOverlayText* pOverlay = NULL;
-  while (m_pStream->ReadLine(line, sizeof(line)))
+  while (m_stringstream.getline(line, sizeof(line)))
   {
     int pos = reg.RegFind(line);
     const char* text = line;
@@ -85,10 +64,9 @@ bool CDVDSubtitleParserSami::Open(CDVDStreamInfo &hints)
       CStdString start = reg.GetMatch(1);
       if(pOverlay)
       {
-        TagConv.ConvertLine(pOverlay, text, pos, lang);
+        AddText(tags, pOverlay, text, pos);
         pOverlay->iPTSStopTime  = (double)atoi(start.c_str()) * DVD_TIME_BASE / 1000;
         pOverlay->Release();
-        TagConv.CloseTag(pOverlay);
       }
 
       pOverlay = new CDVDOverlayText();
@@ -100,9 +78,37 @@ bool CDVDSubtitleParserSami::Open(CDVDStreamInfo &hints)
       text += pos + reg.GetFindLen();
     }
     if(pOverlay)
-      TagConv.ConvertLine(pOverlay, text, strlen(text), lang);
+      AddText(tags, pOverlay, text, strlen(text));
   }
   m_collection.Sort();
+  if(pOverlay)
+    pOverlay->Release();
+
   return true;
+}
+
+void CDVDSubtitleParserSami::AddText(CRegExp& tags, CDVDOverlayText* pOverlay, const char* data, int len)
+{
+  CStdStringA strUTF8;
+  strUTF8.assign(data, len);
+  strUTF8.Replace("\n", "");
+
+  int pos = 0;
+  while( (pos = tags.RegFind(strUTF8.c_str(), pos)) >= 0 )
+  {
+    CStdString tag = tags.GetMatch(0);
+    if(tag == "<i>"
+    || tag == "</i>")
+    {
+      pos += tag.length();
+      continue;
+    }
+    strUTF8.erase(pos, tag.length());
+  }
+
+  if (strUTF8.IsEmpty())
+    return;
+  // add a new text element to our container
+  pOverlay->AddElement(new CDVDOverlayText::CElementText(strUTF8.c_str()));
 }
 

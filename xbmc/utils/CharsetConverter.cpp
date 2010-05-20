@@ -19,24 +19,21 @@
  *
  */
 
-#include "CharsetConverter.h"
+#include "stdafx.h"
 #include "Util.h"
 #include "ArabicShaping.h"
 #include "GUISettings.h"
-#include "LangInfo.h"
-#include "SingleLock.h"
-#include "log.h"
 
+#ifndef _LINUX
+#include "lib/libiconv/iconv.h"
+#else
 #include <iconv.h>
+#endif
 
 #ifdef __APPLE__
-#ifdef __POWERPC__
-  #define WCHAR_CHARSET "UTF-32BE"
-#else
   #define WCHAR_CHARSET "UTF-32LE"
-#endif
   #define UTF8_SOURCE "UTF-8-MAC"
-#elif defined(WIN32)
+#elif defined(_XBOX) || defined(WIN32)
   #define WCHAR_CHARSET "UTF-16LE"
   #define UTF8_SOURCE "UTF-8"
 #else
@@ -369,10 +366,11 @@ void CCharsetConverter::reset(void)
 // of the string is already made or the string is not displayed in the GUI
 void CCharsetConverter::utf8ToW(const CStdStringA& utf8String, CStdStringW &wString, bool bVisualBiDiFlip/*=true*/, bool forceLTRReadingOrder /*=false*/, bool* bWasFlipped/*=NULL*/)
 {
+  CStdStringA strFlipped;
+
   // Try to flip hebrew/arabic characters, if any
   if (bVisualBiDiFlip)
   {
-    CStdStringA strFlipped;
     FriBidiCharType charset = forceLTRReadingOrder ? FRIBIDI_TYPE_LTR : FRIBIDI_TYPE_PDF;
     logicalToVisualBiDi(utf8String, strFlipped, FRIBIDI_CHAR_SET_UTF8, charset, bWasFlipped);
     convert(m_iconvUtf8toW,sizeof(wchar_t),UTF8_SOURCE,WCHAR_CHARSET,strFlipped,wString);
@@ -422,7 +420,7 @@ void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStri
   iconv_close(iconvString);
 }
 
-void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStringA& strSource, CStdString16& strDest)
+void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStringA& strSource, CStdStr<int16_t>& strDest)
 {
   iconv_t iconvString;
   ICONV_PREPARE(iconvString);
@@ -431,7 +429,7 @@ void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStri
   iconv_close(iconvString);
 }
 
-void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStringA& strSource, CStdString32& strDest)
+void CCharsetConverter::utf8To(const CStdStringA& strDestCharset, const CStdStringA& strSource, CStdStr<int32_t>& strDest)
 {
   iconv_t iconvString;
   ICONV_PREPARE(iconvString);
@@ -464,33 +462,29 @@ void CCharsetConverter::wToUTF8(const CStdStringW& strSource, CStdStringA &strDe
   convert(m_iconvWtoUtf8,UTF8_DEST_MULTIPLIER,WCHAR_CHARSET,"UTF-8",strSource,strDest);
 }
 
-void CCharsetConverter::utf16BEtoUTF8(const CStdString16& strSource, CStdStringA &strDest)
+void CCharsetConverter::utf16BEtoUTF8(const CStdStringW& strSource, CStdStringA &strDest)
 {
   CSingleLock lock(m_critSection);
-  if(!convert_checked(m_iconvUtf16BEtoUtf8,UTF8_DEST_MULTIPLIER,"UTF-16BE","UTF-8",strSource,strDest))
-    strDest.empty();
+  convert(m_iconvUtf16BEtoUtf8,UTF8_DEST_MULTIPLIER,"UTF-16BE","UTF-8",strSource,strDest);
 }
 
-void CCharsetConverter::utf16LEtoUTF8(const CStdString16& strSource,
+void CCharsetConverter::utf16LEtoUTF8(const CStdStringW& strSource,
                                       CStdStringA &strDest)
 {
   CSingleLock lock(m_critSection);
-  if(!convert_checked(m_iconvUtf16LEtoUtf8,UTF8_DEST_MULTIPLIER,"UTF-16LE","UTF-8",strSource,strDest))
-    strDest.empty();
+  convert(m_iconvUtf16LEtoUtf8,UTF8_DEST_MULTIPLIER,"UTF-16LE","UTF-8",strSource,strDest);
 }
 
-void CCharsetConverter::ucs2ToUTF8(const CStdString16& strSource, CStdStringA& strDest)
+void CCharsetConverter::ucs2ToUTF8(const CStdStringW& strSource, CStdStringA& strDest)
 {
   CSingleLock lock(m_critSection);
-  if(!convert_checked(m_iconvUcs2CharsetToUtf8,UTF8_DEST_MULTIPLIER,"UCS-2LE","UTF-8",strSource,strDest))
-    strDest.empty();
+  convert(m_iconvUcs2CharsetToUtf8,UTF8_DEST_MULTIPLIER,"UCS-2LE","UTF-8",strSource,strDest);
 }
 
-void CCharsetConverter::utf16LEtoW(const CStdString16& strSource, CStdStringW &strDest)
+void CCharsetConverter::utf16LEtoW(const CStdStringW& strSource, CStdStringW &strDest)
 {
   CSingleLock lock(m_critSection);
-  if(!convert_checked(m_iconvUtf16LEtoW,sizeof(wchar_t),"UTF-16LE",WCHAR_CHARSET,strSource,strDest))
-    strDest.empty();
+  convert(m_iconvUtf16LEtoW,sizeof(wchar_t),"UTF-16LE",WCHAR_CHARSET,strSource,strDest);
 }
 
 void CCharsetConverter::ucs2CharsetToStringCharset(const CStdStringW& strSource, CStdStringA& strDest, bool swap)

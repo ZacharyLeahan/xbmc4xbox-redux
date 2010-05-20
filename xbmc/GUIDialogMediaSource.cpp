@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogMediaSource.h"
 #include "GUIDialogKeyboard.h"
 #include "GUIDialogFileBrowser.h"
@@ -31,12 +32,9 @@
 #include "FileSystem/File.h"
 #include "FileSystem/ShoutcastDirectory.h"
 #include "FileItem.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 #define CONTROL_HEADING          2
 #define CONTROL_PATH            10
@@ -61,7 +59,7 @@ CGUIDialogMediaSource::~CGUIDialogMediaSource()
 
 bool CGUIDialogMediaSource::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_PREVIOUS_MENU)
   {
     m_confirmed = false;
   }
@@ -108,6 +106,8 @@ bool CGUIDialogMediaSource::OnMessage(CGUIMessage& message)
       m_confirmed = false;
       m_bRunScan = false;
       m_bNameChanged=false;
+      m_settings.parent_name = false;
+      m_settings.recurse = 0;
       UpdateButtons();
     }
     break;
@@ -164,7 +164,7 @@ bool CGUIDialogMediaSource::ShowAndAddMediaSource(const CStdString &type)
     if (type == "video")
     {
       if (dialog->m_bRunScan)
-        CGUIWindowVideoBase::OnScan(share.strPath);
+        CGUIWindowVideoBase::OnScan(share.strPath,dialog->m_info,dialog->m_settings);
 
     }
   }
@@ -257,10 +257,6 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.strName = "SAP Streams";
     extraShares.push_back(share1);
 
-    share1.strPath = "zeroconf://";
-    share1.strName = "Zeroconf Browser";
-    extraShares.push_back(share1);
-
     if (g_guiSettings.GetString("audiocds.recordingpath",false) != "")
     {
       share1.strPath = "special://recordings/";
@@ -268,10 +264,16 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
       extraShares.push_back(share1);
     }
 
+#ifdef _XBOX
+    share1.strName = "MS Soundtracks";
+    share1.strPath = "soundtrack://";
+    extraShares.push_back(share1);
+#endif
+
     share1.strName = "Shoutcast";
     share1.strPath = SHOUTCAST_MASTER_LINK;
     extraShares.push_back(share1);
-
+    
     if (g_guiSettings.GetString("scrobbler.lastfmusername") != "")
     {
       share1.strName = "Last.FM";
@@ -279,7 +281,7 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
       extraShares.push_back(share1);
     }
     // add the plugins dir as needed
-    if (ADDON::CAddonMgr::Get().HasAddons(ADDON::ADDON_PLUGIN, CONTENT_AUDIO))
+    if (CPluginDirectory::HasPlugins("music"))
     {
       share1.strPath = "plugin://music/";
       share1.strName = g_localizeStrings.Get(1038); // Music Plugins
@@ -314,12 +316,8 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.strName = "UPnP Devices";
     extraShares.push_back(share1);
 
-    share1.strPath = "zeroconf://";
-    share1.strName = "Zeroconf Browser";
-    extraShares.push_back(share1);
-
     // add the plugins dir as needed
-    if (ADDON::CAddonMgr::Get().HasAddons(ADDON::ADDON_PLUGIN, CONTENT_VIDEO))
+    if (CPluginDirectory::HasPlugins("video"))
     {
       share1.strPath = "plugin://video/";
       share1.strName = g_localizeStrings.Get(1037); // Video Plugins
@@ -345,12 +343,8 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.strName = "UPnP Devices";
     extraShares.push_back(share1);
 
-    share1.strPath = "zeroconf://";
-    share1.strName = "Zeroconf Browser";
-    extraShares.push_back(share1);
-
     // add the plugins dir as needed
-    if (ADDON::CAddonMgr::Get().HasAddons(ADDON::ADDON_PLUGIN, CONTENT_IMAGE))
+    if (CPluginDirectory::HasPlugins("pictures"))
     {
       share1.strPath = "plugin://pictures/";
       share1.strName = g_localizeStrings.Get(1039); // Picture Plugins
@@ -359,7 +353,7 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
   }
   else if (m_type == "programs")
   {
-    if (ADDON::CAddonMgr::Get().HasAddons(ADDON::ADDON_PLUGIN, CONTENT_PROGRAM))
+    if (CPluginDirectory::HasPlugins("programs"))
     {
       CMediaSource share2;
       share2.strPath = "plugin://programs/";
@@ -416,6 +410,29 @@ void CGUIDialogMediaSource::OnOK()
     shares->push_back(share);
   if (share.strPath.Left(9).Equals("plugin://") || CDirectory::GetDirectory(share.strPath, items, "", false, true) || CGUIDialogYesNo::ShowAndGetInput(1001,1025,1003,1004))
   {
+    if (share.strPath.Left(9).Equals("plugin://"))
+    {
+      CStdString strPath=share.strPath;
+      strPath.Replace("plugin://","special://home/plugins/");
+      CFileItem item(strPath,true);
+      item.SetCachedProgramThumb();
+      if (!item.HasThumbnail())
+        item.SetUserProgramThumb();
+      if (!item.HasThumbnail())
+      {
+        CUtil::AddFileToFolder(strPath,"default.py",item.m_strPath);
+        item.m_bIsFolder = false;
+        item.SetCachedProgramThumb();
+        if (!item.HasThumbnail())
+          item.SetUserProgramThumb();
+      }
+      if (item.HasThumbnail() && m_paths->Size())
+      {
+        CFileItem item2(share.strPath,true);
+        XFILE::CFile::Cache(item.GetThumbnailImage(),item2.GetCachedProgramThumb());
+        m_paths->Get(0)->SetThumbnailImage(item2.GetCachedProgramThumb());
+      }
+    }
     m_confirmed = true;
     Close();
   }
@@ -427,7 +444,7 @@ void CGUIDialogMediaSource::OnOK()
   {
     CVideoDatabase database;
     database.Open();
-    m_info = database.GetScraperForPath(share.strPath, m_settings);
+    database.GetScraperForPath(share.strPath, m_info, m_settings);
     database.SetScraperForPath(share.strPath, m_info, m_settings);
     database.Close();
   }
@@ -447,7 +464,7 @@ void CGUIDialogMediaSource::UpdateButtons()
 {
   if (!m_paths->Size()) // sanity
     return;
-
+  
   CONTROL_ENABLE_ON_CONDITION(CONTROL_OK, !m_paths->Get(0)->m_strPath.IsEmpty() && !m_name.IsEmpty());
   CONTROL_ENABLE_ON_CONDITION(CONTROL_PATH_REMOVE, m_paths->Size() > 1);
   // name

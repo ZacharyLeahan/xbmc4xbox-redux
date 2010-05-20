@@ -36,7 +36,6 @@ public:
   virtual int GetData(BYTE** dst);
   virtual void Reset();
   virtual int GetChannels();
-  virtual enum PCMChannels *GetChannelMap();
   virtual int GetSampleRate();
   virtual int GetBitsPerSample();
   virtual const char* GetName() { return "FFmpeg"; }
@@ -46,8 +45,6 @@ protected:
   AVCodecContext* m_pCodecContext;
   AVAudioConvert* m_pConvert;;
   enum SampleFormat m_iSampleFormat;
-  enum PCMChannels m_channelMap[PCM_MAX_CH + 1];
-  int  m_iMapChannels;
 
   BYTE *m_pBuffer1;
   int   m_iBufferSize1;
@@ -57,10 +54,9 @@ protected:
 
   bool m_bOpenedCodec;
   int m_iBuffered;
-
+  
   DllAvCodec m_dllAvCodec;
   DllAvUtil m_dllAvUtil;
 
-  void BuildChannelMap();
 };
 

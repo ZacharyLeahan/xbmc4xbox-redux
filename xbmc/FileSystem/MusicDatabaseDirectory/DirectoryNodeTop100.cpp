@@ -19,12 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeTop100.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeTop100::CDirectoryNodeTop100(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_TOP100, strName, pParent)

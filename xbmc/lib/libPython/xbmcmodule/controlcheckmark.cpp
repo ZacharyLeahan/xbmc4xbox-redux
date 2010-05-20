@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "GUICheckMarkControl.h"
 #include "GUIFontManager.h"
@@ -72,10 +58,10 @@ namespace PYXBMC
 
     self = (ControlCheckMark*)type->tp_alloc(type, 0);
     if (!self) return NULL;
-    new(&self->strFont) string();
-    new(&self->strText) string();
-    new(&self->strTextureFocus) string();
-    new(&self->strTextureNoFocus) string();
+    new(&self->strFont) string();    
+    new(&self->strText) string();    
+    new(&self->strTextureFocus) string();    
+    new(&self->strTextureNoFocus) string();    
 
     // set up default values in case they are not supplied
     self->checkWidth = 30;
@@ -179,7 +165,7 @@ namespace PYXBMC
   {
     char *cDisabledColor = NULL;
 
-    if (!PyArg_ParseTuple(args, (char*)"s", &cDisabledColor)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"s", &cDisabledColor))	return NULL;
 
     if (cDisabledColor)
     {

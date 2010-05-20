@@ -19,15 +19,16 @@
  *
  */
 
+#include "include.h"
 #include "GUIProgressControl.h"
 #include "utils/GUIInfoManager.h"
 
-CGUIProgressControl::CGUIProgressControl(int parentID, int controlID,
-                                         float posX, float posY, float width,
-                                         float height, const CTextureInfo& backGroundTexture,
-                                         const CTextureInfo& leftTexture,
-                                         const CTextureInfo& midTexture,
-                                         const CTextureInfo& rightTexture,
+CGUIProgressControl::CGUIProgressControl(int parentID, int controlID, 
+                                         float posX, float posY, float width, 
+                                         float height, const CTextureInfo& backGroundTexture, 
+                                         const CTextureInfo& leftTexture, 
+                                         const CTextureInfo& midTexture, 
+                                         const CTextureInfo& rightTexture, 
                                          const CTextureInfo& overlayTexture, float min, float max,
                                          bool reveal)
     : CGUIControl(parentID, controlID, posX, posY, width, height)
@@ -67,7 +68,7 @@ void CGUIProgressControl::Render()
       {
         if (m_fPercent > m_RangeMax)
           m_fPercent = m_RangeMax;
-        if (m_fPercent < m_RangeMin)
+        if (m_fPercent < m_RangeMin) 
           m_fPercent = m_RangeMin;
         m_fPercent = ((100*(m_fPercent - m_RangeMin)) / (m_RangeMax - m_RangeMin));
       }
@@ -202,14 +203,14 @@ float CGUIProgressControl::GetPercentage() const
 {
   return m_fPercent;
 }
-void CGUIProgressControl::FreeResources(bool immediately)
+void CGUIProgressControl::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
-  m_guiBackground.FreeResources(immediately);
-  m_guiMid.FreeResources(immediately);
-  m_guiRight.FreeResources(immediately);
-  m_guiLeft.FreeResources(immediately);
-  m_guiOverlay.FreeResources(immediately);
+  CGUIControl::FreeResources();
+  m_guiBackground.FreeResources();
+  m_guiMid.FreeResources();
+  m_guiRight.FreeResources();
+  m_guiLeft.FreeResources();
+  m_guiOverlay.FreeResources();
 }
 
 void CGUIProgressControl::DynamicResourceAlloc(bool bOnOff)
@@ -220,6 +221,16 @@ void CGUIProgressControl::DynamicResourceAlloc(bool bOnOff)
   m_guiRight.DynamicResourceAlloc(bOnOff);
   m_guiLeft.DynamicResourceAlloc(bOnOff);
   m_guiOverlay.DynamicResourceAlloc(bOnOff);
+}
+
+void CGUIProgressControl::PreAllocResources()
+{
+  CGUIControl::PreAllocResources();
+  m_guiBackground.PreAllocResources();
+  m_guiMid.PreAllocResources();
+  m_guiRight.PreAllocResources();
+  m_guiLeft.PreAllocResources();
+  m_guiOverlay.PreAllocResources();
 }
 
 void CGUIProgressControl::AllocResources()
@@ -236,16 +247,6 @@ void CGUIProgressControl::AllocResources()
   m_guiLeft.SetHeight(20);
   m_guiMid.SetHeight(20);
   m_guiOverlay.SetHeight(20);
-}
-
-void CGUIProgressControl::SetInvalid()
-{
-  CGUIControl::SetInvalid();
-  m_guiBackground.SetInvalid();
-  m_guiMid.SetInvalid();
-  m_guiRight.SetInvalid();
-  m_guiLeft.SetInvalid();
-  m_guiOverlay.SetInvalid();
 }
 
 void CGUIProgressControl::SetInfo(int iInfo)

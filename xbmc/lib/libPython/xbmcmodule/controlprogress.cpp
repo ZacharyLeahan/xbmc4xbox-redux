@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/python/Python.h"
 #include "GUIProgressControl.h"
 #include "control.h"
 #include "pyutil.h"
@@ -56,7 +42,7 @@ namespace PYXBMC
 {
   PyObject* ControlProgress_New(PyTypeObject *type, PyObject *args, PyObject *kwds)
   {
-    static const char* keywords[] = { "x", "y", "width", "height", "texturebg", "textureleft", "texturemid", "textureright", "textureoverlay", NULL };
+    static char *keywords[] = { "x", "y", "width", "height", "texturebg", "textureleft", "texturemid", "textureright", "textureoverlay", NULL };
 
     ControlProgress *self;
     char *cTextureBg = NULL;
@@ -67,11 +53,11 @@ namespace PYXBMC
 
     self = (ControlProgress*)type->tp_alloc(type, 0);
     if (!self) return NULL;
-    new(&self->strTextureLeft) string();
-    new(&self->strTextureMid) string();
-    new(&self->strTextureRight) string();
-    new(&self->strTextureBg) string();
-    new(&self->strTextureOverlay) string();
+    new(&self->strTextureLeft) string();    
+    new(&self->strTextureMid) string();    
+    new(&self->strTextureRight) string();    
+    new(&self->strTextureBg) string();     
+    new(&self->strTextureOverlay) string();     
 
     // parse arguments to constructor
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
@@ -109,8 +95,8 @@ namespace PYXBMC
     self->strTextureLeft.~string();
     self->strTextureMid.~string();
     self->strTextureRight.~string();
-    self->strTextureBg.~string();
-    self->strTextureOverlay.~string();
+    self->strTextureBg.~string();    
+    self->strTextureOverlay.~string();    
     self->ob_type->tp_free((PyObject*)self);
   }
 

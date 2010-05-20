@@ -18,7 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDDemuxVobsub.h"
 #include "DVDInputStreams/DVDFactoryInputStream.h"
 #include "DVDInputStreams/DVDInputStream.h"
@@ -32,7 +33,7 @@
 using namespace std;
 
 void CDVDDemuxVobsub::CStream::SetDiscard(AVDiscard discard)
-{
+{  
   if(discard == AVDISCARD_NONE && m_discard != AVDISCARD_NONE)
   {
     // if we stop discarding something, make sure
@@ -54,7 +55,7 @@ CDVDDemuxVobsub::CDVDDemuxVobsub()
 CDVDDemuxVobsub::~CDVDDemuxVobsub()
 {
   for(unsigned i=0;i<m_Streams.size();i++)
-  {
+  {    
     if(m_Streams[i]->ExtraData)
       free(m_Streams[i]->ExtraData);
     delete m_Streams[i];
@@ -117,6 +118,7 @@ bool CDVDDemuxVobsub::Open(const string& filename)
     else
       continue;
   }
+  pStream->Close();
 
   struct sorter s;
   sort(m_Timestamps.begin(), m_Timestamps.end(), s);
@@ -211,11 +213,11 @@ bool CDVDDemuxVobsub::ParseId(SState& state, char* line)
   else
     stream->iPhysicalId = -1;
 
-  stream->codec = CODEC_ID_DVD_SUBTITLE;
+  stream->codec = CODEC_ID_DVD_SUBTITLE;  
   stream->iId = m_Streams.size();
 
   state.id = stream->iId;
-  m_Streams.push_back(stream.release());
+  m_Streams.push_back(stream.release());  
   return true;
 }
 
@@ -230,7 +232,7 @@ bool CDVDDemuxVobsub::ParseTimestamp(SState& state, char* line)
 {
   if(state.id < 0)
     return false;
-
+  
   int h,m,s,ms;
   STimestamp timestamp;
 

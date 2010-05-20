@@ -21,34 +21,26 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if defined(_LINUX) && !defined(__APPLE__)
-  #include <FLAC/stream_decoder.h>
-#else
-  #include "FLACCodec/flac-1.2.1/include/FLAC/stream_decoder.h"
-#endif
 #include "DynamicDll.h"
-#include "utils/log.h"
+#include "flac/stream_decoder.h"
 
 class DllLibFlacInterface
 {
 public:
     virtual ~DllLibFlacInterface() {}
     virtual FLAC__StreamDecoder *FLAC__stream_decoder_new()=0;
-    virtual void   FLAC__stream_decoder_delete(FLAC__StreamDecoder *decoder)=0;
+    virtual void 	FLAC__stream_decoder_delete(FLAC__StreamDecoder *decoder)=0;
     virtual FLAC__StreamDecoderInitStatus FLAC__stream_decoder_init_stream(
-        FLAC__StreamDecoder *decoder,
-        FLAC__StreamDecoderReadCallback read_callback,
-        FLAC__StreamDecoderSeekCallback seek_callback,
-        FLAC__StreamDecoderTellCallback tell_callback,
-        FLAC__StreamDecoderLengthCallback length_callback,
-        FLAC__StreamDecoderEofCallback eof_callback,
-        FLAC__StreamDecoderWriteCallback write_callback,
-        FLAC__StreamDecoderMetadataCallback metadata_callback,
-        FLAC__StreamDecoderErrorCallback error_callback,
-        void *client_data
+	      FLAC__StreamDecoder *decoder,
+	      FLAC__StreamDecoderReadCallback read_callback,
+	      FLAC__StreamDecoderSeekCallback seek_callback,
+	      FLAC__StreamDecoderTellCallback tell_callback,
+	      FLAC__StreamDecoderLengthCallback length_callback,
+	      FLAC__StreamDecoderEofCallback eof_callback,
+	      FLAC__StreamDecoderWriteCallback write_callback,
+	      FLAC__StreamDecoderMetadataCallback metadata_callback,
+	      FLAC__StreamDecoderErrorCallback error_callback,
+	      void *client_data
       )=0;
     virtual FLAC__bool FLAC__stream_decoder_set_md5_checking(FLAC__StreamDecoder *decoder, FLAC__bool value)=0;
     virtual FLAC__bool FLAC__stream_decoder_set_metadata_respond(FLAC__StreamDecoder *decoder, FLAC__MetadataType type)=0;
@@ -79,20 +71,20 @@ public:
 
 class DllLibFlac : public DllDynamic, DllLibFlacInterface
 {
-  DECLARE_DLL_WRAPPER(DllLibFlac, DLL_PATH_FLAC_CODEC)
+  DECLARE_DLL_WRAPPER(DllLibFlac, Q:\\system\\players\\PAPlayer\\libFlac.dll)
   DEFINE_METHOD0(FLAC__StreamDecoder*, FLAC__stream_decoder_new)
   DEFINE_METHOD1(void, FLAC__stream_decoder_delete, (FLAC__StreamDecoder *p1))
   DEFINE_METHOD10(FLAC__StreamDecoderInitStatus, FLAC__stream_decoder_init_stream,
                  (FLAC__StreamDecoder *p1,
-                  FLAC__StreamDecoderReadCallback p2,
-                  FLAC__StreamDecoderSeekCallback p3,
-                  FLAC__StreamDecoderTellCallback p4,
-                  FLAC__StreamDecoderLengthCallback p5,
-                  FLAC__StreamDecoderEofCallback p6,
-                  FLAC__StreamDecoderWriteCallback p7,
-                  FLAC__StreamDecoderMetadataCallback p8,
-                  FLAC__StreamDecoderErrorCallback p9,
-                  void *p10))
+	                FLAC__StreamDecoderReadCallback p2,
+	                FLAC__StreamDecoderSeekCallback p3,
+	                FLAC__StreamDecoderTellCallback p4,
+	                FLAC__StreamDecoderLengthCallback p5,
+	                FLAC__StreamDecoderEofCallback p6,
+	                FLAC__StreamDecoderWriteCallback p7,
+	                FLAC__StreamDecoderMetadataCallback p8,
+	                FLAC__StreamDecoderErrorCallback p9,
+	                void *p10))
   DEFINE_METHOD2(FLAC__bool, FLAC__stream_decoder_set_md5_checking, (FLAC__StreamDecoder *p1, FLAC__bool p2))
   DEFINE_METHOD2(FLAC__bool, FLAC__stream_decoder_set_metadata_respond, (FLAC__StreamDecoder *p1, FLAC__MetadataType p2))
   DEFINE_METHOD2(FLAC__bool, FLAC__stream_decoder_set_metadata_respond_application, (FLAC__StreamDecoder *p1, const FLAC__byte p2[4]))
@@ -150,4 +142,3 @@ class DllLibFlac : public DllDynamic, DllLibFlacInterface
     RESOLVE_METHOD(FLAC__stream_decoder_seek_absolute)
   END_METHOD_RESOLVE()
 };
-

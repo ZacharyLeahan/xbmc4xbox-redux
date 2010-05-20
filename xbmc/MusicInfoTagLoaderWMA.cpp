@@ -19,15 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicInfoTagLoaderWMA.h"
 #include "Util.h"
 #include "Picture.h"
 #include "MusicInfoTag.h"
 #include "FileSystem/File.h"
 #include "AdvancedSettings.h"
-#include "AutoPtrHandle.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
 
 using namespace AUTOPTR;
 using namespace XFILE;
@@ -68,9 +66,9 @@ typedef enum WMT_ATTR_DATATYPE
 // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wmform/htm/wm_picture.asp
 typedef struct _WMPicture
 {
-  CStdString pwszMIMEType;
+  LPWSTR pwszMIMEType;
   BYTE bPictureType;
-  CStdStringW pwszDescription;
+  LPWSTR pwszDescription;
   DWORD dwDataLen;
   BYTE* pbData;
 }
@@ -105,7 +103,6 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
 
     unsigned int iOffset;
     unsigned int* pDataI;
-    CStdString16 utf16String;
 
     //Play time
     iOffset = 0;
@@ -157,16 +154,14 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
       if (nTitleSize)
       {
         // TODO: UTF-8 Do we need to "fixString" these strings at all?
-        utf16String = (uint16_t*)(pData.get()+iOffset);
-        g_charsetConverter.utf16LEtoUTF8(utf16String, utf8String);
+        g_charsetConverter.wToUTF8((LPWSTR)(pData.get()+iOffset), utf8String);
         tag.SetTitle(utf8String);
       }
-
+      
       if (nAuthorSize)
       {
         utf8String = "";
-        utf16String = (uint16_t*)(pData.get() + iOffset + nTitleSize);
-        g_charsetConverter.utf16LEtoUTF8(utf16String, utf8String);
+        g_charsetConverter.wToUTF8((LPWSTR)(pData.get() + iOffset + nTitleSize), utf8String);
         tag.SetArtist(utf8String);
       }
 
@@ -244,10 +239,7 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
         iOffset += 2;
 
         // Get frame name
-        CStdString strFrameName;
-        CStdStringW wString = "";
-        utf16String = (uint16_t*)(pData.get() + iOffset);
-        g_charsetConverter.utf16LEtoUTF8(utf16String, strFrameName);
+        CStdString strFrameName((LPWSTR)(pData.get() + iOffset));
         iOffset += iFrameNameSize;
 
         // Get datatype of frame
@@ -269,25 +261,26 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
         // tag with extended metadata
         if (iFrameType == WMT_TYPE_STRING && iValueSize > 0)
         {
+          LPWSTR pwszValue = (LPWSTR)(pData.get() + iOffset);
           // TODO: UTF-8: Do we need to "fixString" these utf8 strings?
           CStdString utf8String;
-          utf16String = (uint16_t*)(pData.get() + iOffset);
-          g_charsetConverter.utf16LEtoUTF8(utf16String, utf8String);
+          g_charsetConverter.wToUTF8(pwszValue, utf8String);
           SetTagValueString(strFrameName, utf8String, tag);
         }
         else if (iFrameType == WMT_TYPE_BINARY && iValueSize > 0)
         {
-          unsigned char* pValue = (unsigned char*)(pData.get() + iOffset); // Raw data
+          BYTE* pValue = (BYTE*)(pData.get() + iOffset); // Raw data
           SetTagValueBinary(strFrameName, pValue, tag);
         }
         else if (iFrameType == WMT_TYPE_BOOL && iValueSize > 0)
         {
-          SetTagValueBool(strFrameName, pData[iOffset] != 0, tag);
+          BOOL bValue = (BOOL)pData[iOffset];
+          SetTagValueBool(strFrameName, bValue, tag);
         }
         else if (iFrameType == WMT_TYPE_DWORD && iValueSize > 0)
         {
-          uint32_t value = pData[iOffset] + pData[iOffset + 1] * 0x100 + pData[iOffset + 2] * 0x10000 + pData[iOffset + 3] * 0x1000000;
-          SetTagValueUnsigned(strFrameName, value, tag);
+          DWORD dwValue = pData[iOffset] + pData[iOffset + 1] * 0x100 + pData[iOffset + 2] * 0x10000 + pData[iOffset + 3] * 0x1000000;
+          SetTagValueDWORD(strFrameName, dwValue, tag);
         }
         else if (iFrameType == WMT_TYPE_QWORD && iValueSize > 0)
         {
@@ -333,10 +326,7 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
         iOffset += 4;
 
         // Get frame name
-        CStdString strFrameName = "";
-        CStdStringW wString = "";
-        utf16String = (uint16_t*)(pData.get() + iOffset);
-        g_charsetConverter.utf16LEtoUTF8(utf16String, strFrameName);
+        CStdString strFrameName((LPWSTR)(pData.get() + iOffset));
         iOffset += iFrameNameSize;
 
         // Sanity check for buffer size
@@ -350,25 +340,26 @@ bool CMusicInfoTagLoaderWMA::Load(const CStdString& strFileName, CMusicInfoTag& 
         // tag with extended metadata
         if (iFrameType == WMT_TYPE_STRING && iValueSize > 0)
         {
+          LPWSTR pwszValue = (LPWSTR)(pData.get() + iOffset);
           // TODO: UTF-8: Do we need to "fixString" these utf8 strings?
           CStdString utf8String;
-          utf16String = (uint16_t*)(pData.get() + iOffset);
-          g_charsetConverter.utf16LEtoUTF8(utf16String, utf8String);
+          g_charsetConverter.wToUTF8(pwszValue, utf8String);
           SetTagValueString(strFrameName, utf8String, tag);
         }
         else if (iFrameType == WMT_TYPE_BINARY && iValueSize > 0)
         {
-          unsigned char* pValue = (unsigned char*)(pData.get() + iOffset); // Raw data
+          BYTE* pValue = (BYTE*)(pData.get() + iOffset); // Raw data
           SetTagValueBinary(strFrameName, pValue, tag);
         }
         else if (iFrameType == WMT_TYPE_BOOL && iValueSize > 0)
         {
-          SetTagValueBool(strFrameName, pData[iOffset] != 0, tag);
+          BOOL bValue = (BOOL)pData[iOffset];
+          SetTagValueBool(strFrameName, bValue, tag);
         }
         else if (iFrameType == WMT_TYPE_DWORD && iValueSize > 0)
         {
-          uint32_t value = pData[iOffset] + pData[iOffset + 1] * 0x100 + pData[iOffset + 2] * 0x10000 + pData[iOffset + 3] * 0x1000000;
-          SetTagValueUnsigned(strFrameName, value, tag);
+          DWORD dwValue = pData[iOffset] + pData[iOffset + 1] * 0x100 + pData[iOffset + 2] * 0x10000 + pData[iOffset + 3] * 0x1000000;
+          SetTagValueDWORD(strFrameName, dwValue, tag);
         }
         else if (iFrameType == WMT_TYPE_QWORD && iValueSize > 0)
         {
@@ -470,16 +461,16 @@ void CMusicInfoTagLoaderWMA::SetTagValueString(const CStdString& strFrameName, c
   //}
 }
 
-void CMusicInfoTagLoaderWMA::SetTagValueUnsigned(const CStdString& strFrameName, uint32_t value, CMusicInfoTag& tag)
+void CMusicInfoTagLoaderWMA::SetTagValueDWORD(const CStdString& strFrameName, DWORD dwValue, CMusicInfoTag& tag)
 {
   if (strFrameName == "WM/TrackNumber")
   {
     if (tag.GetTrackNumber() <= 0)
-      tag.SetTrackNumber(value);
+      tag.SetTrackNumber(dwValue);
   }
 }
 
-void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, const unsigned char* pValue, CMusicInfoTag& tag)
+void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, const LPBYTE pValue, CMusicInfoTag& tag)
 {
   if (strFrameName == "WM/Picture")
   {
@@ -493,19 +484,15 @@ void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, c
     picture.dwDataLen = (DWORD)pValue[iPicOffset] + (pValue[iPicOffset + 1] * 0x100) + (pValue[iPicOffset + 2] * 0x10000);
     iPicOffset += 4;
 
-    CStdStringW wString;
-    CStdString16 utf16String = (uint16_t*)(pValue+iPicOffset);
-    g_charsetConverter.utf16LEtoW(utf16String, wString);
-    g_charsetConverter.wToUTF8(wString, picture.pwszMIMEType);
-    iPicOffset += (wString.length() * 2);
+    picture.pwszMIMEType = (LPWSTR)(pValue + iPicOffset);
+    iPicOffset += (wcslen(picture.pwszMIMEType) * 2);
     iPicOffset += 2;
 
-    utf16String = (uint16_t*)(pValue+iPicOffset);
-    g_charsetConverter.utf16LEtoW(utf16String, picture.pwszDescription);
-    iPicOffset += (picture.pwszDescription.length() * 2);
+    picture.pwszDescription = (LPWSTR)(pValue + iPicOffset);
+    iPicOffset += (wcslen(picture.pwszDescription) * 2);
     iPicOffset += 2;
 
-    picture.pbData = (BYTE *)(pValue + iPicOffset);
+    picture.pbData = (pValue + iPicOffset);
 
     // many wma's don't have the bPictureType specified.  For now, just take
     // Cover Front (3) or Other (0) as the cover.
@@ -527,18 +514,15 @@ void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, c
 
         if (picture.pbData != NULL && picture.dwDataLen > 0)
         {
-          if (CPicture::CreateThumbnailFromMemory(picture.pbData, picture.dwDataLen, strExtension, strCoverArt))
+          CPicture pic;
+          if (pic.CreateThumbnailFromMemory(picture.pbData, picture.dwDataLen, strExtension, strCoverArt))
           {
             CUtil::ThumbCacheAdd(strCoverArt, true);
           }
           else
           {
             CUtil::ThumbCacheAdd(strCoverArt, false);
-            CLog::Log(LOGERROR, "Tag loader wma: "
-                                "Unable to create album art for %s "
-                                "(extension=%s, size=%u)",
-                      tag.GetURL().c_str(), strExtension.c_str(),
-                      picture.dwDataLen);
+            CLog::Log(LOGERROR, "Tag loader wma: Unable to create album art for %s (extension=%s, size=%lu)", tag.GetURL().c_str(), strExtension.c_str(), picture.dwDataLen);
           }
         }
       }
@@ -546,7 +530,7 @@ void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, c
   }
 }
 
-void CMusicInfoTagLoaderWMA::SetTagValueBool(const CStdString& strFrameName, bool bValue, CMusicInfoTag& tag)
+void CMusicInfoTagLoaderWMA::SetTagValueBool(const CStdString& strFrameName, BOOL bValue, CMusicInfoTag& tag)
 {
   //else if (strFrameName=="isVBR")
   //{

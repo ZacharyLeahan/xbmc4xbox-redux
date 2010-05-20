@@ -1,6 +1,6 @@
 /*!
 \file GUISliderControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUISLIDERCONTROL_H
@@ -38,7 +38,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUISliderControl :
       public CGUIControl
@@ -50,10 +50,10 @@ public:
 
   virtual void Render();
   virtual bool OnAction(const CAction &action);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetRange(int iStart, int iEnd);
   virtual void SetFloatRange(float fStart, float fEnd);
   virtual bool OnMessage(CGUIMessage& message);
@@ -66,11 +66,13 @@ public:
   float GetFloatValue() const;
   void SetFloatInterval(float fInterval);
   void SetType(int iType) { m_iType = iType; };
+  virtual bool HitTest(const CPoint &point) const;
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseDrag(const CPoint &offset, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
   virtual CStdString GetDescription() const;
   void SetTextValue(const CStdString &textValue) { m_textValue = textValue; };
 protected:
-  virtual bool HitTest(const CPoint &point) const;
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   virtual void Move(int iNumSteps);
   virtual void SetFromPosition(const CPoint &point);

@@ -23,8 +23,8 @@
 #include "DynamicDll.h"
 
 extern "C" {
-#include "cmyth/include/cmyth/cmyth.h"
-#include "cmyth/include/refmem/refmem.h"
+#include "lib/libcmyth/cmyth.h"
+#include "lib/libcmyth/mvp_refmem.h"
 }
 
 class DllLibCMythInterface
@@ -86,7 +86,7 @@ public:
   virtual unsigned long long file_start             (cmyth_file_t file)=0;
 
   virtual char*             proginfo_pathname       (cmyth_proginfo_t prog)=0;
-  virtual char*             proginfo_title          (cmyth_proginfo_t prog)=0;
+  virtual char*             proginfo_title          (cmyth_proginfo_t prog)=0;  
   virtual char*             proginfo_description    (cmyth_proginfo_t prog)=0;
   virtual char*             proginfo_subtitle       (cmyth_proginfo_t prog)=0;
   virtual char*             proginfo_chanstr        (cmyth_proginfo_t prog)=0;
@@ -104,7 +104,6 @@ public:
   virtual cmyth_timestamp_t proginfo_rec_start      (cmyth_proginfo_t prog)=0;
   virtual cmyth_timestamp_t proginfo_rec_end        (cmyth_proginfo_t prog)=0;
   virtual cmyth_proginfo_rec_status_t proginfo_rec_status(cmyth_proginfo_t prog)=0;
-  virtual char*             proginfo_prodyear       (cmyth_proginfo_t prog)=0;
   virtual cmyth_proginfo_t  proginfo_get_from_basename   (cmyth_conn_t control, const char* basename)=0;
   virtual int               proginfo_delete_recording(cmyth_conn_t control, cmyth_proginfo_t prog)=0;
   virtual int               proginfo_stop_recording(cmyth_conn_t control, cmyth_proginfo_t prog)=0;
@@ -128,7 +127,7 @@ public:
 
 class DllLibCMyth : public DllDynamic, DllLibCMythInterface
 {
-  DECLARE_DLL_WRAPPER(DllLibCMyth, DLL_PATH_LIBCMYTH)
+  DECLARE_DLL_WRAPPER(DllLibCMyth, Q:\\system\\libcmyth.dll)
   DEFINE_METHOD4(cmyth_conn_t,        conn_connect_ctrl,        (char *p1, unsigned short p2, unsigned p3, int p4))
   DEFINE_METHOD4(cmyth_conn_t,        conn_connect_event,       (char *p1, unsigned short p2, unsigned p3, int p4))
   DEFINE_METHOD4(cmyth_file_t,        conn_connect_file,        (cmyth_proginfo_t p1, cmyth_conn_t p2, unsigned p3, int p4))
@@ -200,7 +199,6 @@ class DllLibCMyth : public DllDynamic, DllLibCMythInterface
   DEFINE_METHOD1(cmyth_timestamp_t,   proginfo_rec_start,       (cmyth_proginfo_t p1))
   DEFINE_METHOD1(cmyth_timestamp_t,   proginfo_rec_end,         (cmyth_proginfo_t p1))
   DEFINE_METHOD1(cmyth_proginfo_rec_status_t, proginfo_rec_status, (cmyth_proginfo_t p1))
-  DEFINE_METHOD1(char*,               proginfo_prodyear,        (cmyth_proginfo_t p1))
   DEFINE_METHOD2(cmyth_proginfo_t,    proginfo_get_from_basename,    (cmyth_conn_t p1, const char* p2))
   DEFINE_METHOD2(int,                 proginfo_delete_recording, (cmyth_conn_t p1, cmyth_proginfo_t p2))
   DEFINE_METHOD2(int,                 proginfo_stop_recording,  (cmyth_conn_t p1, cmyth_proginfo_t p2))
@@ -290,7 +288,6 @@ class DllLibCMyth : public DllDynamic, DllLibCMythInterface
     RESOLVE_METHOD_RENAME(cmyth_proginfo_rec_start, proginfo_rec_start)
     RESOLVE_METHOD_RENAME(cmyth_proginfo_rec_end, proginfo_rec_end)
     RESOLVE_METHOD_RENAME(cmyth_proginfo_rec_status, proginfo_rec_status)
-    RESOLVE_METHOD_RENAME(cmyth_proginfo_prodyear, proginfo_prodyear)
     RESOLVE_METHOD_RENAME(cmyth_proginfo_get_from_basename, proginfo_get_from_basename)
     RESOLVE_METHOD_RENAME(cmyth_proginfo_delete_recording, proginfo_delete_recording)
     RESOLVE_METHOD_RENAME(cmyth_proginfo_stop_recording, proginfo_stop_recording)

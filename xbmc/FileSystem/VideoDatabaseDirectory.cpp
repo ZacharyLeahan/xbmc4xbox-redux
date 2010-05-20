@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "VideoDatabaseDirectory.h"
 #include "Util.h"
 #include "VideoDatabaseDirectory/QueryParams.h"
@@ -28,11 +29,10 @@
 #include "FileItem.h"
 #include "Settings.h"
 #include "Crc32.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace std;
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace VIDEODATABASEDIRECTORY;
 
 CVideoDatabaseDirectory::CVideoDatabaseDirectory(void)
@@ -106,7 +106,7 @@ bool CVideoDatabaseDirectory::GetQueryParams(const CStdString& strPath, CQueryPa
 
   if (!pNode.get())
     return false;
-
+  
   CDirectoryNode::GetDatabaseInfo(strPath,params);
   return true;
 }
@@ -155,13 +155,6 @@ bool CVideoDatabaseDirectory::GetLabel(const CStdString& strDirectory, CStdStrin
     strLabel += strTemp;
   }
 
-  // get country
-  if (params.GetCountryId() != -1)
-  {
-    videodatabase.GetCountryById(params.GetCountryId(), strTemp);
-    strLabel += strTemp;
-  }
-
   // get set
   if (params.GetSetId() != -1)
   {
@@ -171,8 +164,8 @@ bool CVideoDatabaseDirectory::GetLabel(const CStdString& strDirectory, CStdStrin
 
   // get year
   if (params.GetYear() != -1)
-  {
-    strTemp.Format("%i",params.GetYear());
+  { 
+    strTemp.Format("%i",params.GetYear());   
     if (!strLabel.IsEmpty())
       strLabel += " / ";
     strLabel += strTemp;
@@ -190,8 +183,6 @@ bool CVideoDatabaseDirectory::GetLabel(const CStdString& strDirectory, CStdStrin
       strLabel = g_localizeStrings.Get(344); break;
     case NODE_TYPE_GENRE: // Genres
       strLabel = g_localizeStrings.Get(135); break;
-    case NODE_TYPE_COUNTRY: // Countries
-      strLabel = g_localizeStrings.Get(20451); break;
     case NODE_TYPE_YEAR: // Year
       strLabel = g_localizeStrings.Get(562); break;
     case NODE_TYPE_DIRECTOR: // Director
@@ -228,7 +219,7 @@ CStdString CVideoDatabaseDirectory::GetIcon(const CStdString &strDirectory)
   case NODE_TYPE_TITLE_MOVIES:
     if (strDirectory.Equals("videodb://1/2/"))
     {
-      if (g_settings.m_bMyVideoNavFlatten)
+      if (g_stSettings.m_bMyVideoNavFlatten)
         return "DefaultMovies.png";
       return "DefaultMovieTitle.png";
     }
@@ -236,7 +227,7 @@ CStdString CVideoDatabaseDirectory::GetIcon(const CStdString &strDirectory)
   case NODE_TYPE_TITLE_TVSHOWS:
     if (strDirectory.Equals("videodb://2/2/"))
     {
-      if (g_settings.m_bMyVideoNavFlatten)
+      if (g_stSettings.m_bMyVideoNavFlatten)
         return "DefaultTVShows.png";
       return "DefaultTVShowTitle.png";
     }
@@ -244,7 +235,7 @@ CStdString CVideoDatabaseDirectory::GetIcon(const CStdString &strDirectory)
   case NODE_TYPE_TITLE_MUSICVIDEOS:
     if (strDirectory.Equals("videodb://3/2/"))
     {
-      if (g_settings.m_bMyVideoNavFlatten)
+      if (g_stSettings.m_bMyVideoNavFlatten)
         return "DefaultMusicVideos.png";
       return "DefaultMusicVideoTitle.png";
     }
@@ -253,8 +244,6 @@ CStdString CVideoDatabaseDirectory::GetIcon(const CStdString &strDirectory)
     return "DefaultActor.png";
   case NODE_TYPE_GENRE: // Genres
     return "DefaultGenre.png";
-  case NODE_TYPE_COUNTRY: // Countries
-    return "DefaultCountry.png";
   case NODE_TYPE_SETS: // Sets
     return "DefaultSets.png";
   case NODE_TYPE_YEAR: // Year

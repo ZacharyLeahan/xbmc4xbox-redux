@@ -21,40 +21,33 @@
  *
  */
 
-#if defined (HAS_GL)
-  #include "LinuxRendererGL.h"
-#elif HAS_GLES == 2
-  #include "LinuxRendererGLES.h"
-#elif defined(HAS_DX)
-  #include "WinRenderer.h"
-#elif defined(HAS_SDL)
-  #include "LinuxRenderer.h"
-#endif
+#if !defined(HAS_XBOX_HARDWARE)
 
+// we use this manager instead
+#include "WinRenderManager.h"
+
+#else
+
+#include "XBoxRenderer.h"
 #include "utils/SharedSection.h"
 #include "utils/Thread.h"
-#include "settings/VideoSettings.h"
-#include "OverlayRenderer.h"
 
-namespace DXVA { class CProcessor; }
-namespace VAAPI { class CSurfaceHolder; }
-class CVDPAU;
-
-class CXBMCRenderManager
+class CXBoxRenderManager : private CThread
 {
 public:
-  CXBMCRenderManager();
-  ~CXBMCRenderManager();
+  CXBoxRenderManager();
+  ~CXBoxRenderManager();
+
+  void ChangeRenderers();
 
   // Functions called from the GUI
-  void GetVideoRect(CRect &source, CRect &dest) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->GetVideoRect(source, dest); };
+  void GetVideoRect(RECT &rs, RECT &rd) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->GetVideoRect(rs, rd); };
   float GetAspectRatio() { CSharedLock lock(m_sharedSection); if (m_pRenderer) return m_pRenderer->GetAspectRatio(); else return 1.0f; };
+  void AutoCrop(bool bCrop = true) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->AutoCrop(bCrop); };
   void Update(bool bPauseDrawing);
   void RenderUpdate(bool clear, DWORD flags = 0, DWORD alpha = 255);
   void SetupScreenshot();
-
-  void CreateThumbnail(CBaseTexture *texture, unsigned int width, unsigned int height);
-
+  void CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height);
   void SetViewMode(int iViewMode) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->SetViewMode(iViewMode); };
 
   // Functions called from mplayer
@@ -84,49 +77,16 @@ public:
     return 0;
   }
 
-  void FlipPage(volatile bool& bStop, double timestamp = 0.0, int source = -1, EFIELDSYNC sync = FS_NONE);
+  void FlipPage(DWORD timestamp = 0L, int source = -1, EFIELDSYNC sync = FS_NONE);
   unsigned int PreInit();
   void UnInit();
 
-#ifdef HAS_DX
-  void AddProcessor(DXVA::CProcessor* processor, int64_t id)
+  inline void DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
   {
     CSharedLock lock(m_sharedSection);
     if (m_pRenderer)
-      m_pRenderer->AddProcessor(processor, id);
+      m_pRenderer->DrawAlpha(x0, y0, w, h, src, srca, stride);
   }
-#endif
-
-#ifdef HAVE_LIBVDPAU
-  void AddProcessor(CVDPAU* vdpau)
-  {
-    CSharedLock lock(m_sharedSection);
-    if (m_pRenderer)
-      m_pRenderer->AddProcessor(vdpau);
-  }
-#endif
-
-#ifdef HAVE_LIBVA
-  void AddProcessor(VAAPI::CHolder& holder)
-  {
-    CSharedLock lock(m_sharedSection);
-    if (m_pRenderer)
-      m_pRenderer->AddProcessor(holder);
-  }
-#endif
-
-  void AddOverlay(CDVDOverlay* o, double pts)
-  {
-    CSharedLock lock(m_sharedSection);
-    m_overlays.AddOverlay(o, pts);
-  }
-
-  void AddCleanup(OVERLAY::COverlay* o)
-  {
-    CSharedLock lock(m_sharedSection);
-    m_overlays.AddCleanup(o);
-  }
-
   inline void Reset()
   {
     CSharedLock lock(m_sharedSection);
@@ -139,67 +99,17 @@ public:
     if (m_pRenderer)
       return m_pRenderer->GetResolution();
     else
-      return RES_INVALID;
+      return INVALID;
   }
 
   float GetMaximumFPS();
+  inline DWORD GetPresentDelay() { return m_presentdelay;  }
   inline bool Paused() { return m_bPauseDrawing; };
   inline bool IsStarted() { return m_bIsStarted;}
 
-  bool Supports(ERENDERFEATURE feature)
-  {
-    CSharedLock lock(m_sharedSection);
-    if (m_pRenderer)
-      return m_pRenderer->Supports(feature);
-    else
-      return false;
-  }
-
-  bool Supports(EINTERLACEMETHOD method)
-  {
-    CSharedLock lock(m_sharedSection);
-    if (m_pRenderer)
-      return m_pRenderer->Supports(method);
-    else
-      return false;
-  }
-
-  bool Supports(ESCALINGMETHOD method)
-  {
-    CSharedLock lock(m_sharedSection);
-    if (m_pRenderer)
-      return m_pRenderer->Supports(method);
-    else
-      return false;
-  }
-
-  double GetPresentTime();
-  void  WaitPresentTime(double presenttime);
-
-  CStdString GetVSyncState();
-
-  void UpdateResolution();
-
-#ifdef HAS_GL
-  CLinuxRendererGL *m_pRenderer;
-#elif HAS_GLES == 2
-  CLinuxRendererGLES *m_pRenderer;
-#elif defined(HAS_DX)
-  CWinRenderer *m_pRenderer;
-#elif defined(HAS_SDL)
-  CLinuxRenderer *m_pRenderer;
-#elif defined(HAS_XBOX_D3D)
   CXBoxRenderer *m_pRenderer;
-
-#endif
-
-  void Present();
-  void Recover(); // called after resolution switch if something special is needed
-
-  CSharedSection& GetSection() { return m_sharedSection; };
-
 protected:
-
+  inline void Present();
   void PresentSingle();
   void PresentWeave();
   void PresentBob();
@@ -210,29 +120,20 @@ protected:
   bool m_bIsStarted;
   CSharedSection m_sharedSection;
 
-  bool m_bReconfigured;
-
   int m_rendermethod;
 
-  enum EPRESENTSTEP
-  {
-    PRESENT_IDLE     = 0
-  , PRESENT_FLIP
-  , PRESENT_FRAME
-  , PRESENT_FRAME2
-  };
+  // render thread
+  CEvent m_eventFrame;
+  CEvent m_eventPresented;
 
-  double     m_presenttime;
-  double     m_presentcorr;
-  double     m_presenterr;
+  DWORD m_presentdelay;
+  DWORD m_presenttime;
   EFIELDSYNC m_presentfield;
-  EINTERLACEMETHOD m_presentmethod;
-  EPRESENTSTEP     m_presentstep;
-  int        m_presentsource;
-  CEvent     m_presentevent;
 
+  virtual void Process();
 
-  OVERLAY::CRenderer m_overlays;
 };
 
-extern CXBMCRenderManager& g_renderManager;
+extern CXBoxRenderManager g_renderManager;
+
+#endif

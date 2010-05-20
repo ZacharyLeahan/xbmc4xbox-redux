@@ -19,54 +19,57 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
+#include "XBAudioConfig.h"
 #include "CodecFactory.h"
 #include "MP3codec.h"
+#include "APEcodec.h"
 #include "CDDAcodec.h"
 #include "OGGcodec.h"
+#include "MPCcodec.h"
+#include "SHNcodec.h"
 #include "FLACcodec.h"
 #include "WAVcodec.h"
+#include "AACcodec.h"
 #include "WAVPackcodec.h"
-#include "ModplugCodec.h"
+#include "ModuleCodec.h"
 #include "NSFCodec.h"
+#include "DTSCodec.h"
+#include "DTSCDDACodec.h"
 #include "AC3Codec.h"
 #include "AC3CDDACodec.h"
-#ifdef HAS_SPC_CODEC
 #include "SPCCodec.h"
-#endif
 #include "GYMCodec.h"
 #include "SIDCodec.h"
+#include "AdplugCodec.h"
 #include "VGMCodec.h"
 #include "YMCodec.h"
+#include "WMACodec.h"
 #include "AIFFcodec.h"
 #include "ADPCMCodec.h"
 #include "TimidityCodec.h"
-#ifdef HAS_ASAP_CODEC
 #include "ASAPCodec.h"
-#endif
 #include "URL.h"
-#include "DVDPlayerCodec.h"
-#ifdef HAS_DTS_CODEC
-#include "DTSCodec.h"
-#include "DTSCDDACodec.h"
-#endif
+
 
 ICodec* CodecFactory::CreateCodec(const CStdString& strFileType)
 {
   if (strFileType.Equals("mp3") || strFileType.Equals("mp2"))
     return new MP3Codec();
   else if (strFileType.Equals("ape") || strFileType.Equals("mac"))
-    return new DVDPlayerCodec();
+    return new APECodec();
   else if (strFileType.Equals("cdda"))
     return new CDDACodec();
+  else if (strFileType.Equals("ogg") || strFileType.Equals("oggstream") || strFileType.Equals("oga"))
+    return new OGGCodec();
   else if (strFileType.Equals("mpc") || strFileType.Equals("mp+") || strFileType.Equals("mpp"))
-    return new DVDPlayerCodec();
+    return new MPCCodec();
   else if (strFileType.Equals("shn"))
-    return new DVDPlayerCodec();
+    return new SHNCodec();
   else if (strFileType.Equals("flac"))
     return new FLACCodec();
   else if (strFileType.Equals("wav"))
-    return new DVDPlayerCodec();
+    return new WAVCodec();
 #ifdef HAS_DTS_CODEC
   else if (strFileType.Equals("dts"))
     return new DTSCodec();
@@ -76,53 +79,37 @@ ICodec* CodecFactory::CreateCodec(const CStdString& strFileType)
     return new AC3Codec();
 #endif
   else if (strFileType.Equals("m4a") || strFileType.Equals("aac"))
-    return new DVDPlayerCodec();
+    return new AACCodec();
   else if (strFileType.Equals("wv"))
     return new WAVPackCodec();
-  else if (strFileType.Equals("669")  ||  strFileType.Equals("abc") ||
-           strFileType.Equals("amf")  ||  strFileType.Equals("ams") ||
-           strFileType.Equals("dbm")  ||  strFileType.Equals("dmf") ||
-           strFileType.Equals("dsm")  ||  strFileType.Equals("far") ||
-           strFileType.Equals("it")   ||  strFileType.Equals("j2b") ||
-           strFileType.Equals("mdl")  ||  strFileType.Equals("med") ||
-           strFileType.Equals("mid")  ||  strFileType.Equals("mod") ||
-           strFileType.Equals("mt2")  ||  strFileType.Equals("mtm") ||
-           strFileType.Equals("okt")  ||  strFileType.Equals("pat") ||
-           strFileType.Equals("psm")  ||  strFileType.Equals("ptm") ||
-           strFileType.Equals("s3m")  ||  strFileType.Equals("stm") ||
-           strFileType.Equals("ult")  ||  strFileType.Equals("umx") ||
-           strFileType.Equals("xm")   || strFileType.Equals("mdgz") ||
-           strFileType.Equals("s3gz") || strFileType.Equals("xmgz") ||
-           strFileType.Equals("itgz"))
-    return new ModplugCodec();
+  else if (ModuleCodec::IsSupportedFormat(strFileType))
+    return new ModuleCodec();
   else if (strFileType.Equals("nsf") || strFileType.Equals("nsfstream"))
     return new NSFCodec();
-#ifdef HAS_SPC_CODEC
   else if (strFileType.Equals("spc"))
     return new SPCCodec();
-#endif
   else if (strFileType.Equals("gym"))
     return new GYMCodec();
   else if (strFileType.Equals("sid") || strFileType.Equals("sidstream"))
     return new SIDCodec();
+  else if (AdplugCodec::IsSupportedFormat(strFileType))
+    return new AdplugCodec();
   else if (VGMCodec::IsSupportedFormat(strFileType))
     return new VGMCodec();
   else if (strFileType.Equals("ym"))
     return new YMCodec();
+#ifdef HAS_WMA_CODEC
   else if (strFileType.Equals("wma"))
-    return new DVDPlayerCodec();
+    return new WMACodec();
+#endif
   else if (strFileType.Equals("aiff") || strFileType.Equals("aif"))
     return new AIFFCodec();
   else if (strFileType.Equals("xwav"))
     return new ADPCMCodec();
   else if (TimidityCodec::IsSupportedFormat(strFileType))
     return new TimidityCodec();
-#ifdef HAS_ASAP_CODEC
   else if (ASAPCodec::IsSupportedFormat(strFileType) || strFileType.Equals("asapstream"))
     return new ASAPCodec();
-#endif
-  else if (strFileType.Equals("tta"))
-    return new DVDPlayerCodec();
 
   return NULL;
 }
@@ -134,20 +121,13 @@ ICodec* CodecFactory::CreateCodecDemux(const CStdString& strFile, const CStdStri
     return new MP3Codec();
   else if( strContent.Equals("audio/aac")
     || strContent.Equals("audio/aacp") )
-  {
-    DVDPlayerCodec *pCodec = new DVDPlayerCodec;
-    if (urlFile.GetProtocol() == "shout" )
-      pCodec->SetContentType(strContent);
-    return pCodec;
-  }
-  else if( strContent.Equals("audio/x-ms-wma") )
-    return new DVDPlayerCodec();
+    return new AACCodec();
   else if( strContent.Equals("application/ogg") || strContent.Equals("audio/ogg"))
     return new OGGCodec();
 
   if (urlFile.GetProtocol() == "lastfm" || urlFile.GetProtocol() == "shout")
   {
-    return new MP3Codec(); // if we got this far with internet radio - content-type was wrong. gamble on mp3.
+    return new MP3Codec();
   }
 
   if (urlFile.GetFileType().Equals("wav"))
@@ -178,16 +158,11 @@ ICodec* CodecFactory::CreateCodecDemux(const CStdString& strFile, const CStdStri
     {
       return codec;
     }
-    codec = new WAVCodec();
-    if (codec->Init(strFile, filecache))
-    {
-      return codec;
-    }
     delete codec;
   }
   if (urlFile.GetFileType().Equals("cdda"))
   {
-#ifdef HAS_DTS_CODEC
+#ifdef HAS_DTS_CDDA_CODEC
     //lets see what it contains...
     //this kinda sucks 'cause if it's plain cdda the file
     //will be opened, sniffed and closed 2 times before it is opened *again* for cdda
@@ -207,25 +182,6 @@ ICodec* CodecFactory::CreateCodecDemux(const CStdString& strFile, const CStdStri
     }
     delete codec;
 #endif
-  }
-  else if (urlFile.GetFileType().Equals("ogg") || urlFile.GetFileType().Equals("oggstream") || urlFile.GetFileType().Equals("oga"))
-  {
-    // oldnemesis: we want to use OGGCodec() for OGG music since unlike DVDCodec it provides better
-    //  timings for Karaoke. However OGGCodec() cannot handle ogg-flac and ogg videos, that's why this block.
-    ICodec* codec = new OGGCodec();
-    try
-    {
-      if (codec->Init(strFile, filecache))
-      {
-        delete codec; // class can't be inited twice - deinit doesn't properly deinit some members.
-        return new OGGCodec;
-      }
-    }
-    catch( ... )
-    {
-    }
-    delete codec;
-    return new DVDPlayerCodec();
   }
   //default
   return CreateCodec(urlFile.GetFileType());

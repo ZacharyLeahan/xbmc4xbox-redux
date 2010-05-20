@@ -19,8 +19,8 @@
  *
  */
 
+#include "stdafx.h"
 #include "FileTuxBox.h"
-#include <errno.h>
 
 //Reserved for TuxBox Recording!
 
@@ -33,12 +33,12 @@ CFileTuxBox::~CFileTuxBox()
 {
 }
 
-int64_t CFileTuxBox::GetPosition()
+__int64 CFileTuxBox::GetPosition()
 {
   return 0;
 }
 
-int64_t CFileTuxBox::GetLength()
+__int64 CFileTuxBox::GetLength()
 {
   return 0;
 }
@@ -48,12 +48,12 @@ bool CFileTuxBox::Open(const CURL& url)
   return true;
 }
 
-unsigned int CFileTuxBox::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileTuxBox::Read(void* lpBuf, __int64 uiBufSize)
 {
   return 0;
 }
 
-int64_t CFileTuxBox::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileTuxBox::Seek(__int64 iFilePosition, int iWhence)
 {
   return 0;
 }
@@ -62,14 +62,4 @@ void CFileTuxBox::Close()
 {
 }
 
-bool CFileTuxBox::Exists(const CURL& url)
-{
-  return true;
-}
-
-int CFileTuxBox::Stat(const CURL& url, struct __stat64* buffer)
-{
-  errno = ENOENT;
-  return -1;
-}
 

@@ -24,8 +24,7 @@
 #include "IAudioCallback.h"
 #include "Key.h"
 
-struct TextCacheStruct_t;
-class TiXmlElement;
+class TiXmlElement; 
 class CStreamDetails;
 
 class IPlayerCallback
@@ -60,8 +59,6 @@ public:
   bool    video_only; /* player is not allowed to play audio streams, video streams only */
 };
 
-class CFileItem;
-class CRect;
 
 class IPlayer
 {
@@ -75,12 +72,12 @@ public:
   virtual bool QueueNextFile(const CFileItem &file) { return false; }
   virtual void OnNothingToQueueNotify() {}
   virtual bool CloseFile(){ return true;}
-  virtual bool IsPlaying() const { return false;}
+  virtual bool IsPlaying() const { return false;} 
   virtual void Pause() = 0;
   virtual bool IsPaused() const = 0;
   virtual bool HasVideo() const = 0;
   virtual bool HasAudio() const = 0;
-  virtual bool IsPassthrough() const { return false;}
+  virtual void ToggleFrameDrop() = 0;
   virtual bool CanSeek() {return true;}
   virtual void Seek(bool bPlus = true, bool bLargeStep = false) = 0;
   virtual bool SeekScene(bool bPlus = true) {return false;}
@@ -92,8 +89,8 @@ public:
   virtual void GetVideoInfo( CStdString& strVideoInfo) = 0;
   virtual void GetGeneralInfo( CStdString& strVideoInfo) = 0;
   virtual void Update(bool bPauseDrawing = false) = 0;
-  virtual void GetVideoRect(CRect& SrcRect, CRect& DestRect) {}
-  virtual void GetVideoAspectRatio(float& fAR) { fAR = 1.0f; }
+  virtual void GetVideoRect(RECT& SrcRect, RECT& DestRect) = 0;
+  virtual void GetVideoAspectRatio(float& fAR) = 0;
   virtual bool CanRecord() { return false;};
   virtual bool IsRecording() { return false;};
   virtual bool Record(bool bOnOff) { return false;};
@@ -110,15 +107,12 @@ public:
   virtual bool GetSubtitleVisible(){ return false;};
   virtual void SetSubtitleVisible(bool bVisible){};
   virtual bool GetSubtitleExtension(CStdString &strSubtitleExtension){ return false;};
-  virtual int  AddSubtitle(const CStdString& strSubPath) {return -1;};
+  virtual bool AddSubtitle(const CStdString& strSubPath) {return false;};
 
   virtual int  GetAudioStreamCount()  { return 0; }
   virtual int  GetAudioStream()       { return -1; }
   virtual void GetAudioStreamName(int iStream, CStdString &strStreamName){};
   virtual void SetAudioStream(int iStream){};
-
-  virtual TextCacheStruct_t* GetTeletextCache() { return NULL; };
-  virtual void LoadPage(int p, int sp, unsigned char* buffer) {};
 
   virtual int  GetChapterCount()                               { return 0; }
   virtual int  GetChapter()                                    { return -1; }
@@ -148,7 +142,7 @@ public:
   //Returns true if not playback (paused or stopped beeing filled)
   virtual bool IsCaching() const {return false;};
   //Cache filled in Percent
-  virtual int GetCacheLevel() const {return -1;};
+  virtual int GetCacheLevel() const {return -1;}; 
 
   virtual bool IsInMenu() const {return false;};
   virtual bool HasMenu() { return false; };
@@ -161,8 +155,6 @@ public:
   virtual CStdString GetPlayerState() { return ""; };
   virtual bool SetPlayerState(CStdString state) { return false;};
   
-  virtual CStdString GetPlayingTitle() { return ""; };
-
 protected:
   IPlayerCallback& m_callback;
 };

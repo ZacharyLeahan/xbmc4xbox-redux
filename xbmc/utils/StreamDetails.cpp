@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include <math.h>
 #include "StreamDetails.h"
 
@@ -154,7 +155,7 @@ CStreamDetails& CStreamDetails::operator=(const CStreamDetails &that)
     std::vector<CStreamDetail *>::const_iterator iter;
     for (iter = that.m_vecItems.begin(); iter != that.m_vecItems.end(); iter++)
     {
-      switch ((*iter)->m_eType)
+      switch ((*iter)->m_eType) 
       {
       case CStreamDetail::VIDEO:
         AddStream(new CStreamDetailVideo((const CStreamDetailVideo &)(**iter)));
@@ -167,7 +168,7 @@ CStreamDetails& CStreamDetails::operator=(const CStreamDetails &that)
         break;
       }
     }
-
+  
     DetermineBestStreams();
   }  /* if this != that */
 
@@ -251,13 +252,13 @@ const CStreamDetail* CStreamDetails::GetNthStream(CStreamDetail::StreamType type
     switch (type)
     {
     case CStreamDetail::VIDEO:
-      return m_pBestVideo;
+      return m_pBestVideo; 
       break;
     case CStreamDetail::AUDIO:
-      return m_pBestAudio;
+      return m_pBestAudio; 
       break;
     case CStreamDetail::SUBTITLE:
-      return m_pBestSubtitle;
+      return m_pBestSubtitle; 
       break;
     default:
       return NULL;
@@ -398,13 +399,13 @@ void CStreamDetails::DetermineBestStreams(void)
     switch ((*iter)->m_eType)
     {
     case CStreamDetail::VIDEO:
-      champion = (CStreamDetail **)&m_pBestVideo;
+      champion = (CStreamDetail **)&m_pBestVideo; 
       break;
     case CStreamDetail::AUDIO:
-      champion = (CStreamDetail **)&m_pBestAudio;
+      champion = (CStreamDetail **)&m_pBestAudio; 
       break;
     case CStreamDetail::SUBTITLE:
-      champion = (CStreamDetail **)&m_pBestSubtitle;
+      champion = (CStreamDetail **)&m_pBestSubtitle; 
       break;
     default:
       champion = NULL;
@@ -434,7 +435,7 @@ CStdString CStreamDetails::VideoWidthToResolutionDescription(int iWidth)
   else if (iWidth < 1281)
     return "720";
   // 1920x1080
-  else
+  else 
     return "1080";
 }
 

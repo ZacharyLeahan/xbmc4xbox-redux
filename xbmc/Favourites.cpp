@@ -19,21 +19,20 @@
  *
  */
 
-#include "File.h"
+#include "stdafx.h"
+#include "FileSystem/File.h"
 #include "Favourites.h"
 #include "Util.h"
 #include "Key.h"
 #include "Settings.h"
 #include "FileItem.h"
 #include "VideoInfoTag.h"
-#include "tinyXML/tinyxml.h"
-#include "utils/log.h"
 
 bool CFavourites::Load(CFileItemList &items)
 {
   items.Clear();
   CStdString favourites;
-
+  
   favourites = "special://xbmc/system/favourites.xml";
   if(XFILE::CFile::Exists(favourites))
     CFavourites::LoadFavourites(favourites, items);

@@ -1,6 +1,6 @@
 /*!
 \file GUIVideoControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIVIDEOCONTROL_H
@@ -33,7 +33,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIVideoControl :
       public CGUIControl
@@ -44,8 +44,9 @@ public:
   virtual CGUIVideoControl *Clone() const { return new CGUIVideoControl(*this); };
 
   virtual void Render();
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseOver(const CPoint &point);
   virtual bool CanFocus() const;
-  virtual bool CanFocusFromPoint(const CPoint &point) const;
+  virtual bool CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const;
 };
 #endif

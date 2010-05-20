@@ -19,17 +19,18 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "StackDirectory.h"
 #include "utils/log.h"
 #include "Util.h"
 #include "FileItem.h"
-#include "StringUtils.h"
 #include "AdvancedSettings.h"
 
 #define PRE_2_1_STACK_COMPATIBILITY
 
 using namespace std;
-namespace XFILE
+namespace DIRECTORY
 {
   CStackDirectory::CStackDirectory()
   {
@@ -102,17 +103,19 @@ namespace XFILE
   {
     CStackDirectory stack;
     CFileItemList   files;
-    CStdString      strStackTitlePath,
+    CStdString      File1,
+                    File2,
+                    strStackTitlePath,
+                    strStackTitle,
                     strCommonDir        = CUtil::GetParentPath(strPath);
-
+    
     stack.GetDirectory(strPath, files);
 
     if (files.Size() > 1)
     {
-      CStdString strStackTitle;
 
-      CStdString File1 = CUtil::GetFileName(files[0]->m_strPath);
-      CStdString File2 = CUtil::GetFileName(files[1]->m_strPath);
+      File1 = CUtil::GetFileName(files[0]->m_strPath);
+      File2 = CUtil::GetFileName(files[1]->m_strPath);
 
       std::vector<CRegExp>::iterator itRegExp = RegExps.begin();
       int offset = 0;
@@ -178,11 +181,11 @@ namespace XFILE
     else
       CUtil::Split(strPath, folder, file); // single filed stacks - should really not happen
 
-    // remove "stack://" from the folder
+    // remove "stack://" from the folder    
     folder = folder.Mid(8);
     file.Replace(",,", ",");
     CUtil::AddFileToFolder(folder, file, path);
-
+    
     return path;
   }
 
@@ -202,7 +205,7 @@ namespace XFILE
     {
       stackedPath += " , ";
       file = items[stack[i]]->m_strPath;
-
+      
       // double escape any occurence of commas
       file.Replace(",", ",,");
       stackedPath += file;
@@ -225,7 +228,7 @@ namespace XFILE
     {
       stackedPath += " , ";
       file = paths[i];
-
+      
       // double escape any occurence of commas
       file.Replace(",", ",,");
       stackedPath += file;

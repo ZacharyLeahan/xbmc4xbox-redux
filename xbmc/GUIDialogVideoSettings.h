@@ -36,5 +36,7 @@ public:
 protected:
   virtual void CreateSettings();
   virtual void OnSettingChanged(SettingInfo &setting);
-};
 
+  int m_flickerFilter;
+  bool m_soften;
+};

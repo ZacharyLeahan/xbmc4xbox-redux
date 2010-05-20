@@ -24,7 +24,7 @@
 #include "tinyXML/tinyxml.h"
 #include "FileItem.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CDAVDirectory : public IDirectory
   {
@@ -33,7 +33,7 @@ namespace XFILE
       virtual ~CDAVDirectory(void);
       virtual bool GetDirectory(const CStdString& strPath, CFileItemList &items);
       virtual DIR_CACHE_TYPE GetCacheType(const CStdString& strPath) const { return DIR_CACHE_ONCE; };
-    private:
+    private:      
       bool ValueWithoutNamespace(const TiXmlNode *pNode, CStdString value);
       CStdString GetStatusTag(const TiXmlElement *pElement);
       void ParseResponse(const TiXmlElement *pElement, CFileItem &item);

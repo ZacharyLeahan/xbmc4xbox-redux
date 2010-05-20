@@ -18,10 +18,8 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "FileDAAP.h"
-#include "SectionLoader.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 #include <sys/stat.h>
 
 #include "lib/libXDAAP/private.h"
@@ -70,7 +68,7 @@ void CDaapClient::Release()
     }
     catch(...)
     {
-      CLog::Log(LOGINFO, "CDaapClient::Disconnect - Unexpected exception");
+      CLog::Log(LOGINFO, "CDaapClient::Disconnect - Unexpected exception");   
     }
 
     m_pClient = NULL;
@@ -78,7 +76,7 @@ void CDaapClient::Release()
 }
 
 DAAP_SClientHost* CDaapClient::GetHost(const CStdString &strHost)
-{
+{ 
   //We need this section from now on
   if( !CSectionLoader::IsLoaded("LIBXDAAP") ) CSectionLoader::Load("LIBXDAAP");
   try
@@ -115,11 +113,11 @@ DAAP_SClientHost* CDaapClient::GetHost(const CStdString &strHost)
     CLog::Log(LOGERROR, "CDaapClient::GetHost(%s) - Unknown Exception", strHost.c_str());
     return NULL;
   }
-
+    
 }
 
 void CDaapClient::StatusCallback(DAAP_SClient *pClient, DAAP_Status status, int value, void* pContext)
-{
+{    
   ((CDaapClient*)pContext)->m_Status = status;
   switch(status)
   {
@@ -139,7 +137,7 @@ void CDaapClient::StatusCallback(DAAP_SClient *pClient, DAAP_Status status, int 
 //////////////////////////////////////////////////////////////////////
 
 CFileDAAP::CFileDAAP()
-{
+{  
   m_thisHost = NULL;
   m_thisClient = NULL;
 
@@ -148,7 +146,7 @@ CFileDAAP::CFileDAAP()
 
 CFileDAAP::~CFileDAAP()
 {
-  Close();
+  Close();  
 }
 
 
@@ -167,20 +165,20 @@ bool CFileDAAP::Open(const CURL& url)
   if (url.HasPort())
     host.Format("%s:%i",url.GetHostName(),url.GetPort());
   m_thisHost = g_DaapClient.GetHost(host);
-  if (!m_thisHost)
-    return false;
+  if (!m_thisHost)  
+    return false;  
 
   /* get us a new request id */
   int requestid = ++m_thisHost->request_id;
-
+    
   m_hashurl = "/" + m_url.GetFileName();
   m_hashurl += m_url.GetOptions();
 
   char hash[33] = {0};
   GenerateHash(m_thisHost->version_major, (unsigned char*)(m_hashurl.c_str()), 2, (unsigned char*)hash, requestid);
-
-  m_curl.SetUserAgent(DAAP_USERAGENT);
-
+  
+  m_curl.SetUserAgent(DAAP_USERAGENT);  
+  
   //m_curl.SetRequestHeader(HEADER_VERSION, "3.0");
   m_curl.SetRequestHeader(HEADER_REQUESTID, requestid);
   m_curl.SetRequestHeader(HEADER_VALIDATE, CStdString(hash));
@@ -198,7 +196,7 @@ bool CFileDAAP::Open(const CURL& url)
 
 
 //*********************************************************************************************
-unsigned int CFileDAAP::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileDAAP::Read(void *lpBuf, __int64 uiBufSize)
 {
   return m_curl.Read(lpBuf, uiBufSize);
 }
@@ -211,7 +209,7 @@ void CFileDAAP::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileDAAP::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileDAAP::Seek(__int64 iFilePosition, int iWhence)
 {
   CSingleLock lock(g_DaapClient);
 
@@ -230,13 +228,13 @@ int64_t CFileDAAP::Seek(int64_t iFilePosition, int iWhence)
 }
 
 //*********************************************************************************************
-int64_t CFileDAAP::GetLength()
+__int64 CFileDAAP::GetLength()
 {
   return m_curl.GetLength();
 }
 
 //*********************************************************************************************
-int64_t CFileDAAP::GetPosition()
+__int64 CFileDAAP::GetPosition()
 {
   return m_curl.GetPosition();
 }

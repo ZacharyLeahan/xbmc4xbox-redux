@@ -27,7 +27,7 @@ class TiXmlElement;
 
 #define SHOUTCAST_MASTER_LINK "shout://classic.shoutcast.com/sbin/newxml.phtml"
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CShoutcastDirectory :
       public IDirectory

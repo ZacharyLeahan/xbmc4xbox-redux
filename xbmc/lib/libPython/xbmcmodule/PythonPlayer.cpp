@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "pyutil.h"
 #include "PythonPlayer.h"
 #include "lib/libPython/XBPython.h"
@@ -39,7 +40,7 @@ void CPythonPlayer::OnPlayBackStarted()
 {
   // aquire lock?
   Py_INCREF(pCallback);
-  PyXBMC_AddPendingCall(Py_XBMC_Event_OnPlayBackStarted, pCallback);
+  Py_AddPendingCall(Py_XBMC_Event_OnPlayBackStarted, pCallback);
   g_pythonParser.PulseGlobalEvent();
 }
 
@@ -47,7 +48,7 @@ void CPythonPlayer::OnPlayBackEnded()
 {
   // aquire lock?
   Py_INCREF(pCallback);
-  PyXBMC_AddPendingCall(Py_XBMC_Event_OnPlayBackEnded, pCallback);
+  Py_AddPendingCall(Py_XBMC_Event_OnPlayBackEnded, pCallback);
   g_pythonParser.PulseGlobalEvent();
 }
 
@@ -55,7 +56,7 @@ void CPythonPlayer::OnPlayBackStopped()
 {
   // aquire lock?
   Py_INCREF(pCallback);
-  PyXBMC_AddPendingCall(Py_XBMC_Event_OnPlayBackStopped, pCallback);
+  Py_AddPendingCall(Py_XBMC_Event_OnPlayBackStopped, pCallback);
   g_pythonParser.PulseGlobalEvent();
 }
 
@@ -63,7 +64,7 @@ void CPythonPlayer::OnPlayBackPaused()
 {
   // aquire lock?
   Py_INCREF(pCallback);
-  PyXBMC_AddPendingCall(Py_XBMC_Event_OnPlayBackPaused, pCallback);
+  Py_AddPendingCall(Py_XBMC_Event_OnPlayBackPaused, pCallback);
   g_pythonParser.PulseGlobalEvent();
 }
 
@@ -71,7 +72,7 @@ void CPythonPlayer::OnPlayBackResumed()
 {
   // aquire lock?
   Py_INCREF(pCallback);
-  PyXBMC_AddPendingCall(Py_XBMC_Event_OnPlayBackResumed, pCallback);
+  Py_AddPendingCall(Py_XBMC_Event_OnPlayBackResumed, pCallback);
   g_pythonParser.PulseGlobalEvent();
 }
 
@@ -87,7 +88,7 @@ void CPythonPlayer::SetCallback(PyObject *object)
 int Py_XBMC_Event_OnPlayBackStarted(void* playerObject)
 {
   if (playerObject != NULL) PyObject_CallMethod((PyObject*)playerObject, (char*)"onPlayBackStarted", NULL);
-  Py_DECREF((PyObject*)playerObject);
+  Py_DECREF((PyObject*)playerObject);  
   return 0;
 }
 

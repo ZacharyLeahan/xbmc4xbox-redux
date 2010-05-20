@@ -19,13 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNode.h"
 #include "Util.h"
 #include "QueryParams.h"
 #include "DirectoryNodeRoot.h"
 #include "DirectoryNodeOverview.h"
 #include "DirectoryNodeGenre.h"
-#include "DirectoryNodeCountry.h"
 #include "DirectoryNodeSets.h"
 #include "DirectoryNodeTitleMovies.h"
 #include "DirectoryNodeTitleTvShows.h"
@@ -48,11 +48,9 @@
 #include "AdvancedSettings.h"
 #include "FileItem.h"
 #include "FileSystem/File.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
-using namespace XFILE::VIDEODATABASEDIRECTORY;
+using namespace DIRECTORY::VIDEODATABASEDIRECTORY;
 
 //  Constructor is protected use ParseURL()
 CDirectoryNode::CDirectoryNode(NODE_TYPE Type, const CStdString& strName, CDirectoryNode* pParent)
@@ -116,8 +114,6 @@ CDirectoryNode* CDirectoryNode::CreateNode(NODE_TYPE Type, const CStdString& str
     return new CDirectoryNodeOverview(strName, pParent);
   case NODE_TYPE_GENRE:
     return new CDirectoryNodeGenre(strName, pParent);
-  case NODE_TYPE_COUNTRY:
-    return new CDirectoryNodeCountry(strName, pParent);
   case NODE_TYPE_SETS:
     return new CDirectoryNodeSets(strName, pParent);
   case NODE_TYPE_YEAR:

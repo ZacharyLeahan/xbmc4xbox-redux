@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "infotagmusic.h"
 #include "pyutil.h"
 
@@ -33,8 +34,6 @@
 extern "C" {
 #endif
 
-using namespace MUSIC_INFO;
-
 namespace PYXBMC
 {
   /*
@@ -45,7 +44,7 @@ namespace PYXBMC
   {
     InfoTagMusic* self = (InfoTagMusic*)InfoTagMusic_Type.tp_alloc(&InfoTagMusic_Type, 0);
     if (!self) return NULL;
-    new(&self->infoTag) MUSIC_INFO::CMusicInfoTag();
+
     self->infoTag = infoTag;
 
     return self;
@@ -53,7 +52,6 @@ namespace PYXBMC
 
   void InfoTagMusic_Dealloc(InfoTagMusic* self)
   {
-    self->infoTag.~CMusicInfoTag();
     self->ob_type->tp_free((PyObject*)self);
   }
 

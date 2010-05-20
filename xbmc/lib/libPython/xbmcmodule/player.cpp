@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "Application.h"
 #include "utils/GUIInfoManager.h"
 #include "PlayListPlayer.h"
@@ -65,7 +66,8 @@ namespace PYXBMC
 
     if (playerCore == EPC_DVDPLAYER ||
         playerCore == EPC_MPLAYER ||
-        playerCore == EPC_PAPLAYER)
+        playerCore == EPC_PAPLAYER ||
+        playerCore == EPC_MODPLAYER)
     {
       self->playerCore = (EPLAYERCORES)playerCore;
     }
@@ -118,9 +120,6 @@ namespace PYXBMC
       return NULL;
     }
 
-    // set fullscreen or windowed
-    g_settings.m_bStartVideoWindowed = (0 != bWindowed);
-
     // force a playercore before playing
     g_application.m_eForcedNextPlayer = self->playerCore;
 
@@ -131,7 +130,7 @@ namespace PYXBMC
       {
         g_playlistPlayer.SetCurrentPlaylist(self->iPlayList);
       }
-      g_application.getApplicationMessenger().PlayListPlayerPlay(g_playlistPlayer.GetCurrentSong());
+      g_applicationMessenger.PlayListPlayerPlay(g_playlistPlayer.GetCurrentSong());
     }
     else if ((PyString_Check(pObject) || PyUnicode_Check(pObject)) && pObjectListItem != NULL && ListItem_CheckExact(pObjectListItem))
     {
@@ -142,12 +141,12 @@ namespace PYXBMC
       // set m_strPath to the passed url
       pListItem->item->m_strPath = PyString_AsString(pObject);
 
-      g_application.getApplicationMessenger().PlayFile((const CFileItem)*pListItem->item, false);
+      g_applicationMessenger.PlayFile((const CFileItem)*pListItem->item, false);
     }
     else if (PyString_Check(pObject) || PyUnicode_Check(pObject))
     {
       CFileItem item(PyString_AsString(pObject), false);
-      g_application.getApplicationMessenger().MediaPlay(item.m_strPath);
+      g_applicationMessenger.MediaPlay(item.m_strPath);
     }
     else if (PlayList_Check(pObject))
     {
@@ -155,7 +154,7 @@ namespace PYXBMC
       PlayList* pPlayList = (PlayList*)pObject;
       self->iPlayList = pPlayList->iPlayList;
       g_playlistPlayer.SetCurrentPlaylist(pPlayList->iPlayList);
-      g_application.getApplicationMessenger().PlayListPlayerPlay();
+      g_applicationMessenger.PlayListPlayerPlay();
     }
 
     Py_INCREF(Py_None);
@@ -168,7 +167,7 @@ namespace PYXBMC
 
   PyObject* pyPlayer_Stop(PyObject *self, PyObject *args)
   {
-    g_application.getApplicationMessenger().MediaStop();
+    g_applicationMessenger.MediaStop();
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -180,7 +179,7 @@ namespace PYXBMC
 
   PyObject* Player_Pause(PyObject *self, PyObject *args)
   {
-    g_application.getApplicationMessenger().MediaPause();
+    g_applicationMessenger.MediaPause();
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -195,7 +194,7 @@ namespace PYXBMC
     // force a playercore before playing
     g_application.m_eForcedNextPlayer = self->playerCore;
 
-    g_application.getApplicationMessenger().PlayListPlayerNext();
+    g_applicationMessenger.PlayListPlayerNext();
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -210,7 +209,7 @@ namespace PYXBMC
     // force a playercore before playing
     g_application.m_eForcedNextPlayer = self->playerCore;
 
-    g_application.getApplicationMessenger().PlayListPlayerPrevious();
+    g_applicationMessenger.PlayListPlayerPrevious();
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -234,7 +233,7 @@ namespace PYXBMC
     }
     g_playlistPlayer.SetCurrentSong(iItem);
 
-    g_application.getApplicationMessenger().PlayListPlayerPlay(iItem);
+    g_applicationMessenger.PlayListPlayerPlay(iItem);
     //g_playlistPlayer.Play(iItem);
     //CLog::Log(LOGNOTICE, "Current Song After Play: %i", g_playlistPlayer.GetCurrentSong());
 
@@ -472,57 +471,57 @@ namespace PYXBMC
 
     if (g_application.m_pPlayer)
     {
-      int nStream = g_application.m_pPlayer->AddSubtitle(cLine);
-      if(nStream >= 0)
-      {
-        g_application.m_pPlayer->SetSubtitle(nStream);
-        g_application.m_pPlayer->SetSubtitleVisible(true);
-      }
-    }
+      int nStream = g_application.m_pPlayer->GetSubtitleCount();
 
+      g_stSettings.m_currentVideoSettings.m_SubtitleOn = true;
+      g_application.m_pPlayer->SetSubtitleVisible(true);
+      g_application.m_pPlayer->AddSubtitle(cLine);
+      g_application.m_pPlayer->SetSubtitle(nStream);
+    }
+    
     Py_INCREF(Py_None);
     return Py_None;
   }
 
-
+	
   // Player_GetSubtitles
   PyDoc_STRVAR(getSubtitles__doc__,
     "getSubtitles() -- get subtitle stream name\n");
-
+	
   PyObject* Player_GetSubtitles(PyObject *self)
   {
     if (g_application.m_pPlayer)
-    {
+    {	
       int i = g_application.m_pPlayer->GetSubtitle();
       CStdString strName;
       g_application.m_pPlayer->GetSubtitleName(i, strName);
 
       if (strName == "Unknown(Invalid)")
-        strName = "";
+        strName = "";		  
       return Py_BuildValue((char*)"s", strName.c_str());
     }
-
+	  
     Py_INCREF(Py_None);
-    return Py_None;
-  }
+    return Py_None;	  
+  }	
 
   // Player_DisableSubtitles
   PyDoc_STRVAR(DisableSubtitles__doc__,
     "DisableSubtitles() -- disable subtitles\n");
-
+	
   PyObject* Player_DisableSubtitles(PyObject *self)
   {
-    if (g_application.m_pPlayer)
-    {
-      g_settings.m_currentVideoSettings.m_SubtitleOn = false;
+    if (g_application.m_pPlayer)	  
+    {	
+      g_stSettings.m_currentVideoSettings.m_SubtitleOn = false;
       g_application.m_pPlayer->SetSubtitleVisible(false);
-
+		
       Py_INCREF(Py_None);
       return Py_None;
     }
     return NULL;
   }
-
+	
   PyMethodDef Player_methods[] = {
     {(char*)"play", (PyCFunction)Player_Play, METH_VARARGS|METH_KEYWORDS, play__doc__},
     {(char*)"stop", (PyCFunction)pyPlayer_Stop, METH_VARARGS, stop__doc__},
@@ -559,7 +558,8 @@ namespace PYXBMC
     "         : - xbmc.PLAYER_CORE_AUTO\n"
     "         : - xbmc.PLAYER_CORE_DVDPLAYER\n"
     "         : - xbmc.PLAYER_CORE_MPLAYER\n"
-    "         : - xbmc.PLAYER_CORE_PAPLAYER\n");
+    "         : - xbmc.PLAYER_CORE_PAPLAYER\n"
+    "         : - xbmc.PLAYER_CORE_MODPLAYER\n");
 
 // Restore code and data sections to normal.
 #ifndef __GNUC__

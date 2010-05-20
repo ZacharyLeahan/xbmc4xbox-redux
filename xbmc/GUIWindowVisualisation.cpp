@@ -19,22 +19,22 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowVisualisation.h"
 #include "GUIVisualisationControl.h"
-#include "addons/Visualisation.h"
-#include "addons/AddonManager.h"
 #include "Application.h"
 #include "GUIDialogMusicOSD.h"
-#include "GUIUserMessages.h"
 #include "utils/GUIInfoManager.h"
 #include "ButtonTranslator.h"
 #include "GUIDialogVisualisationPresetList.h"
 #include "GUIWindowManager.h"
 #include "Settings.h"
 #include "AdvancedSettings.h"
+#ifdef HAS_KARAOKE
+#include "CdgParser.h"
+#endif
 
 using namespace MUSIC_INFO;
-using namespace ADDON;
 
 #define TRANSISTION_COUNT   50  // 1 second
 #define TRANSISTION_LENGTH 200  // 4 seconds
@@ -45,31 +45,24 @@ using namespace ADDON;
 CGUIWindowVisualisation::CGUIWindowVisualisation(void)
     : CGUIWindow(WINDOW_VISUALISATION, "MusicVisualisation.xml")
 {
-  m_initTimer = 0;
-  m_lockedTimer = 0;
+  m_dwInitTimer = 0;
+  m_dwLockedTimer = 0;
   m_bShowPreset = false;
+}
+
+CGUIWindowVisualisation::~CGUIWindowVisualisation(void)
+{
 }
 
 bool CGUIWindowVisualisation::OnAction(const CAction &action)
 {
-  VIS_ACTION visAction = VIS_ACTION_NONE;
-  switch (action.GetID())
+  switch (action.id)
   {
-  case ACTION_VIS_PRESET_NEXT:
-    visAction = VIS_ACTION_NEXT_PRESET; break;
-  case ACTION_VIS_PRESET_PREV:
-    visAction = VIS_ACTION_PREV_PRESET; break;
-  case ACTION_VIS_PRESET_RANDOM:
-    visAction = VIS_ACTION_RANDOM_PRESET; break;
-  case ACTION_VIS_RATE_PRESET_PLUS:
-    visAction = VIS_ACTION_RATE_PRESET_PLUS; break;
-  case ACTION_VIS_RATE_PRESET_MINUS:
-    visAction = VIS_ACTION_RATE_PRESET_MINUS; break;
   case ACTION_SHOW_INFO:
     {
-      if (!m_initTimer || g_settings.m_bMyMusicSongThumbInVis)
-        g_settings.m_bMyMusicSongThumbInVis = !g_settings.m_bMyMusicSongThumbInVis;
-      g_infoManager.SetShowInfo(g_settings.m_bMyMusicSongThumbInVis);
+      if (!m_dwInitTimer || g_stSettings.m_bMyMusicSongThumbInVis)
+        g_stSettings.m_bMyMusicSongThumbInVis = !g_stSettings.m_bMyMusicSongThumbInVis;
+      g_infoManager.SetShowInfo(g_stSettings.m_bMyMusicSongThumbInVis);
       return true;
     }
     break;
@@ -83,16 +76,29 @@ bool CGUIWindowVisualisation::OnAction(const CAction &action)
 
   case ACTION_VIS_PRESET_LOCK:
     { // show the locked icon + fall through so that the vis handles the locking
+      CGUIMessage msg(GUI_MSG_GET_VISUALISATION, 0, 0);
+      g_windowManager.SendMessage(msg);
+      if (msg.GetPointer())
+      {
+        CVisualisation *pVis = (CVisualisation *)msg.GetPointer();
+        char** pPresets=NULL;
+        int currpreset=0, numpresets=0;
+        bool locked;
+
+        pVis->GetPresets(&pPresets,&currpreset,&numpresets,&locked);
+        if (numpresets == 1 || !pPresets)
+          return true;
+      }
       if (!m_bShowPreset)
       {
-        m_lockedTimer = START_FADE_LENGTH;
+        m_dwLockedTimer = START_FADE_LENGTH;
         g_infoManager.SetShowCodec(true);
       }
     }
     break;
   case ACTION_VIS_PRESET_SHOW:
     {
-      if (!m_lockedTimer || m_bShowPreset)
+      if (!m_dwLockedTimer || m_bShowPreset)
         m_bShowPreset = !m_bShowPreset;
       g_infoManager.SetShowCodec(m_bShowPreset);
       return true;
@@ -103,7 +109,7 @@ bool CGUIWindowVisualisation::OnAction(const CAction &action)
   case ACTION_INCREASE_RATING:
     {
       // actual action is taken care of in CApplication::OnAction()
-      m_initTimer = g_advancedSettings.m_songInfoDuration * 50;
+      m_dwInitTimer = g_advancedSettings.m_songInfoDuration * 50;
       g_infoManager.SetShowInfo(true);
     }
     break;
@@ -116,18 +122,18 @@ bool CGUIWindowVisualisation::OnAction(const CAction &action)
 
     case ACTION_ANALOG_FORWARD:
     // calculate the speed based on the amount the button is held down
-    if (action.GetAmount())
+    if (action.amount1)
     {
       float AVDelay = g_application.m_CdgParser.GetAVDelay();
-      g_application.m_CdgParser.SetAVDelay(AVDelay - action.GetAmount() / 4.0f);
+      g_application.m_CdgParser.SetAVDelay(AVDelay - action.amount1 / 4.0f);
       return true;
     }
     break;*/
   }
-
-  if (visAction != VIS_ACTION_NONE && m_addon)
-    return m_addon->OnAction(visAction);
-
+  // default action is to send to the visualisation first
+  CGUIVisualisationControl *pVisControl = (CGUIVisualisationControl *)GetControl(CONTROL_VIS);
+  if (pVisControl && pVisControl->OnAction(action))
+    return true;
   return CGUIWindow::OnAction(action);
 }
 
@@ -135,33 +141,30 @@ bool CGUIWindowVisualisation::OnMessage(CGUIMessage& message)
 {
   switch ( message.GetMessage() )
   {
-  case GUI_MSG_GET_VISUALISATION:
-    {
-      if (m_addon)
-        message.SetPointer(m_addon.get());
-      return m_addon;
-    }
-    break;
-  case GUI_MSG_VISUALISATION_RELOAD:
+  case GUI_MSG_PLAYBACK_STARTED:
     {
       CGUIVisualisationControl *pVisControl = (CGUIVisualisationControl *)GetControl(CONTROL_VIS);
       if (pVisControl)
-        pVisControl->FreeResources(true);
+        return pVisControl->OnMessage(message);
+    }
+    break;
+  case GUI_MSG_GET_VISUALISATION:
+    {
+//      message.SetControlID(CONTROL_VIS);
+      CGUIVisualisationControl *pVisControl = (CGUIVisualisationControl *)GetControl(CONTROL_VIS);
+      if (pVisControl)
+        message.SetPointer(pVisControl->GetVisualisation());
+      return true;
     }
     break;
   case GUI_MSG_VISUALISATION_ACTION:
-  {
-    CAction action(message.GetParam1());
-    return OnAction(action);
-  }
-  case GUI_MSG_PLAYBACK_STARTED:
-  {
-    if (IsActive() && m_addon)
     {
-      m_addon->UpdateTrack();
+      // message.SetControlID(CONTROL_VIS);
+      CGUIVisualisationControl *pVisControl = (CGUIVisualisationControl *)GetControl(CONTROL_VIS);
+      if (pVisControl)
+        return pVisControl->OnMessage(message);
     }
     break;
-  }
   case GUI_MSG_WINDOW_DEINIT:
     {
       if (IsActive()) // save any changed settings from the OSD
@@ -171,6 +174,11 @@ bool CGUIWindowVisualisation::OnMessage(CGUIMessage& message)
       if (pOSD && pOSD->IsDialogRunning()) pOSD->Close(true);
       CGUIDialogVisualisationPresetList *pList = (CGUIDialogVisualisationPresetList *)g_windowManager.GetWindow(WINDOW_DIALOG_VIS_PRESET_LIST);
       if (pList && pList->IsDialogRunning()) pList->Close(true);
+
+#ifdef HAS_KARAOKE
+      if(g_application.m_pCdgParser)
+        g_application.m_pCdgParser->FreeGraphics();
+#endif
     }
     break;
   case GUI_MSG_WINDOW_INIT:
@@ -183,27 +191,25 @@ bool CGUIWindowVisualisation::OnMessage(CGUIMessage& message)
         return true;
       }
 
-      AddonPtr viz;
-      if (CAddonMgr::Get().GetDefault(ADDON_VIZ, viz))
-        m_addon = boost::dynamic_pointer_cast<CVisualisation>(viz);
-      else
-        m_addon.reset();
-
       // hide or show the preset button(s)
       g_infoManager.SetShowCodec(m_bShowPreset);
       g_infoManager.SetShowInfo(true);  // always show the info initially.
       CGUIWindow::OnMessage(message);
       if (g_infoManager.GetCurrentSongTag())
         m_tag = *g_infoManager.GetCurrentSongTag();
+#ifdef HAS_KARAOKE
+      if( g_application.m_pCdgParser && g_guiSettings.GetBool("karaoke.enabled"))
+        g_application.m_pCdgParser->AllocGraphics();
+#endif
 
-      if (g_settings.m_bMyMusicSongThumbInVis)
+      if (g_stSettings.m_bMyMusicSongThumbInVis)
       { // always on
-        m_initTimer = 0;
+        m_dwInitTimer = 0;
       }
       else
       {
         // start display init timer (fade out after 3 secs...)
-        m_initTimer = g_advancedSettings.m_songInfoDuration * 50;
+        m_dwInitTimer = g_advancedSettings.m_songInfoDuration * 50;
       }
       return true;
     }
@@ -211,75 +217,86 @@ bool CGUIWindowVisualisation::OnMessage(CGUIMessage& message)
   return CGUIWindow::OnMessage(message);
 }
 
-void CGUIWindowVisualisation::OnWindowLoaded()
+bool CGUIWindowVisualisation::OnMouse(const CPoint &point)
 {
-  if (m_addon)
-  {
-    CGUIVisualisationControl *pVisControl = (CGUIVisualisationControl *)GetControl(CONTROL_VIS);
-    if (pVisControl)
-      pVisControl->LoadAddon(m_addon);
-  }
-}
-
-bool CGUIWindowVisualisation::UpdateTrack()
-{
-  if (m_addon)
-  {
-    return m_addon->UpdateTrack();
-  }
-  return false;
-}
-
-EVENT_RESULT CGUIWindowVisualisation::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
-{
-  if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
+  if (g_Mouse.bClick[MOUSE_RIGHT_BUTTON])
   { // no control found to absorb this click - go back to GUI
-    OnAction(CAction(ACTION_SHOW_GUI));
-    return EVENT_RESULT_HANDLED;
+    CAction action;
+    action.id = ACTION_SHOW_GUI;
+    OnAction(action);
+    return true;
   }
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
+  if (g_Mouse.bClick[MOUSE_LEFT_BUTTON])
   { // no control found to absorb this click - toggle the track INFO
-    return g_application.OnAction(CAction(ACTION_PAUSE)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
+    CAction action;
+    action.id = ACTION_PAUSE;
+    return g_application.OnAction(action);
   }
-  if (event.m_id != ACTION_MOUSE_MOVE || event.m_offsetX || event.m_offsetY)
-  { // some other mouse action has occurred - bring up the OSD
+  if (g_Mouse.HasMoved())
+  { // movement - toggle the OSD
     CGUIDialog *pOSD = (CGUIDialog *)g_windowManager.GetWindow(WINDOW_DIALOG_MUSIC_OSD);
     if (pOSD)
     {
       pOSD->SetAutoClose(3000);
       pOSD->DoModal();
     }
-    return EVENT_RESULT_HANDLED;
   }
-  return EVENT_RESULT_UNHANDLED;
+  return true;
 }
 
-void CGUIWindowVisualisation::FrameMove()
+void CGUIWindowVisualisation::Render()
 {
-  g_application.ResetScreenSaver(); //why here?
+  g_application.ResetScreenSaver();
   // check for a tag change
   const CMusicInfoTag* tag = g_infoManager.GetCurrentSongTag();
   if (tag && *tag != m_tag)
   { // need to fade in then out again
     m_tag = *tag;
     // fade in
-    m_initTimer = g_advancedSettings.m_songInfoDuration * 50;
+    m_dwInitTimer = g_advancedSettings.m_songInfoDuration * 50;
     g_infoManager.SetShowInfo(true);
   }
-  if (m_initTimer)
+  if (m_dwInitTimer)
   {
-    m_initTimer--;
-    if (!m_initTimer && !g_settings.m_bMyMusicSongThumbInVis)
+    m_dwInitTimer--;
+    if (!m_dwInitTimer && !g_stSettings.m_bMyMusicSongThumbInVis)
     { // reached end of fade in, fade out again
       g_infoManager.SetShowInfo(false);
     }
   }
   // show or hide the locked texture
-  if (m_lockedTimer)
+  if (m_dwLockedTimer)
   {
-    m_lockedTimer--;
-    if (!m_lockedTimer && !m_bShowPreset)
+    m_dwLockedTimer--;
+    if (!m_dwLockedTimer && !m_bShowPreset)
       g_infoManager.SetShowCodec(false);
   }
-  CGUIWindow::FrameMove();
+  CGUIWindow::Render();
 }
+
+void CGUIWindowVisualisation::AllocResources(bool forceLoad)
+{
+  CGUIWindow::AllocResources(forceLoad);
+  CGUIWindow *pWindow;
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_MUSIC_OSD);
+  if (pWindow) pWindow->AllocResources(true);
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_VIS_SETTINGS);
+  if (pWindow) pWindow->AllocResources(true);
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_VIS_PRESET_LIST);
+  if (pWindow) pWindow->AllocResources(true);
+}
+
+void CGUIWindowVisualisation::FreeResources(bool forceUnload)
+{
+  // Save changed settings from music OSD
+  g_settings.Save();
+  CGUIWindow *pWindow;
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_MUSIC_OSD);
+  if (pWindow) pWindow->FreeResources(true);
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_VIS_SETTINGS);
+  if (pWindow) pWindow->FreeResources(true);
+  pWindow = g_windowManager.GetWindow(WINDOW_DIALOG_VIS_PRESET_LIST);
+  if (pWindow) pWindow->FreeResources(true);
+  CGUIWindow::FreeResources(forceUnload);
+}
+

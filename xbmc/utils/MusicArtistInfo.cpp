@@ -19,13 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicArtistInfo.h"
 #include "ScraperParser.h"
-#include "addons/Scraper.h"
+#include "ScraperSettings.h"
 #include "XMLUtils.h"
 #include "Settings.h"
-#include "CharsetConverter.h"
-#include "log.h"
 
 using namespace MUSIC_GRABBER;
 using namespace std;
@@ -77,10 +76,10 @@ bool CMusicArtistInfo::Parse(const TiXmlElement* artist, bool bChained)
   return true;
 }
 
-bool CMusicArtistInfo::Load(XFILE::CFileCurl& http, const ADDON::ScraperPtr& scraper, const CStdString& strFunction, const CScraperUrl* url)
+bool CMusicArtistInfo::Load(XFILE::CFileCurl& http, const SScraperInfo& info, const CStdString& strFunction, const CScraperUrl* url)
 {
   // load our scraper xml
-  if (!m_parser.Load(scraper))
+  if (!m_parser.Load("special://xbmc/system/scrapers/music/" + info.strPath))
     return false;
 
   bool bChained=true;
@@ -105,7 +104,7 @@ bool CMusicArtistInfo::Load(XFILE::CFileCurl& http, const ADDON::ScraperPtr& scr
 
   m_parser.m_param[strHTML.size()] = m_strSearch;
 
-  CStdString strXML = m_parser.Parse(strFunction);
+  CStdString strXML = m_parser.Parse(strFunction,&info.settings);
   CLog::Log(LOGDEBUG,"scraper: %s returned %s",strFunction.c_str(),strXML.c_str());
   if (strXML.IsEmpty())
   {
@@ -126,7 +125,7 @@ bool CMusicArtistInfo::Load(XFILE::CFileCurl& http, const ADDON::ScraperPtr& scr
     CLog::Log(LOGERROR, "%s: Unable to parse xml",__FUNCTION__);
     return false;
   }
-
+  
   bool ret = Parse(doc.RootElement(),bChained);
   TiXmlElement* pRoot = doc.RootElement();
   TiXmlElement* xurl = pRoot->FirstChildElement("url");
@@ -136,7 +135,7 @@ bool CMusicArtistInfo::Load(XFILE::CFileCurl& http, const ADDON::ScraperPtr& scr
     if (szFunction)
     {
       CScraperUrl scrURL(xurl);
-      Load(http,scraper,szFunction,&scrURL);
+      Load(http,info,szFunction,&scrURL);
     }
     xurl = xurl->NextSiblingElement("url");
   }

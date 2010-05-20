@@ -2,30 +2,29 @@
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
  *
- *  This file is part of libRTMP.
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
  *
- *  libRTMP is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  libRTMP is distributed in the hope that it will be useful,
+ *  This Program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with libRTMP; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, write to
+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  http://www.gnu.org/copyleft/gpl.html
+ *
  */
 
-#include "PlatformInclude.h"
+#include "stdafx.h"
 #include "rtmp.h"
 #include "AMFObject.h"
-#include <assert.h>
 
 #ifdef _LINUX
-  #include <sys/errno.h>
+  #include "PlatformInclude.h"
   #include <sys/types.h>
   #include <sys/socket.h>
   #include <netdb.h>
@@ -34,10 +33,20 @@
   #include <netinet/in.h>
 #endif
 
+#ifdef _XBOX
+  #include "..\..\cores\DllLoader\exports\emu_socket\emu_socket.h"
+
+  extern "C" {
+  extern struct mphostent* __stdcall dllgethostbyname(const char* name);
+  }
+
+  #define gethostbyname(name) dllgethostbyname(name)
+  #define hostent mphostent
+  #define h_addr  h_addr_list[0]
+#endif
+
 #include "URL.h"
 #include "utils/log.h"
-#include "utils/TimeUtils.h"
-#include "utils/EndianSwap.h"
 
 #define RTMP_SIG_SIZE 1536
 #define RTMP_LARGE_HEADER_SIZE 12
@@ -341,13 +350,13 @@ bool CRTMP::SendConnectPacket()
   if (m_strTcUrl.empty())
   {
     tcURL = url.GetWithoutFilename();
-    tcURL += app;
+  tcURL += app;
   }
   else
   {
     tcURL = m_strTcUrl;
   }
-  
+	
 	
   RTMPPacket packet;
   packet.m_nChannel = 0x03;   // control channel (invoke)
@@ -500,7 +509,7 @@ bool CRTMP::SendCheckBW()
   packet.m_nChannel = 0x03;   // control channel (invoke)
   packet.m_headerType = RTMP_PACKET_SIZE_LARGE;
   packet.m_packetType = 0x14; // INVOKE
-  packet.m_nInfoField1 = CTimeUtils::GetTimeMS();
+  packet.m_nInfoField1 = timeGetTime();
 
   packet.AllocPacket(256); // should be enough
   char *enc = packet.m_body;
@@ -595,7 +604,7 @@ bool CRTMP::SendPing(short nType, unsigned int nObject, unsigned int nTime)
   packet.m_nChannel = 0x02;   // control channel (ping)
   packet.m_headerType = RTMP_PACKET_SIZE_MEDIUM;
   packet.m_packetType = 0x04; // ping
-  packet.m_nInfoField1 = CTimeUtils::GetTimeMS();
+  packet.m_nInfoField1 = timeGetTime();
 
   int nSize = (nType==0x03?10:6); // type 3 is the buffer time and requires all 3 parameters. all in all 10 bytes.
   packet.AllocPacket(nSize);
@@ -846,11 +855,12 @@ int  CRTMP::ReadInt32(const char *data)
 }
 
 // little-endian 32bit integer
+// TODO: this is wrong on big-endian processors
 int  CRTMP::ReadInt32LE(const char *data)
 {
   int val;
   memcpy(&val, data, sizeof(int));
-  return Endian_SwapLE32(val);
+  return val;
 }
 
 std::string CRTMP::ReadString(const char *data)
@@ -876,16 +886,12 @@ bool CRTMP::ReadBool(const char *data)
 double CRTMP::ReadNumber(const char *data)
 {
   double val;
-#ifndef WORDS_BIGENDIAN
   char *dPtr = (char *)&val;
   for (int i=7;i>=0;i--)
   {
     *dPtr = data[i];
     dPtr++;
   }
-#else
-  memcpy(&val, data, 8);
-#endif
 
   return val;
 }
@@ -929,9 +935,9 @@ int CRTMP::EncodeInt32(char *output, int nVal)
 }
 
 // little-endian 32bit integer
+// TODO: this is wrong on big-endian processors
 int CRTMP::EncodeInt32LE(char *output, int nVal)
 {
-  nVal = Endian_SwapLE32(nVal);
   memcpy(output, &nVal, sizeof(int));
   return sizeof(int);
 }
@@ -988,16 +994,12 @@ int CRTMP::EncodeNumber(char *output, double dVal)
   *buf = 0x00; // type: Number
   buf++;
 
-#ifndef WORDS_BIGENDIAN
   char *dPtr = (char *)&dVal;
   for (int i=7;i>=0;i--)
   {
     buf[i] = *dPtr;
     dPtr++;
   }
-#else
-  memcpy(buf, &dVal, 8);
-#endif
 
   buf += 8;
 
@@ -1023,7 +1025,7 @@ bool CRTMP::HandShake()
   char serversig[RTMP_SIG_SIZE];
 
   clientsig[0] = 0x3;
-  DWORD uptime = htonl(CTimeUtils::GetTimeMS());
+  DWORD uptime = htonl(timeGetTime());
   memcpy(clientsig + 1, &uptime, sizeof(DWORD));
   memset(clientsig + 5, 0, 4);
 

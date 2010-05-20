@@ -29,11 +29,13 @@
 #ifndef _QRYDAT_H
 #define _QRYDAT_H
 
+#include "../../xbox/PlatformDefs.h"
 #include <map>
 #include <vector>
 #include <iostream>
 #include <string>
-#include <stdint.h>
+
+
 
 namespace dbiplus {
 

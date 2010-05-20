@@ -20,10 +20,11 @@
  */
 
 
+#include "stdafx.h"
 #include "IDirectory.h"
 #include "Util.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 IDirectory::IDirectory(void)
 {
@@ -54,7 +55,7 @@ bool IDirectory::IsAllowed(const CStdString& strFile) const
 
   strExtension.ToLower();
   strExtension += '|'; // ensures that we have a | at the end of it
-  if (m_strFileMask.Find(strExtension) != -1)
+  if ((size_t)m_strFileMask.Find(strExtension) != -1)
   { // it's allowed, but we should also ignore all non dvd related ifo files.
     if (strExtension.Equals(".ifo|"))
     {
@@ -71,7 +72,7 @@ bool IDirectory::IsAllowed(const CStdString& strFile) const
 /*!
  \brief Set a mask of extensions for the files in the directory.
  \param strMask Mask of file extensions that are allowed.
-
+ 
  The mask has to look like the following: \n
  \verbatim
  .m4a|.flac|.aac|
@@ -90,7 +91,7 @@ void IDirectory::SetMask(const CStdString& strMask)
 /*!
  \brief Set whether the directory handlers can prompt the user.
  \param allowPrompting Set true to allow prompting to occur (default is false).
-
+ 
  Directory handlers should only prompt the user as a direct result of the
  users actions.
  */
@@ -102,7 +103,7 @@ void IDirectory::SetAllowPrompting(bool allowPrompting)
 
 /*!
  \brief Set whether the directory should be cached by our directory cache.
- \param cacheDirectory Set DIR_CACHE_NEVER or DIR_CACHE_ALWAYS to enable or disable caching (default is DIR_CACHE_ONCE).
+ \param cacheDirectory Set DIR_CACHE_ONCE or DIR_CACHE_ALWAYS to enable caching (default is DIR_CACHE_NEVER).
  */
 
 void IDirectory::SetCacheDirectory(DIR_CACHE_TYPE cacheDirectory)
@@ -124,7 +125,7 @@ void IDirectory::SetUseFileDirectories(bool useFileDirectories)
  \brief Set whether the GetDirectory call will retrieve extended file information (stat calls for example).
  \param extFileInfo Set true to enable extended file info (default is true).
  */
-
+ 
 void IDirectory::SetExtFileInfo(bool extFileInfo)
 {
   m_extFileInfo = extFileInfo;

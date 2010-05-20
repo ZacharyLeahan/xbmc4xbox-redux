@@ -21,7 +21,6 @@
  *
  */
 
-#include "StdString.h"
 #include "Thread.h"
 
 class CSplash : public CThread
@@ -33,21 +32,10 @@ public:
   bool IsRunning();
   bool Start();
   void Stop();
-
-  // In case you don't want to use another thread
-  void Show();
-  void Hide();
-
 private:
-  virtual void Process();
   virtual void OnStartup();
   virtual void OnExit();
+  virtual void Process();
 
-  float fade;
   CStdString m_ImageName;
-#ifdef HAS_DX
-  D3DGAMMARAMP newRamp;
-  D3DGAMMARAMP oldRamp;
-
-#endif
 };

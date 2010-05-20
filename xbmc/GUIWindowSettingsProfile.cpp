@@ -19,24 +19,22 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowSettingsProfile.h"
 #include "GUIWindowFileManager.h"
 #include "Profile.h"
 #include "Application.h"
 #include "GUIDialogContextMenu.h"
 #include "GUIDialogProfileSettings.h"
-#include "utils/Network.h"
+#include "xbox/network.h"
 #include "utils/Weather.h"
 #include "GUIPassword.h"
-#include "GUIWindowLoginScreen.h"
 #include "GUIWindowManager.h"
 #include "FileSystem/Directory.h"
 #include "FileItem.h"
 #include "Util.h"
-#include "Settings.h"
-#include "LocalizeStrings.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 #define CONTROL_PROFILES 2
 #define CONTROL_LASTLOADED_PROFILE 3
@@ -55,7 +53,7 @@ CGUIWindowSettingsProfile::~CGUIWindowSettingsProfile(void)
 
 bool CGUIWindowSettingsProfile::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_PREVIOUS_MENU)
   {
     g_windowManager.PreviousWindow();
     return true;
@@ -88,13 +86,13 @@ void CGUIWindowSettingsProfile::OnPopupMenu(int iItem)
   if (!pMenu) return ;
   // load our menu
   pMenu->Initialize();
-  if (iItem == (int)g_settings.GetNumProfiles())
+  if (iItem == (int)g_settings.m_vecProfiles.size())
     return;
 
   // add the needed buttons
   int btnLoad = pMenu->AddButton(20092); // load profile
   int btnDelete=0;
-  if (iItem > 0 && iItem != (int)g_settings.GetCurrentProfileIndex())
+  if (iItem > 0 && iItem != g_settings.m_iLastLoadedProfileIndex)
     btnDelete = pMenu->AddButton(117); // Delete
 
   // position it correctly
@@ -107,9 +105,22 @@ void CGUIWindowSettingsProfile::OnPopupMenu(int iItem)
     g_application.StopPlaying();
     CGUIMessage msg2(GUI_MSG_ITEM_SELECTED, g_windowManager.GetActiveWindow(), iCtrlID);
     g_windowManager.SendMessage(msg2);
-    g_application.getNetwork().NetworkMessage(CNetwork::SERVICES_DOWN,1);
-    CGUIWindowLoginScreen::LoadProfile(iItem);
-    return;
+    g_network.NetworkMessage(CNetwork::SERVICES_DOWN,1);
+    bool bOldMaster = g_passwordManager.bMasterUser;
+    g_passwordManager.bMasterUser = true;
+    g_settings.LoadProfile(iItem);
+
+    g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].setDate();
+    g_settings.SaveProfiles("q:\\system\\profiles.xml"); // to set last loaded
+
+    g_passwordManager.bMasterUser = bOldMaster;
+    // Reinit network as the settings might have changed
+    g_network.SetupNetwork();
+    CGUIMessage msg3(GUI_MSG_SETFOCUS, g_windowManager.GetActiveWindow(), iCtrlID, 0);
+    OnMessage(msg3);
+    CGUIMessage msgSelect(GUI_MSG_ITEM_SELECT, g_windowManager.GetActiveWindow(), iCtrlID, msg2.GetParam1(), msg2.GetParam2());
+    OnMessage(msgSelect);
+    g_weatherManager.Refresh();
   }
 
   if (iButton == btnDelete)
@@ -154,13 +165,13 @@ bool CGUIWindowSettingsProfile::OnMessage(CGUIMessage& message)
           if (iAction == ACTION_CONTEXT_MENU || iAction == ACTION_MOUSE_RIGHT_CLICK)
           {
             //contextmenu
-            if (iItem <= (int)g_settings.GetNumProfiles() - 1)
+            if (iItem <= (int)g_settings.m_vecProfiles.size() - 1)
             {
               OnPopupMenu(iItem);
             }
             return true;
           }
-          else if (iItem < (int)g_settings.GetNumProfiles())
+          else if (iItem < (int)g_settings.m_vecProfiles.size())
           {
             if (CGUIDialogProfileSettings::ShowForProfile(iItem))
             {
@@ -173,10 +184,10 @@ bool CGUIWindowSettingsProfile::OnMessage(CGUIMessage& message)
 
             return false;
           }
-          else if (iItem > (int)g_settings.GetNumProfiles() - 1)
+          else if (iItem > (int)g_settings.m_vecProfiles.size() - 1)
           {
             CDirectory::Create(CUtil::AddFileToFolder(g_settings.GetUserDataFolder(),"profiles"));
-            if (CGUIDialogProfileSettings::ShowForProfile(g_settings.GetNumProfiles()))
+            if (CGUIDialogProfileSettings::ShowForProfile(g_settings.m_vecProfiles.size()))
             {
               LoadList();
               CGUIMessage msg(GUI_MSG_ITEM_SELECT, GetID(), 2,iItem);
@@ -190,8 +201,8 @@ bool CGUIWindowSettingsProfile::OnMessage(CGUIMessage& message)
       }
       else if (iControl == CONTROL_LOGINSCREEN)
       {
-        g_settings.ToggleLoginScreen();
-        g_settings.SaveProfiles(PROFILES_FILE);
+        g_settings.bUseLoginScreen = !g_settings.bUseLoginScreen;
+        g_settings.SaveProfiles("q:\\system\\profiles.xml");
         return true;
       }
     }
@@ -205,14 +216,14 @@ void CGUIWindowSettingsProfile::LoadList()
 {
   ClearListItems();
 
-  for (unsigned int i = 0; i < g_settings.GetNumProfiles(); i++)
+  for (UCHAR i = 0; i < g_settings.m_vecProfiles.size(); i++)
   {
-    const CProfile *profile = g_settings.GetProfile(i);
-    CFileItemPtr item(new CFileItem(profile->getName()));
+    CProfile& profile = g_settings.m_vecProfiles.at(i);
+    CFileItemPtr item(new CFileItem(profile.getName()));
     item->m_strPath.Empty();
-    item->SetLabel2(profile->getDate());
-    item->SetThumbnailImage(profile->getThumb());
-    item->SetOverlayImage(profile->getLockMode() == LOCK_MODE_EVERYONE ? CGUIListItem::ICON_OVERLAY_NONE : CGUIListItem::ICON_OVERLAY_LOCKED);
+    item->SetLabel2(profile.getDate());
+    item->SetThumbnailImage(profile.getThumb());
+    item->SetOverlayImage(profile.getLockMode() == LOCK_MODE_EVERYONE ? CGUIListItem::ICON_OVERLAY_NONE : CGUIListItem::ICON_OVERLAY_LOCKED);
     m_listItems->Add(item);
   }
   {
@@ -223,7 +234,7 @@ void CGUIWindowSettingsProfile::LoadList()
   CGUIMessage msg(GUI_MSG_LABEL_BIND, GetID(), CONTROL_PROFILES, 0, 0, m_listItems);
   OnMessage(msg);
 
-  if (g_settings.UsingLoginScreen())
+  if (g_settings.bUseLoginScreen)
   {
     CONTROL_SELECT(CONTROL_LOGINSCREEN);
   }

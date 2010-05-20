@@ -19,15 +19,14 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryCache.h"
 #include "Util.h"
 #include "Settings.h"
 #include "FileItem.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CDirectoryCache g_directoryCache;
 
@@ -75,8 +74,8 @@ bool CDirectoryCache::GetDirectory(const CStdString& strPath, CFileItemList &ite
   if (i != m_cache.end())
   {
     CDir* dir = i->second;
-    if (dir->m_cacheType == XFILE::DIR_CACHE_ALWAYS ||
-       (dir->m_cacheType == XFILE::DIR_CACHE_ONCE && retrieveAll))
+    if (dir->m_cacheType == DIRECTORY::DIR_CACHE_ALWAYS ||
+       (dir->m_cacheType == DIRECTORY::DIR_CACHE_ONCE && retrieveAll))
     {
       items.Copy(*dir->m_Items);
       dir->SetLastAccess(m_accessCounter);
@@ -335,7 +334,8 @@ void CDirectoryCache::ClearMusicThumbCache()
 void CDirectoryCache::CheckIfFull()
 {
   CSingleLock lock (m_cs);
-  static const unsigned int max_cached_dirs = 10;
+  // Set this to 5 on Xbox due to the limited amount of memory:
+  static const unsigned int max_cached_dirs = 5;
 
   // find the last accessed folder, and remove if the number of cached folders is too many
   iCache lastAccessed = m_cache.end();

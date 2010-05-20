@@ -19,17 +19,15 @@
  *
  */
 
-#include "system.h"
-
-#ifdef HAS_DVD_DRIVE
-
+#include "stdafx.h"
 #include "CDDADirectory.h"
+#include "DetectDVDType.h"
 #include "MusicDatabase.h"
 #include "FileItem.h"
 #include "FileSystem/File.h"
-#include "MediaManager.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace MEDIA_DETECT;
 
 CCDDADirectory::CCDDADirectory(void)
@@ -45,11 +43,11 @@ bool CCDDADirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
 {
   // Reads the tracks from an audio cd
 
-  if (!g_mediaManager.IsDiscInDrive(strPath))
+  if (!CDetectDVDMedia::IsDiscInDrive())
     return false;
 
   // Get information for the inserted disc
-  CCdInfo* pCdInfo = g_mediaManager.GetCdInfo(strPath);
+  CCdInfo* pCdInfo = CDetectDVDMedia::GetCdInfo();
   if (pCdInfo == NULL)
     return false;
 
@@ -78,7 +76,7 @@ bool CCDDADirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
     pItem->m_bIsFolder = false;
     pItem->m_strPath.Format("cdda://local/%02.2i.cdda", i);
 
-    struct __stat64 s64;
+    __stat64 s64;
     if (CFile::Stat(pItem->m_strPath, &s64) == 0)
       pItem->m_dwSize = s64.st_size;
 
@@ -86,5 +84,3 @@ bool CCDDADirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
   }
   return true;
 }
-
-#endif

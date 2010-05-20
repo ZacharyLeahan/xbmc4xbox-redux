@@ -21,10 +21,6 @@
  *
  */
 
-#include "StdString.h"
-
-#include <map>
-
 // forward definitions
 class TiXmlElement;
 
@@ -37,7 +33,7 @@ public:
   void ClearIncludes();
   bool LoadIncludes(const CStdString &includeFile);
   void ResolveIncludes(TiXmlElement *node, const CStdString &type);
-  bool ResolveConstant(const CStdString &constant, float &value) const;
+  bool ResolveConstant(const CStdString &constant, float &value);
   bool LoadIncludesFromXML(const TiXmlElement *root);
 
 private:

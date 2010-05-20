@@ -19,11 +19,10 @@
  *
  */
 
+#include "include.h"
 #include "GUIIncludes.h"
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "utils/GUIInfoManager.h"
-#include "utils/log.h"
-#include "tinyXML/tinyxml.h"
 
 using namespace std;
 
@@ -81,7 +80,8 @@ bool CGUIIncludes::LoadIncludesFromXML(const TiXmlElement *root)
     }
     else if (node->Attribute("file"))
     { // load this file in as well
-      LoadIncludes(g_SkinInfo->GetSkinPath(node->Attribute("file")));
+      RESOLUTION res;
+      LoadIncludes(g_SkinInfo.GetSkinPath(node->Attribute("file"), &res));
     }
     node = node->NextSiblingElement("include");
   }
@@ -126,7 +126,7 @@ void CGUIIncludes::ResolveIncludes(TiXmlElement *node, const CStdString &type)
   // First add the defaults if this is for a control
   if (!type.IsEmpty())
   { // resolve defaults
-    map<CStdString, TiXmlElement>::const_iterator it = m_defaults.find(type);
+    map<CStdString, TiXmlElement>::iterator it = m_defaults.find(type);
     if (it != m_defaults.end())
     {
       const TiXmlElement &element = (*it).second;
@@ -146,19 +146,20 @@ void CGUIIncludes::ResolveIncludes(TiXmlElement *node, const CStdString &type)
     const char *file = include->Attribute("file");
     if (file)
     { // we need to load this include from the alternative file
-      LoadIncludes(g_SkinInfo->GetSkinPath(file));
+      RESOLUTION res;
+      LoadIncludes(g_SkinInfo.GetSkinPath(file, &res));
     }
     const char *condition = include->Attribute("condition");
     if (condition)
     { // check this condition
-      if (!g_infoManager.GetBool(g_infoManager.TranslateString(condition)))
+      if (!g_infoManager.GetBool(g_infoManager.TranslateString(condition))) 
       {
         include = include->NextSiblingElement("include");
         continue;
       }
     }
     CStdString tagName = include->FirstChild()->Value();
-    map<CStdString, TiXmlElement>::const_iterator it = m_includes.find(tagName);
+    map<CStdString, TiXmlElement>::iterator it = m_includes.find(tagName);
     if (it != m_includes.end())
     { // found the tag(s) to include - let's replace it
       const TiXmlElement &element = (*it).second;
@@ -182,9 +183,9 @@ void CGUIIncludes::ResolveIncludes(TiXmlElement *node, const CStdString &type)
   }
 }
 
-bool CGUIIncludes::ResolveConstant(const CStdString &constant, float &value) const
+bool CGUIIncludes::ResolveConstant(const CStdString &constant, float &value)
 {
-  map<CStdString, float>::const_iterator it = m_constants.find(constant);
+  map<CStdString, float>::iterator it = m_constants.find(constant);
   if (it == m_constants.end())
     value = (float)atof(constant.c_str());
   else

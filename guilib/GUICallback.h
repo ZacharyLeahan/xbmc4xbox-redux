@@ -102,21 +102,9 @@ public:
 
   GUIEventHandler(Class* pInstance, MethodPtr aMethodPtr)
   {
-    GUIEvent<Cookie>::m_pInstance = (GUIEvent<Cookie>*) ((LPVOID) pInstance);
-
-#ifndef _LINUX
+    m_pInstance = (GUIEvent<Cookie>*) ((LPVOID) pInstance);
     // Its dirty but it works!
-    memcpy(&m_pMethod, &aMethodPtr, sizeof(GUIEvent<Cookie>::m_pMethod));
-#else
-    // Well, GCC doesn't like that dirty stuff... here's another version of the same thing
-    // but even dirtier *grin*
-
-#define my_offsetof(TYPE, MEMBER) \
-               ((size_t)((char *)&(((TYPE *)0x10)->MEMBER) - (char*)0x10))
-
-    void* target = (void*) (((char*) this) + my_offsetof(GUIEvent<Cookie>, m_pMethod));
-    memcpy(target, &aMethodPtr, sizeof(GUIEvent<Cookie>::m_pMethod));
-#endif
+    memcpy(&m_pMethod, &aMethodPtr, sizeof(m_pMethod));
   }
 };
 
@@ -183,9 +171,9 @@ public:
 
   CallbackHandler (Class* pInstance, MethodPtr aMethodPtr)
   {
-    Callback<Result, Cookie>::m_pInstance = (Callback<Result, Cookie>*) ((LPVOID) pInstance);
+    m_pInstance = (Callback<Result, Cookie>*) ((LPVOID) pInstance);
     // Its dirty but it works!
-    memcpy(&Callback<Result, Cookie>::m_pMethod, &aMethodPtr, sizeof(Callback<Result, Cookie>::m_pMethod));
+    memcpy(&m_pMethod, &aMethodPtr, sizeof(m_pMethod));
   }
 };
 

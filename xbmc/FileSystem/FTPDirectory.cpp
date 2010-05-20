@@ -19,16 +19,16 @@
  *
  */
 
+#include "stdafx.h"
 #include "FTPDirectory.h"
 #include "FTPParse.h"
 #include "URL.h"
 #include "Util.h"
 #include "FileCurl.h"
 #include "FileItem.h"
-#include "StringUtils.h"
-#include "utils/CharsetConverter.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CFTPDirectory::CFTPDirectory(void){}
 CFTPDirectory::~CFTPDirectory(void){}
@@ -57,18 +57,18 @@ bool CFTPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items
 
     StringUtils::RemoveCRLF(strBuffer);
 
-    CFTPParse parse;
-    if (parse.FTPParse(strBuffer))
+    struct ftpparse lp = {};
+    if (ftpparse(&lp, (char*)strBuffer.c_str(), strBuffer.size()) == 1)
     {
-      if( parse.getName().length() == 0 )
+      if( lp.namelen == 0 )
         continue;
 
-      if( parse.getFlagtrycwd() == 0 && parse.getFlagtryretr() == 0 )
+      if( lp.flagtrycwd == 0 && lp.flagtryretr == 0 )
         continue;
 
-      /* buffer name */
+      /* buffer name as it's not allways null terminated */
       CStdString name;
-      name.assign(parse.getName());
+      name.assign(lp.name, lp.namelen);
 
       if( name.Equals("..") || name.Equals(".") )
         continue;
@@ -80,7 +80,7 @@ bool CFTPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items
       CFileItemPtr pItem(new CFileItem(name));
 
       pItem->m_strPath = path + name;
-      pItem->m_bIsFolder = (bool)(parse.getFlagtrycwd() != 0);
+      pItem->m_bIsFolder = (bool)(lp.flagtrycwd != 0);
       if (pItem->m_bIsFolder)
         CUtil::AddSlashAtEnd(pItem->m_strPath);
 
@@ -88,8 +88,8 @@ bool CFTPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items
       url.SetFileName(pItem->m_strPath);
       pItem->m_strPath = url.Get();
 
-      pItem->m_dwSize = parse.getSize();
-      pItem->m_dateTime=parse.getTime();
+      pItem->m_dwSize = lp.size;
+      pItem->m_dateTime=lp.mtime;
 
       items.Add(pItem);
     }

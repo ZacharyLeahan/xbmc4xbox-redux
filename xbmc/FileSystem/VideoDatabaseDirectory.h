@@ -24,7 +24,7 @@
 #include "VideoDatabaseDirectory/DirectoryNode.h"
 #include "VideoDatabaseDirectory/QueryParams.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CVideoDatabaseDirectory : public IDirectory
   {

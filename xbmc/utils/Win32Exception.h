@@ -21,27 +21,12 @@
  *
  */
 
-#ifdef _WIN32
+#ifdef _XBOX
+#include "xtl.h"
+#else
 #include <windows.h>
 #endif
 #include <exception>
-
-#ifdef _LINUX
-
-class win32_exception: public std::exception
-{
-public:
-    virtual const char* what() const throw() { return mWhat; };
-    void* where() const { return mWhere; };
-    unsigned int code() const { return mCode; };
-    virtual void writelog(const char *prefix) const;
-private:
-    const char* mWhat;
-    void* mWhere;
-    unsigned mCode;
-};
-
-#else
 
 class win32_exception: public std::exception
 {
@@ -66,13 +51,11 @@ class access_violation: public win32_exception
 {
 public:
     bool iswrite() const { return mIsWrite; };
-    Address address() const { return mBadAddress; };
+    Address address() const { return mBadAddress; };    
     virtual void writelog(const char *prefix) const;
-protected:
-    friend void win32_exception::translate(unsigned code, EXCEPTION_POINTERS* info);
 private:
     bool mIsWrite;
     Address mBadAddress;
     access_violation(const EXCEPTION_RECORD& info);
+    friend void win32_exception::translate(unsigned code, EXCEPTION_POINTERS* info);
 };
-#endif

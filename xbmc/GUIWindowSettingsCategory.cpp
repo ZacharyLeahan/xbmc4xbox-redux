@@ -19,28 +19,31 @@
  *
  */
 
-#include "system.h"
-#include "GUIUserMessages.h"
+#include "stdafx.h"
 #include "GUIWindowSettingsCategory.h"
 #include "Application.h"
-#include "utils/Builtins.h"
 #include "KeyboardLayoutConfiguration.h"
 #include "FileSystem/Directory.h"
 #include "Util.h"
-#include "GUISpinControlEx.h"
-#include "GUIRadioButtonControl.h"
-#include "GUIEditControl.h"
+#include "GUILabelControl.h"
+#include "GUICheckMarkControl.h"
 #include "GUIImage.h"
 #include "utils/Weather.h"
 #include "MusicDatabase.h"
-#include "VideoDatabase.h"
 #include "ProgramDatabase.h"
 #include "ViewDatabase.h"
+#include "XBAudioConfig.h"
+#include "XBVideoConfig.h"
+#ifdef HAS_XBOX_HARDWARE
+#include "utils/LED.h"
+#include "utils/FanController.h"
+#include "xbox/XKHDD.h"
+#endif
 #ifdef HAS_LCD
 #include "utils/LCDFactory.h"
 #endif
 #include "PlayListPlayer.h"
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "GUIAudioManager.h"
 #include "AudioContext.h"
 #include "lib/libscrobbler/lastfmscrobbler.h"
@@ -50,64 +53,36 @@
 #include "GUIDialogGamepad.h"
 #include "GUIDialogNumeric.h"
 #include "GUIDialogFileBrowser.h"
-#include "GUIDialogAddonSettings.h"
-#include "GUIDialogContextMenu.h"
-#include "GUIDialogKeyboard.h"
-#include "GUIDialogYesNo.h"
-#include "GUIDialogOK.h"
-#include "GUIWindowPrograms.h"
-#include "addons/Visualisation.h"
-#include "addons/AddonManager.h"
-#include "MediaManager.h"
-#include "utils/Network.h"
-#include "GUIControlGroupList.h"
-#include "GUIWindowManager.h"
 #include "GUIFontManager.h"
-#ifdef _LINUX
-#include "LinuxTimezone.h"
-#include <dlfcn.h>
-#include "cores/AudioRenderers/AudioRendererFactory.h"
-#ifndef __APPLE__
-#include "cores/AudioRenderers/ALSADirectSound.h"
+#include "GUIDialogContextMenu.h"
+#include "GUIWindowPrograms.h"
+#include "MediaManager.h"
+#include "xbox/network.h"
+#ifdef HAS_WEB_SERVER
+#include "lib/libGoAhead/WebServer.h"
 #endif
-#ifdef HAS_HAL
-#include "HALManager.h"
-#endif
-#endif
-#ifdef __APPLE__
-#include "CoreAudio.h"
-#include "XBMCHelper.h"
-#endif
-#include "GUIDialogAccessPoints.h"
+#include "GUIControlGroupList.h"
+#include "XBTimeZone.h"
+#include "VideoDatabase.h"
+#include "GUIWindowManager.h"
+#include "GUIDialogOK.h"
+#include "GUIDialogYesNo.h"
+#include "GUIDialogKeyboard.h"
 #include "FileSystem/Directory.h"
-
+#include "utils/ScraperParser.h"
 #include "FileItem.h"
 #include "GUIToggleButtonControl.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "File.h"
+#include "FileSystem/File.h"
 
-#include "Zeroconf.h"
 
-#ifdef _WIN32
-#include "WIN32Util.h"
-#include "cores/AudioRenderers/AudioRendererFactory.h"
-#endif
-#include <map>
-#include "Settings.h"
+#include "ScraperSettings.h"
+#include "ScriptSettings.h"
+#include "GUIDialogPluginSettings.h"
 #include "AdvancedSettings.h"
-#include "MouseStat.h"
-#include "LocalizeStrings.h"
-#include "LangInfo.h"
-#include "StringUtils.h"
-#include "WindowingFactory.h"
-
-#if defined(HAVE_LIBCRYSTALHD)
-#include "cores/dvdplayer/DVDCodecs/Video/CrystalHD/CrystalHD.h"
-#endif
 
 using namespace std;
-using namespace XFILE;
-using namespace ADDON;
+using namespace DIRECTORY;
 
 #define CONTROL_GROUP_BUTTONS           0
 #define CONTROL_GROUP_SETTINGS          1
@@ -120,8 +95,10 @@ using namespace ADDON;
 #define CONTROL_DEFAULT_CATEGORY_BUTTON 10
 #define CONTROL_DEFAULT_SEPARATOR       11
 #define CONTROL_DEFAULT_EDIT            12
-#define CONTROL_START_BUTTONS           -100
-#define CONTROL_START_CONTROL           -80
+#define CONTROL_START_BUTTONS           -40
+#define CONTROL_START_CONTROL           -20
+
+#define PREDEFINED_SCREENSAVERS          5
 
 #define RSSEDITOR_PATH "special://home/scripts/RSS Editor/default.py"
 
@@ -157,7 +134,7 @@ CGUIWindowSettingsCategory::~CGUIWindowSettingsCategory(void)
 
 bool CGUIWindowSettingsCategory::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU || action.GetID() == ACTION_PARENT_DIR)
+  if (action.id == ACTION_PREVIOUS_MENU)
   {
     g_settings.Save();
     if (m_iWindowBeforeJump!=WINDOW_INVALID)
@@ -189,7 +166,7 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
          }*/
       for (unsigned int i = 0; i < m_vecSettings.size(); i++)
       {
-        if (m_vecSettings[i]->GetID() == (int)iControl)
+        if (m_vecSettings[i]->GetID() == iControl)
           OnClick(m_vecSettings[i]);
       }
     }
@@ -199,7 +176,7 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
       CGUIWindow::OnMessage(message);
       int focusedControl = GetFocusedControlID();
       if (focusedControl >= CONTROL_START_BUTTONS && focusedControl < (int)(CONTROL_START_BUTTONS + m_vecSections.size()) &&
-          focusedControl - CONTROL_START_BUTTONS != m_iSection && !m_returningFromSkinLoad)
+          focusedControl - CONTROL_START_BUTTONS != m_iSection)
       {
         // changing section, check for updates and cancel any delayed changes
         m_delayedSetting = NULL;
@@ -222,6 +199,86 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
     }
   case GUI_MSG_LOAD_SKIN:
     {
+      // Do we need to reload the language file
+      if (!m_strNewLanguage.IsEmpty())
+      {
+        g_guiSettings.SetString("locale.language", m_strNewLanguage);
+        g_settings.Save();
+
+        CStdString strLangInfoPath;
+        strLangInfoPath.Format("special://xbmc/language/%s/langinfo.xml", m_strNewLanguage.c_str());
+        g_langInfo.Load(strLangInfoPath);
+
+        if (g_langInfo.ForceUnicodeFont() && !g_fontManager.IsFontSetUnicode())
+        {
+          CLog::Log(LOGINFO, "Language needs a ttf font, loading first ttf font available");
+          CStdString strFontSet;
+          if (g_fontManager.GetFirstFontSetUnicode(strFontSet))
+          {
+            m_strNewSkinFontSet=strFontSet;
+          }
+          else
+            CLog::Log(LOGERROR, "No ttf font found but needed: %s", strFontSet.c_str());
+        }
+
+        g_charsetConverter.reset();
+
+        CStdString strKeyboardLayoutConfigurationPath;
+        strKeyboardLayoutConfigurationPath.Format("special://xbmc/language/%s/keyboardmap.xml", m_strNewLanguage.c_str());
+        CLog::Log(LOGINFO, "load keyboard layout configuration info file: %s", strKeyboardLayoutConfigurationPath.c_str());
+        g_keyboardLayoutConfiguration.Load(strKeyboardLayoutConfigurationPath);
+
+        CStdString strLanguagePath;
+        strLanguagePath.Format("special://xbmc/language/%s/strings.xml", m_strNewLanguage.c_str());
+        g_localizeStrings.Load(strLanguagePath);
+
+        // also tell our weather to reload, as this must be localized
+        g_weatherManager.ResetTimer();
+      }
+
+      // Do we need to reload the skin font set
+      if (!m_strNewSkinFontSet.IsEmpty())
+      {
+        g_guiSettings.SetString("lookandfeel.font", m_strNewSkinFontSet);
+        g_settings.Save();
+      }
+
+      // Reload another skin
+      if (!m_strNewSkin.IsEmpty())
+      {
+        g_guiSettings.SetString("lookandfeel.skin", m_strNewSkin);
+        g_settings.Save();
+      }
+
+      // Reload a skin theme
+      if (!m_strNewSkinTheme.IsEmpty())
+      {
+        g_guiSettings.SetString("lookandfeel.skintheme", m_strNewSkinTheme);
+        // also set the default color theme
+        CStdString colorTheme(CUtil::ReplaceExtension(m_strNewSkinTheme, ".xml"));
+        if (colorTheme.Equals("Textures.xml"))
+          colorTheme = "defaults.xml";
+        g_guiSettings.SetString("lookandfeel.skincolors", colorTheme);
+        g_settings.Save();
+      }
+
+      // Reload a skin color
+      if (!m_strNewSkinColors.IsEmpty())
+      {
+        g_guiSettings.SetString("lookandfeel.skincolors", m_strNewSkinColors);
+        g_settings.Save();
+      }
+
+      // Reload a resolution
+      if (m_NewResolution != INVALID)
+      {
+        g_guiSettings.SetInt("videoscreen.resolution", m_NewResolution);
+        //set the gui resolution, if newRes is AUTORES newRes will be set to the highest available resolution
+        g_graphicsContext.SetVideoResolution(m_NewResolution, TRUE);
+        //set our lookandfeelres to the resolution set in graphiccontext
+        g_guiSettings.m_LookAndFeelResolution = m_NewResolution;
+      }
+
       if (IsActive())
         m_returningFromSkinLoad = true;
     }
@@ -235,10 +292,9 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
         m_iSection = 0;
         ResetControlStates();
       }
-      m_iScreen = (int)message.GetParam2() - (int)CGUIWindow::GetID();
-      CGUIWindow::OnMessage(message);
       m_returningFromSkinLoad = false;
-      return true;
+      m_iScreen = (int)message.GetParam2() - (int)CGUIWindow::GetID();
+      return CGUIWindow::OnMessage(message);
     }
     break;
   case GUI_MSG_UPDATE_ITEM:
@@ -249,23 +305,45 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
       return true;
     }
     break;
-  case GUI_MSG_NOTIFY_ALL:
-    {
-      if (message.GetParam1() == GUI_MSG_WINDOW_RESIZE)
-      {
-        // Cancel delayed setting - it's only used for res changing anyway
-        m_delayedSetting = NULL;
-        if (IsActive() && g_guiSettings.GetResolution() != g_graphicsContext.GetVideoResolution())
-        {
-          g_guiSettings.SetResolution(g_graphicsContext.GetVideoResolution());
-          CreateSettings();
-        }
-      }
-    }
-    break;
   case GUI_MSG_WINDOW_DEINIT:
     {
       m_delayedSetting = NULL;
+      // Hardware based stuff
+      // TODO: This should be done in a completely separate screen
+      // to give warning to the user that it writes to the EEPROM.
+      if ((g_guiSettings.GetInt("audiooutput.mode") == AUDIO_DIGITAL))
+      {
+        g_audioConfig.SetAC3Enabled(g_guiSettings.GetBool("audiooutput.ac3passthrough"));
+        g_audioConfig.SetDTSEnabled(g_guiSettings.GetBool("audiooutput.dtspassthrough"));
+        if (g_audioConfig.NeedsSave())
+        { // should we perhaps show a dialog here?
+          g_audioConfig.Save();
+        }
+      }
+      switch(g_guiSettings.GetInt("videooutput.aspect"))
+      {
+      case VIDEO_NORMAL:
+        g_videoConfig.SetNormal();
+        break;
+      case VIDEO_LETTERBOX:
+        g_videoConfig.SetLetterbox(true);
+        break;
+      case VIDEO_WIDESCREEN:
+        g_videoConfig.SetWidescreen(true);
+        break;
+      }
+      g_videoConfig.Set480p(g_guiSettings.GetBool("videooutput.hd480p"));
+      g_videoConfig.Set720p(g_guiSettings.GetBool("videooutput.hd720p"));
+      g_videoConfig.Set1080i(g_guiSettings.GetBool("videooutput.hd1080i"));
+
+      if (g_videoConfig.NeedsSave())
+        g_videoConfig.Save();
+
+      if (g_timezone.GetTimeZoneIndex() != g_guiSettings.GetInt("locale.timezone"))
+        g_timezone.SetTimeZoneIndex(g_guiSettings.GetInt("locale.timezone"));
+
+      if (g_timezone.GetDST() != g_guiSettings.GetBool("locale.usedst"))
+        g_timezone.SetDST(g_guiSettings.GetBool("locale.usedst"));
 
       CheckForUpdates();
       CheckNetworkSettings();
@@ -316,7 +394,7 @@ void CGUIWindowSettingsCategory::SetupControls()
   int j=0;
   for (unsigned int i = 0; i < m_vecSections.size(); i++)
   {
-    if (m_vecSections[i]->m_labelID == 12360 && !g_settings.IsMasterUser())
+    if (m_vecSections[i]->m_labelID == 12360 && g_settings.m_iLastLoadedProfileIndex != 0)
       continue;
     CGUIButtonControl *pButton = NULL;
     if (m_pOriginalCategoryButton->GetControlType() == CGUIControl::GUICONTROL_TOGGLEBUTTON)
@@ -352,32 +430,66 @@ void CGUIWindowSettingsCategory::CreateSettings()
     CSetting *pSetting = settings[i];
     AddSetting(pSetting, group->GetWidth(), iControlID);
     CStdString strSetting = pSetting->GetSetting();
-    if (pSetting->GetType() == SETTINGS_TYPE_INT)
+    if (strSetting.Equals("myprograms.ntscmode"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
-      if (!pSettingInt->m_entries.empty())
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      for (int i = pSettingInt->m_iMin; i <= pSettingInt->m_iMax; i++)
       {
-        CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-        for (map<int,int>::iterator it=pSettingInt->m_entries.begin();
-             it != pSettingInt->m_entries.end();++it)
-        {
-          pControl->AddLabel(g_localizeStrings.Get(it->first), it->second);
-        }
-        pControl->SetValue(pSettingInt->GetData());
-        continue;
+        pControl->AddLabel(g_localizeStrings.Get(16106 + i), i);
       }
+      pControl->SetValue(pSettingInt->GetData());
     }
-    else if (pSetting->GetType() == SETTINGS_TYPE_ADDON)
+    else if (strSetting.Equals("musicplayer.visualisation"))
     {
-      CSettingAddon *pSettingAddon = (CSettingAddon*)pSetting;
-      CBaseSettingControl *control = GetSetting(strSetting);
-      const TYPE type = pSettingAddon->m_type;
-      if (type == ADDON_SKIN || type == ADDON_VIZ)
-        control->SetDelayed();
-      FillInAddons(pSettingAddon, control->GetID());
-      continue;
+      FillInVisualisations(pSetting, GetSetting(pSetting->GetSetting())->GetID());
     }
-    if (strSetting.Equals("videooutput.aspect"))
+    else if (strSetting.Equals("musiclibrary.scraper"))
+    {
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+      FillInScrapers(pControl, g_guiSettings.GetString("musiclibrary.scraper"), "music");
+    }
+    else if (strSetting.Equals("scrapers.moviedefault"))
+    {
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+      FillInScrapers(pControl, g_guiSettings.GetString("scrapers.moviedefault"), "movies");
+    }
+    else if (strSetting.Equals("scrapers.tvshowdefault"))
+    {
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+      FillInScrapers(pControl, g_guiSettings.GetString("scrapers.tvshowdefault"), "tvshows");
+    }
+    else if (strSetting.Equals("scrapers.musicvideodefault"))
+    {
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+      FillInScrapers(pControl, g_guiSettings.GetString("scrapers.musicvideodefault"), "musicvideos");
+    }
+    else if (strSetting.Equals("karaoke.port0voicemask"))
+    {
+      FillInVoiceMasks(0, pSetting);
+    }
+    else if (strSetting.Equals("karaoke.port1voicemask"))
+    {
+      FillInVoiceMasks(1, pSetting);
+    }
+    else if (strSetting.Equals("karaoke.port2voicemask"))
+    {
+      FillInVoiceMasks(2, pSetting);
+    }
+    else if (strSetting.Equals("karaoke.port3voicemask"))
+    {
+      FillInVoiceMasks(3, pSetting);
+    }
+    else if (strSetting.Equals("audiooutput.mode"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(338), AUDIO_ANALOG);
+      if (g_audioConfig.HasDigitalOutput())
+        pControl->AddLabel(g_localizeStrings.Get(339), AUDIO_DIGITAL);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("videooutput.aspect"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
@@ -386,27 +498,131 @@ void CGUIWindowSettingsCategory::CreateSettings()
       pControl->AddLabel(g_localizeStrings.Get(21377), VIDEO_WIDESCREEN);
       pControl->SetValue(pSettingInt->GetData());
     }
-#ifdef HAS_WEB_SERVER
+    else if (strSetting.Equals("audiocds.encoder"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel("Lame", CDDARIP_ENCODER_LAME);
+      pControl->AddLabel("Vorbis", CDDARIP_ENCODER_VORBIS);
+      pControl->AddLabel("Wav", CDDARIP_ENCODER_WAV);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("audiocds.quality"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(604), CDDARIP_QUALITY_CBR);
+      pControl->AddLabel(g_localizeStrings.Get(601), CDDARIP_QUALITY_MEDIUM);
+      pControl->AddLabel(g_localizeStrings.Get(602), CDDARIP_QUALITY_STANDARD);
+      pControl->AddLabel(g_localizeStrings.Get(603), CDDARIP_QUALITY_EXTREME);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("lcd.type"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(351), LCD_TYPE_NONE);
+      pControl->AddLabel("LCD - HD44780", LCD_TYPE_LCD_HD44780);
+      pControl->AddLabel("LCD - KS0073", LCD_TYPE_LCD_KS0073);
+      pControl->AddLabel("VFD", LCD_TYPE_VFD);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("lcd.modchip"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel("SmartXX", MODCHIP_SMARTXX);
+      pControl->AddLabel("Xenium", MODCHIP_XENIUM);
+      pControl->AddLabel("Xecuter3", MODCHIP_XECUTER3);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("harddisk.aamlevel"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(21388), AAM_QUIET);
+      pControl->AddLabel(g_localizeStrings.Get(21387), AAM_FAST);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("harddisk.apmlevel"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(21391), APM_HIPOWER);
+      pControl->AddLabel(g_localizeStrings.Get(21392), APM_LOPOWER);
+      pControl->AddLabel(g_localizeStrings.Get(21393), APM_HIPOWER_STANDBY);
+      pControl->AddLabel(g_localizeStrings.Get(21394), APM_LOPOWER_STANDBY);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("system.targettemperature"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      for (int i = pSettingInt->m_iMin; i <= pSettingInt->m_iMax; i++)
+      {
+        CTemperature temp=CTemperature::CreateFromCelsius(i);
+        pControl->AddLabel(temp.ToString(), i);
+      }
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("system.fanspeed") || strSetting.Equals("system.minfanspeed"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      CStdString strPercentMask = g_localizeStrings.Get(14047);
+      for (int i=pSettingInt->m_iMin; i <= pSettingInt->m_iMax; i += pSettingInt->m_iStep)
+      {
+        CStdString strLabel;
+        strLabel.Format(strPercentMask.c_str(), i*2);
+        pControl->AddLabel(strLabel, i);
+      }
+      pControl->SetValue(int(pSettingInt->GetData()));
+    }
+    else if (strSetting.Equals("harddisk.remoteplayspindown"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(474), SPIN_DOWN_NONE);
+      pControl->AddLabel(g_localizeStrings.Get(475), SPIN_DOWN_MUSIC);
+      pControl->AddLabel(g_localizeStrings.Get(13002), SPIN_DOWN_VIDEO);
+      pControl->AddLabel(g_localizeStrings.Get(476), SPIN_DOWN_BOTH);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("services.webserverusername"))
+    {
+      // get password from the webserver if it's running (and update our settings)
+      if (g_application.m_pWebServer)
+      {
+        ((CSettingString *)GetSetting(strSetting)->GetSetting())->SetData(g_application.m_pWebServer->GetUserName());
+        g_settings.Save();
+      }
+    }
+    else if (strSetting.Equals("services.webserverpassword"))
+    {
+      // get password from the webserver if it's running (and update our settings)
+      if (g_application.m_pWebServer)
+      {
+        ((CSettingString *)GetSetting(strSetting)->GetSetting())->SetData(g_application.m_pWebServer->GetPassword());
+        g_settings.Save();
+      }
+    }
     else if (strSetting.Equals("services.webserverport"))
     {
       CBaseSettingControl *control = GetSetting(pSetting->GetSetting());
       control->SetDelayed();
     }
-#endif
     else if (strSetting.Equals("services.esport"))
     {
-#ifdef HAS_EVENT_SERVER
       CBaseSettingControl *control = GetSetting(pSetting->GetSetting());
       control->SetDelayed();
-#endif
     }
     else if (strSetting.Equals("network.assignment"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(718), NETWORK_DASH);
       pControl->AddLabel(g_localizeStrings.Get(716), NETWORK_DHCP);
       pControl->AddLabel(g_localizeStrings.Get(717), NETWORK_STATIC);
-      pControl->AddLabel(g_localizeStrings.Get(787), NETWORK_DISABLED);
       pControl->SetValue(pSettingInt->GetData());
     }
     else if (strSetting.Equals("network.httpproxyport"))
@@ -432,21 +648,25 @@ void CGUIWindowSettingsCategory::CreateSettings()
         pControl->AddLabel(g_localizeStrings.Get(760 + i), i);
       pControl->SetValue(pSettingInt->GetData());
     }
-    else if (strSetting.Equals("subtitles.height") || strSetting.Equals("karaoke.fontheight") )
+    else if (strSetting.Equals("subtitles.height"))
     {
       FillInSubtitleHeights(pSetting);
     }
-    else if (strSetting.Equals("subtitles.font") || strSetting.Equals("karaoke.font") )
+    else if (strSetting.Equals("subtitles.font"))
     {
       FillInSubtitleFonts(pSetting);
     }
-    else if (strSetting.Equals("subtitles.charset") || strSetting.Equals("locale.charset") || strSetting.Equals("karaoke.charset"))
+    else if (strSetting.Equals("subtitles.charset") || strSetting.Equals("locale.charset"))
     {
       FillInCharSets(pSetting);
     }
     else if (strSetting.Equals("lookandfeel.font"))
     {
       FillInSkinFonts(pSetting);
+    }
+    else if (strSetting.Equals("lookandfeel.skin"))
+    {
+      FillInSkins(pSetting);
     }
     else if (strSetting.Equals("lookandfeel.soundskin"))
     {
@@ -456,41 +676,15 @@ void CGUIWindowSettingsCategory::CreateSettings()
     {
       FillInLanguages(pSetting);
     }
-#ifdef _LINUX
-    else if (strSetting.Equals("locale.timezonecountry"))
-    {
-      CStdString myTimezoneCountry = g_guiSettings.GetString("locale.timezonecountry");
-      int myTimezeoneCountryIndex = 0;
-
-      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      vector<CStdString> countries = g_timezone.GetCounties();
-      for (unsigned int i=0; i < countries.size(); i++)
-      {
-        if (countries[i] == myTimezoneCountry)
-           myTimezeoneCountryIndex = i;
-        pControl->AddLabel(countries[i], i);
-      }
-      pControl->SetValue(myTimezeoneCountryIndex);
-    }
     else if (strSetting.Equals("locale.timezone"))
     {
-      CStdString myTimezoneCountry = g_guiSettings.GetString("locale.timezonecountry");
-      CStdString myTimezone = g_guiSettings.GetString("locale.timezone");
-      int myTimezoneIndex = 0;
-
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->Clear();
-      vector<CStdString> timezones = g_timezone.GetTimezonesByCountry(myTimezoneCountry);
-      for (unsigned int i=0; i < timezones.size(); i++)
-      {
-        if (timezones[i] == myTimezone)
-           myTimezoneIndex = i;
-        pControl->AddLabel(timezones[i], i);
-      }
-      pControl->SetValue(myTimezoneIndex);
+      for (int i=0; i < g_timezone.GetNumberOfTimeZones(); i++)
+        pControl->AddLabel(g_timezone.GetTimeZoneString(i), i);
+      pControl->SetValue(pSettingInt->GetData());
     }
-#endif
-    else if (strSetting.Equals("videoscreen.screenmode"))
+    else if (strSetting.Equals("videoscreen.resolution"))
     {
       FillInResolutions(pSetting, false);
     }
@@ -502,27 +696,22 @@ void CGUIWindowSettingsCategory::CreateSettings()
     {
       FillInSkinColors(pSetting);
     }
+    else if (strSetting.Equals("screensaver.mode"))
+    {
+      FillInScreenSavers(pSetting);
+    }
     else if (strSetting.Equals("videoplayer.displayresolution") || strSetting.Equals("pictures.displayresolution"))
     {
       FillInResolutions(pSetting, true);
     }
-    else if (strSetting.Equals("videoplayer.highqualityupscaling"))
+    else if (strSetting.Equals("videoplayer.framerateconversions"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->AddLabel(g_localizeStrings.Get(13113), SOFTWARE_UPSCALING_DISABLED);
-      pControl->AddLabel(g_localizeStrings.Get(13114), SOFTWARE_UPSCALING_SD_CONTENT);
-      pControl->AddLabel(g_localizeStrings.Get(13115), SOFTWARE_UPSCALING_ALWAYS);
-      pControl->SetValue(pSettingInt->GetData());
-    }
-    else if (strSetting.Equals("videoplayer.upscalingalgorithm"))
-    {
-      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
-      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->AddLabel(g_localizeStrings.Get(13117), VS_SCALINGMETHOD_BICUBIC_SOFTWARE);
-      pControl->AddLabel(g_localizeStrings.Get(13118), VS_SCALINGMETHOD_LANCZOS_SOFTWARE);
-      pControl->AddLabel(g_localizeStrings.Get(13119), VS_SCALINGMETHOD_SINC_SOFTWARE);
-      pControl->AddLabel(g_localizeStrings.Get(13120), VS_SCALINGMETHOD_VDPAU_HARDWARE);
+      pControl->AddLabel(g_localizeStrings.Get(231), FRAME_RATE_LEAVE_AS_IS); // "None"
+      pControl->AddLabel(g_videoConfig.HasPAL() ? g_localizeStrings.Get(12380) : g_localizeStrings.Get(12381), FRAME_RATE_CONVERT); // "Play PAL videos at NTSC rates" or "Play NTSC videos at PAL rates"
+      if (g_videoConfig.HasPAL() && g_videoConfig.HasPAL60())
+        pControl->AddLabel(g_localizeStrings.Get(12382), FRAME_RATE_USE_PAL60); // "Play NTSC videos in PAL60"
       pControl->SetValue(pSettingInt->GetData());
     }
     else if (strSetting.Equals("videolibrary.flattentvshows"))
@@ -534,67 +723,89 @@ void CGUIWindowSettingsCategory::CreateSettings()
       pControl->AddLabel(g_localizeStrings.Get(20422), 2); // Always
       pControl->SetValue(pSettingInt->GetData());
     }
-    else if (strSetting.Equals("network.enc"))
+    else if (strSetting.Equals("system.ledcolour"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->AddLabel(g_localizeStrings.Get(780), ENC_NONE);
-      pControl->AddLabel(g_localizeStrings.Get(781), ENC_WEP);
-      pControl->AddLabel(g_localizeStrings.Get(782), ENC_WPA);
-      pControl->AddLabel(g_localizeStrings.Get(783), ENC_WPA2);
+      pControl->AddLabel(g_localizeStrings.Get(13340), LED_COLOUR_NO_CHANGE);
+      pControl->AddLabel(g_localizeStrings.Get(13341), LED_COLOUR_GREEN);
+      pControl->AddLabel(g_localizeStrings.Get(13342), LED_COLOUR_ORANGE);
+      pControl->AddLabel(g_localizeStrings.Get(13343), LED_COLOUR_RED);
+      pControl->AddLabel(g_localizeStrings.Get(13344), LED_COLOUR_CYCLE);
+      pControl->AddLabel(g_localizeStrings.Get(351), LED_COLOUR_OFF);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("system.leddisableonplayback") || strSetting.Equals("lcd.disableonplayback"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(106), LED_PLAYBACK_OFF);     // No
+      pControl->AddLabel(g_localizeStrings.Get(13002), LED_PLAYBACK_VIDEO);   // Video Only
+      pControl->AddLabel(g_localizeStrings.Get(475), LED_PLAYBACK_MUSIC);    // Music Only
+      pControl->AddLabel(g_localizeStrings.Get(476), LED_PLAYBACK_VIDEO_MUSIC); // Video & Music
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("videoplayer.rendermethod"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(13355), RENDER_LQ_RGB_SHADER);
+      pControl->AddLabel(g_localizeStrings.Get(13356), RENDER_OVERLAYS);
+      pControl->AddLabel(g_localizeStrings.Get(13357), RENDER_HQ_RGB_SHADER);
+      pControl->AddLabel(g_localizeStrings.Get(21397), RENDER_HQ_RGB_SHADERV2);
+      pControl->SetValue(pSettingInt->GetData());
+    }
+    else if (strSetting.Equals("musicplayer.replaygaintype"))
+    {
+      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->AddLabel(g_localizeStrings.Get(351), REPLAY_GAIN_NONE);
+      pControl->AddLabel(g_localizeStrings.Get(639), REPLAY_GAIN_TRACK);
+      pControl->AddLabel(g_localizeStrings.Get(640), REPLAY_GAIN_ALBUM);
       pControl->SetValue(pSettingInt->GetData());
     }
     else if (strSetting.Equals("lookandfeel.startupwindow"))
     {
       FillInStartupWindow(pSetting);
     }
+    else if (strSetting.Equals("services.ftpserveruser"))
+    {
+      FillInFTPServerUser(pSetting);
+    }
+    else if (strSetting.Equals("autodetect.nickname"))
+    {
+#ifdef HAS_XBOX_HARDWARE
+      CStdString strXboxNickNameOut;
+      if (CUtil::GetXBOXNickName(strXboxNickNameOut))
+        g_guiSettings.SetString("autodetect.nickname", strXboxNickNameOut.c_str());
+#endif
+    }
+    else if (strSetting.Equals("dvds.externaldvdplayer"))
+    {
+      CSettingString *pSettingString = (CSettingString *)pSetting;
+      CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(GetSetting(strSetting)->GetID());
+      if (pSettingString->GetData().IsEmpty())
+        pControl->SetLabel2(g_localizeStrings.Get(20009));
+    }
     else if (strSetting.Equals("locale.country"))
     {
       FillInRegions(pSetting);
     }
-    else if (strSetting.Equals("network.interface"))
-    {
-       FillInNetworkInterfaces(pSetting);
-    }
-    else if (strSetting.Equals("audiooutput.audiodevice"))
-    {
-      FillInAudioDevices(pSetting);
-    }
-    else if (strSetting.Equals("audiooutput.passthroughdevice"))
-    {
-      FillInAudioDevices(pSetting,true);
-    }
-    else if (strSetting.Equals("videoplayer.synctype"))
+    else if (strSetting.Equals("videoplayer.resumeautomatically"))
     {
       CSettingInt *pSettingInt = (CSettingInt*)pSetting;
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->AddLabel(g_localizeStrings.Get(13501), SYNC_DISCON);
-      pControl->AddLabel(g_localizeStrings.Get(13502), SYNC_SKIPDUP);
-      pControl->AddLabel(g_localizeStrings.Get(13503), SYNC_RESAMPLE);
+      pControl->AddLabel(g_localizeStrings.Get(106), RESUME_NO);
+      pControl->AddLabel(g_localizeStrings.Get(107), RESUME_YES);
+      pControl->AddLabel(g_localizeStrings.Get(12020), RESUME_ASK);
       pControl->SetValue(pSettingInt->GetData());
     }
-    else if (strSetting.Equals("videoplayer.resamplequality"))
-    {
-      CSettingInt *pSettingInt = (CSettingInt*)pSetting;
-      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->AddLabel(g_localizeStrings.Get(13506), RESAMPLE_LOW);
-      pControl->AddLabel(g_localizeStrings.Get(13507), RESAMPLE_MID);
-      pControl->AddLabel(g_localizeStrings.Get(13508), RESAMPLE_HIGH);
-      pControl->AddLabel(g_localizeStrings.Get(13509), RESAMPLE_REALLYHIGH);
-      pControl->SetValue(pSettingInt->GetData());
-    }
-    else if (strSetting.Equals("weather.script"))
+    else if (strSetting.Equals("weather.plugin"))
     {
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
-      FillInWeatherScripts(pControl, g_guiSettings.GetString("weather.script"));
+      FillInWeatherPlugins(pControl, g_guiSettings.GetString("weather.plugin"));
     }
   }
-
-  if (m_vecSections[m_iSection]->m_strCategory == "network")
-  {
-     NetworkInterfaceChanged();
-  }
-
   // update our settings (turns controls on/off as appropriate)
   UpdateSettings();
 }
@@ -606,134 +817,25 @@ void CGUIWindowSettingsCategory::UpdateSettings()
     CBaseSettingControl *pSettingControl = m_vecSettings[i];
     pSettingControl->Update();
     CStdString strSetting = pSettingControl->GetSetting()->GetSetting();
-    if (strSetting.Equals("videoplayer.upscalingalgorithm"))
+    if (strSetting.Equals("filelists.allowfiledeletion"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
-      {
-        int value = g_guiSettings.GetInt("videoplayer.highqualityupscaling");
-
-        if (value == SOFTWARE_UPSCALING_DISABLED)
-          pControl->SetEnabled(false);
-        else
-          pControl->SetEnabled(true);
-      }
-    }
-#ifdef HAVE_LIBVDPAU
-    else if (strSetting.Equals("videoplayer.vdpauUpscalingLevel"))
-    {
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
-      {
-        pControl->SetEnabled(true);
-      }
-    }
-#endif
-    else if (strSetting.Equals("videoscreen.screenmode"))
-    {
-      // The user may have rejected the new resolution.
-      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-      if (pControl && (pControl->GetValue() != g_guiSettings.GetResolution()))
-          pControl->SetValue(g_guiSettings.GetResolution());
-    }
-#if defined(__APPLE__) || defined(_WIN32)
-    else if (strSetting.Equals("videoscreen.blankdisplays"))
-    {
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
-      {
-        int value = g_guiSettings.GetResolution();
-        if (g_settings.m_ResInfo[value].bFullScreen)
-          pControl->SetEnabled(true);
-        else
-          pControl->SetEnabled(false);
-      }
-    }
-#endif
-#ifdef __APPLE__
-    else if (strSetting.Equals("input.appleremotemode"))
-    {
-      int remoteMode = g_guiSettings.GetInt("input.appleremotemode");
-
-      // if it's not disabled, start the event server or else apple remote won't work
-      if ( remoteMode != APPLE_REMOTE_DISABLED )
-      {
-        g_guiSettings.SetBool("services.esenabled", true);
-        g_application.StartEventServer();
-      }
-
-      // if XBMC helper is running, prompt user before effecting change
-      if ( XBMCHelper::GetInstance().IsRunning() && XBMCHelper::GetInstance().GetMode()!=remoteMode )
-      {
-        bool cancelled;
-        if (!CGUIDialogYesNo::ShowAndGetInput(13144, 13145, 13146, 13147, -1, -1, cancelled, 10000))
-        {
-          // user declined, restore previous spinner state and appleremote mode
-          CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-          g_guiSettings.SetInt("input.appleremotemode", XBMCHelper::GetInstance().GetMode());
-          pControl->SetValue(XBMCHelper::GetInstance().GetMode());
-        }
-        else
-        {
-          // reload configuration
-          XBMCHelper::GetInstance().Configure();
-        }
-      }
-      else
-      {
-        // set new configuration.
-        XBMCHelper::GetInstance().Configure();
-      }
-
-      if (XBMCHelper::GetInstance().ErrorStarting() == true)
-      {
-        // inform user about error
-        CGUIDialogOK::ShowAndGetInput(13620, 13621, 20022, 20022);
-
-        // reset spinner to disabled state
-        CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-        pControl->SetValue(APPLE_REMOTE_DISABLED);
-      }
-    }
-    else if (strSetting.Equals("input.appleremotealwayson"))
-     {
-       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-       if (pControl)
-       {
-         int value = g_guiSettings.GetInt("input.appleremotemode");
-         if (value != APPLE_REMOTE_DISABLED)
-           pControl->SetEnabled(true);
-         else
-           pControl->SetEnabled(false);
-       }
-     }
-     else if (strSetting.Equals("input.appleremotesequencetime"))
-     {
-       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-       if (pControl)
-       {
-         int value = g_guiSettings.GetInt("input.appleremotemode");
-         if (value == APPLE_REMOTE_UNIVERSAL)
-           pControl->SetEnabled(true);
-         else
-           pControl->SetEnabled(false);
-       }
-     }
-#endif
-    else if (strSetting.Equals("filelists.allowfiledeletion"))
-    {
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(!g_settings.GetCurrentProfile().filesLocked() || g_passwordManager.bMasterUser);
+      if (pControl) pControl->SetEnabled(!g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].filesLocked() || g_passwordManager.bMasterUser);
     }
     else if (strSetting.Equals("filelists.showaddsourcebuttons"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_settings.GetCurrentProfile().canWriteSources() || g_passwordManager.bMasterUser);
+      if (pControl) pControl->SetEnabled(g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() || g_passwordManager.bMasterUser);
     }
-    else if (strSetting.Equals("masterlock.startuplock"))
+    else if (strSetting.Equals("myprograms.ntscmode"))
+    { // set visibility based on our other setting...
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("myprograms.gameautoregion"));
+    }
+    else if (strSetting.Equals("masterlock.startuplock") || strSetting.Equals("masterlock.enableshutdown"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE);
+      if (pControl) pControl->SetEnabled(g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE);
     }
     else if (!strSetting.Equals("services.esenabled")
              && strSetting.Left(11).Equals("services.es"))
@@ -744,45 +846,62 @@ void CGUIWindowSettingsCategory::UpdateSettings()
     else if (strSetting.Equals("audiocds.quality"))
     { // only visible if we are doing non-WAV ripping
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_WAV &&
-                                         g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_FLAC);
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_WAV);
     }
     else if (strSetting.Equals("audiocds.bitrate"))
     { // only visible if we are ripping to CBR
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_WAV && 
-                                         g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_FLAC &&
-                                         g_guiSettings.GetInt("audiocds.quality") == CDDARIP_QUALITY_CBR);
+      if (pControl) pControl->SetEnabled((g_guiSettings.GetInt("audiocds.encoder") != CDDARIP_ENCODER_WAV) &&
+                                           (g_guiSettings.GetInt("audiocds.quality") == CDDARIP_QUALITY_CBR));
     }
-    else if (strSetting.Equals("audiocds.compressionlevel"))
-    { // only visible if we are doing FLAC ripping
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("audiocds.encoder") == CDDARIP_ENCODER_FLAC);
-    }
-    else if (
-             strSetting.Equals("audiooutput.passthroughdevice") ||
-             strSetting.Equals("audiooutput.ac3passthrough") ||
-             strSetting.Equals("audiooutput.dtspassthrough") ||
-             strSetting.Equals("audiooutput.aacpassthrough") ||
-             strSetting.Equals("audiooutput.mp1passthrough") ||
-             strSetting.Equals("audiooutput.mp2passthrough") ||
-             strSetting.Equals("audiooutput.mp3passthrough"))
+    else if (strSetting.Equals("musicplayer.outputtoallspeakers") || strSetting.Equals("audiooutput.ac3passthrough") || strSetting.Equals("audiooutput.dtspassthrough"))
     { // only visible if we are in digital mode
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(AUDIO_IS_BITSTREAM(g_guiSettings.GetInt("audiooutput.mode")));
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("audiooutput.mode") == AUDIO_DIGITAL);
     }
-    else if (strSetting.Equals("musicplayer.crossfade"))
+    else if (strSetting.Equals("videooutput.hd480p") || strSetting.Equals("videooutput.hd720p") || strSetting.Equals("videooutput.hd1080i"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetString("audiooutput.audiodevice").find("wasapi:") == CStdString::npos);
+      // disable if we do not have the HDTV pack and are not NTSC
+#ifdef HAS_XBOX_HARDWARE
+      if (pControl) pControl->SetEnabled(g_videoConfig.HasNTSC() && g_videoConfig.HasHDPack());
+#endif
     }
     else if (strSetting.Equals("musicplayer.crossfadealbumtracks"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("musicplayer.crossfade") > 0 &&
-                                         g_guiSettings.GetString("audiooutput.audiodevice").find("wasapi:") == CStdString::npos);
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("musicplayer.crossfade") > 0);
     }
-#ifdef HAS_WEB_SERVER
+    else if (strSetting.Left(12).Equals("karaoke.port") || strSetting.Equals("karaoke.volume"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("karaoke.voiceenabled"));
+    }
+    else if (strSetting.Equals("system.fanspeed"))
+    { // only visible if we have fancontrolspeed enabled
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("system.fanspeedcontrol"));
+    }
+    else if (strSetting.Equals("system.targettemperature") || strSetting.Equals("system.minfanspeed"))
+    { // only visible if we have autotemperature enabled
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("system.autotemperature"));
+    }
+    else if (strSetting.Equals("harddisk.remoteplayspindowndelay"))
+    { // only visible if we have spin down enabled
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("harddisk.remoteplayspindown") != SPIN_DOWN_NONE);
+    }
+    else if (strSetting.Equals("harddisk.remoteplayspindownminduration"))
+    { // only visible if we have spin down enabled
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("harddisk.remoteplayspindown") != SPIN_DOWN_NONE);
+    }
+    else if (strSetting.Equals("services.ftpserveruser") || strSetting.Equals("services.ftpserverpassword") || strSetting.Equals("services.ftpautofatx"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      pControl->SetEnabled(g_guiSettings.GetBool("services.ftpserver"));
+    }
     else if (strSetting.Equals("services.webserverusername"))
     {
       CGUIEditControl *pControl = (CGUIEditControl *)GetControl(pSettingControl->GetID());
@@ -790,64 +909,38 @@ void CGUIWindowSettingsCategory::UpdateSettings()
         pControl->SetEnabled(g_guiSettings.GetBool("services.webserver"));
     }
     else if (strSetting.Equals("services.webserverpassword"))
-    {
+    { // Fill in a blank pass if we don't have it
       CGUIEditControl *pControl = (CGUIEditControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
+      if (((CSettingString *)pSettingControl->GetSetting())->GetData().size() == 0 && pControl)
+      {
+        pControl->SetLabel2(g_localizeStrings.Get(734));
         pControl->SetEnabled(g_guiSettings.GetBool("services.webserver"));
+      }
     }
     else if (strSetting.Equals("services.webserverport"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
       if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("services.webserver"));
     }
-#endif
     else if (strSetting.Equals("network.ipaddress") || strSetting.Equals("network.subnet") || strSetting.Equals("network.gateway") || strSetting.Equals("network.dns"))
     {
-#ifdef _LINUX
-      bool enabled = (geteuid() == 0);
-#else
-      bool enabled = false;
-#endif
-      CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.assignment")->GetID());
-      if (pControl1)
-         enabled = (pControl1->GetValue() == NETWORK_STATIC);
-
-       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-       if (pControl) pControl->SetEnabled(enabled);
-    }
-    else if (strSetting.Equals("network.assignment"))
-    {
-      CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.assignment")->GetID());
-#ifdef HAS_LINUX_NETWORK
-      if (pControl1)
-         pControl1->SetEnabled(geteuid() == 0);
-#endif
-    }
-    else if (strSetting.Equals("network.essid") || strSetting.Equals("network.enc") || strSetting.Equals("network.key"))
-    {
-      // Get network information
-      CGUISpinControlEx *ifaceControl = (CGUISpinControlEx *)GetControl(GetSetting("network.interface")->GetID());
-      CStdString ifaceName = ifaceControl->GetLabel();
-      CNetworkInterface* iface = g_application.getNetwork().GetInterfaceByName(ifaceName);
-      bool bIsWireless = iface->IsWireless();
-
-#ifdef HAS_LINUX_NETWORK
-      bool enabled = bIsWireless && (geteuid() == 0);
-#else
-      bool enabled = bIsWireless;
-#endif
-      CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.assignment")->GetID());
-      if (pControl1)
-         enabled &= (pControl1->GetValue() != NETWORK_DISABLED);
-
-      if (strSetting.Equals("network.key"))
+      CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
+      if (pControl)
       {
-         pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.enc")->GetID());
-         if (pControl1) enabled &= (pControl1->GetValue() != ENC_NONE);
+        if (g_guiSettings.GetInt("network.assignment") != NETWORK_STATIC)
+        {
+          //We are in non Static Mode! Setting the Received IP Information
+          if(strSetting.Equals("network.ipaddress"))
+            pControl->SetLabel2(g_network.m_networkinfo.ip);
+          else if(strSetting.Equals("network.subnet"))
+            pControl->SetLabel2(g_network.m_networkinfo.subnet);
+          else if(strSetting.Equals("network.gateway"))
+            pControl->SetLabel2(g_network.m_networkinfo.gateway);
+          else if(strSetting.Equals("network.dns"))
+            pControl->SetLabel2(g_network.m_networkinfo.DNS1);
+        }
+        pControl->SetEnabled(g_guiSettings.GetInt("network.assignment") == NETWORK_STATIC);
       }
-
-       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-       if (pControl) pControl->SetEnabled(enabled);
     }
     else if (strSetting.Equals("network.httpproxyserver")   || strSetting.Equals("network.httpproxyport") ||
              strSetting.Equals("network.httpproxyusername") || strSetting.Equals("network.httpproxypassword"))
@@ -855,27 +948,13 @@ void CGUIWindowSettingsCategory::UpdateSettings()
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
       if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("network.usehttpproxy"));
     }
-#ifdef HAS_LINUX_NETWORK
-    else if (strSetting.Equals("network.key"))
-    {
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.enc")->GetID());
-      if (pControl && pControl1)
-         pControl->SetEnabled(!pControl1->IsDisabled() && pControl1->GetValue() > 0);
-    }
-    else if (strSetting.Equals("network.save"))
-    {
-      CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
-      pControl->SetEnabled(geteuid() == 0);
-    }
-#endif
-    else if (strSetting.Equals("scrobbler.lastfmusername") || strSetting.Equals("scrobbler.lastfmpass"))
+    else if (strSetting.Equals("scrobbler.lastfmusername") || strSetting.Equals("scrobbler.lastfmpassword"))
     {
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
       if (pControl)
         pControl->SetEnabled(g_guiSettings.GetBool("scrobbler.lastfmsubmit") | g_guiSettings.GetBool("scrobbler.lastfmsubmitradio"));
     }
-    else if (strSetting.Equals("scrobbler.librefmusername") || strSetting.Equals("scrobbler.librefmpass"))
+    else if (strSetting.Equals("scrobbler.librefmusername") || strSetting.Equals("scrobbler.librefmpassword"))
     {
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
       if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("scrobbler.librefmsubmit"));
@@ -905,6 +984,11 @@ void CGUIWindowSettingsCategory::UpdateSettings()
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
       pControl->SetEnabled(g_guiSettings.GetBool("postprocessing.enable"));
     }
+    else if (strSetting.Equals("VideoPlayer.InvertFieldSync"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
+      pControl->SetEnabled(g_guiSettings.GetBool("VideoPlayer.FieldSync"));
+    }
     else if (strSetting.Equals("subtitles.color") || strSetting.Equals("subtitles.style") || strSetting.Equals("subtitles.charset"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
@@ -918,18 +1002,18 @@ void CGUIWindowSettingsCategory::UpdateSettings()
     else if (strSetting.Equals("screensaver.dimlevel"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "_virtual.dim");
+      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "Dim");
     }
     else if (strSetting.Equals("screensaver.slideshowpath"))
     {
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "_virtual.pic");
+      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "SlideShow");
     }
     else if (strSetting.Equals("screensaver.slideshowshuffle"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "_virtual.pic" ||
-                           g_guiSettings.GetString("screensaver.mode") == "_virtual.fan");
+      pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") == "SlideShow" ||
+                           g_guiSettings.GetString("screensaver.mode") == "Fanart Slideshow");
     }
     else if (strSetting.Equals("screensaver.preview")           ||
              strSetting.Equals("screensaver.usedimonpause")     ||
@@ -937,22 +1021,29 @@ void CGUIWindowSettingsCategory::UpdateSettings()
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
       pControl->SetEnabled(g_guiSettings.GetString("screensaver.mode") != "None");
-      if (strSetting.Equals("screensaver.usedimonpause") && g_guiSettings.GetString("screensaver.mode").Equals("_virtual.dim"))
+      if (strSetting.Equals("screensaver.usedimonpause") && g_guiSettings.GetString("screensaver.mode").Equals("Dim"))
         pControl->SetEnabled(false);
     }
     else if (strSetting.Left(16).Equals("weather.areacode"))
     {
       CSettingString *pSetting = (CSettingString *)GetSetting(strSetting)->GetSetting();
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(GetSetting(strSetting)->GetID());
-      pControl->SetLabel2(CWeather::GetAreaCity(pSetting->GetData()));
+      pControl->SetLabel2(g_weatherManager.GetAreaCity(pSetting->GetData()));
     }
-    else if (strSetting.Equals("weather.script"))
+    else if (strSetting.Equals("weather.plugin"))
     {
       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
       if (pControl->GetCurrentLabel().Equals(g_localizeStrings.Get(13611)))
-        g_guiSettings.SetString("weather.script", "");
+        g_guiSettings.SetString("weather.plugin", "");
       else
-        g_guiSettings.SetString("weather.script", pControl->GetCurrentLabel());
+        g_guiSettings.SetString("weather.plugin", pControl->GetCurrentLabel());
+    }
+    else if (strSetting.Equals("system.leddisableonplayback"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(GetSetting(strSetting)->GetID());
+      // LED_COLOUR_NO_CHANGE: we can't disable the LED on playback, 
+      //                       we have no previos reference LED COLOUR, to set the LED colour back
+      pControl->SetEnabled(g_guiSettings.GetInt("system.ledcolour") != LED_COLOUR_NO_CHANGE && g_guiSettings.GetInt("system.ledcolour") != LED_COLOUR_OFF);
     }
     else if (strSetting.Equals("musicfiles.trackformat"))
     {
@@ -976,8 +1067,38 @@ void CGUIWindowSettingsCategory::UpdateSettings()
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
       if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("locale.timeserver"));
     }
+    else if (strSetting.Equals("locale.time") || strSetting.Equals("locale.date"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(!g_guiSettings.GetBool("locale.timeserver"));
+      SYSTEMTIME curTime;
+      GetLocalTime(&curTime);
+      CStdString time;
+      if (strSetting.Equals("locale.time"))
+        time = g_infoManager.GetTime();
+      else
+        time = g_infoManager.GetDate();
+      CSettingString *pSettingString = (CSettingString*)pSettingControl->GetSetting();
+      pSettingString->SetData(time);
+      pSettingControl->Update();
+    }
 #endif
-    else if (strSetting.Equals("audiocds.recordingpath") || strSetting.Equals("debug.screenshotpath"))
+    else if (strSetting.Equals("autodetect.nickname") || strSetting.Equals("autodetect.senduserpw"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("autodetect.onoff") && (g_settings.m_iLastLoadedProfileIndex == 0));
+    }
+    else if ( strSetting.Equals("autodetect.popupinfo"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("autodetect.onoff"));
+    }
+    else if (strSetting.Equals("dvds.externaldvdplayer"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("dvds.useexternaldvdplayer"));
+    }
+    else if (strSetting.Equals("myprograms.trainerpath") || strSetting.Equals("audiocds.recordingpath") || strSetting.Equals("debug.screenshotpath"))
     {
       CGUIButtonControl *pControl = (CGUIButtonControl *)GetControl(pSettingControl->GetID());
       if (pControl && g_guiSettings.GetString(strSetting, false).IsEmpty())
@@ -988,63 +1109,97 @@ void CGUIWindowSettingsCategory::UpdateSettings()
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
       pControl->SetEnabled(XFILE::CFile::Exists(RSSEDITOR_PATH) && g_guiSettings.GetBool("lookandfeel.enablerssfeeds"));
     }
-    else if (strSetting.Equals("videoplayer.synctype"))
+    else if (strSetting.Equals("myprograms.dashboard"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("videoplayer.usedisplayasclock"));
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("myprograms.usedashpath"));
     }
-    else if (strSetting.Equals("videoplayer.maxspeedadjust"))
+    else if (strSetting.Equals("lcd.enableonpaused"))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("lcd.disableonplayback") != LED_PLAYBACK_OFF && g_guiSettings.GetInt("lcd.type") != LCD_TYPE_NONE);
+    }
+    else if (strSetting.Equals("musiclibrary.scrapersettings"))
+    {
+      CScraperParser parser;
+      bool enabled=false;
+      if (parser.Load("special://xbmc/system/scrapers/music/"+g_guiSettings.GetString("musiclibrary.scraper")))
+        enabled = parser.HasFunction("GetSettings");
+
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(enabled);
+    }
+    else if (strSetting.Equals("system.ledenableonpaused"))
+    {
+      // LED_COLOUR_NO_CHANGE: we can't enable LED on paused, 
+      //                       we have no previos reference LED COLOUR, to set the LED colour back
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("system.leddisableonplayback") != LED_PLAYBACK_OFF && g_guiSettings.GetInt("system.ledcolour") != LED_COLOUR_OFF && g_guiSettings.GetInt("system.ledcolour") != LED_COLOUR_NO_CHANGE);
+    }
+    else if (strSetting.Equals("lcd.modchip") || strSetting.Equals("lcd.backlight") || strSetting.Equals("lcd.disableonplayback"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("lcd.type") != LCD_TYPE_NONE);
+    }
+    else if (strSetting.Equals("lcd.contrast"))
+    {
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      // X3 can't control the contrast via software graying out!
+      if(g_guiSettings.GetInt("lcd.type") != LCD_TYPE_NONE)
       {
-        bool enabled = (g_guiSettings.GetBool("videoplayer.usedisplayasclock")) &&
-            (g_guiSettings.GetInt("videoplayer.synctype") == SYNC_RESAMPLE);
-        pControl->SetEnabled(enabled);
+        if (pControl) pControl->SetEnabled(g_guiSettings.GetInt("lcd.modchip") != MODCHIP_XECUTER3);
+      }
+      else 
+      { 
+        if (pControl) pControl->SetEnabled(false); 
       }
     }
-    else if (strSetting.Equals("videoplayer.resamplequality"))
+    else if (strSetting.Equals("weather.pluginsettings"))
+    {
+      // Create our base path
+      CStdString basepath = "special://home/plugins/weather/" + g_guiSettings.GetString("weather.plugin");
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(!g_guiSettings.GetString("weather.plugin").IsEmpty() && CScriptSettings::SettingsExist(basepath));
+    }
+    else if (!strSetting.Equals("musiclibrary.enabled")
+      && strSetting.Left(13).Equals("musiclibrary."))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl)
-      {
-        bool enabled = (g_guiSettings.GetBool("videoplayer.usedisplayasclock")) &&
-            (g_guiSettings.GetInt("videoplayer.synctype") == SYNC_RESAMPLE);
-        pControl->SetEnabled(enabled);
-      }
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("musiclibrary.enabled"));
     }
-    else if (strSetting.Equals("weather.scriptsettings"))
-    {
-      //// Create our base path
-      //CStdString basepath = "special://home/plugins/weather/" + g_guiSettings.GetString("weather.plugin");
-      //CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      //if (pControl) pControl->SetEnabled(!g_guiSettings.GetString("weather.plugin").IsEmpty() && CScriptSettings::SettingsExist(basepath));
-    }
-#if defined(_LINUX) && !defined(__APPLE__)
-    else if (strSetting.Equals("audiooutput.custompassthrough"))
+    else if (!strSetting.Equals("videolibrary.enabled")
+      && strSetting.Left(13).Equals("videolibrary."))
     {
       CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (AUDIO_IS_BITSTREAM(g_guiSettings.GetInt("audiooutput.mode")))
-      {
-        if (pControl) pControl->SetEnabled(g_guiSettings.GetString("audiooutput.passthroughdevice").Equals("custom"));
-      }
-      else
-      {
-        if (pControl) pControl->SetEnabled(false);
-      }
+      if (pControl) pControl->SetEnabled(g_guiSettings.GetBool("videolibrary.enabled"));
     }
-    else if (strSetting.Equals("audiooutput.customdevice"))
-    {
-      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
-      if (pControl) pControl->SetEnabled(g_guiSettings.GetString("audiooutput.audiodevice").Equals("custom"));
-    }
-#endif
   }
 }
 
 void CGUIWindowSettingsCategory::UpdateRealTimeSettings()
 {
-  // date and time used to be here
+  for (unsigned int i = 0; i < m_vecSettings.size(); i++)
+  {
+    CBaseSettingControl *pSettingControl = m_vecSettings[i];
+    CStdString strSetting = pSettingControl->GetSetting()->GetSetting();
+    if (strSetting.Equals("locale.time") || strSetting.Equals("locale.date"))
+    {
+#ifdef HAS_TIME_SERVER
+      CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
+      if (pControl) pControl->SetEnabled(!g_guiSettings.GetBool("locale.timeserver"));
+#endif
+      SYSTEMTIME curTime;
+      GetLocalTime(&curTime);
+      CStdString time;
+      if (strSetting.Equals("locale.time"))
+        time = g_infoManager.GetTime();
+      else
+        time = g_infoManager.GetDate();
+      CSettingString *pSettingString = (CSettingString*)pSettingControl->GetSetting();
+      pSettingString->SetData(time);
+      pSettingControl->Update();
+    }
+  }
 }
 
 void CGUIWindowSettingsCategory::OnClick(CBaseSettingControl *pSettingControl)
@@ -1059,25 +1214,36 @@ void CGUIWindowSettingsCategory::OnClick(CBaseSettingControl *pSettingControl)
       CStdString strResult = ((CSettingString *)pSettingControl->GetSetting())->GetData();
       if (g_weatherManager.GetSearchResults(strSearch, strResult))
         ((CSettingString *)pSettingControl->GetSetting())->SetData(strResult);
-      g_weatherManager.Refresh();
+      g_weatherManager.ResetTimer();
     }
   }
-  else if (strSetting.Equals("weather.script"))
+  else if (strSetting.Equals("weather.plugin"))
   {
-    g_weatherManager.Refresh();
+    g_weatherManager.ResetTimer();
   }
-  else if (strSetting.Equals("weather.scriptsettings"))
+  else if (strSetting.Equals("weather.pluginsettings"))
   {
-    CStdString name = g_guiSettings.GetString("weather.script");
-    AddonPtr addon;
-    if (CAddonMgr::Get().GetAddon(name, addon, ADDON_PLUGIN))
-    { // TODO: maybe have ShowAndGetInput return a bool if settings changed, then only reset weather if true.
-      CGUIDialogAddonSettings::ShowAndGetInput(addon);
-    }
-    g_weatherManager.Refresh();
+    // Create our base path
+    CStdString basepath = "special://home/plugins/weather/" + g_guiSettings.GetString("weather.plugin");
+    CGUIDialogPluginSettings::ShowAndGetInput(basepath);
+    // TODO: maybe have ShowAndGetInput return a bool if settings changed, then only reset weather if true.
+    g_weatherManager.ResetTimer();
   }
   else if (strSetting.Equals("lookandfeel.rssedit"))
-    CBuiltins::Execute("RunScript("RSSEDITOR_PATH")");
+    CUtil::ExecBuiltIn("RunScript("RSSEDITOR_PATH")");
+  else if (strSetting.Equals("musiclibrary.scrapersettings"))
+  {
+    CMusicDatabase database;
+    database.Open();
+    SScraperInfo info;
+    database.GetScraperForPath("musicdb://",info);
+
+    if (info.settings.LoadSettingsXML("special://xbmc/system/scrapers/music/" + info.strPath))
+        CGUIDialogPluginSettings::ShowAndGetInput(info);
+
+    database.SetScraperForPath("musicdb://",info);
+    database.Close();
+  }
 
   // if OnClick() returns false, the setting hasn't changed or doesn't
   // require immediate update
@@ -1115,48 +1281,81 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
   CStdString strSetting = pSettingControl->GetSetting()->GetSetting();
 
   // ok, now check the various special things we need to do
-  if (pSettingControl->GetSetting()->GetType() == SETTINGS_TYPE_ADDON)
-  {
-    CSettingAddon *pSettingAddon = (CSettingAddon*)pSettingControl->GetSetting();
-    FillInAddons(pSettingAddon, GetSetting(strSetting)->GetID());
-    if (pSettingAddon->m_type == ADDON_SKIN)
-    {
-      g_application.ReloadSkin();
-    }
-  }
-  else if (strSetting.Equals("musicplayer.visualisation"))
+  if (strSetting.Equals("musicplayer.visualisation"))
   { // new visualisation choosen...
     CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
     CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
     if (pControl->GetValue() == 0)
       pSettingString->SetData("None");
     else
-      pSettingString->SetData(pControl->GetCurrentLabel());
+      pSettingString->SetData(pControl->GetCurrentLabel() + ".vis");
   }
   else if (strSetting.Equals("debug.showloginfo"))
   {
-    if (g_guiSettings.GetBool("debug.showloginfo"))
+    if (g_guiSettings.GetBool("debug.showloginfo") && g_advancedSettings.m_logLevel < LOG_LEVEL_DEBUG_FREEMEM)
     {
-      int level = std::max(g_advancedSettings.m_logLevelHint, LOG_LEVEL_DEBUG_FREEMEM);
-      g_advancedSettings.m_logLevel = level;
-      CLog::Log(LOGNOTICE, "Enabled debug logging due to GUI setting. Level %d.", level);
+      g_advancedSettings.m_logLevel = LOG_LEVEL_DEBUG_FREEMEM;
+      CLog::Log(LOGNOTICE, "Enabled debug logging due to GUI setting");
     }
-    else
+    else if (!g_guiSettings.GetBool("debug.showloginfo") && g_advancedSettings.m_logLevel == LOG_LEVEL_DEBUG_FREEMEM)
     {
-      int level = std::min(g_advancedSettings.m_logLevelHint, LOG_LEVEL_DEBUG/*LOG_LEVEL_NORMAL*/);
-      CLog::Log(LOGNOTICE, "Disabled debug logging due to GUI setting. Level %d.", level);
-      g_advancedSettings.m_logLevel = level;
+      CLog::Log(LOGNOTICE, "Disabled debug logging due to GUI setting");
+      g_advancedSettings.m_logLevel = LOG_LEVEL_NORMAL;
     }
   }
   /*else if (strSetting.Equals("musicfiles.repeat"))
   {
     g_playlistPlayer.SetRepeat(PLAYLIST_MUSIC_TEMP, g_guiSettings.GetBool("musicfiles.repeat") ? PLAYLIST::REPEAT_ALL : PLAYLIST::REPEAT_NONE);
   }*/
+  else if (strSetting.Equals("karaoke.port0voicemask"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    g_guiSettings.SetString("karaoke.port0voicemask", pControl->GetCurrentLabel());
+    FillInVoiceMaskValues(0, g_guiSettings.GetSetting("karaoke.port0voicemask"));
+  }
+  else if (strSetting.Equals("karaoke.port1voicemask"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    g_guiSettings.SetString("karaoke.port1voicemask", pControl->GetCurrentLabel());
+    FillInVoiceMaskValues(1, g_guiSettings.GetSetting("karaoke.port1voicemask"));
+  }
+  else if (strSetting.Equals("karaoke.port2voicemask"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    g_guiSettings.SetString("karaoke.port2voicemask", pControl->GetCurrentLabel());
+    FillInVoiceMaskValues(2, g_guiSettings.GetSetting("karaoke.port2voicemask"));
+  }
+  else if (strSetting.Equals("karaoke.port2voicemask"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    g_guiSettings.SetString("karaoke.port3voicemask", pControl->GetCurrentLabel());
+    FillInVoiceMaskValues(3, g_guiSettings.GetSetting("karaoke.port3voicemask"));
+  }
   else if (strSetting.Equals("musiclibrary.cleanup"))
   {
     CMusicDatabase musicdatabase;
     musicdatabase.Clean();
     CUtil::DeleteMusicDatabaseDirectoryCache();
+  }
+  else if (strSetting.Equals("musiclibrary.scraper"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    FillInScrapers(pControl, pControl->GetCurrentLabel(), "music");
+  }
+  else if (strSetting.Equals("scrapers.moviedefault"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    FillInScrapers(pControl, pControl->GetCurrentLabel(), "movies");
+  }
+  else if (strSetting.Equals("scrapers.tvshowdefault"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    FillInScrapers(pControl, pControl->GetCurrentLabel(), "tvshows");
+  }
+  else if (strSetting.Equals("scrapers.musicvideodefault"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    FillInScrapers(pControl, pControl->GetCurrentLabel(), "musicvideos");
   }
   else if (strSetting.Equals("videolibrary.cleanup"))
   {
@@ -1169,40 +1368,10 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     }
   }
   else if (strSetting.Equals("videolibrary.export"))
-    CBuiltins::Execute("exportlibrary(video)");
+    CUtil::ExecBuiltIn("exportlibrary(video)");
   else if (strSetting.Equals("musiclibrary.export"))
-    CBuiltins::Execute("exportlibrary(music)");
-  else if (strSetting.Equals("karaoke.export") )
-  {
-    vector<CStdString> choices;
-    choices.push_back(g_localizeStrings.Get(22034));
-    choices.push_back(g_localizeStrings.Get(22035));
+    CUtil::ExecBuiltIn("exportlibrary(music)");
 
-    int retVal = CGUIDialogContextMenu::ShowAndGetChoice(choices);
-    if ( retVal > 0 )
-    {
-      CStdString path(g_settings.GetDatabaseFolder());
-      VECSOURCES shares;
-      g_mediaManager.GetLocalDrives(shares);
-      if (CGUIDialogFileBrowser::ShowAndGetDirectory(shares, g_localizeStrings.Get(661), path, true))
-      {
-        CMusicDatabase musicdatabase;
-        musicdatabase.Open();
-
-        if ( retVal == 1 )
-        {
-          CUtil::AddFileToFolder(path, "karaoke.html", path);
-          musicdatabase.ExportKaraokeInfo( path, true );
-        }
-        else
-        {
-          CUtil::AddFileToFolder(path, "karaoke.csv", path);
-          musicdatabase.ExportKaraokeInfo( path, false );
-        }
-        musicdatabase.Close();
-      }
-    }
-  }
   else if (strSetting.Equals("videolibrary.import"))
   {
     CStdString path;
@@ -1229,24 +1398,15 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       musicdatabase.Close();
     }
   }
-  else if (strSetting.Equals("karaoke.importcsv"))
+  else if (strSetting.Equals("musicplayer.jumptoaudiohardware") || strSetting.Equals("videoplayer.jumptoaudiohardware"))
   {
-    CStdString path(g_settings.GetDatabaseFolder());
-    VECSOURCES shares;
-    g_mediaManager.GetLocalDrives(shares);
-    if (CGUIDialogFileBrowser::ShowAndGetFile(shares, "karaoke.csv", g_localizeStrings.Get(651) , path))
-    {
-      CMusicDatabase musicdatabase;
-      musicdatabase.Open();
-      musicdatabase.ImportKaraokeInfo(path);
-      musicdatabase.Close();
-    }
+    JumpToSection(WINDOW_SETTINGS_SYSTEM, "audiooutput");
   }
-  else if (strSetting.Equals("scrobbler.lastfmsubmit") || strSetting.Equals("scrobbler.lastfmsubmitradio") || strSetting.Equals("scrobbler.lastfmusername") || strSetting.Equals("scrobbler.lastfmpass"))
+  else if (strSetting.Equals("scrobbler.lastfmsubmit") || strSetting.Equals("scrobbler.lastfmsubmitradio") || strSetting.Equals("scrobbler.lastfmusername") || strSetting.Equals("scrobbler.lastfmpassword"))
   {
-    CStdString strPassword=g_guiSettings.GetString("scrobbler.lastfmpass");
+    CStdString strPassword=g_guiSettings.GetString("scrobbler.lastfmpassword");
     CStdString strUserName=g_guiSettings.GetString("scrobbler.lastfmusername");
-    if ((g_guiSettings.GetBool("scrobbler.lastfmsubmit") ||
+    if ((g_guiSettings.GetBool("scrobbler.lastfmsubmit") || 
          g_guiSettings.GetBool("scrobbler.lastfmsubmitradio")) &&
          !strUserName.IsEmpty() && !strPassword.IsEmpty())
     {
@@ -1257,11 +1417,11 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       CLastfmScrobbler::GetInstance()->Term();
     }
   }
-  else if (strSetting.Equals("scrobbler.librefmsubmit") || strSetting.Equals("scrobbler.librefmsubmitradio") || strSetting.Equals("scrobbler.librefmusername") || strSetting.Equals("scrobbler.librefmpass"))
+  else if (strSetting.Equals("scrobbler.librefmsubmit") || strSetting.Equals("scrobbler.librefmsubmitradio") || strSetting.Equals("scrobbler.librefmusername") || strSetting.Equals("scrobbler.librefmpassword"))
   {
-    CStdString strPassword=g_guiSettings.GetString("scrobbler.librefmpass");
+    CStdString strPassword=g_guiSettings.GetString("scrobbler.librefmpassword");
     CStdString strUserName=g_guiSettings.GetString("scrobbler.librefmusername");
-    if ((g_guiSettings.GetBool("scrobbler.librefmsubmit") ||
+    if ((g_guiSettings.GetBool("scrobbler.librefmsubmit") || 
          g_guiSettings.GetBool("scrobbler.librefmsubmitradio")) &&
          !strUserName.IsEmpty() && !strPassword.IsEmpty())
     {
@@ -1272,6 +1432,13 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       CLibrefmScrobbler::GetInstance()->Term();
     }
   }
+  else if (strSetting.Equals("musicplayer.outputtoallspeakers"))
+  {
+    if (!g_application.IsPlaying())
+    {
+      g_audioContext.SetActiveDevice(CAudioContext::DEFAULT_DEVICE);
+    }
+  }
   else if (strSetting.Left(22).Equals("MusicPlayer.ReplayGain"))
   { // Update our replaygain settings
     g_guiSettings.m_replayGain.iType = g_guiSettings.GetInt("musicplayer.replaygaintype");
@@ -1279,28 +1446,16 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     g_guiSettings.m_replayGain.iNoGainPreAmp = g_guiSettings.GetInt("musicplayer.replaygainnogainpreamp");
     g_guiSettings.m_replayGain.bAvoidClipping = g_guiSettings.GetBool("musicplayer.replaygainavoidclipping");
   }
-  else if (strSetting.Equals("audiooutput.audiodevice"))
-  {
-      CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-#if !defined(__APPLE__)
-      g_guiSettings.SetString("audiooutput.audiodevice", m_AnalogAudioSinkMap[pControl->GetCurrentLabel()]);
-#else
-      g_guiSettings.SetString("audiooutput.audiodevice", pControl->GetCurrentLabel());
-#endif
-  }
-#if defined(_LINUX)
-  else if (strSetting.Equals("audiooutput.passthroughdevice"))
-  {
-    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-#if defined(_LINUX) && !defined(__APPLE__)
-      g_guiSettings.SetString("audiooutput.passthroughdevice", m_DigitalAudioSinkMap[pControl->GetCurrentLabel()]);
-#else
-      g_guiSettings.SetString("audiooutput.passthroughdevice", pControl->GetCurrentLabel());
-#endif
-  }
-#endif
 #ifdef HAS_LCD
-  else if (strSetting.Equals("videoscreen.haslcd"))
+  else if (strSetting.Equals("lcd.type"))
+  {
+    g_lcd->Initialize();
+  }
+  else if (strSetting.Equals("lcd.backlight"))
+  {
+    g_lcd->SetBackLight(((CSettingInt *)pSettingControl->GetSetting())->GetData());
+  }
+  else if (strSetting.Equals("lcd.modchip"))
   {
     g_lcd->Stop();
     CLCDFactory factory;
@@ -1308,30 +1463,132 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     g_lcd = factory.Create();
     g_lcd->Initialize();
   }
+  else if (strSetting.Equals("lcd.contrast"))
+  {
+    g_lcd->SetContrast(((CSettingInt *)pSettingControl->GetSetting())->GetData());
+  }
 #endif
-#ifdef HAS_WEB_SERVER
-  else if ( strSetting.Equals("services.webserver") || strSetting.Equals("services.webserverport"))
+#ifdef HAS_XBOX_HARDWARE
+  else if (strSetting.Equals("system.targettemperature"))
+  {
+    CSettingInt *pSetting = (CSettingInt*)pSettingControl->GetSetting();
+    CFanController::Instance()->SetTargetTemperature(pSetting->GetData());
+  }
+  else if (strSetting.Equals("system.fanspeed"))
+  {
+    CSettingInt *pSetting = (CSettingInt*)pSettingControl->GetSetting();
+    int iControlID = pSettingControl->GetID();
+    CGUIMessage msg(GUI_MSG_ITEM_SELECTED, GetID(), iControlID);
+    g_windowManager.SendMessage(msg);
+    int iSpeed = (RESOLUTION)msg.GetParam1();
+    g_guiSettings.SetInt("system.fanspeed", iSpeed);
+    CFanController::Instance()->SetFanSpeed(iSpeed);
+  }
+  else if (strSetting.Equals("system.autotemperature"))
+  {
+    CSettingBool *pSetting = (CSettingBool*)pSettingControl->GetSetting();
+    if (pSetting->GetData())
+    {
+      g_guiSettings.SetBool("system.fanspeedcontrol", false);
+      CFanController::Instance()->Start(g_guiSettings.GetInt("system.targettemperature"), g_guiSettings.GetInt("system.minfanspeed") );
+    }
+    else
+      CFanController::Instance()->Stop();
+  }
+  else if (strSetting.Equals("system.minfanspeed"))
+  {
+    CSettingInt *pSetting = (CSettingInt*)pSettingControl->GetSetting();
+    CFanController::Instance()->SetMinFanSpeed(pSetting->GetData());
+  }
+  else if (strSetting.Equals("system.fanspeedcontrol"))
+  {
+    CSettingBool *pSetting = (CSettingBool*)pSettingControl->GetSetting();
+    if (pSetting->GetData())
+    {
+      g_guiSettings.SetBool("system.autotemperature", false);
+      CFanController::Instance()->Stop();
+      CFanController::Instance()->SetFanSpeed(g_guiSettings.GetInt("system.fanspeed"));
+    }
+    else
+      CFanController::Instance()->RestoreStartupSpeed();
+  }
+  else if (strSetting.Equals("harddisk.aamlevel"))
+  {
+    CSettingInt * pSetting = (CSettingInt*)pSettingControl->GetSetting();
+    int setting_level = pSetting->GetData();
+
+    if (setting_level == AAM_QUIET)
+      XKHDD::SetAAMLevel(0x80);
+    else if (setting_level == AAM_FAST)
+      XKHDD::SetAAMLevel(0xFE);
+  }
+  else if (strSetting.Equals("harddisk.apmlevel"))
+  {
+    CSettingInt * pSetting = (CSettingInt*)pSettingControl->GetSetting();
+    int setting_level = pSetting->GetData();
+
+    switch(setting_level)
+    {
+    case APM_LOPOWER:
+      XKHDD::SetAPMLevel(0x80);
+      break;
+    case APM_HIPOWER:
+      XKHDD::SetAPMLevel(0xFE);
+      break;
+    case APM_LOPOWER_STANDBY:
+      XKHDD::SetAPMLevel(0x01);
+      break;
+    case APM_HIPOWER_STANDBY:
+      XKHDD::SetAPMLevel(0x7F);
+      break;
+    }
+  }
+  else if (strSetting.Equals("autodetect.nickname") )
+  {
+    CStdString strXboxNickNameIn = g_guiSettings.GetString("autodetect.nickname");
+    CUtil::SetXBOXNickName(strXboxNickNameIn, strXboxNickNameIn);
+  }
+#endif
+  else if (strSetting.Equals("services.ftpserver"))
+  {
+    g_application.StopFtpServer();
+    if (g_guiSettings.GetBool("services.ftpserver"))
+      g_application.StartFtpServer();
+  }
+  else if (strSetting.Equals("services.ftpserverpassword"))
+  {
+   SetFTPServerUserPass();
+  }
+  else if (strSetting.Equals("services.ftpserveruser"))
+  {
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    g_guiSettings.SetString("services.ftpserveruser", pControl->GetCurrentLabel());
+  }
+
+  else if ( strSetting.Equals("services.webserver") || strSetting.Equals("services.webserverport") || 
+            strSetting.Equals("services.webserverusername") || strSetting.Equals("services.webserverpassword"))
   {
     if (strSetting.Equals("services.webserverport"))
-      ValidatePortNumber(pSettingControl, "8080", "80");
+    {
+      CSettingString *pSetting = (CSettingString *)pSettingControl->GetSetting();
+      // check that it's a valid port
+      int port = atoi(pSetting->GetData().c_str());
+      if (port <= 0 || port > 65535)
+        pSetting->SetData("80");
+    }
     g_application.StopWebServer();
     if (g_guiSettings.GetBool("services.webserver"))
+    {
       g_application.StartWebServer();
+      if (g_application.m_pWebServer) {
+        if (strSetting.Equals("services.webserverusername"))
+          g_application.m_pWebServer->SetUserName(g_guiSettings.GetString("services.webserverusername").c_str());
+        else
+          g_application.m_pWebServer->SetPassword(g_guiSettings.GetString("services.webserverpassword").c_str());
+      }
+    }
   }
-  else if (strSetting.Equals("services.webserverusername") || strSetting.Equals("services.webserverpassword"))
-  {
-    g_application.m_WebServer.SetCredentials(g_guiSettings.GetString("services.webserverusername"), g_guiSettings.GetString("services.webserverpassword"));
-  }
-#endif
-  else if (strSetting.Equals("services.zeroconf"))
-  {
-#ifdef HAS_ZEROCONF
-    //ifdef zeroconf here because it's only found in guisettings if defined
-    CZeroconf::GetInstance()->Stop();
-    if(g_guiSettings.GetBool("services.zeroconf"))
-      CZeroconf::GetInstance()->Start();
-#endif
-  }
+  
   else if (strSetting.Equals("network.ipaddress"))
   {
     if (g_guiSettings.GetInt("network.assignment") == NETWORK_STATIC)
@@ -1344,18 +1601,28 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
 
     }
   }
-
+    
   else if (strSetting.Equals("network.httpproxyport"))
   {
-    ValidatePortNumber(pSettingControl, "8080", "8080", false);
+    CSettingString *pSetting = (CSettingString *)pSettingControl->GetSetting();
+    // check that it's a valid port
+    int port = atoi(pSetting->GetData().c_str());
+    if (port <= 0 || port > 65535)
+      pSetting->SetData("8080");
   }
   else if (strSetting.Equals("videoplayer.calibrate") || strSetting.Equals("videoscreen.guicalibration"))
   { // activate the video calibration screen
     g_windowManager.ActivateWindow(WINDOW_SCREEN_CALIBRATION);
   }
-  else if (strSetting.Equals("videoscreen.testpattern"))
-  { // activate the test pattern
-    g_windowManager.ActivateWindow(WINDOW_TEST_PATTERN);
+  else if (strSetting.Equals("dvds.externaldvdplayer"))
+  {
+    CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
+    CStdString path = pSettingString->GetData();
+    VECSOURCES shares;
+    g_mediaManager.GetLocalDrives(shares);
+    // TODO 2.0: Localize this
+    if (CGUIDialogFileBrowser::ShowAndGetFile(shares, ".xbe", g_localizeStrings.Get(655), path))
+      pSettingString->SetData(path);
   }
   else if (strSetting.Equals("subtitles.height"))
   {
@@ -1385,31 +1652,6 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       g_charsetConverter.reset();
     }
   }
-  else if (strSetting.Equals("karaoke.fontheight"))
-  {
-    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-    ((CSettingInt *)pSettingControl->GetSetting())->FromString(pControl->GetCurrentLabel());
-  }
-  else if (strSetting.Equals("karaoke.font"))
-  {
-    CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
-    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-    pSettingString->SetData(pControl->GetCurrentLabel());
-    FillInSubtitleHeights(g_guiSettings.GetSetting("karaoke.fontheight"));
-  }
-  else if (strSetting.Equals("karaoke.charset"))
-  {
-    CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
-    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-    CStdString newCharset="DEFAULT";
-    if (pControl->GetValue()!=0)
-      newCharset = g_charsetConverter.getCharsetNameByLabel(pControl->GetCurrentLabel());
-    if (newCharset != "" && (newCharset != pSettingString->GetData() || newCharset=="DEFAULT"))
-    {
-      pSettingString->SetData(newCharset);
-      g_charsetConverter.reset();
-    }
-  }
   else if (strSetting.Equals("locale.charset"))
   {
     CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
@@ -1429,8 +1671,41 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     CStdString strSkinFontSet = pControl->GetCurrentLabel();
     if (strSkinFontSet != ".svn" && strSkinFontSet != g_guiSettings.GetString("lookandfeel.font"))
     {
-      g_guiSettings.SetString("lookandfeel.font", strSkinFontSet);
-      g_application.ReloadSkin();
+      m_strNewSkinFontSet = strSkinFontSet;
+      g_application.DelayLoadSkin();
+    }
+    else
+    { // Do not reload the language we are already using
+      m_strNewSkinFontSet.Empty();
+      g_application.CancelDelayLoadSkin();
+    }
+  }
+  else if (strSetting.Equals("lookandfeel.skin"))
+  { // new skin choosen...
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    CStdString strSkin = pControl->GetCurrentLabel();
+    CStdString strSkinPath = "Q:\\skin\\" + strSkin;
+    if (g_SkinInfo.Check(strSkinPath))
+    {
+      m_strErrorMessage.Empty();
+      pControl->SettingsCategorySetSpinTextColor(pControl->GetButtonLabelInfo().textColor);
+      if (strSkin != ".svn" && strSkin != g_guiSettings.GetString("lookandfeel.skin"))
+      {
+        m_strNewSkin = strSkin;
+        g_application.DelayLoadSkin();
+      }
+      else
+      { // Do not reload the skin we are already using
+        m_strNewSkin.Empty();
+        g_application.CancelDelayLoadSkin();
+      }
+    }
+    else
+    {
+      m_strErrorMessage.Format("Incompatible skin. We require skins of version %0.2f or higher", g_SkinInfo.GetMinVersion());
+      m_strNewSkin.Empty();
+      g_application.CancelDelayLoadSkin();
+      pControl->SettingsCategorySetSpinTextColor(pControl->GetButtonLabelInfo().disabledColor);
     }
   }
   else if (strSetting.Equals("lookandfeel.soundskin"))
@@ -1446,38 +1721,42 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     g_audioManager.Enable(true);
     g_audioManager.Load();
   }
-  else if (strSetting.Equals("input.enablemouse"))
+  else if (strSetting.Equals("lookandfeel.enablemouse"))
   {
-    g_Mouse.SetEnabled(g_guiSettings.GetBool("input.enablemouse"));
+    g_Mouse.SetEnabled(g_guiSettings.GetBool("lookandfeel.enablemouse"));
   }
-  else if (strSetting.Equals("videoscreen.screenmode"))
+  else if (strSetting.Equals("videoscreen.resolution"))
   { // new resolution choosen... - update if necessary
+    CSettingInt *pSettingInt = (CSettingInt *)pSettingControl->GetSetting();
     int iControlID = pSettingControl->GetID();
     CGUIMessage msg(GUI_MSG_ITEM_SELECTED, GetID(), iControlID);
     g_windowManager.SendMessage(msg);
-    RESOLUTION nextRes = (RESOLUTION)msg.GetParam1();
-    RESOLUTION lastRes = g_graphicsContext.GetVideoResolution();
-    g_guiSettings.SetResolution(nextRes);
-    g_graphicsContext.SetVideoResolution(nextRes);
-    bool cancelled = false;
-    if (!CGUIDialogYesNo::ShowAndGetInput(13110, 13111, 20022, 20022, -1, -1, cancelled, 10000))
+    m_NewResolution = (RESOLUTION)msg.GetParam1();
+    // reset our skin if necessary
+    // delay change of resolution
+    if (m_NewResolution != g_guiSettings.m_LookAndFeelResolution)
     {
-      g_guiSettings.SetResolution(lastRes);
-      g_graphicsContext.SetVideoResolution(lastRes);
+      g_application.DelayLoadSkin();
+    }
+    else
+    { // Do not reload the resolution we are using
+      m_NewResolution = INVALID;
+      g_application.CancelDelayLoadSkin();
     }
   }
-  else if (strSetting.Equals("videoscreen.vsync"))
-  {
-    int iControlID = pSettingControl->GetID();
-    CGUIMessage msg(GUI_MSG_ITEM_SELECTED, GetID(), iControlID);
-    g_windowManager.SendMessage(msg);
-// DXMERGE: This may be useful
-//    g_videoConfig.SetVSyncMode((VSYNC)msg.GetParam1());
-  }
-  else if (strSetting.Equals("videoscreen.fakefullscreen"))
-  {
-    if (g_graphicsContext.IsFullScreenRoot())
-      g_graphicsContext.SetVideoResolution(g_graphicsContext.GetVideoResolution(), true);
+  else if (strSetting.Equals("system.ledcolour"))
+  { 
+#ifdef HAS_XBOX_HARDWARE
+    // Alter LED Colour immediately
+    int iData =  ((CSettingInt *)pSettingControl->GetSetting())->GetData();
+    if (iData == LED_COLOUR_NO_CHANGE)
+      // LED_COLOUR_NO_CHANGE: to prevent "led off" on colour immediately change, set to default green! 
+      //                       (we have no previos reference LED COLOUR, to set the LED colour back)
+      //                       on next boot the colour will not changed and the default BIOS led colour will used
+      ILED::CLEDControl(LED_COLOUR_GREEN); 
+    else
+      ILED::CLEDControl(iData);
+#endif
   }
   else if (strSetting.Equals("locale.language"))
   { // new language chosen...
@@ -1486,30 +1765,13 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     CStdString strLanguage = pControl->GetCurrentLabel();
     if (strLanguage != ".svn" && strLanguage != pSettingString->GetData())
     {
-      CStdString strLangInfoPath;
-      strLangInfoPath.Format("special://xbmc/language/%s/langinfo.xml", strLanguage.c_str());
-      g_langInfo.Load(strLangInfoPath);
-
-      if (g_langInfo.ForceUnicodeFont() && !g_fontManager.IsFontSetUnicode())
-      {
-        CLog::Log(LOGINFO, "Language needs a ttf font, loading first ttf font available");
-        CStdString strFontSet;
-        if (g_fontManager.GetFirstFontSetUnicode(strFontSet))
-          strLanguage = strFontSet;
-        else
-          CLog::Log(LOGERROR, "No ttf font found but needed: %s", strFontSet.c_str());
-      }
-      g_guiSettings.SetString("locale.language", strLanguage);
-
-      g_charsetConverter.reset();
-
-      CStdString strLanguagePath;
-      strLanguagePath.Format("special://xbmc/language/%s/strings.xml", strLanguage.c_str());
-      g_localizeStrings.Load(strLanguagePath);
-
-      // also tell our weather and skin to reload as these are localized
-      g_weatherManager.Refresh();
-      g_application.ReloadSkin();
+      m_strNewLanguage = strLanguage;
+      g_application.DelayLoadSkin();
+    }
+    else
+    { // Do not reload the language we are already using
+      m_strNewLanguage.Empty();
+      g_application.CancelDelayLoadSkin();
     }
   }
   else if (strSetting.Equals("lookandfeel.skintheme"))
@@ -1522,17 +1784,17 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     if (pControl->GetValue() == 0) // Use default theme
       strSkinTheme = "SKINDEFAULT";
     else
-      strSkinTheme = pControl->GetCurrentLabel();
+      strSkinTheme = pControl->GetCurrentLabel() + ".xpr";
 
     if (strSkinTheme != pSettingString->GetData())
     {
-      g_guiSettings.SetString("lookandfeel.skintheme", strSkinTheme);
-      // also set the default color theme
-      CStdString colorTheme(CUtil::ReplaceExtension(strSkinTheme, ".xml"));
-      if (colorTheme.Equals("Textures.xml"))
-        colorTheme = "defaults.xml";
-      g_guiSettings.SetString("lookandfeel.skincolors", colorTheme);
-      g_application.ReloadSkin();
+      m_strNewSkinTheme = strSkinTheme;
+      g_application.DelayLoadSkin();
+    }
+    else
+    { // Do not reload the skin theme we are using
+      m_strNewSkinTheme.Empty();
+      g_application.CancelDelayLoadSkin();
     }
   }
   else if (strSetting.Equals("lookandfeel.skincolors"))
@@ -1549,8 +1811,13 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
 
     if (strSkinColor != pSettingString->GetData())
     {
-      g_guiSettings.SetString("lookandfeel.skincolors", strSkinColor);
-      g_application.ReloadSkin();
+      m_strNewSkinColors = strSkinColor;
+      g_application.DelayLoadSkin();
+    }
+    else
+    { // Do not reload the skin colors we are using
+      m_strNewSkinColors.Empty();
+      g_application.CancelDelayLoadSkin();
     }
   }
   else if (strSetting.Equals("videoplayer.displayresolution"))
@@ -1563,7 +1830,27 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
   }
   else if (strSetting.Equals("videoscreen.flickerfilter") || strSetting.Equals("videoscreen.soften"))
   { // reset display
-    g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution);
+    g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution, TRUE);
+  }
+  else if (strSetting.Equals("screensaver.mode"))
+  {
+    CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
+    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
+    int iValue = pControl->GetValue();
+    CStdString strScreenSaver;
+    if (iValue == 0)
+      strScreenSaver = "None";
+    else if (iValue == 1)
+      strScreenSaver = "Dim";
+    else if (iValue == 2)
+      strScreenSaver = "Black";
+    else if (iValue == 3)
+      strScreenSaver = "SlideShow"; // PictureSlideShow
+    else if (iValue == 4)
+      strScreenSaver = "Fanart Slideshow"; //Fanart Slideshow
+    else
+      strScreenSaver = pControl->GetCurrentLabel() + ".xbs";
+    pSettingString->SetData(strScreenSaver);
   }
   else if (strSetting.Equals("screensaver.preview"))
   {
@@ -1578,17 +1865,25 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     if (CGUIDialogFileBrowser::ShowAndGetDirectory(shares, g_localizeStrings.Get(pSettingString->m_iHeadingString), path))
       pSettingString->SetData(path);
   }
-  else if (strSetting.Equals("debug.screenshotpath") || strSetting.Equals("audiocds.recordingpath") || strSetting.Equals("subtitles.custompath"))
+  else if (strSetting.Equals("myprograms.dashboard"))
+  {
+    CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
+    CStdString path = pSettingString->GetData();
+    VECSOURCES shares;
+    g_mediaManager.GetLocalDrives(shares);
+    if (CGUIDialogFileBrowser::ShowAndGetFile(shares, ".xbe", g_localizeStrings.Get(pSettingString->m_iHeadingString), path))
+      pSettingString->SetData(path);
+  }
+  else if (strSetting.Equals("myprograms.trainerpath") || strSetting.Equals("debug.screenshotpath") || strSetting.Equals("audiocds.recordingpath") || strSetting.Equals("cddaripper.path") || strSetting.Equals("subtitles.custompath"))
   {
     CSettingString *pSettingString = (CSettingString *)pSettingControl->GetSetting();
     CStdString path = g_guiSettings.GetString(strSetting,false);
     VECSOURCES shares;
-
-    g_mediaManager.GetNetworkLocations(shares);
     g_mediaManager.GetLocalDrives(shares);
-
     UpdateSettings();
     bool bWriteOnly = true;
+    if (strSetting.Equals("myprograms.trainerpath"))
+      bWriteOnly = false;
 
     if (strSetting.Equals("subtitles.custompath"))
     {
@@ -1599,6 +1894,16 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     if (CGUIDialogFileBrowser::ShowAndGetDirectory(shares, g_localizeStrings.Get(pSettingString->m_iHeadingString), path, bWriteOnly))
     {
       pSettingString->SetData(path);
+
+      if (strSetting.Equals("myprograms.trainerpath"))
+      {
+        if (CGUIDialogYesNo::ShowAndGetInput(12012,20135,20022,20022))
+        {
+          CGUIWindowPrograms* pWindow = (CGUIWindowPrograms*)g_windowManager.GetWindow(WINDOW_PROGRAMS);
+          if (pWindow)
+            pWindow->PopulateTrainersList();
+        }
+      }
     }
   }
   else if (strSetting.Left(22).Equals("MusicPlayer.ReplayGain"))
@@ -1615,7 +1920,7 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     const CStdString& strRegion=pControl->GetCurrentLabel();
     g_langInfo.SetCurrentRegion(strRegion);
     g_guiSettings.SetString("locale.country", strRegion);
-    g_weatherManager.Refresh(); // need to reset our weather, as temperatures need re-translating.
+    g_weatherManager.ResetTimer(); // need to reset our weather, as temperatures need re-translating.
   }
 #ifdef HAS_TIME_SERVER
   else if (strSetting.Equals("locale.timeserver") || strSetting.Equals("locale.timeserveraddress"))
@@ -1625,6 +1930,28 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       g_application.StartTimeServer();
   }
 #endif
+  else if (strSetting.Equals("locale.time"))
+  {
+    SYSTEMTIME curTime;
+    GetLocalTime(&curTime);
+    if (CGUIDialogNumeric::ShowAndGetTime(curTime, g_localizeStrings.Get(14066)))
+    { // yay!
+      SYSTEMTIME curDate;
+      GetLocalTime(&curDate);
+      CUtil::SetSysDateTimeYear(curDate.wYear, curDate.wMonth, curDate.wDay, curTime.wHour, curTime.wMinute);
+    }
+  }
+  else if (strSetting.Equals("locale.date"))
+  {
+    SYSTEMTIME curDate;
+    GetLocalTime(&curDate);
+    if (CGUIDialogNumeric::ShowAndGetDate(curDate, g_localizeStrings.Get(14067)))
+    { // yay!
+      SYSTEMTIME curTime;
+      GetLocalTime(&curTime);
+      CUtil::SetSysDateTimeYear(curDate.wYear, curDate.wMonth, curDate.wDay, curTime.wHour, curTime.wMinute);
+    }
+  }
   else if (strSetting.Equals("smb.winsserver") || strSetting.Equals("smb.workgroup") )
   {
     if (g_guiSettings.GetString("smb.winsserver") == "0.0.0.0")
@@ -1644,7 +1971,7 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
     if (dlg->IsConfirmed())
     {
       g_settings.Save();
-      g_application.getApplicationMessenger().RestartApp();
+      g_applicationMessenger.RestartApp();
     }
   }
   else if (strSetting.Equals("services.upnpserver"))
@@ -1672,7 +1999,7 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       g_application.StartEventServer();
     else
     {
-      if (!g_application.StopEventServer(true, true))
+      if (!g_application.StopEventServer(true))
       {
         g_guiSettings.SetBool("services.esenabled", true);
         CGUIControl *pControl = (CGUIControl *)GetControl(pSettingControl->GetID());
@@ -1680,30 +2007,13 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       }
     }
 #endif
-    if (g_guiSettings.GetBool("services.esenabled"))
-      g_application.StartJSONRPCServer();
-    else
-      g_application.StopJSONRPCServer(false);
-  }
-  else if (strSetting.Equals("services.esport"))
-  {
-#ifdef HAS_EVENT_SERVER
-    ValidatePortNumber(pSettingControl, "9777", "9777");
-    //restart eventserver without asking user
-    if (g_application.StopEventServer(true, false))
-      g_application.StartEventServer();
-#ifdef __APPLE__
-    //reconfigure XBMCHelper for port changes
-    XBMCHelper::GetInstance().Configure();
-#endif
-#endif
   }
   else if (strSetting.Equals("services.esallinterfaces"))
   {
 #ifdef HAS_EVENT_SERVER
     if (g_guiSettings.GetBool("services.esenabled"))
     {
-      if (g_application.StopEventServer(true, true))
+      if (g_application.StopEventServer(true))
         g_application.StartEventServer();
       else
       {
@@ -1713,20 +2023,16 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       }
     }
 #endif
-    if (g_guiSettings.GetBool("services.esenabled"))
-      g_application.StartJSONRPCServer();
-    else
-      g_application.StopJSONRPCServer(false);
   }
-  else if (strSetting.Equals("services.esinitialdelay") ||
-           strSetting.Equals("services.escontinuousdelay"))
+  else if (strSetting.Equals("services.esinitialdelay") || 
+           strSetting.Equals("services.escontinuousdelay"))    
   {
 #ifdef HAS_EVENT_SERVER
     if (g_guiSettings.GetBool("services.esenabled"))
     {
       g_application.RefreshEventServer();
     }
-#endif
+#endif      
   }
   else if (strSetting.Equals("masterlock.lockcode"))
   {
@@ -1737,125 +2043,16 @@ void CGUIWindowSettingsCategory::OnSettingChanged(CBaseSettingControl *pSettingC
       // Nothing todo here
     }
   }
-  else if (strSetting.Equals("network.interface"))
-  {
-     NetworkInterfaceChanged();
-  }
-#ifdef HAS_LINUX_NETWORK
-  else if (strSetting.Equals("network.save"))
-  {
-     NetworkAssignment iAssignment;
-     CStdString sIPAddress;
-     CStdString sNetworkMask;
-     CStdString sDefaultGateway;
-     CStdString sWirelessNetwork;
-     CStdString sWirelessKey;
-     CStdString sDns;
-     EncMode iWirelessEnc;
-     CStdString ifaceName;
 
-     CGUISpinControlEx *ifaceControl = (CGUISpinControlEx *)GetControl(GetSetting("network.interface")->GetID());
-     ifaceName = ifaceControl->GetLabel();
-     CNetworkInterface* iface = g_application.getNetwork().GetInterfaceByName(ifaceName);
-
-     // Update controls with information
-     CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.assignment")->GetID());
-     if (pControl1) iAssignment = (NetworkAssignment) pControl1->GetValue();
-     CGUIButtonControl* pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.ipaddress")->GetID());
-     if (pControl2) sIPAddress = pControl2->GetLabel2();
-     pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.subnet")->GetID());
-     if (pControl2) sNetworkMask = pControl2->GetLabel2();
-     pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.gateway")->GetID());
-     if (pControl2) sDefaultGateway = pControl2->GetLabel2();
-     pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.dns")->GetID());
-     if (pControl2) sDns = pControl2->GetLabel2();
-     pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.enc")->GetID());
-     if (pControl1) iWirelessEnc = (EncMode) pControl1->GetValue();
-     pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.essid")->GetID());
-     if (pControl2) sWirelessNetwork = pControl2->GetLabel2();
-     pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.key")->GetID());
-     if (pControl2) sWirelessKey = pControl2->GetLabel2();
-
-     CGUIDialogProgress* pDlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
-     pDlgProgress->SetLine(0, "");
-     pDlgProgress->SetLine(1, g_localizeStrings.Get(784));
-     pDlgProgress->SetLine(2, "");
-     pDlgProgress->StartModal();
-     pDlgProgress->Progress();
-
-     std::vector<CStdString> nameServers;
-     nameServers.push_back(sDns);
-     g_application.getNetwork().SetNameServers(nameServers);
-     iface->SetSettings(iAssignment, sIPAddress, sNetworkMask, sDefaultGateway, sWirelessNetwork, sWirelessKey, iWirelessEnc);
-
-     pDlgProgress->Close();
-
-     if (iAssignment == NETWORK_DISABLED)
-        CGUIDialogOK::ShowAndGetInput(0, 788, 0, 0);
-     else if (iface->IsConnected())
-        CGUIDialogOK::ShowAndGetInput(0, 785, 0, 0);
-     else
-        CGUIDialogOK::ShowAndGetInput(0, 786, 0, 0);
-  }
-  else if (strSetting.Equals("network.essid"))
-  {
-    CGUIDialogAccessPoints *dialog = (CGUIDialogAccessPoints *)g_windowManager.GetWindow(WINDOW_DIALOG_ACCESS_POINTS);
-    if (dialog)
-    {
-       CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting("network.interface")->GetID());
-       dialog->SetInterfaceName(pControl->GetLabel());
-       dialog->DoModal();
-
-       if (dialog->WasItemSelected())
-       {
-          CGUIButtonControl* pControl2 = (CGUIButtonControl *)GetControl(GetSetting("network.essid")->GetID());
-          if (pControl2) pControl2->SetLabel2(dialog->GetSelectedAccessPointEssId());
-          pControl = (CGUISpinControlEx *)GetControl(GetSetting("network.enc")->GetID());
-          if (pControl) pControl->SetValue(dialog->GetSelectedAccessPointEncMode());
-       }
-    }
-  }
-#endif
-#ifdef _LINUX
-  else if (strSetting.Equals("locale.timezonecountry"))
-  {
-    CGUISpinControlEx *pControlCountry = (CGUISpinControlEx *)GetControl(pSettingControl->GetID());
-    CStdString country = pControlCountry->GetCurrentLabel();
-
-    CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting("locale.timezone")->GetID());
-    pControl->Clear();
-    vector<CStdString> timezones = g_timezone.GetTimezonesByCountry(country);
-    for (unsigned int i=0; i < timezones.size(); i++)
-    {
-      pControl->AddLabel(timezones[i], i);
-    }
-
-    g_timezone.SetTimezone(pControl->GetLabel());
-    g_guiSettings.SetString("locale.timezonecountry",pControlCountry->GetLabel().c_str());
-
-    CGUISpinControlEx *tzControl = (CGUISpinControlEx *)GetControl(GetSetting("locale.timezone")->GetID());
-    g_guiSettings.SetString("locale.timezone", tzControl->GetLabel().c_str());
-  }
-  else  if (strSetting.Equals("locale.timezone"))
-  {
-     CGUISpinControlEx *tzControl = (CGUISpinControlEx *)GetControl(GetSetting("locale.timezone")->GetID());
-     g_timezone.SetTimezone(tzControl->GetLabel());
-     g_guiSettings.SetString("locale.timezone", tzControl->GetLabel().c_str());
-
-     tzControl = (CGUISpinControlEx *)GetControl(GetSetting("locale.timezonecountry")->GetID());
-     g_guiSettings.SetString("locale.timezonecountry", tzControl->GetLabel().c_str());
-  }
-#endif
   else if (strSetting.Equals("lookandfeel.skinzoom"))
   {
-    g_windowManager.SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
+    g_fontManager.ReloadTTFFonts();
   }
   else if (strSetting.Equals("videolibrary.flattentvshows") ||
            strSetting.Equals("videolibrary.removeduplicates"))
   {
     CUtil::DeleteVideoDatabaseDirectoryCache();
   }
-
   UpdateSettings();
 }
 
@@ -1891,7 +2088,6 @@ void CGUIWindowSettingsCategory::FreeSettingsControls()
 
 void CGUIWindowSettingsCategory::AddSetting(CSetting *pSetting, float width, int &iControlID)
 {
-  if (!pSetting->IsVisible()) return;  // not displayed in current session
   CBaseSettingControl *pSettingControl = NULL;
   CGUIControl *pControl = NULL;
   if (pSetting->GetControlType() == CHECKMARK_CONTROL)
@@ -1919,7 +2115,6 @@ void CGUIWindowSettingsCategory::AddSetting(CSetting *pSetting, float width, int
   }
   else if (pSetting->GetControlType() == EDIT_CONTROL_INPUT ||
            pSetting->GetControlType() == EDIT_CONTROL_HIDDEN_INPUT ||
-           pSetting->GetControlType() == EDIT_CONTROL_MD5_INPUT ||
            pSetting->GetControlType() == EDIT_CONTROL_NUMBER_INPUT ||
            pSetting->GetControlType() == EDIT_CONTROL_IP_INPUT)
   {
@@ -1939,11 +2134,7 @@ void CGUIWindowSettingsCategory::AddSetting(CSetting *pSetting, float width, int
     pControl->SetWidth(width);
     pSettingControl = new CButtonSettingControl((CGUIButtonControl *)pControl, iControlID, pSetting);
   }
-  if (!pControl)
-  {
-    delete pSettingControl;
-    return;
-  }
+  if (!pControl) return;
   pControl->SetID(iControlID++);
   pControl->SetVisible(true);
   CGUIControlGroupList *group = (CGUIControlGroupList *)GetControl(SETTINGS_GROUP_ID);
@@ -1955,7 +2146,7 @@ void CGUIWindowSettingsCategory::AddSetting(CSetting *pSetting, float width, int
   }
 }
 
-void CGUIWindowSettingsCategory::FrameMove()
+void CGUIWindowSettingsCategory::Render()
 {
   // update realtime changeable stuff
   UpdateRealTimeSettings();
@@ -1967,11 +2158,7 @@ void CGUIWindowSettingsCategory::FrameMove()
     g_windowManager.SendThreadMessage(message, GetID());
     m_delayedTimer.Stop();
   }
-  CGUIWindow::FrameMove();
-}
 
-void CGUIWindowSettingsCategory::Render()
-{
   // update alpha status of current button
   bool bAlphaFaded = false;
   CGUIControl *control = GetFirstFocusableControl(CONTROL_START_BUTTONS + m_iSection);
@@ -2011,9 +2198,6 @@ void CGUIWindowSettingsCategory::Render()
 
 void CGUIWindowSettingsCategory::CheckNetworkSettings()
 {
-  if (!g_application.IsStandAlone())
-    return;
-
   // check if our network needs restarting (requires a reset, so check well!)
   if (m_iNetworkAssignment == -1)
   {
@@ -2034,12 +2218,16 @@ void CGUIWindowSettingsCategory::CheckNetworkSettings()
     if (CGUIDialogYesNo::ShowAndGetInput(14038, 14039, 14040, 0))
     {
       // reset settings
-      g_application.getApplicationMessenger().RestartApp();
+      g_applicationMessenger.RestartApp();
       // Todo: aquire new network settings without restart app!
     }
     else*/
+    {
+      g_network.NetworkMessage(CNetwork::SERVICES_DOWN,1);
+      g_network.SetupNetwork();
+    }
 
-    // update our settings variables
+    // update our settings variables    
     m_iNetworkAssignment = g_guiSettings.GetInt("network.assignment");
     m_strNetworkIPAddress = g_guiSettings.GetString("network.ipaddress");
     m_strNetworkSubnet = g_guiSettings.GetString("network.subnet");
@@ -2077,6 +2265,35 @@ void CGUIWindowSettingsCategory::FillInSubtitleHeights(CSetting *pSetting)
     }
     pControl->SetValue(pSettingInt->GetData());
   }
+#ifdef _XBOX
+  else
+  {
+    if (g_guiSettings.GetString("subtitles.font").size())
+    {
+      //find font sizes...
+      CFileItemList items;
+      CStdString strPath = "special://xbmc/system/players/mplayer/font/";
+      strPath += g_guiSettings.GetString("subtitles.font");
+      strPath += "/";
+      CDirectory::GetDirectory(strPath, items);
+      int iCurrentSize = 0;
+      int iSize = 0;
+      for (int i = 0; i < items.Size(); ++i)
+      {
+        CFileItemPtr pItem = items[i];
+        if (pItem->m_bIsFolder)
+        {
+          if (strcmpi(pItem->GetLabel().c_str(), ".svn") == 0) continue;
+          int iSizeTmp = atoi(pItem->GetLabel().c_str());
+          if (iSizeTmp == pSettingInt->GetData())
+            iCurrentSize = iSize;
+          pControl->AddLabel(pItem->GetLabel(), iSize++);
+        }
+      }
+      pControl->SetValue(iCurrentSize);
+    }
+  }
+#endif
 }
 
 void CGUIWindowSettingsCategory::FillInSubtitleFonts(CSetting *pSetting)
@@ -2087,6 +2304,25 @@ void CGUIWindowSettingsCategory::FillInSubtitleFonts(CSetting *pSetting)
   pControl->Clear();
   int iCurrentFont = 0;
   int iFont = 0;
+
+#ifdef _XBOX
+  // Find mplayer fonts...
+  {
+    CFileItemList items;
+    CDirectory::GetDirectory("special://xbmc/system/players/mplayer/font/", items);
+    for (int i = 0; i < items.Size(); ++i)
+    {
+      CFileItemPtr pItem = items[i];
+      if (pItem->m_bIsFolder)
+      {
+        if (strcmpi(pItem->GetLabel().c_str(), ".svn") == 0) continue;
+        if (strcmpi(pItem->GetLabel().c_str(), pSettingString->GetData().c_str()) == 0)
+          iCurrentFont = iFont;
+        pControl->AddLabel(pItem->GetLabel(), iFont++);
+      }
+    }
+  }
+#endif
 
   // find TTF fonts
   {
@@ -2115,15 +2351,16 @@ void CGUIWindowSettingsCategory::FillInSubtitleFonts(CSetting *pSetting)
 
 void CGUIWindowSettingsCategory::FillInSkinFonts(CSetting *pSetting)
 {
-  CBaseSettingControl *setting = GetSetting(pSetting->GetSetting());
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(setting->GetID());
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   pControl->SetType(SPIN_CONTROL_TYPE_TEXT);
   pControl->Clear();
-  setting->SetDelayed();
 
   int iSkinFontSet = 0;
 
-  CStdString strPath = g_SkinInfo->GetSkinPath("Font.xml");
+  m_strNewSkinFontSet.Empty();
+
+  RESOLUTION res;
+  CStdString strPath = g_SkinInfo.GetSkinPath("Font.xml", &res);
 
   TiXmlDocument xmlDoc;
   if (!xmlDoc.LoadFile(strPath))
@@ -2180,12 +2417,61 @@ void CGUIWindowSettingsCategory::FillInSkinFonts(CSetting *pSetting)
   }
 }
 
+void CGUIWindowSettingsCategory::FillInSkins(CSetting *pSetting)
+{
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+  pControl->SetType(SPIN_CONTROL_TYPE_TEXT);
+  pControl->Clear();
+  pControl->SetShowRange(true);
+
+  m_strNewSkin.Empty();
+
+  //find skins...
+  CFileItemList items;
+  CDirectory::GetDirectory("special://xbmc/skin/", items);
+  if (!CSpecialProtocol::XBMCIsHome())
+    CDirectory::GetDirectory("special://home/skin/", items);
+
+  int iCurrentSkin = 0;
+  int iSkin = 0;
+  vector<CStdString> vecSkins;
+  for (int i = 0; i < items.Size(); ++i)
+  {
+    CFileItemPtr pItem = items[i];
+    if (pItem->m_bIsFolder)
+    {
+      if (strcmpi(pItem->GetLabel().c_str(), ".svn") == 0) continue;
+      if (strcmpi(pItem->GetLabel().c_str(), "fonts") == 0) continue;
+      if (strcmpi(pItem->GetLabel().c_str(), "media") == 0) continue;
+      //   if (g_SkinInfo.Check(pItem->m_strPath))
+      //   {
+      vecSkins.push_back(pItem->GetLabel());
+      //   }
+    }
+  }
+
+  sort(vecSkins.begin(), vecSkins.end(), sortstringbyname());
+  for (unsigned int i = 0; i < vecSkins.size(); ++i)
+  {
+    CStdString strSkin = vecSkins[i];
+    if (strcmpi(strSkin.c_str(), g_guiSettings.GetString("lookandfeel.skin").c_str()) == 0)
+    {
+      iCurrentSkin = iSkin;
+    }
+    pControl->AddLabel(strSkin, iSkin++);
+  }
+  pControl->SetValue(iCurrentSkin);
+  return ;
+}
+
 void CGUIWindowSettingsCategory::FillInSoundSkins(CSetting *pSetting)
 {
   CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   pControl->SetType(SPIN_CONTROL_TYPE_TEXT);
   pControl->Clear();
   pControl->SetShowRange(true);
+
+  m_strNewSkin.Empty();
 
   //find skins...
   CFileItemList items;
@@ -2196,8 +2482,7 @@ void CGUIWindowSettingsCategory::FillInSoundSkins(CSetting *pSetting)
   int iCurrentSoundSkin = 0;
   int iSoundSkin = 0;
   vector<CStdString> vecSoundSkins;
-  int i;
-  for (i = 0; i < items.Size(); ++i)
+  for (int i = 0; i < items.Size(); ++i)
   {
     CFileItemPtr pItem = items[i];
     if (pItem->m_bIsFolder)
@@ -2216,7 +2501,7 @@ void CGUIWindowSettingsCategory::FillInSoundSkins(CSetting *pSetting)
     iCurrentSoundSkin=1;
 
   sort(vecSoundSkins.begin(), vecSoundSkins.end(), sortstringbyname());
-  for (i = 0; i < (int) vecSoundSkins.size(); ++i)
+  for (int i = 0; i < (int) vecSoundSkins.size(); ++i)
   {
     CStdString strSkin = vecSoundSkins[i];
     if (strcmpi(strSkin.c_str(), g_guiSettings.GetString("lookandfeel.soundskin").c_str()) == 0)
@@ -2261,34 +2546,244 @@ void CGUIWindowSettingsCategory::FillInCharSets(CSetting *pSetting)
   pControl->SetValue(iCurrentCharset);
 }
 
-void CGUIWindowSettingsCategory::FillInResolutions(CSetting *pSetting, bool playbackSetting)
+void CGUIWindowSettingsCategory::FillInVisualisations(CSetting *pSetting, int iControlID)
 {
   CSettingString *pSettingString = (CSettingString*)pSetting;
-  CBaseSettingControl *control = GetSetting(pSetting->GetSetting());
-  control->SetDelayed();
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(control->GetID());
-  pControl->Clear();
-
-  pControl->AddLabel(g_settings.m_ResInfo[RES_WINDOW].strMode, RES_WINDOW);
-  pControl->AddLabel(g_settings.m_ResInfo[RES_DESKTOP].strMode, RES_DESKTOP);
-  size_t maxRes = g_settings.m_ResInfo.size();
-  if (g_Windowing.GetNumScreens())
-    maxRes = std::min(maxRes, (size_t)RES_DESKTOP + g_Windowing.GetNumScreens());
-  for (size_t i = RES_CUSTOM ; i < maxRes; i++)
+  if (!pSetting) return;
+  int iWinID = g_windowManager.GetActiveWindow();
   {
-    pControl->AddLabel(g_settings.m_ResInfo[i].strMode, i);
+    CGUIMessage msg(GUI_MSG_LABEL_RESET, iWinID, iControlID);
+    g_windowManager.SendMessage(msg);
   }
-  pControl->SetValue(CGUISettings::GetResFromString(pSettingString->GetData()));
+  vector<CStdString> vecVis;
+  //find visz....
+  CFileItemList items;
+  CDirectory::GetDirectory("special://xbmc/visualisations/", items);
+  if (!CSpecialProtocol::XBMCIsHome())
+    CDirectory::GetDirectory("special://home/visualisations/", items);
+
+  for (int i = 0; i < items.Size(); ++i)
+  {
+    CFileItemPtr pItem = items[i];
+    if (!pItem->m_bIsFolder)
+    {
+      CStdString strExtension;
+      CUtil::GetExtension(pItem->m_strPath, strExtension);
+      if (strExtension == ".vis")
+      {
+        CStdString strLabel = pItem->GetLabel();
+        vecVis.push_back(strLabel.Mid(0, strLabel.size() - 4));
+      }
+    }
+  }
+
+  CStdString strDefaultVis = pSettingString->GetData();
+  if (!strDefaultVis.Equals("None"))
+    strDefaultVis.Delete(strDefaultVis.size() - 4, 4);
+
+  sort(vecVis.begin(), vecVis.end(), sortstringbyname());
+
+  // add the "disabled" setting first
+  int iVis = 0;
+  int iCurrentVis = 0;
+  {
+    CGUIMessage msg(GUI_MSG_LABEL_ADD, iWinID, iControlID, iVis++);
+    msg.SetLabel(231);
+    g_windowManager.SendMessage(msg);
+  }
+  for (int i = 0; i < (int) vecVis.size(); ++i)
+  {
+    CStdString strVis = vecVis[i];
+
+    if (strcmpi(strVis.c_str(), strDefaultVis.c_str()) == 0)
+      iCurrentVis = iVis;
+
+    {
+      CGUIMessage msg(GUI_MSG_LABEL_ADD, iWinID, iControlID, iVis++);
+      msg.SetLabel(strVis);
+      g_windowManager.SendMessage(msg);
+    }
+  }
+  {
+    CGUIMessage msg(GUI_MSG_ITEM_SELECT, iWinID, iControlID, iCurrentVis);
+    g_windowManager.SendMessage(msg);
+  }
+}
+
+void CGUIWindowSettingsCategory::FillInVoiceMasks(DWORD dwPort, CSetting *pSetting)
+{
+  CSettingString *pSettingString = (CSettingString*)pSetting;
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+  pControl->SetShowRange(true); // show the range
+  int iCurrentMask = 0;
+  int iMask = 0;
+  vector<CStdString> vecMask;
+
+  //find masks in xml...
+  TiXmlDocument xmlDoc;
+  CStdString fileName = "special://xbmc/system/voicemasks.xml";
+  if ( !xmlDoc.LoadFile(fileName) ) return ;
+  TiXmlElement* pRootElement = xmlDoc.RootElement();
+  CStdString strValue = pRootElement->Value();
+  if ( strValue != "VoiceMasks") return ;
+  if (pRootElement)
+  {
+    const TiXmlNode *pChild = pRootElement->FirstChild("Name");
+    while (pChild)
+    {
+      if (pChild->FirstChild())
+      {
+        CStdString strName = pChild->FirstChild()->Value();
+        vecMask.push_back(strName);
+      }
+      pChild = pChild->NextSibling("Name");
+    }
+  }
+  xmlDoc.Clear();
+
+
+  CStdString strDefaultMask = pSettingString->GetData();
+
+  sort(vecMask.begin(), vecMask.end(), sortstringbyname());
+//  CStdString strCustom = "Custom";
+  CStdString strNone = "None";
+//  vecMask.insert(vecMask.begin(), strCustom);
+  vecMask.insert(vecMask.begin(), strNone);
+  for (int i = 0; i < (int) vecMask.size(); ++i)
+  {
+    CStdString strMask = vecMask[i];
+
+    if (strcmpi(strMask.c_str(), strDefaultMask.c_str()) == 0)
+      iCurrentMask = iMask;
+
+    pControl->AddLabel(strMask, iMask++);
+  }
+
+  pControl->SetValue(iCurrentMask);
+}
+
+void CGUIWindowSettingsCategory::FillInVoiceMaskValues(DWORD dwPort, CSetting *pSetting)
+{
+  CStdString strCurMask = g_guiSettings.GetString(pSetting->GetSetting());
+  if (strCurMask.CompareNoCase("None") == 0 || strCurMask.CompareNoCase("Custom") == 0 )
+  {
+#ifndef HAS_XBOX_AUDIO
+#define XVOICE_MASK_PARAM_DISABLED (-1.0f)
+#endif
+    g_stSettings.m_karaokeVoiceMask[dwPort].energy = XVOICE_MASK_PARAM_DISABLED;
+    g_stSettings.m_karaokeVoiceMask[dwPort].pitch = XVOICE_MASK_PARAM_DISABLED;
+    g_stSettings.m_karaokeVoiceMask[dwPort].whisper = XVOICE_MASK_PARAM_DISABLED;
+    g_stSettings.m_karaokeVoiceMask[dwPort].robotic = XVOICE_MASK_PARAM_DISABLED;
+    return;
+  }
+
+  //find mask values in xml...
+  TiXmlDocument xmlDoc;
+  CStdString fileName = "special://xbmc/system/voicemasks.xml";
+  if ( !xmlDoc.LoadFile( fileName ) ) return ;
+  TiXmlElement* pRootElement = xmlDoc.RootElement();
+  CStdString strValue = pRootElement->Value();
+  if ( strValue != "VoiceMasks") return ;
+  if (pRootElement)
+  {
+    const TiXmlNode *pChild = pRootElement->FirstChild("Name");
+    while (pChild)
+    {
+      CStdString strMask = pChild->FirstChild()->Value();
+      if (strMask.CompareNoCase(strCurMask) == 0)
+      {
+        for (int i = 0; i < 4;i++)
+        {
+          pChild = pChild->NextSibling();
+          if (pChild)
+          {
+            CStdString strValue = pChild->Value();
+            if (strValue.CompareNoCase("fSpecEnergyWeight") == 0)
+            {
+              if (pChild->FirstChild())
+              {
+                CStdString strName = pChild->FirstChild()->Value();
+                g_stSettings.m_karaokeVoiceMask[dwPort].energy = (float) atof(strName.c_str());
+              }
+            }
+            else if (strValue.CompareNoCase("fPitchScale") == 0)
+            {
+              if (pChild->FirstChild())
+              {
+                CStdString strName = pChild->FirstChild()->Value();
+                g_stSettings.m_karaokeVoiceMask[dwPort].pitch = (float) atof(strName.c_str());
+              }
+            }
+            else if (strValue.CompareNoCase("fWhisperValue") == 0)
+            {
+              if (pChild->FirstChild())
+              {
+                CStdString strName = pChild->FirstChild()->Value();
+                g_stSettings.m_karaokeVoiceMask[dwPort].whisper = (float) atof(strName.c_str());
+              }
+            }
+            else if (strValue.CompareNoCase("fRoboticValue") == 0)
+            {
+              if (pChild->FirstChild())
+              {
+                CStdString strName = pChild->FirstChild()->Value();
+                g_stSettings.m_karaokeVoiceMask[dwPort].robotic = (float) atof(strName.c_str());
+              }
+            }
+          }
+        }
+        break;
+      }
+      pChild = pChild->NextSibling("Name");
+    }
+  }
+  xmlDoc.Clear();
+}
+
+void CGUIWindowSettingsCategory::FillInResolutions(CSetting *pSetting, bool playbackSetting)
+{
+  CSettingInt *pSettingInt = (CSettingInt*)pSetting;
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+  pControl->Clear();
+  // Find the valid resolutions and add them as necessary
+  vector<RESOLUTION> res;
+  g_graphicsContext.GetAllowedResolutions(res, false);
+
+  /* add the virtual resolutions */
+  res.push_back(AUTORES);
+
+  for (vector<RESOLUTION>::iterator it = res.begin(); it != res.end();it++)
+  {
+    RESOLUTION res = *it;
+    if (res == AUTORES)
+    {
+      if (playbackSetting)
+      {
+        //  TODO: localize 2.0
+        if (g_videoConfig.Has1080i() || g_videoConfig.Has720p())
+          pControl->AddLabel(g_localizeStrings.Get(20049) , res); // Best Available
+        else if (g_videoConfig.HasWidescreen())
+          pControl->AddLabel(g_localizeStrings.Get(20050) , res); // Autoswitch between 16x9 and 4x3
+        else
+          continue;   // don't have a choice of resolution (other than 480p vs NTSC, which isn't a choice)
+      }
+      else  // "Auto"
+        pControl->AddLabel(g_localizeStrings.Get(14061), res);
+    }
+    else
+    {
+      pControl->AddLabel(g_settings.m_ResInfo[res].strMode, res);
+    }
+  }
+  pControl->SetValue(pSettingInt->GetData());
 }
 
 void CGUIWindowSettingsCategory::FillInLanguages(CSetting *pSetting)
 {
-  CSettingString *pSettingString = (CSettingString *)pSetting;
-  CBaseSettingControl *setting = GetSetting(pSetting->GetSetting());
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(setting->GetID());
-  setting->SetDelayed();
+  CSettingString *pSettingString = (CSettingString*)pSetting;
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   pControl->Clear();
-
+  m_strNewLanguage.Empty();
   //find languages...
   CFileItemList items;
   CDirectory::GetDirectory("special://xbmc/language/", items);
@@ -2318,6 +2813,138 @@ void CGUIWindowSettingsCategory::FillInLanguages(CSetting *pSetting)
   }
 
   pControl->SetValue(iCurrentLang);
+}
+
+void CGUIWindowSettingsCategory::FillInScreenSavers(CSetting *pSetting)
+{ // Screensaver mode
+  CSettingString *pSettingString = (CSettingString*)pSetting;
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+  pControl->Clear();
+
+  pControl->AddLabel(g_localizeStrings.Get(351), 0); // Off
+  pControl->AddLabel(g_localizeStrings.Get(352), 1); // Dim
+  pControl->AddLabel(g_localizeStrings.Get(353), 2); // Black
+  pControl->AddLabel(g_localizeStrings.Get(108), 3); // PictureSlideShow
+  pControl->AddLabel(g_localizeStrings.Get(20425), 4); // Fanart Slideshow
+
+  //find screensavers ....
+  CFileItemList items;
+  CDirectory::GetDirectory( "special://xbmc/screensavers/", items);
+  if (!CSpecialProtocol::XBMCIsHome())
+    CDirectory::GetDirectory("special://home/screensavers/", items);
+
+  int iCurrentScr = -1;
+  vector<CStdString> vecScr;
+  int i;
+  for (i = 0; i < items.Size(); ++i)
+  {
+    CFileItemPtr pItem = items[i];
+    if (!pItem->m_bIsFolder)
+    {
+      CStdString strExtension;
+      CUtil::GetExtension(pItem->m_strPath, strExtension);
+      if (strExtension == ".xbs")
+      {
+        CStdString strLabel = pItem->GetLabel();
+        vecScr.push_back(strLabel.Mid(0, strLabel.size() - 4));
+      }
+    }
+  }
+
+  CStdString strDefaultScr = pSettingString->GetData();
+  CStdString strExtension;
+  CUtil::GetExtension(strDefaultScr, strExtension);
+  if (strExtension == ".xbs")
+    strDefaultScr.Delete(strDefaultScr.size() - 4, 4);
+
+  sort(vecScr.begin(), vecScr.end(), sortstringbyname());
+  for (i = 0; i < (int) vecScr.size(); ++i)
+  {
+    CStdString strScr = vecScr[i];
+
+    if (strcmpi(strScr.c_str(), strDefaultScr.c_str()) == 0)
+      iCurrentScr = i + PREDEFINED_SCREENSAVERS;
+
+    pControl->AddLabel(strScr, i + PREDEFINED_SCREENSAVERS);
+  }
+
+  // if we can't find the screensaver previously configured
+  // then fallback to turning the screensaver off.
+  if (iCurrentScr < 0)
+  {
+    if (strDefaultScr == "Dim")
+      iCurrentScr = 1;
+    else if (strDefaultScr == "Black")
+      iCurrentScr = 2;
+    else if (strDefaultScr == "SlideShow") // PictureSlideShow
+      iCurrentScr = 3;
+    else if (strDefaultScr == "Fanart Slideshow") // Fanart slideshow
+      iCurrentScr = 4;
+    else
+    {
+      iCurrentScr = 0;
+      pSettingString->SetData("None");
+    }
+  }
+  pControl->SetValue(iCurrentScr);
+}
+
+void CGUIWindowSettingsCategory::FillInFTPServerUser(CSetting *pSetting)
+{
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
+  pControl->SetType(SPIN_CONTROL_TYPE_TEXT);
+  pControl->Clear();
+  pControl->SetShowRange(true);
+  int iDefaultFtpUser = 0;
+
+#ifdef HAS_FTP_SERVER
+  CStdString strFtpUser1; int iUserMax;
+  // Get FTP XBOX Users and list them !
+  if (CUtil::GetFTPServerUserName(0, strFtpUser1, iUserMax))
+  {
+    for (int i = 0; i < iUserMax; i++)
+    {
+      if (CUtil::GetFTPServerUserName(i, strFtpUser1, iUserMax))
+        pControl->AddLabel(strFtpUser1.c_str(), i);
+      if (strFtpUser1.ToLower() == "xbox") iDefaultFtpUser = i;
+    }
+    pControl->SetValue(iDefaultFtpUser);
+    CUtil::GetFTPServerUserName(iDefaultFtpUser, strFtpUser1, iUserMax);
+    g_guiSettings.SetString("services.ftpserveruser", strFtpUser1.c_str());
+    pControl->SetInvalid();
+  }
+  else { //Set "None" if there is no FTP User found!
+    pControl->AddLabel(g_localizeStrings.Get(231).c_str(), 0);
+    pControl->SetValue(0);
+    pControl->SetInvalid();
+  }
+#endif
+}
+bool CGUIWindowSettingsCategory::SetFTPServerUserPass()
+{
+#ifdef HAS_FTP_SERVER
+  // TODO: Read the FileZilla Server XML and Set it here!
+  // Get GUI USER and pass and set pass to FTP Server
+  CStdString strFtpUserName, strFtpUserPassword;
+  strFtpUserName      = g_guiSettings.GetString("services.ftpserveruser");
+  strFtpUserPassword  = g_guiSettings.GetString("services.ftpserverpassword");
+  if(strFtpUserPassword.size()!=0)
+  {
+    if (CUtil::SetFTPServerUserPassword(strFtpUserName, strFtpUserPassword))
+    {
+      // todo! ERROR check! if something goes wrong on SetPW!
+      // PopUp OK and Display: FTP Server Password was set succesfull!
+      CGUIDialogOK::ShowAndGetInput(728, 0, 1247, 0);
+    }
+    return true;
+  }
+  else
+  {
+    // PopUp OK and Display: FTP Server Password is empty! Try Again!
+    CGUIDialogOK::ShowAndGetInput(728, 0, 12358, 0);
+  }
+#endif
+  return true;
 }
 
 void CGUIWindowSettingsCategory::FillInRegions(CSetting *pSetting)
@@ -2402,28 +3029,30 @@ void CGUIWindowSettingsCategory::JumpToPreviousSection()
 
 void CGUIWindowSettingsCategory::FillInSkinThemes(CSetting *pSetting)
 {
-  // There is a default theme (just Textures.xpr/xbt)
-  // any other *.xpr|*.xbt files are additional themes on top of this one.
-  CSettingString *pSettingString = (CSettingString *)pSetting;
-  CBaseSettingControl *setting = GetSetting(pSetting->GetSetting());
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(setting->GetID());
+  // There is a default theme (just Textures.xpr)
+  // any other *.xpr files are additional themes on top of this one.
+  CSettingString *pSettingString = (CSettingString*)pSetting;
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   CStdString strSettingString = g_guiSettings.GetString("lookandfeel.skintheme");
-  setting->SetDelayed();
+
+  m_strNewSkinTheme.Empty();
 
   // Clear and add. the Default Label
   pControl->Clear();
   pControl->SetShowRange(true);
-  pControl->AddLabel(g_localizeStrings.Get(15109), 0); // "SKINDEFAULT" The standard Textures.xpr/xbt will be used
+  pControl->AddLabel(g_localizeStrings.Get(15109), 0); // "SKINDEFAULT"! The standart Textures.xpr will be used!
 
+  // find all *.xpr in this path
   CStdString strDefaultTheme = pSettingString->GetData();
 
   // Search for Themes in the Current skin!
   vector<CStdString> vecTheme;
   CUtil::GetSkinThemes(vecTheme);
 
-  // Remove the extension from the current Theme (backward compat)
-  CUtil::RemoveExtension(strSettingString);
-
+  // Remove the .xpr extension from the Themes
+  CStdString strExtension;
+  CUtil::GetExtension(strSettingString, strExtension);
+  if (strExtension == ".xpr") strSettingString.Delete(strSettingString.size() - 4, 4);
   // Sort the Themes for GUI and list them
   int iCurrentTheme = 0;
   for (int i = 0; i < (int) vecTheme.size(); ++i)
@@ -2442,10 +3071,10 @@ void CGUIWindowSettingsCategory::FillInSkinColors(CSetting *pSetting)
 {
   // There is a default theme (just defaults.xml)
   // any other *.xml files are additional color themes on top of this one.
-  CBaseSettingControl *setting = GetSetting(pSetting->GetSetting());
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(setting->GetID());
+  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   CStdString strSettingString = g_guiSettings.GetString("lookandfeel.skincolors");
-  setting->SetDelayed();
+
+  m_strNewSkinColors.Empty();
 
   // Clear and add. the Default Label
   pControl->Clear();
@@ -2456,10 +3085,10 @@ void CGUIWindowSettingsCategory::FillInSkinColors(CSetting *pSetting)
   vector<CStdString> vecColors;
 
   CStdString strPath;
-  CUtil::AddFileToFolder(g_SkinInfo->Path(),"colors",strPath);
+  CUtil::AddFileToFolder(g_SkinInfo.GetBaseDir(),"colors",strPath);
 
   CFileItemList items;
-  CDirectory::GetDirectory(PTH_IC(strPath), items, ".xml");
+  CDirectory::GetDirectory(strPath, items, ".xml");
   // Search for Themes in the Current skin!
   for (int i = 0; i < items.Size(); ++i)
   {
@@ -2495,7 +3124,7 @@ void CGUIWindowSettingsCategory::FillInStartupWindow(CSetting *pSetting)
   CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
   pControl->Clear();
 
-  const vector<CSkinInfo::CStartupWindow> &startupWindows = g_SkinInfo->GetStartupWindows();
+  const vector<CSkinInfo::CStartupWindow> &startupWindows = g_SkinInfo.GetStartupWindows();
 
   // TODO: How should we localize this?
   // In the long run there is no way to do it really without the skin having some
@@ -2531,18 +3160,14 @@ void CGUIWindowSettingsCategory::FillInStartupWindow(CSetting *pSetting)
 
 void CGUIWindowSettingsCategory::OnInitWindow()
 {
-  if (g_application.IsStandAlone())
-  {
-#ifndef __APPLE__
-    m_iNetworkAssignment = g_guiSettings.GetInt("network.assignment");
-    m_strNetworkIPAddress = g_guiSettings.GetString("network.ipaddress");
-    m_strNetworkSubnet = g_guiSettings.GetString("network.subnet");
-    m_strNetworkGateway = g_guiSettings.GetString("network.gateway");
-    m_strNetworkDNS = g_guiSettings.GetString("network.dns");
-#endif
-  }
+  m_iNetworkAssignment = g_guiSettings.GetInt("network.assignment");
+  m_strNetworkIPAddress = g_guiSettings.GetString("network.ipaddress");
+  m_strNetworkSubnet = g_guiSettings.GetString("network.subnet");
+  m_strNetworkGateway = g_guiSettings.GetString("network.gateway");
+  m_strNetworkDNS = g_guiSettings.GetString("network.dns");
   m_strOldTrackFormat = g_guiSettings.GetString("musicfiles.trackformat");
   m_strOldTrackFormatRight = g_guiSettings.GetString("musicfiles.trackformatright");
+  m_NewResolution = INVALID;
   SetupControls();
   CGUIWindow::OnInitWindow();
 }
@@ -2602,286 +3227,90 @@ void CGUIWindowSettingsCategory::FillInSortMethods(CSetting *pSetting, int windo
   delete state;
 }
 
-void CGUIWindowSettingsCategory::FillInAddons(CSettingAddon *pSetting, int controlID)
+void CGUIWindowSettingsCategory::FillInScrapers(CGUISpinControlEx *pControl, const CStdString& strSelected, const CStdString& strContent)
 {
-  // note: this function is static as it's called from elsewhere in the app, so we send messages
-  //       via the window manager
-  int windowID = g_windowManager.GetActiveWindow();
-
-  bool allowNone = false;
-  switch (pSetting->m_type)
-  {
-    case ADDON_SCREENSAVER:
-    case ADDON_VIZ:
-    allowNone = true;
-    break;
-    default:
-    break;
-  }
-
-  //FIXME must be better way to handle virtual addontypes, as this is horrid
-  VECADDONS addons;
-  g_windowManager.SendMessage(GUI_MSG_LABEL_RESET, windowID, controlID);
-  CStdString strSelected = pSetting->GetData();
-
-  pSetting->m_entries.clear();
-
-  if (allowNone)
-    pSetting->m_entries.insert(std::make_pair("_virtual.none", g_localizeStrings.Get(231)));
-
-  if (pSetting->m_type == ADDON_SCREENSAVER)
-  {
-    pSetting->m_entries.insert(std::make_pair("_virtual.dim", g_localizeStrings.Get(352))); // Dim
-    pSetting->m_entries.insert(std::make_pair("_virtual.blk", g_localizeStrings.Get(353))); // Black
-    pSetting->m_entries.insert(std::make_pair("_virtual.pic", g_localizeStrings.Get(108))); // PictureSlideShow
-    pSetting->m_entries.insert(std::make_pair("_virtual.fan", g_localizeStrings.Get(20425))); // Fanart Slideshow
-  }
-
-  CAddonMgr::Get().GetAddons(pSetting->m_type, addons, pSetting->m_content);
-  for (IVECADDONS it = addons.begin(); it != addons.end(); it++)
-  {
-    AddonPtr addon = *it;
-    pSetting->m_entries.insert(std::make_pair(addon->ID(),addon->Name()));
-  }
-
-  unsigned i=0;
-  for (map<CStdString,CStdString>::iterator it=pSetting->m_entries.begin();
-       it != pSetting->m_entries.end();++it)
-  {
-    CGUIMessage msg(GUI_MSG_LABEL_ADD, windowID, controlID, i++);
-    msg.SetLabel(it->second);
-    g_windowManager.SendMessage(msg);
-  }
-  g_windowManager.SendMessage(GUI_MSG_ITEM_SELECT, windowID, controlID, pSetting->GetPos());
-}
-
-void CGUIWindowSettingsCategory::FillInNetworkInterfaces(CSetting *pSetting)
-{
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
-  pControl->Clear();
-
-  // query list of interfaces
-  vector<CStdString> vecInterfaces;
-  std::vector<CNetworkInterface*>& ifaces = g_application.getNetwork().GetInterfaceList();
-  std::vector<CNetworkInterface*>::const_iterator iter = ifaces.begin();
-  while (iter != ifaces.end())
-  {
-    CNetworkInterface* iface = *iter;
-    vecInterfaces.push_back(iface->GetName());
-    ++iter;
-  }
-  sort(vecInterfaces.begin(), vecInterfaces.end(), sortstringbyname());
-
-  int iInterface = 0;
-  for (unsigned int i = 0; i < vecInterfaces.size(); ++i)
-  {
-    pControl->AddLabel(vecInterfaces[i], iInterface++);
-  }
-}
-
-void CGUIWindowSettingsCategory::FillInAudioDevices(CSetting* pSetting, bool Passthrough)
-{
-#ifdef __APPLE__
-  if (Passthrough)
-    return;
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
-  pControl->Clear();
-
-  CoreAudioDeviceList deviceList;
-  CCoreAudioHardware::GetOutputDevices(&deviceList);
-
-  if (CCoreAudioHardware::GetDefaultOutputDevice())
-    pControl->AddLabel("Default Output Device", 0); // This will cause FindAudioDevice to fall back to the system default as configured in 'System Preferences'
-  int activeDevice = 0;
-
-  CStdString deviceName;
-  for (int i = pControl->GetMaximum(); !deviceList.empty(); i++)
-  {
-    CCoreAudioDevice device(deviceList.front());
-    pControl->AddLabel(device.GetName(deviceName), i);
-
-    if (g_guiSettings.GetString("audiooutput.audiodevice").Equals(deviceName))
-      activeDevice = i; // Tag this one
-
-    deviceList.pop_front();
-  }
-  pControl->SetValue(activeDevice);
-#else
-  CGUISpinControlEx *pControl = (CGUISpinControlEx *)GetControl(GetSetting(pSetting->GetSetting())->GetID());
-  pControl->Clear();
-
-  CStdString currentDevice = Passthrough ? g_guiSettings.GetString("audiooutput.passthroughdevice") : g_guiSettings.GetString("audiooutput.audiodevice");
-
-  if (Passthrough)
-  {
-    m_DigitalAudioSinkMap.clear();
-    m_DigitalAudioSinkMap["Error - no devices found"] = "null:";
-    m_DigitalAudioSinkMap["custom"] = "custom";
-  }
+  CFileItemList items;
+  if (strContent.Equals("music"))
+    CDirectory::GetDirectory("special://xbmc/system/scrapers/music",items,".xml",false);
   else
-  {
-    m_AnalogAudioSinkMap.clear();
-    m_AnalogAudioSinkMap["Error - no devices found"] = "null:";
-    m_AnalogAudioSinkMap["custom"] = "custom";
-  }
-
-  int numberSinks = 0;
-
-  int selectedValue = -1;
-  AudioSinkList sinkList;
-  CAudioRendererFactory::EnumerateAudioSinks(sinkList, Passthrough);
-  if (sinkList.size()==0)
-  {
-    pControl->AddLabel("Error - no devices found", 0);
-    numberSinks = 1;
-    selectedValue = 0;
-  }
-  else
-  {
-    AudioSinkList::const_iterator iter = sinkList.begin();
-    for (int i=0; iter != sinkList.end(); iter++)
-    {
-      CStdString label = (*iter).first;
-      CStdString sink  = (*iter).second;
-      pControl->AddLabel(label.c_str(), i);
-
-      if (currentDevice.Equals(sink))
-        selectedValue = i;
-
-      if (Passthrough)
-        m_DigitalAudioSinkMap[label] = sink;
-      else
-        m_AnalogAudioSinkMap[label] = sink;
-
-      i++;
-    }
-
-    numberSinks = sinkList.size();
-  }
-
-#ifdef _LINUX
-  if (currentDevice.Equals("custom"))
-    selectedValue = numberSinks;
-
-  pControl->AddLabel("custom", numberSinks++);
-#endif
-
-  if (selectedValue < 0)
-  {
-    CLog::Log(LOGWARNING, "Failed to find previously selected audio sink");
-    pControl->AddLabel(currentDevice, numberSinks);
-    pControl->SetValue(numberSinks);
-  }
-  else
-    pControl->SetValue(selectedValue);
-#endif
-}
-
-void CGUIWindowSettingsCategory::FillInWeatherScripts(CGUISpinControlEx *pControl, const CStdString& strSelected)
-{
-  VECADDONS addons;
+    CDirectory::GetDirectory("special://xbmc/system/scrapers/video",items,".xml",false);
   int j=0;
   int k=0;
   pControl->Clear();
-  // add our disable option
-  pControl->AddLabel(g_localizeStrings.Get(24028), j++);
-
-  //find weather scripts....
-  CAddonMgr::Get().GetAddons(ADDON_SCRIPT, addons);
-  if (!addons.empty())
+  for ( int i=0;i<items.Size();++i)
   {
-    for (unsigned int i = 0; i < addons.size(); i++)
+    if (items[i]->m_bIsFolder)
+      continue;
+
+    CScraperParser parser;
+    if (parser.Load(items[i]->m_strPath))
     {
-      AddonPtr addon = addons.at(i);
-      // create the full path to the plugin
-      CStdString strFileName = addon->Path() + addon->LibName();
-      if (XFILE::CFile::Exists(strFileName))
+      if (parser.GetContent() != strContent && !strContent.Equals("music"))
+        continue;
+
+      if (parser.GetName().Equals(strSelected) || CUtil::GetFileName(items[i]->m_strPath).Equals(strSelected))
       {
-        // is this the users choice
-        if (addon->Name().Equals(strSelected))
-          k = j;
-        // we want to use the plugins folder as name
-        pControl->AddLabel(addon->Name(), j++);
+        if (strContent.Equals("music")) // native strContent would be albums or artists but we're using the same scraper for both
+        {
+          if (g_guiSettings.GetString("musiclibrary.scraper") != strSelected)
+          {
+            g_guiSettings.SetString("musiclibrary.scraper", CUtil::GetFileName(items[i]->m_strPath));
+
+            SScraperInfo info;
+            CMusicDatabase database;
+
+            info.strPath = g_guiSettings.GetString("musiclibrary.scraper");
+            info.strContent = "albums";
+            info.strTitle = parser.GetName();
+
+            database.Open();
+            database.SetScraperForPath("musicdb://",info);
+            database.Close();
+          }
+        }
+        else if (strContent.Equals("movies"))
+          g_guiSettings.SetString("scrapers.moviedefault", CUtil::GetFileName(items[i]->m_strPath));
+        else if (strContent.Equals("tvshows"))
+          g_guiSettings.SetString("scrapers.tvshowdefault", CUtil::GetFileName(items[i]->m_strPath));
+        else if (strContent.Equals("musicvideos"))
+          g_guiSettings.SetString("scrapers.musicvideodefault", CUtil::GetFileName(items[i]->m_strPath));
+        k = j;
       }
+      pControl->AddLabel(parser.GetName(),j++);
     }
   }
   pControl->SetValue(k);
 }
 
-void CGUIWindowSettingsCategory::NetworkInterfaceChanged(void)
+void CGUIWindowSettingsCategory::FillInWeatherPlugins(CGUISpinControlEx *pControl, const CStdString& strSelected)
 {
-  return;
+  int j=0;
+  int k=0;
+  pControl->Clear();
+  // add our disable option
+  pControl->AddLabel(g_localizeStrings.Get(13611), j++);
 
-   NetworkAssignment iAssignment;
-   CStdString sIPAddress;
-   CStdString sNetworkMask;
-   CStdString sDefaultGateway;
-   CStdString sWirelessNetwork;
-   CStdString sWirelessKey;
-   EncMode iWirelessEnc;
-   bool bIsWireless;
-   CStdString ifaceName;
-
-   // Get network information
-   CGUISpinControlEx *ifaceControl = (CGUISpinControlEx *)GetControl(GetSetting("network.interface")->GetID());
-   ifaceName = ifaceControl->GetLabel();
-   CNetworkInterface* iface = g_application.getNetwork().GetInterfaceByName(ifaceName);
-   iface->GetSettings(iAssignment, sIPAddress, sNetworkMask, sDefaultGateway, sWirelessNetwork, sWirelessKey, iWirelessEnc);
-   bIsWireless = iface->IsWireless();
-
-   CStdString dns;
-   std::vector<CStdString> dnss = g_application.getNetwork().GetNameServers();
-   if (dnss.size() >= 1)
-      dns = dnss[0];
-
-   // Update controls with information
-   CGUISpinControlEx* pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.assignment")->GetID());
-   if (pControl1) pControl1->SetValue(iAssignment);
-   GetSetting("network.dns")->GetSetting()->FromString(dns);
-   if (iAssignment == NETWORK_STATIC || iAssignment == NETWORK_DISABLED)
-   {
-     GetSetting("network.ipaddress")->GetSetting()->FromString(sIPAddress);
-     GetSetting("network.subnet")->GetSetting()->FromString(sNetworkMask);
-     GetSetting("network.gateway")->GetSetting()->FromString(sDefaultGateway);
-   }
-   else
-   {
-     GetSetting("network.ipaddress")->GetSetting()->FromString(iface->GetCurrentIPAddress());
-     GetSetting("network.subnet")->GetSetting()->FromString(iface->GetCurrentNetmask());
-     GetSetting("network.gateway")->GetSetting()->FromString(iface->GetCurrentDefaultGateway());
-   }
-
-   pControl1 = (CGUISpinControlEx *)GetControl(GetSetting("network.enc")->GetID());
-   if (pControl1) pControl1->SetValue(iWirelessEnc);
-
-   if (bIsWireless)
-   {
-      GetSetting("network.essid")->GetSetting()->FromString(sWirelessNetwork);
-      GetSetting("network.key")->GetSetting()->FromString(sWirelessKey);
-   }
-   else
-   {
-      GetSetting("network.essid")->GetSetting()->FromString("");
-      GetSetting("network.key")->GetSetting()->FromString("");
-   }
-}
-
-void CGUIWindowSettingsCategory::ValidatePortNumber(CBaseSettingControl* pSettingControl, const CStdString& userPort, const CStdString& privPort, bool listening/*=true*/)
-{
-  CSettingString *pSetting = (CSettingString *)pSettingControl->GetSetting();
-  // check that it's a valid port
-  int port = atoi(pSetting->GetData().c_str());
-#ifdef _LINUX
-  if (listening && geteuid() != 0 && (port < 1024 || port > 65535))
+  CFileItemList items;
+  if (CDirectory::GetDirectory("special://home/plugins/weather/", items, "/", false))
   {
-    CGUIDialogOK::ShowAndGetInput(257, 850, 852, -1);
-    pSetting->SetData(userPort.c_str());
+    for (int i=0; i<items.Size(); ++i)
+    {    
+      // create the full path to the plugin
+      CStdString plugin;
+      CStdString pluginPath = items[i]->m_strPath;
+      // remove slash at end so we can use the plugins folder as plugin name
+      CUtil::RemoveSlashAtEnd(pluginPath);
+      // add default.py to our plugin path to create the full path
+      CUtil::AddFileToFolder(pluginPath, "default.py", plugin);
+      if (XFILE::CFile::Exists(plugin))
+      {
+        // is this the users choice
+        if (CUtil::GetFileName(pluginPath).Equals(strSelected))
+          k = j;
+        // we want to use the plugins folder as name
+        pControl->AddLabel(CUtil::GetFileName(pluginPath), j++);
+      }
+    }
   }
-  else
-#endif
-  if (port <= 0 || port > 65535)
-  {
-    CGUIDialogOK::ShowAndGetInput(257, 850, 851, -1);
-    pSetting->SetData(privPort.c_str());
-  }
+  pControl->SetValue(k);
 }

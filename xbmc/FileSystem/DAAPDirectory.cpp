@@ -18,15 +18,14 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "FileDAAP.h"
 #include "DAAPDirectory.h"
 #include "Util.h"
 #include "MusicInfoTag.h"
 #include "FileItem.h"
-#include "SectionLoader.h"
-#include "utils/log.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 
 // these are the different request urls that exist.. i think the first one would always work, but take safe route
@@ -47,7 +46,7 @@ CDAAPDirectory::CDAAPDirectory(void)
 }
 
 CDAAPDirectory::~CDAAPDirectory(void)
-{
+{  
   //if (m_thisClient) DAAP_Client_Release(m_thisClient);
   free_artists();
 
@@ -60,6 +59,9 @@ CDAAPDirectory::~CDAAPDirectory(void)
 
 bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items)
 {
+  int c;
+  //wchar_t wStrFile[1024]; // buffer for converting strings
+
   CURL url(strPath);
 
   CStdString strRoot = strPath;
@@ -69,7 +71,7 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
   if (url.HasPort())
     host.Format("%s:%i",url.GetHostName(),url.GetPort());
   m_thisHost = g_DaapClient.GetHost(host);
-  if (!m_thisHost)
+  if (!m_thisHost)  
     return false;
 
   // find out where we are in the folder hierarchy
@@ -83,7 +85,7 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
     //Store the first database
     g_DaapClient.m_iDatabase = m_thisHost->databases[0].id;
 
-    m_currentSongItems = m_thisHost->dbitems[0].items;
+	  m_currentSongItems = m_thisHost->dbitems[0].items;
     m_currentSongItemCount = m_thisHost->dbitems[0].nItems;
 
     // Get the songs from the database if we haven't already
@@ -91,16 +93,17 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
     {
       CLog::Log(LOGDEBUG, "Getting songs from the database.  Have %i", m_currentSongItemCount);
       // Add each artist and album to an array
-      for (int c = 0; c < m_currentSongItemCount; c++)
+      int c;
+      for (c = 0; c < m_currentSongItemCount; c++)
       {
         AddToArtistAlbum(m_currentSongItems[c].songartist, m_currentSongItems[c].songalbum);
       }
     }
 
-
+    
     if (m_currLevel < 0) // root, so show playlists
     {
-      for (int c = 0; c < m_thisHost->dbplaylists->nPlaylists; c++)
+      for (c = 0; c < m_thisHost->dbplaylists->nPlaylists; c++)
       {
         CStdString strFile;
         //size_t strLen;
@@ -118,9 +121,11 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
     }
     else if (m_currLevel == 0) // playlists, so show albums
     {
+      CStdString strFolder;
+      bool bFoundMatch;
+
       // find the playlist
-      bool bFoundMatch = false;
-      int c;
+      bFoundMatch = false;
       for (c = 0; c < m_thisHost->dbplaylists->nPlaylists; c++)
       {
         if (m_thisHost->dbplaylists->playlists[c].itemname == m_selectedPlaylist)
@@ -140,7 +145,7 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
           CStdString strBuffer;
           artistPTR *cur = m_artisthead;
           while (cur)
-          {
+          {            
             strBuffer = cur->artist;
             CLog::Log(LOGDEBUG, "DAAPDirectory: Adding item %s", strBuffer.c_str());
             CFileItemPtr pItem(new CFileItem(strBuffer));
@@ -172,26 +177,26 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
             }
 
             if (idx > -1)
-            {
+            {              
               CLog::Log(LOGDEBUG, "DAAPDirectory: Adding item %s", m_currentSongItems[idx].itemname);
               CFileItemPtr pItem(new CFileItem(m_currentSongItems[idx].itemname));
 
 
               if( m_thisHost->version_major != 3 )
               {
-                pItem->m_strPath.Format(REQUEST42,
-                                        m_thisHost->host,
+                pItem->m_strPath.Format(REQUEST42, 
+                                        m_thisHost->host,  
                                         g_DaapClient.m_iDatabase,
                                         m_currentSongItems[idx].id,
                                         m_currentSongItems[idx].songformat,
-                                        m_thisHost->sessionid,
+                                        m_thisHost->sessionid, 
                                         m_thisHost->revision_number);
 
               }
               else
               {
-                pItem->m_strPath.Format(REQUEST45,
-                                        m_thisHost->host,
+                pItem->m_strPath.Format(REQUEST45, 
+                                        m_thisHost->host,  
                                         g_DaapClient.m_iDatabase,
                                         m_currentSongItems[idx].id,
                                         m_currentSongItems[idx].songformat,
@@ -251,8 +256,8 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
       for (c = 0; c < m_currentSongItemCount; c++)
       {
         // mt-daapd will sometimes give us null artist and album names
-        if (m_currentSongItems[c].songartist && m_currentSongItems[c].songalbum)
-        {
+	      if (m_currentSongItems[c].songartist && m_currentSongItems[c].songalbum)
+  		  {
           char *artist = m_currentSongItems[c].songartist;
           char *album = m_currentSongItems[c].songalbum;
           if (!strlen(artist)) artist = (char *)unknownArtistAlbum;
@@ -265,19 +270,19 @@ bool CDAAPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
 
             if( m_thisHost->version_major != 3 )
             {
-              pItem->m_strPath.Format(REQUEST42,
-                                      m_thisHost->host,
+              pItem->m_strPath.Format(REQUEST42, 
+                                      m_thisHost->host,  
                                       g_DaapClient.m_iDatabase,
                                       m_currentSongItems[c].id,
                                       m_currentSongItems[c].songformat,
-                                      m_thisHost->sessionid,
+                                      m_thisHost->sessionid, 
                                       m_thisHost->revision_number);
 
             }
             else
             {
-              pItem->m_strPath.Format(REQUEST45,
-                                      m_thisHost->host,
+              pItem->m_strPath.Format(REQUEST45, 
+                                      m_thisHost->host,  
                                       g_DaapClient.m_iDatabase,
                                       m_currentSongItems[c].id,
                                       m_currentSongItems[c].songformat,

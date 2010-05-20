@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "LabelFormatter.h"
 #include "GUISettings.h"
 #include "RegExp.h"
@@ -26,8 +27,6 @@
 #include "VideoInfoTag.h"
 #include "MusicInfoTag.h"
 #include "FileItem.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
 
 using namespace MUSIC_INFO;
 
@@ -322,7 +321,7 @@ void CLabelFormatter::AssembleMask(unsigned int label, const CStdString& mask)
   int findStart = -1;
   while ((findStart = reg.RegFind(work.c_str())) >= 0)
   { // we've found a match for a pre/postfixed string
-    // send anything
+    // send anything 
     char *s1 = reg.GetReplaceString("\\1");
     char *s2 = reg.GetReplaceString("\\2");
     char *s4 = reg.GetReplaceString("\\4");

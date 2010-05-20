@@ -19,14 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogProgress.h"
 #include "GUIProgressControl.h"
 #include "Application.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIWindowManager.h"
-#include "LocalizeStrings.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 
 using namespace std;
 
@@ -58,8 +56,12 @@ void CGUIDialogProgress::SetCanCancel(bool bCanCancel)
     g_windowManager.SendThreadMessage(msg, GetID());
 }
 
-void CGUIDialogProgress::StartModal()
+void CGUIDialogProgress::DoModal(int iWindowID, const CStdString &param)
 {
+  // NOTE: This is pretty much identical to CGUIDialog::DoModal() other than the fact that
+  //       we only run for the opening animation.  The app then calls Progress() progressively
+  //       as and when it needs to.  If the main render routine is running, then the dialog
+  //       will stay on screen until a Close() is called.
   CSingleLock lock(g_graphicsContext);
 
   CLog::DebugLog("DialogProgress::StartModal called %s", m_bRunning ? "(already running)!" : "");
@@ -93,6 +95,22 @@ void CGUIDialogProgress::StartModal()
   }
 }
 
+void CGUIDialogProgress::StartModal(bool threadSafe /* = false */)
+{
+  // NOTE: There is currently an issue starting this threadsafe from the
+  //       video playback threads. It's probably due to the app thread
+  //       waiting on something in the player so it never gets to actually
+  //       send the threadmessage in DoModalThreadSafe() but this has yet
+  //       to be verified.
+  //       The workaround currently is to start all progressdialogs NOT
+  //       threadsafe, other than the python calls which are deliberately
+  //       threadsafe.
+  if (threadSafe)
+    DoModalThreadSafe();
+  else
+    DoModal();
+}
+
 void CGUIDialogProgress::Progress()
 {
   if (m_bRunning)
@@ -120,15 +138,19 @@ bool CGUIDialogProgress::OnMessage(CGUIMessage& message)
 
   case GUI_MSG_CLICKED:
     {
-      int iControl = message.GetSenderId();
-      if (iControl == CONTROL_CANCEL_BUTTON && m_bCanCancel)
+      int iAction = message.GetParam1();
+      if (1 || ACTION_SELECT_ITEM == iAction)
       {
-        string strHeading = m_strHeading;
-        strHeading.append(" : ");
-        strHeading.append(g_localizeStrings.Get(16024));
-        CGUIDialogBoxBase::SetHeading(strHeading);
-        m_bCanceled = true;
-        return true;
+        int iControl = message.GetSenderId();
+        if (iControl == CONTROL_CANCEL_BUTTON && m_bCanCancel)
+        {
+          string strHeading = m_strHeading;
+          strHeading.append(" : ");
+          strHeading.append(g_localizeStrings.Get(16024));
+          CGUIDialogBoxBase::SetHeading(strHeading);
+          m_bCanceled = true;
+          return true;
+        }
       }
     }
     break;
@@ -138,7 +160,7 @@ bool CGUIDialogProgress::OnMessage(CGUIMessage& message)
 
 bool CGUIDialogProgress::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_CLOSE_DIALOG || action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_CLOSE_DIALOG || action.id == ACTION_PREVIOUS_MENU)
   {
     if (m_bCanCancel)
     {

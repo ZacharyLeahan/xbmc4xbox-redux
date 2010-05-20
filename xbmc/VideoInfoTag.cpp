@@ -36,7 +36,6 @@ void CVideoInfoTag::Reset()
   m_strDirector = "";
   m_strWritingCredits = "";
   m_strGenre = "";
-  m_strCountry = "";
   m_strTagLine = "";
   m_strPlotOutline = "";
   m_strPlot = "";
@@ -118,7 +117,7 @@ bool CVideoInfoTag::Save(TiXmlNode *node, const CStdString &tag, bool savePathIn
   if (!m_strPictureURL.m_xml.empty())
   {
     TiXmlDocument doc;
-    doc.Parse(m_strPictureURL.m_xml);
+    doc.Parse(m_strPictureURL.m_xml); 
     const TiXmlNode* thumb = doc.FirstChild("thumb");
     while (thumb)
     {
@@ -142,20 +141,11 @@ bool CVideoInfoTag::Save(TiXmlNode *node, const CStdString &tag, bool savePathIn
     XMLUtils::SetString(movie, "filenameandpath", m_strFileNameAndPath);
   }
   if (!m_strEpisodeGuide.IsEmpty())
-  {
-    TiXmlDocument doc;
-    doc.Parse(m_strEpisodeGuide);
-    if (doc.RootElement())
-      movie->InsertEndChild(*doc.RootElement());
-    else
-      XMLUtils::SetString(movie, "episodeguide", m_strEpisodeGuide);
-  }
+    XMLUtils::SetString(movie, "episodeguide", m_strEpisodeGuide);
 
   XMLUtils::SetString(movie, "id", m_strIMDBNumber);
   XMLUtils::SetAdditiveString(movie, "genre",
                           g_advancedSettings.m_videoItemSeparator, m_strGenre);
-  XMLUtils::SetAdditiveString(movie, "country",
-                          g_advancedSettings.m_videoItemSeparator, m_strCountry);
   XMLUtils::SetAdditiveString(movie, "set",
                           g_advancedSettings.m_videoItemSeparator, m_strSet);
   XMLUtils::SetAdditiveString(movie, "credits",
@@ -251,7 +241,6 @@ void CVideoInfoTag::Serialize(CArchive& ar)
     ar << m_strDirector;
     ar << m_strWritingCredits;
     ar << m_strGenre;
-    ar << m_strCountry;
     ar << m_strTagLine;
     ar << m_strPlotOutline;
     ar << m_strPlot;
@@ -270,7 +259,7 @@ void CVideoInfoTag::Serialize(CArchive& ar)
       ar << m_cast[i].strRole;
       ar << m_cast[i].thumbUrl.m_xml;
     }
-
+    
     ar << m_strSet;
     ar << m_strRuntime;
     ar << m_strFile;
@@ -309,7 +298,6 @@ void CVideoInfoTag::Serialize(CArchive& ar)
     ar >> m_strDirector;
     ar >> m_strWritingCredits;
     ar >> m_strGenre;
-    ar >> m_strCountry;
     ar >> m_strTagLine;
     ar >> m_strPlotOutline;
     ar >> m_strPlot;
@@ -335,7 +323,7 @@ void CVideoInfoTag::Serialize(CArchive& ar)
       info.thumbUrl.ParseString(strXml);
       m_cast.push_back(info);
     }
-
+    
     ar >> m_strSet;
     ar >> m_strRuntime;
     ar >> m_strFile;
@@ -396,7 +384,7 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie)
   int max_value = 10;
   const TiXmlElement* rElement = movie->FirstChildElement("rating");
   if (rElement && (rElement->QueryIntAttribute("max", &max_value) == TIXML_SUCCESS) && max_value>=1)
-  {
+  {    
     m_fRating = m_fRating / max_value * 10; // Normalise the Movie Rating to between 1 and 10
   }
   XMLUtils::GetInt(movie, "year", m_iYear);
@@ -440,7 +428,6 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie)
   }
 
   XMLUtils::GetAdditiveString(movie,"genre",g_advancedSettings.m_videoItemSeparator,m_strGenre);
-  XMLUtils::GetAdditiveString(movie,"country",g_advancedSettings.m_videoItemSeparator,m_strCountry);
   XMLUtils::GetAdditiveString(movie,"credits",g_advancedSettings.m_videoItemSeparator,m_strWritingCredits);
   XMLUtils::GetAdditiveString(movie,"director",g_advancedSettings.m_videoItemSeparator,m_strDirector);
   XMLUtils::GetAdditiveString(movie,"showlink",g_advancedSettings.m_videoItemSeparator,m_strShowLink);
@@ -497,7 +484,7 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie)
   node = movie->FirstChildElement("fileinfo");
   if (node)
   {
-    // Try to pull from fileinfo/streamdetails/[video|audio|subtitle]
+    // Try to pull from fileinfo/streamdetails/[video|audio|subtitle] 
     const TiXmlNode *nodeStreamDetails = node->FirstChild("streamdetails");
     if (nodeStreamDetails)
     {
@@ -538,9 +525,14 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie)
   const TiXmlElement *epguide = movie->FirstChildElement("episodeguide");
   if (epguide)
   {
-    stringstream stream;
-    stream << *epguide;
-    m_strEpisodeGuide = stream.str();
+    if (epguide->FirstChild() && strncmp(epguide->FirstChild()->Value(),"<episodeguide>",14) == 0)
+      m_strEpisodeGuide = epguide->FirstChild()->Value();
+    else if (epguide->FirstChild() && strlen(epguide->FirstChild()->Value()) > 0)
+    {
+      stringstream stream;
+      stream << *epguide;
+      m_strEpisodeGuide = stream.str();
+    }
   }
 
   // fanart
@@ -601,21 +593,6 @@ void CVideoInfoTag::ParseMyMovies(const TiXmlElement *movie)
         m_strGenre += g_advancedSettings.m_videoItemSeparator+strTemp;
     }
     genre = genre->NextSiblingElement("Genre");
-  }
-  // countries
-  node = movie->FirstChild("Countries");
-  const TiXmlNode *country = node ? node->FirstChildElement("Country") : NULL;
-  while (country)
-  {
-    if (country && country->FirstChild())
-    {
-      strTemp = country->FirstChild()->Value();
-      if (m_strCountry.IsEmpty())
-        m_strCountry = strTemp;
-      else
-        m_strCountry += g_advancedSettings.m_videoItemSeparator+strTemp;
-    }
-    country = country->NextSibling("Countries");
   }
   // MyMovies categories to genres
   if (g_advancedSettings.m_bVideoLibraryMyMoviesCategoriesToGenres)

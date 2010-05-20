@@ -222,7 +222,7 @@ bool File::Close()
     {*/
       if (!SkipClose)
       {
-#if defined(_WIN_32) || defined(_LINUX)
+#ifdef _WIN_32
         //success=CloseHandle(hFile) != FALSE;
         m_File.Close();
 #else
@@ -311,7 +311,7 @@ void File::Write(const void *Data,int Size)
   while (1)
   {
     bool success = true;
-#if defined(_WIN_32) || defined(_LINUX)
+#ifdef _WIN_32
     DWORD Written=0;
     if (HandleType!=FILE_HANDLENORMAL)
     {
@@ -341,7 +341,7 @@ void File::Write(const void *Data,int Size)
 #endif
       if (ErrHandler.AskRepeatWrite(FileName))
       {
-#if !defined(_WIN_32) && !defined(_LINUX)
+#ifndef _WIN_32
         clearerr(hFile);
 #endif
       if (Written<(unsigned int)Size && Written>0)
@@ -474,7 +474,7 @@ bool File::RawSeek(Int64 Offset,int Method)
     Offset=(Method==SEEK_CUR ? Tell():FileLength())+Offset;
     Method=SEEK_SET;
   }*/
-#if defined(_WIN_32) || defined(_LINUX)
+#ifdef _WIN_32
   //LONG HighDist=int64to32(Offset>>32);
   //if (SetFilePointer(hFile,int64to32(Offset),&HighDist,Method)==0xffffffff &&
   if (Offset > FileLength())
@@ -499,7 +499,7 @@ bool File::RawSeek(Int64 Offset,int Method)
 
 Int64 File::Tell()
 {
-#if defined(_WIN_32) || defined(_LINUX)
+#ifdef _WIN_32
   //LONG HighDist=0;
   //uint LowDist=SetFilePointer(hFile,0,&HighDist,FILE_CURRENT);
   //Int64 pos = m_File.GetPosition();
@@ -607,18 +607,16 @@ void File::SetCloseFileTimeByName(const char *Name,RarTime *ftm,RarTime *fta)
 
 void File::GetOpenFileTime(RarTime *ft)
 {
-#if defined(_WIN_32) || defined(_LINUX)
+#ifdef _WIN_32
 /*  FILETIME FileTime;
   GetFileTime(hFile,NULL,NULL,&FileTime);
   *ft=FileTime;*/
 #endif
-/*
 #if defined(_UNIX) || defined(_EMX)
   struct stat st;
   fstat(fileno(hFile),&st);
   *ft=st.st_mtime;
 #endif
-*/
 }
 
 
@@ -662,7 +660,7 @@ bool File::IsDevice()
 {
   /*if (hFile==BAD_HANDLE)
     return(false);*/
-#if defined(_XBOX) || defined(_LINUX) || defined(_XBMC)
+#if defined(_XBOX) || defined(XBMC)
   return false;
 //#ifdef _WIN_32
 #elif defined(_WIN_32)

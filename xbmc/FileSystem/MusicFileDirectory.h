@@ -22,9 +22,9 @@
 
 
 #include "IFileDirectory.h"
-#include "MusicInfoTag.h"
+#include "musicInfoTag.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CMusicFileDirectory : public IFileDirectory
   {

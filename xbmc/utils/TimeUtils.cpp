@@ -19,40 +19,22 @@
  *
  */
 
+#include "system.h"
 #include "TimeUtils.h"
 #include "DateTime.h"
 
-#ifdef __APPLE__
-#include <time.h>
-#include "posix-realtime-stub.h"
-#elif defined(_LINUX)
-#include <time.h>
-#elif defined(_WIN32)
-#include <windows.h>
-#endif
-
 int64_t CurrentHostCounter(void)
 {
-#if defined(_LINUX)
-  struct timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  return( ((int64_t)now.tv_sec * 1000000000L) + now.tv_nsec );
-#else
   LARGE_INTEGER PerformanceCount;
   QueryPerformanceCounter(&PerformanceCount);
   return( (int64_t)PerformanceCount.QuadPart );
-#endif
 }
 
 int64_t CurrentHostFrequency(void)
 {
-#if defined(_LINUX)
-  return( (int64_t)1000000000L );
-#else
   LARGE_INTEGER Frequency;
   QueryPerformanceFrequency(&Frequency);
   return( (int64_t)Frequency.QuadPart );
-#endif
 }
 
 unsigned int CTimeUtils::frameTime = 0;
@@ -69,19 +51,7 @@ unsigned int CTimeUtils::GetFrameTime()
 
 unsigned int CTimeUtils::GetTimeMS()
 {
-#ifdef _LINUX
-          uint64_t now_time;
-  static  uint64_t start_time = 0;
-  struct timespec ts = {};
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  now_time = (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
-
-  if (start_time == 0)
-    start_time = now_time;
-  return (now_time - start_time);
-#else
   return timeGetTime();
-#endif
 }
 
 CDateTime CTimeUtils::GetLocalTime(time_t time)

@@ -18,10 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+#include "stdafx.h"
 #include "LangCodeExpander.h"
-#include "SectionLoader.h"
-#include "tinyXML/tinyxml.h"
 
 #define MAKECODE(a, b, c, d) ((((long)(a))<<24) | (((long)(b))<<16) | (((long)(c))<<8) | (long)(d))
 typedef struct LCENTRY
@@ -181,6 +179,11 @@ bool CLangCodeExpander::LookupInDb(CStdString& desc, const CStdString& code)
   }
   return false;
 }
+
+#ifdef _XBOX
+#pragma const_seg("LC_RDATA")
+#pragma comment(linker, "/merge:LC_RDATA=LCODE")
+#endif
 
 extern const LCENTRY g_iso639_1[143] =
 {
@@ -734,7 +737,7 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','r','a','j'), "Rajasthani" },
   { MAKECODE('\0','r','a','p'), "Rapanui" },
   { MAKECODE('\0','r','a','r'), "Rarotongan" },
-// { "qaa-qtz", "Reserved for local use" },
+//	{ "qaa-qtz", "Reserved for local use" },
   { MAKECODE('\0','r','o','a'), "Romance (Other)" },
   { MAKECODE('\0','r','u','m'), "Romanian" },
   { MAKECODE('\0','r','o','n'), "Romanian" },

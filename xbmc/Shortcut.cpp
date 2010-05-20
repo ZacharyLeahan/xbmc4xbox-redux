@@ -22,10 +22,11 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "stdafx.h"
 #include "Shortcut.h"
 #include "Util.h"
 #include "tinyXML/tinyxml.h"
-#include "File.h"
+#include "FileSystem/File.h"
 
 using namespace XFILE;
 
@@ -83,7 +84,7 @@ bool CShortcut::Create(const CStdString& szPath)
         m_strParameters = pChild->FirstChild()->Value();
       }
     }
-
+    
     if (strValue == "thumb")
     {
       if (pChild->FirstChild())

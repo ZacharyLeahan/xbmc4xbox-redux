@@ -20,9 +20,6 @@
  *
  */
 
-#include "StdString.h"
-#include "utils/CriticalSection.h"
-
 //  forward
 class LibraryLoader;
 
@@ -34,7 +31,7 @@ public:
   public:
     CStdString m_strSectionName;
     long m_lReferenceCount;
-    unsigned int m_unloadDelayStartTick;
+    DWORD m_lUnloadDelayStartTick;
   };
   class CDll
   {
@@ -42,7 +39,7 @@ public:
     CStdString m_strDllName;
     long m_lReferenceCount;
     LibraryLoader *m_pDll;
-    unsigned int m_unloadDelayStartTick;
+    DWORD m_lUnloadDelayStartTick;
     bool m_bDelayUnload;
   };
   CSectionLoader(void);

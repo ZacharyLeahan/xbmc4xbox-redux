@@ -23,7 +23,7 @@
 
 #include "GUIWindow.h"
 #include "SettingsControls.h"
-#include "GUISettings.h"
+#include "Settings.h"
 #include "utils/Stopwatch.h"
 
 class CGUIWindowSettingsCategory :
@@ -34,12 +34,11 @@ public:
   virtual ~CGUIWindowSettingsCategory(void);
   virtual bool OnMessage(CGUIMessage &message);
   virtual bool OnAction(const CAction &action);
-  virtual void FrameMove();
   virtual void Render();
   virtual int GetID() const { return CGUIWindow::GetID() + m_iScreen; };
 
-  // Note: Static as it's used elsewhere
-  static void FillInAddons(CSettingAddon *pSetting, int controlID);
+  // static function as it's accessed elsewhere
+  static void FillInVisualisations(CSetting *pSetting, int iControlID);
 protected:
   virtual void OnInitWindow();
 
@@ -48,22 +47,25 @@ protected:
   void FillInSubtitleFonts(CSetting *pSetting);
   void FillInCharSets(CSetting *pSetting);
   void FillInSkinFonts(CSetting *pSetting);
+  void FillInSkins(CSetting *pSetting);
   void FillInSoundSkins(CSetting *pSetting);
   void FillInLanguages(CSetting *pSetting);
+  void FillInVoiceMasks(DWORD dwPort, CSetting *pSetting);   // Karaoke patch (114097)
+  void FillInVoiceMaskValues(DWORD dwPort, CSetting *pSetting); // Karaoke patch (114097)
   void FillInResolutions(CSetting *pSetting, bool playbackSetting);
+  void FillInScreenSavers(CSetting *pSetting);
   void FillInRegions(CSetting *pSetting);
+  void FillInFTPServerUser(CSetting *pSetting);
   void FillInStartupWindow(CSetting *pSetting);
   void FillInViewModes(CSetting *pSetting, int windowID);
   void FillInSortMethods(CSetting *pSetting, int windowID);
+  bool SetFTPServerUserPass();
 
   void FillInSkinThemes(CSetting *pSetting);
   void FillInSkinColors(CSetting *pSetting);
+  void FillInScrapers(CGUISpinControlEx *pControl, const CStdString& strSelected, const CStdString& strContent);
 
-  void FillInNetworkInterfaces(CSetting *pSetting);
-  void NetworkInterfaceChanged(void);
-
-  void FillInAudioDevices(CSetting* pSetting, bool Passthrough = false);
-  void FillInWeatherScripts(CGUISpinControlEx *pControl, const CStdString& strSelected);
+  void FillInWeatherPlugins(CGUISpinControlEx *pControl, const CStdString& strSelected);
 
   virtual void SetupControls();
   void CreateSettings();
@@ -79,11 +81,11 @@ protected:
 
   void JumpToSection(int windowID, const CStdString &section);
   void JumpToPreviousSection();
-  void ValidatePortNumber(CBaseSettingControl* pSettingControl, const CStdString& userPort, const CStdString& privPort, bool listening=true);
 
   std::vector<CBaseSettingControl *> m_vecSettings;
   int m_iSection;
   int m_iScreen;
+  RESOLUTION m_NewResolution;
   vecSettingsCategory m_vecSections;
   CGUISpinControlEx *m_pOriginalSpin;
   CGUIRadioButtonControl *m_pOriginalRadioButton;
@@ -97,14 +99,17 @@ protected:
   CStdString m_strNetworkSubnet;
   CStdString m_strNetworkGateway;
   CStdString m_strNetworkDNS;
+  // look + feel settings (for delayed loading)
+  CStdString m_strNewSkinFontSet;
+  CStdString m_strNewSkin;
+  CStdString m_strNewLanguage;
+  CStdString m_strNewSkinTheme;
+  CStdString m_strNewSkinColors;
 
   CStdString m_strErrorMessage;
 
   CStdString m_strOldTrackFormat;
   CStdString m_strOldTrackFormatRight;
-
-  std::map<CStdString, CStdString> m_AnalogAudioSinkMap;
-  std::map<CStdString, CStdString> m_DigitalAudioSinkMap;
 
   // state of the window saved in JumpToSection()
   // to get to the previous settings screen when
@@ -118,4 +123,3 @@ protected:
   CBaseSettingControl *m_delayedSetting; ///< Current delayed setting \sa CBaseSettingControl::SetDelayed()
   CStopWatch           m_delayedTimer;   ///< Delayed setting timer
 };
-

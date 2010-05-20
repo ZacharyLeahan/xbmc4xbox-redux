@@ -25,8 +25,6 @@
 //
 // by Bobbin007 in 2003
 
-#include "system.h" // for HANDLE
-
 class CMutex
 {
 public:
@@ -39,7 +37,7 @@ public:
   void Release();
 
   bool Wait();
-  bool WaitMSec(unsigned int milliSeconds);
+  void WaitMSec(DWORD dwMillSeconds);
 
 protected:
   HANDLE m_hMutex;

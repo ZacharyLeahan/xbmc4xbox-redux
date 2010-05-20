@@ -19,13 +19,11 @@
  *
  */
 
+#include "include.h"
 #include "XMLUtils.h"
 #include "Util.h"
 #include "FileSystem/SpecialProtocol.h"
 #include "StringUtils.h"
-#ifdef _WIN32
-#include "PlatformDefs.h" //for strcasecmp
-#endif
 
 bool XMLUtils::GetHex(const TiXmlNode* pRootNode, const char* strTag, uint32_t& hexValue)
 {
@@ -124,7 +122,7 @@ bool XMLUtils::GetString(const TiXmlNode* pRootNode, const char* strTag, CStdStr
   if (pNode != NULL)
   {
     strStringValue = pNode->Value();
-    if (encoded && strcasecmp(encoded,"yes") == 0)
+    if (encoded && stricmp(encoded,"yes") == 0)
       CUtil::URLDecode(strStringValue);
     return true;
   }
@@ -145,7 +143,7 @@ bool XMLUtils::GetAdditiveString(const TiXmlNode* pRootNode, const char* strTag,
       bResult = true;
       strTemp = node->FirstChild()->Value();
       const char* clear=node->Attribute("clear");
-      if (strStringValue.IsEmpty() || (clear && strcasecmp(clear,"true")==0))
+      if (strStringValue.IsEmpty() || (clear && stricmp(clear,"true")==0))
         strStringValue = strTemp;
       else
         strStringValue += strSeparator+strTemp;
@@ -200,7 +198,7 @@ bool XMLUtils::GetPath(const TiXmlNode* pRootNode, const char* strTag, CStdStrin
   if (pNode != NULL)
   {
     strStringValue = pNode->Value();
-    if (encoded && strcasecmp(encoded,"yes") == 0)
+    if (encoded && stricmp(encoded,"yes") == 0)
       CUtil::URLDecode(strStringValue);
     strStringValue = CSpecialProtocol::ReplaceOldPath(strStringValue, pathVersion);
     return true;
@@ -232,13 +230,6 @@ void XMLUtils::SetInt(TiXmlNode* pRootNode, const char *strTag, int value)
 {
   CStdString strValue;
   strValue.Format("%i", value);
-  SetString(pRootNode, strTag, strValue);
-}
-
-void XMLUtils::SetLong(TiXmlNode* pRootNode, const char *strTag, long value)
-{
-  CStdString strValue;
-  strValue.Format("%l", value);
   SetString(pRootNode, strTag, strValue);
 }
 

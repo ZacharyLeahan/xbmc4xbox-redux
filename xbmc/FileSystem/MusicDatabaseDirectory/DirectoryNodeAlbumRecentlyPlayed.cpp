@@ -19,11 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeAlbumRecentlyPlayed.h"
 #include "MusicDatabase.h"
 #include "FileItem.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeAlbumRecentlyPlayed::CDirectoryNodeAlbumRecentlyPlayed(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_ALBUM_RECENTLY_PLAYED, strName, pParent)
@@ -36,7 +37,7 @@ NODE_TYPE CDirectoryNodeAlbumRecentlyPlayed::GetChildType()
   if (GetName()=="-1")
     return NODE_TYPE_ALBUM_RECENTLY_PLAYED_SONGS;
 
-  return NODE_TYPE_SONG;
+  return NODE_TYPE_SONG; 
 }
 
 bool CDirectoryNodeAlbumRecentlyPlayed::GetContent(CFileItemList& items)

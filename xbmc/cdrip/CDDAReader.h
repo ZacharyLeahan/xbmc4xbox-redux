@@ -29,9 +29,6 @@
 #include "utils/Thread.h"
 #include "FileSystem/File.h"
 
-#include "FileItem.h"
-#include "FileSystem/File.h"
-
 struct RipBuffer
 {
   int iRipError;

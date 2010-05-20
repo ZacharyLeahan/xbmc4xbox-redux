@@ -19,10 +19,9 @@
  *
  */
 
+#include "include.h"
 #include "GUIImage.h"
 #include "TextureManager.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace std;
 
@@ -100,7 +99,7 @@ void CGUIImage::Render()
   // check whether our image failed to allocate, and if so drop back to the fallback image
   if (m_texture.FailedToAlloc() && !m_texture.GetFileName().Equals(m_info.GetFallback()))
     m_texture.SetFileName(m_info.GetFallback());
-
+  
   if (m_crossFadeTime)
   {
     // make sure our texture has started allocating
@@ -108,7 +107,7 @@ void CGUIImage::Render()
 
     // compute the frame time
     unsigned int frameTime = 0;
-    unsigned int currentTime = CTimeUtils::GetFrameTime();
+    unsigned int currentTime = timeGetTime();
     if (m_lastRenderTime)
       frameTime = currentTime - m_lastRenderTime;
     m_lastRenderTime = currentTime;
@@ -187,11 +186,17 @@ bool CGUIImage::OnMessage(CGUIMessage& message)
   return CGUIControl::OnMessage(message);
 }
 
+void CGUIImage::PreAllocResources()
+{
+  FreeResources();
+  m_texture.PreAllocResources();
+}
+
 void CGUIImage::AllocResources()
 {
   if (m_texture.GetFileName().IsEmpty())
     return;
-
+  
   CGUIControl::AllocResources();
   m_texture.AllocResources();
 }
@@ -204,16 +209,10 @@ void CGUIImage::FreeTextures(bool immediately /* = false */)
   m_fadingTextures.clear();
 }
 
-void CGUIImage::FreeResources(bool immediately)
+void CGUIImage::FreeResources()
 {
-  FreeTextures(immediately);
-  CGUIControl::FreeResources(immediately);
-}
-
-void CGUIImage::SetInvalid()
-{
-  m_texture.SetInvalid();
-  CGUIControl::SetInvalid();
+  FreeTextures();
+  CGUIControl::FreeResources();
 }
 
 // WORKAROUND - we are currently resetting all animations when this is called, which shouldn't be the case
@@ -268,7 +267,7 @@ void CGUIImage::SetFileName(const CStdString& strFileName, bool setConstant)
 {
   if (setConstant)
     m_info.SetLabel(strFileName, "");
-
+  
   if (m_crossFadeTime)
   {
     // set filename on the next texture
@@ -342,9 +341,3 @@ unsigned char CGUIImage::GetFadeLevel(unsigned int time) const
   const float alpha = 0.7f;
   return (unsigned char)(255.0f * (1 - pow(1-alpha, amount))/alpha);
 }
-
-CStdString CGUIImage::GetDescription(void) const
-{
-  return GetFileName();
-}
-

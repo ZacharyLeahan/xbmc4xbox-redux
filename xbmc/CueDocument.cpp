@@ -53,12 +53,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
+#include "stdafx.h"
 #include "CueDocument.h"
 #include "Util.h"
-#include "StringUtils.h"
-#include "utils/CharsetConverter.h"
-
-#include <set>
 
 using namespace std;
 
@@ -143,7 +140,7 @@ bool CCueDocument::Parse(const CStdString &strFile)
     else if (strLine.Left(5) == "TRACK")
     {
       int iTrackNumber = ExtractNumericInfo(strLine.c_str() + 5);
-
+ 
       m_iTotalTracks++;
 
       CCueTrack track;
@@ -225,7 +222,6 @@ void CCueDocument::GetSongs(VECSONGS &songs)
       song.strArtist = m_strArtist;
     else
       song.strArtist = m_Track[i].strArtist;
-    song.strAlbumArtist = m_strArtist;
     song.strAlbum = m_strAlbum;
     song.strGenre = m_strGenre;
     song.iYear = m_iYear;
@@ -322,7 +318,7 @@ int CCueDocument::ExtractTimeFromIndex(const CStdString &index)
     numberTime.erase(0, 1);
   }
   numberTime.TrimLeft();
-  // split the resulting string
+  // split the resulting string 
   CStdStringArray time;
   StringUtils::SplitString(numberTime, ":", time);
   if (time.size() != 3)
@@ -357,7 +353,7 @@ bool CCueDocument::ResolvePath(CStdString &strPath, const CStdString &strBase)
 {
   CStdString strDirectory;
   CUtil::GetDirectory(strBase, strDirectory);
-
+  
   CStdString strFilename = strPath;
   CUtil::GetFileName(strFilename);
 

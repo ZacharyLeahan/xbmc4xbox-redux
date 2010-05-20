@@ -19,14 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "UdpClient.h"
-#ifdef _LINUX
-#include <sys/ioctl.h>
-#endif
-#include "../utils/Network.h"
 #include "GraphicContext.h"
-#include "log.h"
-#include "utils/TimeUtils.h"
+#include "GraphicContext.h"
 
 #define UDPCLIENT_DEBUG_LEVEL LOGDEBUG
 
@@ -84,7 +80,7 @@ void CUdpClient::Destroy()
 
 void CUdpClient::OnStartup()
 {
-  SetPriority( GetMinPriority() );
+  SetPriority( THREAD_PRIORITY_LOWEST );
 }
 
 bool CUdpClient::Broadcast(int aPort, CStdString& aMessage)
@@ -157,18 +153,6 @@ void CUdpClient::Process()
 
   while ( !m_bStop )
   {
-    fd_set readset, exceptset;
-    FD_ZERO(&readset);    FD_SET(client_socket, &readset);
-    FD_ZERO(&exceptset);  FD_SET(client_socket, &exceptset);
-
-    int nfds = (int)(client_socket);
-    timeval tv = { 0, 100000 };
-    if (select(nfds, &readset, NULL, &exceptset, &tv) < 0)
-    {
-      CLog::Log(LOGERROR, "UDPCLIENT: failed to select on socket");
-      break;
-    }
-
     // is there any data to read
     dataAvailable = 0;
     ioctlsocket(client_socket, FIONREAD, &dataAvailable);
@@ -178,12 +162,7 @@ void CUdpClient::Process()
     {
       // read data
       int messageLength = sizeof(messageBuffer) - 1 ;
-#ifndef _LINUX
-      int remoteAddressSize;
-#else
-      socklen_t remoteAddressSize;
-#endif
-      remoteAddressSize = sizeof(remoteAddress);
+      int remoteAddressSize = sizeof(remoteAddress);
 
       int ret = recvfrom(client_socket, messageBuffer, messageLength, 0, (struct sockaddr *) & remoteAddress, &remoteAddressSize);
       if (ret != SOCKET_ERROR)
@@ -194,8 +173,7 @@ void CUdpClient::Process()
 
         CStdString message = messageBuffer;
 
-        CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT RX: %u\t\t<- '%s'",
-                  CTimeUtils::GetTimeMS(), message.c_str() );
+        CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT RX: %lu\t\t<- '%s'", timeGetTime(), message.c_str() );
 
         // NOTE: You should consider locking access to the screen device
         // or at least wait until after vertical refresh before firing off events
@@ -216,7 +194,7 @@ void CUdpClient::Process()
     }
 
     // dispatch a single command if any pending
-    while(DispatchNextCommand()) {}
+    DispatchNextCommand();
   }
 
   closesocket(client_socket);
@@ -225,14 +203,17 @@ void CUdpClient::Process()
 }
 
 
-bool CUdpClient::DispatchNextCommand()
+void CUdpClient::DispatchNextCommand()
 {
   EnterCriticalSection(&critical_section);
 
   if (commands.size() <= 0)
   {
     LeaveCriticalSection(&critical_section);
-    return false;
+
+    // relinquish the remainder of this threads time slice
+    Sleep(1);
+    return ;
   }
 
   COMMANDITERATOR it = commands.begin();
@@ -244,9 +225,7 @@ bool CUdpClient::DispatchNextCommand()
   if (command.binarySize > 0)
   {
     // only perform the following if logging level at debug
-    CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT TX: %u\t\t-> "
-                                     "<binary payload %u bytes>",
-              CTimeUtils::GetTimeMS(), command.binarySize );
+    CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT TX: %lu\t\t-> <binary payload %lu bytes>", timeGetTime(), command.binarySize );
 
     do
     {
@@ -259,8 +238,7 @@ bool CUdpClient::DispatchNextCommand()
   else
   {
     // only perform the following if logging level at debug
-    CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT TX: %u\t\t-> '%s'",
-              CTimeUtils::GetTimeMS(), command.message.c_str() );
+    CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT TX: %lu\t\t-> '%s'", timeGetTime(), command.message.c_str() );
 
     do
     {
@@ -268,5 +246,4 @@ bool CUdpClient::DispatchNextCommand()
     }
     while (ret == -1 && !m_bStop);
   }
-  return true;
 }

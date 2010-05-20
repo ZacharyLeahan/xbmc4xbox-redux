@@ -19,10 +19,9 @@
  *
  */
 
+#include "include.h"
 #include "GUIMultiSelectText.h"
 #include "GUIWindowManager.h"
-#include "Key.h"
-#include "utils/log.h"
 
 using namespace std;
 
@@ -58,7 +57,7 @@ CGUIMultiSelectTextControl::~CGUIMultiSelectTextControl(void)
 {
 }
 
-void CGUIMultiSelectTextControl::DoRender(unsigned int currentTime)
+void CGUIMultiSelectTextControl::DoRender(DWORD currentTime)
 {
   m_renderTime = currentTime;
   CGUIControl::DoRender(currentTime);
@@ -156,7 +155,7 @@ void CGUIMultiSelectTextControl::UpdateInfo(const CGUIListItem *item)
 
 bool CGUIMultiSelectTextControl::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SELECT_ITEM)
+  if (action.id == ACTION_SELECT_ITEM)
   {
     // item is clicked - see if we have a clickaction
     CStdString clickAction;
@@ -246,15 +245,18 @@ bool CGUIMultiSelectTextControl::OnMouseOver(const CPoint &point)
   return CGUIControl::OnMouseOver(point);
 }
 
-EVENT_RESULT CGUIMultiSelectTextControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIMultiSelectTextControl::OnMouseClick(int button, const CPoint &point)
 {
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
+  if (button == MOUSE_LEFT_BUTTON)
   {
     m_selectedItem = GetItemFromPoint(point);
-    OnAction(CAction(ACTION_SELECT_ITEM));
-    return EVENT_RESULT_HANDLED;
+    g_Mouse.SetState(MOUSE_STATE_CLICK);
+    CAction action;
+    action.id = ACTION_SELECT_ITEM;
+    OnAction(action);
+    return true;
   }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
 }
 
 int CGUIMultiSelectTextControl::GetItemFromPoint(const CPoint &point) const

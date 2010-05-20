@@ -23,7 +23,6 @@
 
 #include "GUIDialogSettings.h"
 #include "MediaSource.h"
-#include "Profile.h"
 
 class CGUIDialogProfileSettings : public CGUIDialogSettings
 {
@@ -32,7 +31,7 @@ public:
   virtual ~CGUIDialogProfileSettings(void);
   virtual bool OnMessage(CGUIMessage &message);
 
-  static bool ShowForProfile(unsigned int iProfile, bool firstLogin = false);
+  static bool ShowForProfile(unsigned int iProfile, bool bDetails=true);
 protected:
   virtual void OnCancel();
   virtual void OnWindowLoaded();
@@ -52,7 +51,16 @@ protected:
   bool m_bIsNewUser;
   bool m_bShowDetails;
 
-  CProfile::CLock m_locks;
+  // lock stuff
+  CStdString m_strLockCode;
+  LockType m_iLockMode;
+  bool m_bLockSettings;
+  bool m_bLockMusic;
+  bool m_bLockVideo;
+  bool m_bLockFiles;
+  bool m_bLockPictures;
+  bool m_bLockPrograms;
+
   CStdString m_strDefaultImage;
 };
 

@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/python/Python.h"
 #include "../XBPythonDll.h"
 #include "GUILabelControl.h"
 #include "GUIFontManager.h"
@@ -160,7 +146,7 @@ namespace PYXBMC
   {
     PyObject *pObjectText;
 
-    if (!PyArg_ParseTuple(args, (char*)"O", &pObjectText)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"O", &pObjectText))	return NULL;
     if (!PyXBMCGetUnicodeString(self->strText, pObjectText, 1)) return NULL;
 
     ControlLabel *pControl = (ControlLabel*)self;
@@ -185,7 +171,7 @@ namespace PYXBMC
   PyObject* ControlLabel_GetLabel(ControlLabel *self, PyObject *args)
   {
     if (!self->pGUIControl) return NULL;
-
+    
     PyXBMCGUILock();
     const char *cLabel = self->strText.c_str();
     PyXBMCGUIUnlock();

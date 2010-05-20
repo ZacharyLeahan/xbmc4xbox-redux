@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "FileSpecialProtocol.h"
 #include "SpecialProtocol.h"
 #include "URL.h"
@@ -84,17 +85,17 @@ int CFileSpecialProtocol::Stat(struct __stat64* buffer)
   return m_file.Stat(buffer);
 }
 
-unsigned int CFileSpecialProtocol::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileSpecialProtocol::Read(void* lpBuf, __int64 uiBufSize)
 {
   return m_file.Read(lpBuf, uiBufSize);
 }
   
-int CFileSpecialProtocol::Write(const void* lpBuf, int64_t uiBufSize)
+int CFileSpecialProtocol::Write(const void* lpBuf, __int64 uiBufSize)
 {
   return m_file.Write(lpBuf,uiBufSize);
 }
 
-int64_t CFileSpecialProtocol::Seek(int64_t iFilePosition, int iWhence /*=SEEK_SET*/)
+__int64 CFileSpecialProtocol::Seek(__int64 iFilePosition, int iWhence /*=SEEK_SET*/)
 {
   return m_file.Seek(iFilePosition, iWhence);
 }
@@ -104,12 +105,12 @@ void CFileSpecialProtocol::Close()
   m_file.Close();
 }
 
-int64_t CFileSpecialProtocol::GetPosition()
+__int64 CFileSpecialProtocol::GetPosition()
 {
   return m_file.GetPosition();
 }
 
-int64_t CFileSpecialProtocol::GetLength()
+__int64 CFileSpecialProtocol::GetLength()
 {
   return m_file.GetLength();
 }

@@ -19,9 +19,7 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
 #include "BackgroundInfoLoader.h"
-#include "StdString.h"
 
 class CPictureInfoLoader : public CBackgroundInfoLoader
 {

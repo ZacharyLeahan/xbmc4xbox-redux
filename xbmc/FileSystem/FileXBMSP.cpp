@@ -18,18 +18,16 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "FileXBMSP.h"
 #include "Util.h"
 #include "FileSystem/Directory.h"
-#include "SectionLoader.h"
 #include "URL.h"
 #include "AdvancedSettings.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
 
 #include <sys/stat.h>
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 namespace XFILE
 {
@@ -129,7 +127,7 @@ bool CFileXBMSP::Open(const CURL& urlUtf8)
   }
 
 
-  CStdString strDir;
+  CStdString strDir, strPath;
   strDir = "";
 
   if (g_advancedSettings.m_logLevel >= LOG_LEVEL_DEBUG_SAMBA)
@@ -137,7 +135,7 @@ bool CFileXBMSP::Open(const CURL& urlUtf8)
 
   if (cc_xstream_client_setcwd(m_connection, "/") == CC_XSTREAM_CLIENT_OK)
   {
-    CStdString strPath = szPath;
+    strPath = szPath;
     for (int i = 0; i < (int)strPath.size(); ++i)
     {
       if (strPath[i] == '/' || strPath[i] == '\\')
@@ -169,7 +167,7 @@ bool CFileXBMSP::Open(const CURL& urlUtf8)
     return false;
   }
   if (strDir.size() > 0)
-  {
+  {  
     if (g_advancedSettings.m_logLevel >= LOG_LEVEL_DEBUG_SAMBA)
       CLog::Log(LOGDEBUG,"xbms:setdir: %s",strDir.c_str());
 
@@ -252,7 +250,7 @@ int CFileXBMSP::Stat(const CURL& url, struct __stat64* buffer)
 }
 
 //*********************************************************************************************
-unsigned int CFileXBMSP::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileXBMSP::Read(void *lpBuf, __int64 uiBufSize)
 {
   unsigned char *buf = NULL;
   size_t buflen = 0;
@@ -277,7 +275,7 @@ unsigned int CFileXBMSP::Read(void *lpBuf, int64_t uiBufSize)
   m_filePos += buflen;
 
   free(buf);
-
+  
   return buflen;
 }
 
@@ -295,7 +293,7 @@ void CFileXBMSP::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileXBMSP::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileXBMSP::Seek(__int64 iFilePosition, int iWhence)
 {
   UINT64 newpos;
 
@@ -321,9 +319,9 @@ int64_t CFileXBMSP::Seek(int64_t iFilePosition, int iWhence)
 
   // We can't seek beyond EOF
   if (newpos > m_fileSize) return -1;
-
+  
   if (newpos == m_filePos) return m_filePos;
-
+  
   if ( newpos == 0 )
   {
     // goto beginning
@@ -381,14 +379,14 @@ int64_t CFileXBMSP::Seek(int64_t iFilePosition, int iWhence)
 }
 
 //*********************************************************************************************
-int64_t CFileXBMSP::GetLength()
+__int64 CFileXBMSP::GetLength()
 {
   if (!m_bOpened) return 0;
   return m_fileSize;
 }
 
 //*********************************************************************************************
-int64_t CFileXBMSP::GetPosition()
+__int64 CFileXBMSP::GetPosition()
 {
   if (!m_bOpened) return 0;
   return m_filePos;

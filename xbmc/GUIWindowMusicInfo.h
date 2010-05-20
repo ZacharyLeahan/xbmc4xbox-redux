@@ -36,6 +36,7 @@ public:
   CGUIWindowMusicInfo(void);
   virtual ~CGUIWindowMusicInfo(void);
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void Render();
   void SetAlbum(const CAlbum& album, const CStdString &path);
   void SetArtist(const CArtist& artist, const CStdString &path);
   bool NeedRefresh() const;

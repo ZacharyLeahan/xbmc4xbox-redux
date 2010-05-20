@@ -18,7 +18,7 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
 #include "stdafx.h"
 #include "XBoxRenderer.h"
 #include "Application.h"
@@ -45,25 +45,19 @@ YUVCOEF yuv_coef_bt709 = {
 YUVCOEF yuv_coef_ebu = {
     0.0f,  1.140f,
  -0.396f, -0.581f,
-  2.029f,    0.0f,
+  2.029f,    0.0f, 
 };
 
 YUVCOEF yuv_coef_smtp240m = {
      0.0f,  1.5756f,
  -0.2253f, -0.5000f, /* page above have the 0.5000f as positive */
-  1.8270f,     0.0f,
+  1.8270f,     0.0f,  
 };
 
 
-#ifndef HAS_SDL
 CXBoxRenderer::CXBoxRenderer(LPDIRECT3DDEVICE8 pDevice)
-#else
-CXBoxRenderer::CXBoxRenderer()
-#endif
 {
-#ifndef _LINUX
   m_pD3DDevice = pDevice;
-#endif
   m_fSourceFrameRatio = 1.0f;
   m_iResolution = PAL_4x3;
   for (int i = 0; i < NUM_BUFFERS; i++)
@@ -76,17 +70,17 @@ CXBoxRenderer::CXBoxRenderer()
   m_hLowMemShader = 0;
 
   m_iYV12RenderBuffer = 0;
+  m_NumYV12Buffers = 0;
 
   memset(m_image, 0, sizeof(m_image));
-
   memset(m_YUVTexture, 0, sizeof(m_YUVTexture));
+
   m_yuvcoef = yuv_coef_bt709;
   m_yuvrange = yuv_range_lim;
 }
 
 CXBoxRenderer::~CXBoxRenderer()
 {
-  UnInit();
   for (int i = 0; i < NUM_BUFFERS; i++)
   {
     CloseHandle(m_eventTexturesDone[i]);
@@ -100,20 +94,12 @@ void CXBoxRenderer::DeleteOSDTextures(int index)
   CSingleLock lock(g_graphicsContext);
   if (m_pOSDYTexture[index])
   {
-#ifndef _LINUX
     m_pOSDYTexture[index]->Release();
-#else
-    SDL_FreeSurface(m_pOSDYTexture[index]);
-#endif
     m_pOSDYTexture[index] = NULL;
   }
   if (m_pOSDATexture[index])
   {
-#ifndef _LINUX
     m_pOSDATexture[index]->Release();
-#else
-    SDL_FreeSurface(m_pOSDATexture[index]);
-#endif
     m_pOSDATexture[index] = NULL;
     CLog::Log(LOGDEBUG, "Deleted OSD textures (%i)", index);
   }
@@ -122,7 +108,6 @@ void CXBoxRenderer::DeleteOSDTextures(int index)
 
 void CXBoxRenderer::Setup_Y8A8Render()
 {
-#ifndef _LINUX
   m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
   m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
   m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
@@ -139,10 +124,10 @@ void CXBoxRenderer::Setup_Y8A8Render()
   m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
   m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
 
-  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_settings.m_maxFilter*/ );
-  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_settings.m_minFilter*/ );
-  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MAGFILTER, D3DTEXF_POINT /*g_settings.m_maxFilter*/ );
-  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MINFILTER, D3DTEXF_POINT /*g_settings.m_minFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_stSettings.m_maxFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_stSettings.m_minFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MAGFILTER, D3DTEXF_POINT /*g_stSettings.m_maxFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MINFILTER, D3DTEXF_POINT /*g_stSettings.m_minFilter*/ );
 
   m_pD3DDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
   m_pD3DDevice->SetRenderState( D3DRS_FOGENABLE, FALSE );
@@ -153,7 +138,6 @@ void CXBoxRenderer::Setup_Y8A8Render()
   m_pD3DDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_SRCALPHA );
   m_pD3DDevice->SetRenderState( D3DRS_YUVENABLE, FALSE );
   m_pD3DDevice->SetVertexShader( FVF_Y8A8VERTEX );
-#endif
 }
 
 //***************************************************************************************
@@ -284,7 +268,7 @@ void CXBoxRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, 
 
   if(true /*isvobsub*/) // xbox_video.cpp is fixed to 720x576 osd, so this should be fine
   { // vobsubs are given to us unscaled
-    // scale them up to the full output, assuming vobsubs have same
+    // scale them up to the full output, assuming vobsubs have same 
     // pixel aspect ratio as the movie, and are 720 pixels wide
 
     float pixelaspect = m_fSourceFrameRatio * m_iSourceHeight / m_iSourceWidth;
@@ -299,7 +283,7 @@ void CXBoxRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, 
     xscale = 1.0f;
     yscale = 1.0f;
   }
-
+  
   // horizontal centering, and align to bottom of subtitles line
   osdRect.left = (float)rv.left + (float)(rv.right - rv.left - (float)w * xscale) / 2.0f;
   osdRect.right = osdRect.left + (float)w * xscale;
@@ -319,15 +303,10 @@ void CXBoxRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, 
     DeleteOSDTextures(iOSDBuffer);
     m_iOSDTextureHeight[iOSDBuffer] = h;
     // Create osd textures for this buffer with new size
-#ifndef _LINUX
     if (
       D3D_OK != m_pD3DDevice->CreateTexture(m_iOSDTextureWidth, m_iOSDTextureHeight[iOSDBuffer], 1, 0, D3DFMT_LIN_L8, 0, &m_pOSDYTexture[iOSDBuffer]) ||
       D3D_OK != m_pD3DDevice->CreateTexture(m_iOSDTextureWidth, m_iOSDTextureHeight[iOSDBuffer], 1, 0, D3DFMT_LIN_A8, 0, &m_pOSDATexture[iOSDBuffer])
     )
-#else
-    if ( 1 )
-#warning need to create textures
-#endif
     {
       CLog::Log(LOGERROR, "Could not create OSD/Sub textures");
       DeleteOSDTextures(iOSDBuffer);
@@ -350,7 +329,6 @@ void CXBoxRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, 
 
   //We know the resources have been used at this point (or they are the second buffer, wich means they aren't in use anyways)
   //reset these so the gpu doesn't try to block on these
-#ifndef _LINUX
   m_pOSDYTexture[iOSDBuffer]->Lock = 0;
   m_pOSDATexture[iOSDBuffer]->Lock = 0;
 
@@ -369,20 +347,6 @@ void CXBoxRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, 
   }
   m_pOSDYTexture[iOSDBuffer]->UnlockRect(0);
   m_pOSDATexture[iOSDBuffer]->UnlockRect(0);
-#else
-  if (SDL_LockSurface(m_pOSDYTexture[iOSDBuffer]) == 0 &&
-      SDL_LockSurface(m_pOSDATexture[iOSDBuffer]) == 0)
-  {
-    //clear the textures
-    memset(m_pOSDYTexture[iOSDBuffer]->pixels, 0, m_pOSDYTexture[iOSDBuffer]->pitch*m_iOSDTextureHeight[iOSDBuffer]);
-    memset(m_pOSDATexture[iOSDBuffer]->pixels, 0, m_pOSDATexture[iOSDBuffer]->pitch*m_iOSDTextureHeight[iOSDBuffer]);
-
-    //draw the osd/subs
-    CopyAlpha(w, h, src, srca, stride, (BYTE*)m_pOSDYTexture[iOSDBuffer]->pixels, (BYTE*)m_pOSDATexture[iOSDBuffer]->pixels, m_pOSDYTexture[iOSDBuffer]->pitch);
-  }
-  SDL_UnlockSurface(m_pOSDYTexture[iOSDBuffer]);
-  SDL_UnlockSurface(m_pOSDATexture[iOSDBuffer]);
-#endif
 
   //set module variables to calculated values
   m_OSDRect = osdRect;
@@ -413,11 +377,8 @@ void CXBoxRenderer::RenderOSD()
   //    return;
 
   // Set state to render the image
-#ifndef _LINUX
   m_pD3DDevice->SetTexture(0, m_pOSDYTexture[iRenderBuffer]);
   m_pD3DDevice->SetTexture(1, m_pOSDATexture[iRenderBuffer]);
-#endif
-
   Setup_Y8A8Render();
 
   /* In mplayer's alpha planes, 0 is transparent, then 1 is nearly
@@ -444,10 +405,10 @@ void CXBoxRenderer::RenderOSD()
   */
 
   // Set texture filters
-  //m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_settings.m_maxFilter*/ );
-  //m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_settings.m_minFilter*/ );
-  //m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_settings.m_maxFilter*/ );
-  //m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_settings.m_minFilter*/ );
+  //m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_stSettings.m_maxFilter*/ );
+  //m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_stSettings.m_minFilter*/ );
+  //m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_stSettings.m_maxFilter*/ );
+  //m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_stSettings.m_minFilter*/ );
 
   // clip the output if we are not in FSV so that zoomed subs don't go all over the GUI
   if ( !(g_graphicsContext.IsFullScreenVideo() || g_graphicsContext.IsCalibrating() ))
@@ -456,7 +417,6 @@ void CXBoxRenderer::RenderOSD()
   }
 
   // Render the image
-#ifndef _LINUX
   m_pD3DDevice->Begin(D3DPT_QUADLIST);
   m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD0, 0, 0 );
   m_pD3DDevice->SetVertexData2f( D3DVSDE_TEXCOORD1, 0, 0 );
@@ -482,7 +442,6 @@ void CXBoxRenderer::RenderOSD()
   //this is very weird.. D3DCALLBACK_READ is not enough.. if that is used, we start flushing
   //the texutures to early.. I have no idea why really
   m_pD3DDevice->InsertCallback(D3DCALLBACK_WRITE,&TextureCallback, (DWORD)m_eventOSDDone[iRenderBuffer]);
-#endif
 
 }
 
@@ -499,8 +458,8 @@ RESOLUTION CXBoxRenderer::GetResolution()
 
 float CXBoxRenderer::GetAspectRatio()
 {
-  float fWidth = (float)m_iSourceWidth - g_settings.m_currentVideoSettings.m_CropLeft - g_settings.m_currentVideoSettings.m_CropRight;
-  float fHeight = (float)m_iSourceHeight - g_settings.m_currentVideoSettings.m_CropTop - g_settings.m_currentVideoSettings.m_CropBottom;
+  float fWidth = (float)m_iSourceWidth - g_stSettings.m_currentVideoSettings.m_CropLeft - g_stSettings.m_currentVideoSettings.m_CropRight;
+  float fHeight = (float)m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropTop - g_stSettings.m_currentVideoSettings.m_CropBottom;
   return m_fSourceFrameRatio * fWidth / fHeight * m_iSourceHeight / m_iSourceWidth;
 }
 
@@ -518,6 +477,15 @@ void CXBoxRenderer::CalcNormalDisplayRect(float fOffsetX1, float fOffsetY1, floa
   // and the output pixel ratio setting)
 
   float fOutputFrameRatio = fInputFrameRatio / g_settings.m_ResInfo[GetResolution()].fPixelRatio;
+
+  // allow a certain error to maximize screen size
+  float fCorrection = fScreenWidth / fScreenHeight / fOutputFrameRatio - 1.0f;
+  if(fCorrection >   m_aspecterror)
+    fCorrection = m_aspecterror;
+  if(fCorrection < - m_aspecterror)
+    fCorrection = - m_aspecterror;
+
+  fOutputFrameRatio *= 1.0f + fCorrection;
 
   // maximize the movie width
   float fNewWidth = fScreenWidth;
@@ -605,12 +573,12 @@ void CXBoxRenderer::ManageDisplay()
   float fOffsetY1 = (float)rv.top;
 
   // source rect
-  rs.left = g_settings.m_currentVideoSettings.m_CropLeft;
-  rs.top = g_settings.m_currentVideoSettings.m_CropTop;
-  rs.right = m_iSourceWidth - g_settings.m_currentVideoSettings.m_CropRight;
-  rs.bottom = m_iSourceHeight - g_settings.m_currentVideoSettings.m_CropBottom;
+  rs.left = g_stSettings.m_currentVideoSettings.m_CropLeft;
+  rs.top = g_stSettings.m_currentVideoSettings.m_CropTop;
+  rs.right = m_iSourceWidth - g_stSettings.m_currentVideoSettings.m_CropRight;
+  rs.bottom = m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropBottom;
 
-  CalcNormalDisplayRect(fOffsetX1, fOffsetY1, fScreenWidth, fScreenHeight, GetAspectRatio() * g_settings.m_fPixelRatio, g_settings.m_fZoomAmount);
+  CalcNormalDisplayRect(fOffsetX1, fOffsetY1, fScreenWidth, fScreenHeight, GetAspectRatio() * g_stSettings.m_fPixelRatio, g_stSettings.m_fZoomAmount);
 }
 
 void CXBoxRenderer::ChooseBestResolution(float fps)
@@ -642,13 +610,8 @@ void CXBoxRenderer::ChooseBestResolution(float fps)
     // yes dashboard PAL60 settings is enabled
     // Calculate the framerate difference from a divisor of 120fps and 100fps
     // (twice 60fps and 50fps to allow for 2:3 IVTC pulldown)
-#ifndef _LINUX
     float fFrameDifference60 = abs(120.0f / fps - floor(120.0f / fps + 0.5f));
     float fFrameDifference50 = abs(100.0f / fps - floor(100.0f / fps + 0.5f));
-#else
-    float fFrameDifference60 = fabs(120.0f / fps - floor(120.0f / fps + 0.5f));
-    float fFrameDifference50 = fabs(100.0f / fps - floor(100.0f / fps + 0.5f));
-#endif
     // Make a decision based on the framerate difference
     if (fFrameDifference60 < fFrameDifference50)
       bPal60 = true;
@@ -665,7 +628,7 @@ void CXBoxRenderer::ChooseBestResolution(float fps)
       if (DisplayRes == PAL_16x9) DisplayRes = PAL60_16x9;
       if (DisplayRes == PAL_4x3) DisplayRes = PAL60_4x3;
     }
-    CLog::Log(LOGNOTICE, "Display resolution USER : %s (%d)", g_settings.m_ResInfo[DisplayRes].strMode.c_str(), DisplayRes);
+    CLog::Log(LOGNOTICE, "Display resolution USER : %s (%d)", g_settings.m_ResInfo[DisplayRes].strMode, DisplayRes);
     m_iResolution = DisplayRes;
     return;
   }
@@ -757,16 +720,25 @@ void CXBoxRenderer::ChooseBestResolution(float fps)
     }
   }
 
-  CLog::Log(LOGNOTICE, "Display resolution AUTO : %s (%d)", g_settings.m_ResInfo[m_iResolution].strMode.c_str(), m_iResolution);
+  CLog::Log(LOGNOTICE, "Display resolution AUTO : %s (%d)", g_settings.m_ResInfo[m_iResolution].strMode, m_iResolution);
 }
 
 bool CXBoxRenderer::Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags)
 {
-  m_fps = fps;
-  m_iSourceWidth = width;
-  m_iSourceHeight = height;
-  m_iFlags = flags;
+  if(m_iSourceWidth  != width
+  || m_iSourceHeight != height)
+  {
+    m_iSourceWidth = width;
+    m_iSourceHeight = height;
+    // need to recreate textures
+    m_NumYV12Buffers = 0;
+    m_iYV12RenderBuffer = 0;
+  }
 
+  m_fps = fps;
+  m_iFlags = flags;
+  m_bConfigured = true;
+  
   // setup what colorspace we live in
   if(flags & CONF_FLAGS_YUV_FULLRANGE)
     m_yuvrange = yuv_range_full;
@@ -779,7 +751,7 @@ bool CXBoxRenderer::Configure(unsigned int width, unsigned int height, unsigned 
       m_yuvcoef = yuv_coef_smtp240m; break;
     case CONF_FLAGS_YUVCOEF_BT709:
       m_yuvcoef = yuv_coef_bt709; break;
-    case CONF_FLAGS_YUVCOEF_BT601:
+    case CONF_FLAGS_YUVCOEF_BT601:    
       m_yuvcoef = yuv_coef_bt601; break;
     case CONF_FLAGS_YUVCOEF_EBU:
       m_yuvcoef = yuv_coef_ebu; break;
@@ -790,7 +762,7 @@ bool CXBoxRenderer::Configure(unsigned int width, unsigned int height, unsigned 
   // calculate the input frame aspect ratio
   CalculateFrameAspectRatio(d_width, d_height);
   ChooseBestResolution(m_fps);
-  SetViewMode(g_settings.m_currentVideoSettings.m_ViewMode);
+  SetViewMode(g_stSettings.m_currentVideoSettings.m_ViewMode);
 
   ManageDisplay();
 
@@ -802,7 +774,7 @@ int CXBoxRenderer::NextYV12Texture()
 #ifdef MP_DIRECTRENDERING
   int source = m_iYV12RenderBuffer;
   do {
-    source = (source + 1) % m_NumYV12Buffers;
+    source = (source + 1) % m_NumYV12Buffers;    
   } while( source != m_iYV12RenderBuffer
     && m_image[source].flags & IMAGE_FLAG_INUSE);
 
@@ -825,7 +797,7 @@ int CXBoxRenderer::GetImage(YV12Image *image, int source, bool readonly)
   if( source == AUTOSOURCE )
     source = NextYV12Texture();
 
-#ifdef MP_DIRECTRENDERING
+#ifdef MP_DIRECTRENDERING 
     if( source < 0 )
     { /* no free source existed, so create one */
       CSingleLock lock(g_graphicsContext);
@@ -845,7 +817,7 @@ int CXBoxRenderer::GetImage(YV12Image *image, int source, bool readonly)
     else
     {
       if( WaitForSingleObject(m_eventTexturesDone[source], 500) == WAIT_TIMEOUT )
-        CLog::Log(LOGWARNING, CStdString(__FUNCTION__) + " - Timeout waiting for texture %d", source);
+        CLog::Log(LOGWARNING, "%s - Timeout waiting for texture %d", __FUNCTION__, source);
 
       m_image[source].flags |= IMAGE_FLAG_WRITING;
     }
@@ -861,12 +833,12 @@ void CXBoxRenderer::ReleaseImage(int source, bool preserve)
 {
   if( m_image[source].flags & IMAGE_FLAG_WRITING )
     SetEvent(m_eventTexturesDone[source]);
-
+  
   m_image[source].flags &= ~IMAGE_FLAG_INUSE;
 
   /* if image should be preserved reserve it so it's not auto seleceted */
   if( preserve )
-    m_image[source].flags |= IMAGE_FLAG_RESERVED;
+    m_image[source].flags |= IMAGE_FLAG_RESERVED;  
 }
 
 void CXBoxRenderer::Reset()
@@ -876,7 +848,7 @@ void CXBoxRenderer::Reset()
     /* reset all image flags, this will cleanup textures later */
     m_image[i].flags = 0;
     /* reset texure locks, abit uggly, could result in tearing */
-    SetEvent(m_eventTexturesDone[i]);
+    SetEvent(m_eventTexturesDone[i]); 
   }
 }
 
@@ -890,13 +862,13 @@ void CXBoxRenderer::Update(bool bPauseDrawing)
 
 void CXBoxRenderer::RenderUpdate(bool clear, DWORD flags, DWORD alpha)
 {
+  if (!m_bConfigured) return;
+
   if (!m_YUVTexture[m_iYV12RenderBuffer][FIELD_FULL][0]) return ;
 
   CSingleLock lock(g_graphicsContext);
   ManageDisplay();
   ManageTextures();
-
-#ifndef _LINUX
   if (clear)
     m_pD3DDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, m_clearColour, 1.0f, 0L );
 
@@ -914,16 +886,17 @@ void CXBoxRenderer::RenderUpdate(bool clear, DWORD flags, DWORD alpha)
 
   //Kick commands out to the GPU, or we won't get the callback for textures being done
   m_pD3DDevice->KickPushBuffer();
-#endif
-
 }
 
 void CXBoxRenderer::FlipPage(int source)
-{
+{  
+  if(source == AUTOSOURCE) 
+    source = NextYV12Texture();
+
   if( source >= 0 && source < m_NumYV12Buffers )
     m_iYV12RenderBuffer = source;
   else
-    m_iYV12RenderBuffer = NextYV12Texture();
+    m_iYV12RenderBuffer = 0;
 
   /* we always decode into to the next buffer */
   ++m_iOSDRenderBuffer %= m_NumOSDBuffers;
@@ -1001,7 +974,6 @@ unsigned int CXBoxRenderer::PreInit()
 {
   CSingleLock lock(g_graphicsContext);
   m_bConfigured = false;
-  UnInit();
   m_iResolution = PAL_4x3;
 
   m_iOSDRenderBuffer = 0;
@@ -1017,10 +989,11 @@ unsigned int CXBoxRenderer::PreInit()
 
   // setup the background colour
   m_clearColour = (g_advancedSettings.m_videoBlackBarColour & 0xff) * 0x010101;
+  m_aspecterror = g_guiSettings.GetFloat("videoplayer.errorinaspect") * 0.01f;
+
   // low memory pixel shader
   if (!m_hLowMemShader)
   {
-#ifndef _LINUX
     // lowmem shader (not as accurate, but no need for interleaving of YUV)
     const char *lowmem =
       "xps.1.1\n"
@@ -1049,7 +1022,6 @@ unsigned int CXBoxRenderer::PreInit()
     XGAssembleShader("LowMemShader", lowmem, strlen(lowmem), 0, NULL, &pShader, NULL, NULL, NULL, NULL, NULL);
     m_pD3DDevice->CreatePixelShader((D3DPIXELSHADERDEF*)pShader->GetBufferPointer(), &m_hLowMemShader);
     pShader->Release();
-#endif
   }
 
   return 0;
@@ -1057,6 +1029,7 @@ unsigned int CXBoxRenderer::PreInit()
 
 void CXBoxRenderer::UnInit()
 {
+  CLog::Log(LOGDEBUG, "%s - Cleaning up resources", __FUNCTION__);
   CSingleLock lock(g_graphicsContext);
 
   // YV12 textures, subtitle and osd stuff
@@ -1065,14 +1038,14 @@ void CXBoxRenderer::UnInit()
     DeleteYV12Texture(i);
     DeleteOSDTextures(i);
   }
-
+  
   if (m_hLowMemShader)
   {
-#ifndef _LINUX
     m_pD3DDevice->DeletePixelShader(m_hLowMemShader);
-#endif
     m_hLowMemShader = 0;
   }
+
+  m_bConfigured = false;
 }
 
 void CXBoxRenderer::Render(DWORD flags)
@@ -1099,18 +1072,18 @@ void CXBoxRenderer::Render(DWORD flags)
 void CXBoxRenderer::SetViewMode(int iViewMode)
 {
   if (iViewMode < VIEW_MODE_NORMAL || iViewMode > VIEW_MODE_CUSTOM) iViewMode = VIEW_MODE_NORMAL;
-  g_settings.m_currentVideoSettings.m_ViewMode = iViewMode;
+  g_stSettings.m_currentVideoSettings.m_ViewMode = iViewMode;
 
-  if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_NORMAL)
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_NORMAL)
   { // normal mode...
-    g_settings.m_fPixelRatio = 1.0;
-    g_settings.m_fZoomAmount = 1.0;
+    g_stSettings.m_fPixelRatio = 1.0;
+    g_stSettings.m_fZoomAmount = 1.0;
     return ;
   }
-  if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_CUSTOM)
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_CUSTOM)
   {
-    g_settings.m_fZoomAmount = g_settings.m_currentVideoSettings.m_CustomZoomAmount;
-    g_settings.m_fPixelRatio = g_settings.m_currentVideoSettings.m_CustomPixelRatio;
+    g_stSettings.m_fZoomAmount = g_stSettings.m_currentVideoSettings.m_CustomZoomAmount;
+    g_stSettings.m_fPixelRatio = g_stSettings.m_currentVideoSettings.m_CustomPixelRatio;
     return ;
   }
 
@@ -1122,75 +1095,75 @@ void CXBoxRenderer::SetViewMode(int iViewMode)
   // and the source frame ratio
   float fSourceFrameRatio = GetAspectRatio();
 
-  if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ZOOM)
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ZOOM)
   { // zoom image so no black bars
-    g_settings.m_fPixelRatio = 1.0;
+    g_stSettings.m_fPixelRatio = 1.0;
     // calculate the desired output ratio
-    float fOutputFrameRatio = fSourceFrameRatio * g_settings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
     // now calculate the correct zoom amount.  First zoom to full height.
     float fNewHeight = fScreenHeight;
     float fNewWidth = fNewHeight * fOutputFrameRatio;
-    g_settings.m_fZoomAmount = fNewWidth / fScreenWidth;
+    g_stSettings.m_fZoomAmount = fNewWidth / fScreenWidth;
     if (fNewWidth < fScreenWidth)
     { // zoom to full width
       fNewWidth = fScreenWidth;
       fNewHeight = fNewWidth / fOutputFrameRatio;
-      g_settings.m_fZoomAmount = fNewHeight / fScreenHeight;
+      g_stSettings.m_fZoomAmount = fNewHeight / fScreenHeight;
     }
   }
-  else if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_4x3)
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_4x3)
   { // stretch image to 4:3 ratio
-    g_settings.m_fZoomAmount = 1.0;
+    g_stSettings.m_fZoomAmount = 1.0;
     if (m_iResolution == PAL_4x3 || m_iResolution == PAL60_4x3 || m_iResolution == NTSC_4x3 || m_iResolution == HDTV_480p_4x3)
     { // stretch to the limits of the 4:3 screen.
       // incorrect behaviour, but it's what the users want, so...
-      g_settings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
+      g_stSettings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
     }
     else
     {
-      // now we need to set g_settings.m_fPixelRatio so that
+      // now we need to set g_stSettings.m_fPixelRatio so that
       // fOutputFrameRatio = 4:3.
-      g_settings.m_fPixelRatio = (4.0f / 3.0f) / fSourceFrameRatio;
+      g_stSettings.m_fPixelRatio = (4.0f / 3.0f) / fSourceFrameRatio;
     }
   }
-  else if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_14x9)
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_14x9)
   { // stretch image to 14:9 ratio
-    // now we need to set g_settings.m_fPixelRatio so that
+    // now we need to set g_stSettings.m_fPixelRatio so that
     // fOutputFrameRatio = 14:9.
-    g_settings.m_fPixelRatio = (14.0f / 9.0f) / fSourceFrameRatio;
+    g_stSettings.m_fPixelRatio = (14.0f / 9.0f) / fSourceFrameRatio;
     // calculate the desired output ratio
-    float fOutputFrameRatio = fSourceFrameRatio * g_settings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
     // now calculate the correct zoom amount.  First zoom to full height.
     float fNewHeight = fScreenHeight;
     float fNewWidth = fNewHeight * fOutputFrameRatio;
-    g_settings.m_fZoomAmount = fNewWidth / fScreenWidth;
+    g_stSettings.m_fZoomAmount = fNewWidth / fScreenWidth;
     if (fNewWidth < fScreenWidth)
     { // zoom to full width
       fNewWidth = fScreenWidth;
       fNewHeight = fNewWidth / fOutputFrameRatio;
-      g_settings.m_fZoomAmount = fNewHeight / fScreenHeight;
+      g_stSettings.m_fZoomAmount = fNewHeight / fScreenHeight;
     }
   }
-  else if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_16x9)
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_16x9)
   { // stretch image to 16:9 ratio
-    g_settings.m_fZoomAmount = 1.0;
+    g_stSettings.m_fZoomAmount = 1.0;
     if (m_iResolution == PAL_4x3 || m_iResolution == PAL60_4x3 || m_iResolution == NTSC_4x3 || m_iResolution == HDTV_480p_4x3)
-    { // now we need to set g_settings.m_fPixelRatio so that
+    { // now we need to set g_stSettings.m_fPixelRatio so that
       // fOutputFrameRatio = 16:9.
-      g_settings.m_fPixelRatio = (16.0f / 9.0f) / fSourceFrameRatio;
+      g_stSettings.m_fPixelRatio = (16.0f / 9.0f) / fSourceFrameRatio;
     }
     else
     { // stretch to the limits of the 16:9 screen.
       // incorrect behaviour, but it's what the users want, so...
-      g_settings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
+      g_stSettings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
     }
   }
-  else // if (g_settings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ORIGINAL)
+  else // if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ORIGINAL)
   { // zoom image so that the height is the original size
-    g_settings.m_fPixelRatio = 1.0;
+    g_stSettings.m_fPixelRatio = 1.0;
     // get the size of the media file
     // calculate the desired output ratio
-    float fOutputFrameRatio = fSourceFrameRatio * g_settings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
     // now calculate the correct zoom amount.  First zoom to full width.
     float fNewWidth = fScreenWidth;
     float fNewHeight = fNewWidth / fOutputFrameRatio;
@@ -1200,8 +1173,95 @@ void CXBoxRenderer::SetViewMode(int iViewMode)
       fNewWidth = fNewHeight * fOutputFrameRatio;
     }
     // now work out the zoom amount so that no zoom is done
-    g_settings.m_fZoomAmount = (m_iSourceHeight - g_settings.m_currentVideoSettings.m_CropTop - g_settings.m_currentVideoSettings.m_CropBottom) / fNewHeight;
+    g_stSettings.m_fZoomAmount = (m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropTop - g_stSettings.m_currentVideoSettings.m_CropBottom) / fNewHeight;
   }
+}
+
+void CXBoxRenderer::AutoCrop(bool bCrop)
+{
+  if (!m_YUVTexture[0][FIELD_FULL][PLANE_Y]) return ;
+
+  if (bCrop)
+  {
+    CSingleLock lock(g_graphicsContext);
+    // apply auto-crop filter - only luminance needed, and we run vertically down 'n'
+    // runs down the image.
+    int min_detect = 8;                                // reasonable amount (what mplayer uses)
+    int detect = (min_detect + 16)*m_iSourceWidth/4;     // luminance should have minimum 16
+    D3DLOCKED_RECT lr;
+    m_YUVTexture[0][FIELD_FULL][PLANE_Y]->LockRect(0, &lr, NULL, 0);
+    int total;
+    int teletext_lines = 10;
+    // Crop top
+    BYTE *s = (BYTE *)lr.pBits + lr.Pitch*teletext_lines;
+    g_stSettings.m_currentVideoSettings.m_CropTop = m_iSourceHeight/2;
+    for (unsigned int y = teletext_lines; y < m_iSourceHeight/2; y++)
+    {
+      total = 0;
+      for (unsigned int x = (unsigned int)(m_iSourceWidth*0.375); x < (unsigned int)(m_iSourceWidth*0.625); x++)
+        total += s[x];
+      s += lr.Pitch;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropTop = y;
+        break;
+      }
+    }
+    // Crop bottom
+    s = (BYTE *)lr.pBits + (m_iSourceHeight-1)*lr.Pitch;
+    g_stSettings.m_currentVideoSettings.m_CropBottom = m_iSourceHeight/2;
+    for (unsigned int y = (int)m_iSourceHeight; y > m_iSourceHeight/2; y--)
+    {
+      total = 0;
+      for (unsigned int x = (unsigned int)(m_iSourceWidth*0.375); x < (unsigned int)(m_iSourceWidth*0.625); x++)
+        total += s[x];
+      s -= lr.Pitch;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropBottom = m_iSourceHeight - y;
+        break;
+      }
+    }
+    // Crop left
+    s = (BYTE *)lr.pBits;
+    g_stSettings.m_currentVideoSettings.m_CropLeft = m_iSourceWidth/2;
+    for (unsigned int x = 0; x < m_iSourceWidth/2; x++)
+    {
+      total = 0;
+      for (unsigned int y = (unsigned int)(m_iSourceHeight*0.375); y < (unsigned int)(m_iSourceHeight*0.625); y++)
+        total += s[y * lr.Pitch];
+      s++;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropLeft = x;
+        break;
+      }
+    }
+    // Crop right
+    s = (BYTE *)lr.pBits + (m_iSourceWidth-1);
+    g_stSettings.m_currentVideoSettings.m_CropRight= m_iSourceWidth/2;
+    for (unsigned int x = (int)m_iSourceWidth-1; x > m_iSourceWidth/2; x--)
+    {
+      total = 0;
+      for (unsigned int y = (unsigned int)(m_iSourceHeight*0.375); y < (unsigned int)(m_iSourceHeight*0.625); y++)
+        total += s[y * lr.Pitch];
+      s--;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropRight = m_iSourceWidth - x;
+        break;
+      }
+    }
+    m_YUVTexture[0][FIELD_FULL][PLANE_Y]->UnlockRect(0);
+  }
+  else
+  { // reset to defaults
+    g_stSettings.m_currentVideoSettings.m_CropLeft = 0;
+    g_stSettings.m_currentVideoSettings.m_CropRight = 0;
+    g_stSettings.m_currentVideoSettings.m_CropTop = 0;
+    g_stSettings.m_currentVideoSettings.m_CropBottom = 0;
+  }
+  SetViewMode(g_stSettings.m_currentVideoSettings.m_ViewMode);
 }
 
 void CXBoxRenderer::RenderLowMem(DWORD flags)
@@ -1219,16 +1279,13 @@ void CXBoxRenderer::RenderLowMem(DWORD flags)
 
   for (int i = 0; i < 3; ++i)
   {
-#ifndef _LINUX
     m_pD3DDevice->SetTexture(i, m_YUVTexture[index][FIELD_FULL][i]);
     m_pD3DDevice->SetTextureStageState( i, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
     m_pD3DDevice->SetTextureStageState( i, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
     m_pD3DDevice->SetTextureStageState( i, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
     m_pD3DDevice->SetTextureStageState( i, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
-#endif
   }
 
-#ifndef _LINUX
   m_pD3DDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
   m_pD3DDevice->SetRenderState( D3DRS_FOGENABLE, FALSE );
   m_pD3DDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
@@ -1236,12 +1293,10 @@ void CXBoxRenderer::RenderLowMem(DWORD flags)
   m_pD3DDevice->SetRenderState( D3DRS_YUVENABLE, FALSE );
   m_pD3DDevice->SetVertexShader( FVF_YV12VERTEX );
   m_pD3DDevice->SetPixelShader( m_hLowMemShader );
-#endif
 
   //See RGB renderer for comment on this
   #define CHROMAOFFSET_HORIZ 0.25f
 
-#ifndef _LINUX
   // Render the image
   m_pD3DDevice->SetScreenSpaceOffset( -0.5f, -0.5f); // fix texel align
   m_pD3DDevice->Begin(D3DPT_QUADLIST);
@@ -1276,18 +1331,12 @@ void CXBoxRenderer::RenderLowMem(DWORD flags)
 
   //Okey, when the gpu is done with the textures here, they are free to be modified again
   m_pD3DDevice->InsertCallback(D3DCALLBACK_WRITE,&TextureCallback, (DWORD)m_eventTexturesDone[index]);
-#endif
 
 }
 
-#ifndef _LINUX
 void CXBoxRenderer::CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height)
-#else
-void CXBoxRenderer::CreateThumbnail(SDL_Surface * surface, unsigned int width, unsigned int height)
-#endif
 {
   CSingleLock lock(g_graphicsContext);
-#ifndef _LINUX
   LPDIRECT3DSURFACE8 oldRT;
   RECT saveSize = rd;
   rd.left = rd.top = 0;
@@ -1300,7 +1349,6 @@ void CXBoxRenderer::CreateThumbnail(SDL_Surface * surface, unsigned int width, u
   rd = saveSize;
   m_pD3DDevice->SetRenderTarget(oldRT, NULL);
   oldRT->Release();
-#endif
 }
 
 //********************************************************************************************************
@@ -1308,6 +1356,8 @@ void CXBoxRenderer::CreateThumbnail(SDL_Surface * surface, unsigned int width, u
 //********************************************************************************************************
 void CXBoxRenderer::DeleteYV12Texture(int index)
 {
+  CSingleLock lock(g_graphicsContext);
+  
   YV12Image &im = m_image[index];
   YUVFIELDS &fields = m_YUVTexture[index];
 
@@ -1318,23 +1368,21 @@ void CXBoxRenderer::DeleteYV12Texture(int index)
     for(int p = 0;p<MAX_PLANES;p++) {
       if( fields[f][p] )
       {
-#ifndef _LINUX
         fields[f][p]->BlockUntilNotBusy();
         SAFE_DELETE(fields[f][p]);
-#endif
       }
     }
   }
 
-#ifndef _LINUX
   /* data is allocated in one go */
   if (im.plane[0])
     XPhysicalFree(im.plane[0]);
 
   for(int p = 0;p<MAX_PLANES;p++)
     im.plane[p] = NULL;
-#endif
 
+  m_NumYV12Buffers = 0;
+  
   CLog::Log(LOGDEBUG, "Deleted YV12 texture %i", index);
 }
 
@@ -1354,17 +1402,16 @@ void CXBoxRenderer::ClearYV12Texture(int index)
 
 bool CXBoxRenderer::CreateYV12Texture(int index)
 {
+  CSingleLock lock(g_graphicsContext);
   DeleteYV12Texture(index);
 
   /* since we also want the field textures, pitch must be texture aligned */
   DWORD dwTextureSize;
   unsigned stride, p;
-#ifndef _LINUX
 #ifdef MP_DIRECTRENDERING
   unsigned memflags = PAGE_READWRITE;
 #else
   unsigned memflags = PAGE_READWRITE | PAGE_WRITECOMBINE;
-#endif
 #endif
 
   YV12Image &im = m_image[index];
@@ -1373,16 +1420,13 @@ bool CXBoxRenderer::CreateYV12Texture(int index)
   im.height = m_iSourceHeight;
   im.width = m_iSourceWidth;
 
-#ifndef _LINUX
   im.stride[0] = ALIGN(m_iSourceWidth,D3DTEXTURE_ALIGNMENT);
   im.stride[1] = ALIGN(m_iSourceWidth>>1,D3DTEXTURE_ALIGNMENT);
   im.stride[2] = ALIGN(m_iSourceWidth>>1,D3DTEXTURE_ALIGNMENT);
-#endif
 
   im.cshift_x = 1;
   im.cshift_y = 1;
 
-#ifndef _LINUX
   for(int f = 0;f<MAX_FIELDS;f++) {
     for(p = 0;p<MAX_PLANES;p++) {
       fields[f][p] = new D3DTexture();
@@ -1437,7 +1481,6 @@ bool CXBoxRenderer::CreateYV12Texture(int index)
       fields[f][p]->Register(data);
     }
   }
-#endif
 
   SetEvent(m_eventTexturesDone[index]);
 

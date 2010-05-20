@@ -19,37 +19,19 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "player.h"
 #include "pyplaylist.h"
 #include "keyboard.h"
-#include "utils/IoSupport.h"
-#ifndef _LINUX
+#include "xbox/IoSupport.h"
 #include <ConIo.h>
-#endif
 #include "infotagvideo.h"
 #include "infotagmusic.h"
-#ifdef HAS_HTTPAPI
-#include "lib/libhttpapi/XBMChttp.h"
-#include "lib/libhttpapi/HttpApi.h"
+#ifdef HAS_WEB_SERVER
+#include "lib/libGoAhead/XBMChttp.h"
 #endif
-#include "pyjsonrpc.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIWindowManager.h"
 #include "GUIAudioManager.h"
@@ -58,14 +40,10 @@
 #include "Util.h"
 #include "FileSystem/File.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "GUISettings.h"
+#include "Settings.h"
 #include "TextureManager.h"
 #include "language.h"
-#include "LangInfo.h"
 #include "PythonSettings.h"
-#include "SectionLoader.h"
-#include "Settings.h"
-#include "LocalizeStrings.h"
 
 // include for constants
 #include "pyutil.h"
@@ -79,10 +57,6 @@ using namespace XFILE;
 #pragma data_seg("PY_DATA")
 #pragma bss_seg("PY_BSS")
 #pragma const_seg("PY_RDATA")
-#endif
-
-#if defined(__GNUG__) && (__GNUC__>4) || (__GNUC__==4 && __GNUC_MINOR__>=2)
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
 
 #ifdef __cplusplus
@@ -126,7 +100,7 @@ namespace PYXBMC
     if (!PyArg_ParseTupleAndKeywords(
       args,
       kwds,
-      (char*)"s|i",
+      (char*)"s|i:xb_output",
       (char**)keywords,
       &s_line,
       &iLevel))
@@ -140,7 +114,7 @@ namespace PYXBMC
 
     ThreadMessage tMsg = {TMSG_WRITE_SCRIPT_OUTPUT};
     tMsg.strParam = s_line;
-    g_application.getApplicationMessenger().SendMessage(tMsg);
+    g_applicationMessenger.SendMessage(tMsg);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -204,7 +178,7 @@ namespace PYXBMC
   PyObject* XBMC_Shutdown(PyObject *self, PyObject *args)
   {
     ThreadMessage tMsg = {TMSG_SHUTDOWN};
-    g_application.getApplicationMessenger().SendMessage(tMsg);
+    g_applicationMessenger.SendMessage(tMsg);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -220,7 +194,7 @@ namespace PYXBMC
   PyObject* XBMC_Dashboard(PyObject *self, PyObject *args)
   {
     ThreadMessage tMsg = {TMSG_DASHBOARD};
-    g_application.getApplicationMessenger().SendMessage(tMsg);
+    g_applicationMessenger.SendMessage(tMsg);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -236,7 +210,7 @@ namespace PYXBMC
   PyObject* XBMC_Restart(PyObject *self, PyObject *args)
   {
     ThreadMessage tMsg = {TMSG_RESTART};
-    g_application.getApplicationMessenger().SendMessage(tMsg);
+    g_applicationMessenger.SendMessage(tMsg);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -258,7 +232,7 @@ namespace PYXBMC
 
     ThreadMessage tMsg = {TMSG_EXECUTE_SCRIPT};
     tMsg.strParam = cLine;
-    g_application.getApplicationMessenger().SendMessage(tMsg);
+    g_applicationMessenger.SendMessage(tMsg);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -280,20 +254,19 @@ namespace PYXBMC
     char *cLine = NULL;
     if (!PyArg_ParseTuple(args, (char*)"s", &cLine)) return NULL;
 
-    g_application.getApplicationMessenger().ExecBuiltIn(cLine);
+    g_applicationMessenger.ExecBuiltIn(cLine);
 
     Py_INCREF(Py_None);
     return Py_None;
   }
 
-#ifdef HAS_HTTPAPI
   // executehttpapi() method
   PyDoc_STRVAR(executeHttpApi__doc__,
     "executehttpapi(httpcommand) -- Execute an HTTP API command.\n"
     "\n"
     "httpcommand    : string - http command to execute.\n"
     "\n"
-    "List of commands - http://wiki.xbmc.org/?title=WebServerHTTP-API#The_Commands \n"
+    "List of commands - http://xbmc.org/wiki/?title=WebServerHTTP-API#The_Commands \n"
     "\n"
     "example:\n"
     "  - response = xbmc.executehttpapi('TakeScreenShot(special://temp/test.jpg,0,false,200,-1,90)')\n");
@@ -301,62 +274,23 @@ namespace PYXBMC
   PyObject* XBMC_ExecuteHttpApi(PyObject *self, PyObject *args)
   {
     char *cLine = NULL;
+    CStdString ret;
     if (!PyArg_ParseTuple(args, (char*)"s", &cLine)) return NULL;
     if (!m_pXbmcHttp)
-      m_pXbmcHttp = new CXbmcHttp();
-    CStdString method = cLine;
-
-    int open, close;
-    CStdString parameter="", cmd=cLine, execute;
-    open = cmd.Find("(");
-    if (open>0)
     {
-      close=cmd.length();
-      while (close>open && cmd.Mid(close,1)!=")")
-        close--;
-      if (close>open)
-      {
-        parameter = cmd.Mid(open + 1, close - open - 1);
-        parameter.Replace(",",";");
-        execute = cmd.Left(open);
-      }
-      else //open bracket but no close
-        return PyString_FromString("");
+      CSectionLoader::Load("LIBHTTP");
+      m_pXbmcHttp = new CXbmcHttp();
     }
-    else //no parameters
-      execute = cmd;
+    if (!pXbmcHttpShim)
+    {
+      pXbmcHttpShim = new CXbmcHttpShim();
+      if (!pXbmcHttpShim)
+        return NULL;
+    }
+    ret=pXbmcHttpShim->xbmcExternalCall(cLine);
 
-    CUtil::URLDecode(parameter);
-    return PyString_FromString(CHttpApi::MethodCall(execute, parameter).c_str());
-	}
-#endif
-
-#ifdef HAS_JSONRPC
-  // executehttpapi() method
-  PyDoc_STRVAR(executeJSONRPC__doc__,
-    "executeJSONRPC(jsonrpccommand) -- Execute an JSONRPC command.\n"
-    "\n"
-    "jsonrpccommand    : string - jsonrpc command to execute.\n"
-    "\n"
-    "List of commands - \n"
-    "\n"
-    "example:\n"
-    "  - response = xbmc.executeJSONRPC('{ \"jsonrpc\": \"2.0\", \"method\": \"JSONRPC.Introspect\", \"id\": 1 }')\n");
-
-  PyObject* XBMC_ExecuteJSONRPC(PyObject *self, PyObject *args)
-  {
-    char *cLine = NULL;
-    if (!PyArg_ParseTuple(args, (char*)"s", &cLine))
-      return NULL;
-
-    CStdString method = cLine;
-
-    CPythonTransport transport;
-    CPythonTransport::CPythonClient client;
-
-    return PyString_FromString(JSONRPC::CJSONRPC::MethodCall(method, &transport, &client).c_str());
-	}
-#endif
+    return PyString_FromString(ret.c_str());
+  }
 
   // sleep() method
   PyDoc_STRVAR(sleep__doc__,
@@ -389,7 +323,7 @@ namespace PYXBMC
       Sleep(i);//(500);
       Py_END_ALLOW_THREADS
 
-      PyXBMC_MakePendingCalls();
+      Py_MakePendingCalls();
       //i = PyInt_AsLong(pObject);
     //}
 
@@ -461,11 +395,13 @@ namespace PYXBMC
   PyObject* XBMC_GetIPAddress(PyObject *self, PyObject *args)
   {
     char cTitleIP[32];
+#ifdef HAS_XBOX_NETWORK
+    XNADDR xna;
+    XNetGetTitleXnAddr(&xna);
+    XNetInAddrToString(xna.ina, cTitleIP, 32);
+#else
     sprintf(cTitleIP, "127.0.0.1");
-    CNetworkInterface* iface = g_application.getNetwork().GetFirstConnectedInterface();
-    if (iface)
-      return PyString_FromString(iface->GetCurrentIPAddress().c_str());
-
+#endif
     return PyString_FromString(cTitleIP);
   }
 
@@ -776,7 +712,7 @@ namespace PYXBMC
   {
     static const char *keywords[] = { "path", "usefoldername", NULL };
     PyObject *pObjectText;
-    bool bUseFolderName = false;
+    char bUseFolderName = false;
     // parse arguments to constructor
     if (!PyArg_ParseTupleAndKeywords(
       args,
@@ -905,11 +841,11 @@ namespace PYXBMC
 
     CStdString result;
     if (strcmpi(media, "video") == 0)
-      result = g_settings.m_videoExtensions;
+      result = g_stSettings.m_videoExtensions;
     else if (strcmpi(media, "music") == 0)
-      result = g_settings.m_musicExtensions;
+      result = g_stSettings.m_musicExtensions;
     else if (strcmpi(media, "picture") == 0)
-      result = g_settings.m_pictureExtensions;
+      result = g_stSettings.m_pictureExtensions;
     else
     {
       PyErr_SetString(PyExc_ValueError, "media = (video, music, picture)");
@@ -973,12 +909,7 @@ namespace PYXBMC
     {(char*)"getFreeMem", (PyCFunction)XBMC_GetFreeMem, METH_VARARGS, getFreeMem__doc__},
     //{(char*)"getCpuTemp", (PyCFunction)XBMC_GetCpuTemp, METH_VARARGS, getCpuTemp__doc__},
 
-#ifdef HAS_HTTPAPI
     {(char*)"executehttpapi", (PyCFunction)XBMC_ExecuteHttpApi, METH_VARARGS, executeHttpApi__doc__},
-#endif
-#ifdef HAS_JSONRPC
-    {(char*)"executeJSONRPC", (PyCFunction)XBMC_ExecuteJSONRPC, METH_VARARGS, executeJSONRPC__doc__},
-#endif
     {(char*)"getInfoLabel", (PyCFunction)XBMC_GetInfoLabel, METH_VARARGS, getInfoLabel__doc__},
     {(char*)"getInfoImage", (PyCFunction)XBMC_GetInfoImage, METH_VARARGS, getInfoImage__doc__},
     {(char*)"getCondVisibility", (PyCFunction)XBMC_GetCondVisibility, METH_VARARGS, getCondVisibility__doc__},
@@ -1007,8 +938,11 @@ namespace PYXBMC
  * initxbmc(void);
  *****************************************************************/
   PyMODINIT_FUNC
-  InitXBMCTypes(bool bInitTypes)
+  initxbmc(void)
   {
+    // init general xbmc modules
+    PyObject* pXbmcModule;
+
     initKeyboard_Type();
     initPlayer_Type();
     initPlayList_Type();
@@ -1026,20 +960,6 @@ namespace PYXBMC
         PyType_Ready(&InfoTagVideo_Type) < 0 ||
         PyType_Ready(&Language_Type) < 0 ||
         PyType_Ready(&Settings_Type) < 0) return;
-  }
-
-  PyMODINIT_FUNC
-  DeinitXBMCModule()
-  {
-    // no need to Py_DECREF our objects (see InitXBMCModule()) as they were created only
-    // so that they could be added to the module, which steals a reference.
-  }
-
-  PyMODINIT_FUNC
-  InitXBMCModule()
-  {
-    // init general xbmc modules
-    PyObject* pXbmcModule;
 
     Py_INCREF(&Keyboard_Type);
     Py_INCREF(&Player_Type);
@@ -1080,6 +1000,7 @@ namespace PYXBMC
     PyModule_AddIntConstant(pXbmcModule, (char*)"PLAYER_CORE_DVDPLAYER", EPC_DVDPLAYER);
     PyModule_AddIntConstant(pXbmcModule, (char*)"PLAYER_CORE_MPLAYER", EPC_MPLAYER);
     PyModule_AddIntConstant(pXbmcModule, (char*)"PLAYER_CORE_PAPLAYER", EPC_PAPLAYER);
+    PyModule_AddIntConstant(pXbmcModule, (char*)"PLAYER_CORE_MODPLAYER", EPC_MODPLAYER);
 
     // dvd state constants
     PyModule_AddIntConstant(pXbmcModule, (char*)"TRAY_OPEN", TRAY_OPEN);

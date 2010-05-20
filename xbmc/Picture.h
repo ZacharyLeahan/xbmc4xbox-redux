@@ -19,38 +19,49 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-#include "StdString.h"
-#include "Job.h"
+#include "DllImageLib.h"
 
 class CPicture
 {
 public:
-  static bool CreateThumbnailFromMemory(const unsigned char* buffer, int bufSize, const CStdString& extension, const CStdString& thumbFile);
-  static bool CreateThumbnailFromSurface(const unsigned char* buffer, int width, int height, int stride, const CStdString &thumbFile);
-  static int ConvertFile(const CStdString& srcFile, const CStdString& destFile, float rotateDegrees, int width, int height, unsigned int quality, bool mirror=false);
+  CPicture(void);
+  virtual ~CPicture(void);
+  IDirect3DTexture8* Load(const CStdString& strFilename, int iMaxWidth = 128, int iMaxHeight = 128);
 
-  static void CreateFolderThumb(const CStdString *thumbs, const CStdString &folderThumb);
-  static bool CreateThumbnail(const CStdString& file, const CStdString& thumbFile, bool checkExistence = false);
-  static bool CacheThumb(const CStdString& sourceUrl, const CStdString& destFile);
-  static bool CacheFanart(const CStdString& SourceUrl, const CStdString& destFile);
+  bool CreateThumbnailFromMemory(const BYTE* pBuffer, int nBufSize, const CStdString& strExtension, const CStdString& strThumbFileName);
+  bool CreateThumbnailFromSurface(BYTE* pBuffer, int width, int height, int stride, const CStdString &strThumbFileName);
+  bool CreateThumbnailFromSwizzledTexture(LPDIRECT3DTEXTURE8 &texture, int width, int height, const CStdString &thumb);
+  int ConvertFile(const CStdString& srcFile, const CStdString& destFile, float rotateDegrees, int width, int height, unsigned int quality, bool mirror=false);
 
+  void CreateFolderThumb(const CStdString *strThumbs, const CStdString &folderThumbnail);
+  bool CreateThumbnail(const CStdString& strFileName, const CStdString& strThumbFileName, bool checkExistence = false);
+  bool CacheThumb(const CStdString& sourceUrl, const CStdString& destFileName);
+  bool CacheFanart(const CStdString& sourceUrl, const CStdString& destFileName);
+
+  // caches a skin image as a thumbnail image
+  bool CacheSkinImage(const CStdString &srcFile, const CStdString &destFile);
+
+  ImageInfo GetInfo() const { return m_info; };
+  unsigned int GetWidth() const { return m_info.width; };
+  unsigned int GetHeight() const { return m_info.height; };
+  unsigned int GetOriginalWidth() const { return m_info.originalwidth; };
+  unsigned int GetOriginalHeight() const { return m_info.originalheight; };
+  const EXIFINFO *GetExifInfo() const { return &m_info.exifInfo; };
+
+protected:
+  
 private:
-  static bool CacheImage(const CStdString& sourceUrl, const CStdString& destFile, int width, int height);
+  bool CacheImage(const CStdString& sourceUrl, const CStdString& destFileName, int width, int height);
+
+  struct VERTEX
+  {
+    D3DXVECTOR4 p;
+    D3DCOLOR col;
+    FLOAT tu, tv;
+  };
+  static const DWORD FVF_VERTEX = D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1;
+
+  DllImageLib m_dll;
+
+  ImageInfo m_info;
 };
-
-//this class calls CreateThumbnailFromSurface in a CJob, so a png file can be written without halting the render thread
-class CThumbnailWriter : public CJob
-{
-  public:
-    //WARNING: buffer is deleted from DoWork()
-    CThumbnailWriter(unsigned char* buffer, int width, int height, int stride, const CStdString& thumbFile);
-    bool DoWork();
-
-  private:
-    unsigned char* m_buffer;
-    int            m_width;
-    int            m_height;
-    int            m_stride;
-    CStdString     m_thumbFile;
-};
-

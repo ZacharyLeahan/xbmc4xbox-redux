@@ -33,6 +33,7 @@ public:
   // Functions called from mplayer
   // virtual void     WaitForFlip();
   virtual bool Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags);
+  virtual bool IsConfigured() { return m_bConfigured; } 
   virtual unsigned int PreInit();
   virtual void UnInit();
   virtual void FlipPage(int source);
@@ -52,7 +53,7 @@ protected:
       YUVPLANES          pSources,
       LPDIRECT3DTEXTURE8 pAlpha,
       LPDIRECT3DSURFACE8 pTarget,
-      RECT &source, RECT &sourcealpha, RECT &target,
+      RECT &source, RECT &sourcealpha, RECT &target,      
       unsigned cshift_x,  unsigned cshift_y,
       float    offset_x,  float    offset_y,
       float    coffset_x, float    coffset_y);
@@ -68,7 +69,7 @@ protected:
 
   bool m_444GeneratedFull;
   int m_444RenderBuffer;
-
+  
 
   // textures for YUV->RGB lookup
   LPDIRECT3DTEXTURE8 m_UVLookup;

@@ -19,17 +19,11 @@
  *
  */
 
-#include "system.h"
+#include "include.h"
 #include "GUISound.h"
 #include "AudioContext.h"
 #include "Settings.h"
 #include "FileSystem/File.h"
-#include "utils/log.h"
-#ifdef HAS_SDL_AUDIO
-#include <SDL/SDL_mixer.h>
-#include "FileSystem/SpecialProtocol.h"
-#endif
-#ifndef HAS_SDL_AUDIO
 
 typedef struct
 {
@@ -43,9 +37,6 @@ typedef struct
   long filesize;
   char rifftype[4];
 } WAVE_RIFFHEADER;
-#else
-#define GUI_SOUND_CHANNEL 0
-#endif
 
 CGUISound::CGUISound()
 {
@@ -54,17 +45,12 @@ CGUISound::CGUISound()
 
 CGUISound::~CGUISound()
 {
-#ifdef _WIN32
   FreeBuffer();
-#elif defined(HAS_SDL_AUDIO)
-  Mix_FreeChunk(m_soundBuffer);
-#endif
 }
 
 // \brief Loads a wav file by filename
 bool CGUISound::Load(const CStdString& strFile)
 {
-#ifdef _WIN32
   LPBYTE pbData=NULL;
   WAVEFORMATEX wfx;
   int size=0;
@@ -79,34 +65,22 @@ bool CGUISound::Load(const CStdString& strFile)
   delete[] pbData;
 
   return bReady;
-#elif defined(HAS_SDL_AUDIO)
-  m_soundBuffer = Mix_LoadWAV(_P(strFile));
-  if (!m_soundBuffer)
-    return false;
-
-  return true;
-#else
-  return false;
-#endif
 }
 
 // \brief Starts playback of the sound
 void CGUISound::Play()
 {
   if (m_soundBuffer)
-  {
-#ifdef _WIN32
+#ifdef HAS_XBOX_AUDIO
+    m_soundBuffer->Play(0, 0, DSBPLAY_FROMSTART);
+#else
     m_soundBuffer->Play(0, 0, 0);
-#elif defined(HAS_SDL_AUDIO)
-    Mix_PlayChannel(GUI_SOUND_CHANNEL, m_soundBuffer, 0);
 #endif
-  }
 }
 
 // \brief returns true if the sound is playing
 bool CGUISound::IsPlaying()
 {
-#ifdef _WIN32
   if (m_soundBuffer)
   {
     DWORD dwStatus;
@@ -115,11 +89,6 @@ bool CGUISound::IsPlaying()
   }
 
   return false;
-#elif defined(HAS_SDL_AUDIO)
-  return Mix_Playing(GUI_SOUND_CHANNEL) != 0;
-#else
-  return false;
-#endif
 }
 
 // \brief Stops playback if the sound
@@ -127,10 +96,10 @@ void CGUISound::Stop()
 {
   if (m_soundBuffer)
   {
-#ifdef _WIN32
+#ifdef HAS_XBOX_AUDIO
+    m_soundBuffer->StopEx( 0, DSBSTOPEX_IMMEDIATE );
+#else
     m_soundBuffer->Stop();
-#elif defined(HAS_SDL_AUDIO)
-    Mix_HaltChannel(GUI_SOUND_CHANNEL);
 #endif
 
     while(IsPlaying()) {}
@@ -141,25 +110,33 @@ void CGUISound::Stop()
 void CGUISound::SetVolume(int level)
 {
   if (m_soundBuffer)
-  {
-#ifdef _WIN32
     m_soundBuffer->SetVolume(level);
-#elif defined(HAS_SDL_AUDIO)
-    Mix_Volume(GUI_SOUND_CHANNEL, level);
-#endif
-  }
 }
 
-#ifdef _WIN32
 bool CGUISound::CreateBuffer(LPWAVEFORMATEX wfx, int iLength)
 {
+#ifdef HAS_XBOX_AUDIO
+  //  Use a volume pair preset
+  DSMIXBINVOLUMEPAIR vp[2] = { DSMIXBINVOLUMEPAIRS_DEFAULT_STEREO };
+
+  //  Set up DSMIXBINS structure
+  DSMIXBINS mixbins;
+  mixbins.dwMixBinCount=2;
+  mixbins.lpMixBinVolumePairs=vp;
+#endif
+
   //  Set up DSBUFFERDESC structure
-  DSBUFFERDESC dsbdesc;
-  memset(&dsbdesc, 0, sizeof(DSBUFFERDESC));
+  DSBUFFERDESC dsbdesc; 
+  memset(&dsbdesc, 0, sizeof(DSBUFFERDESC)); 
   dsbdesc.dwSize=sizeof(DSBUFFERDESC);
+#ifdef HAS_XBOX_AUDIO
+  dsbdesc.dwFlags=0; 
+  dsbdesc.lpMixBins=&mixbins;
+#else
   // directsound requires ctrlvolume to be set
   dsbdesc.dwFlags = DSBCAPS_CTRLVOLUME;
-  dsbdesc.dwBufferBytes=iLength;
+#endif
+  dsbdesc.dwBufferBytes=iLength; 
   dsbdesc.lpwfxFormat=wfx;
 
   LPDIRECTSOUND directSound=g_audioContext.GetDirectSoundDevice();
@@ -175,9 +152,16 @@ bool CGUISound::CreateBuffer(LPWAVEFORMATEX wfx, int iLength)
   }
 
   //  Make effects as loud as possible
-  m_soundBuffer->SetVolume(g_settings.m_nVolumeLevel);
+  m_soundBuffer->SetVolume(g_stSettings.m_nVolumeLevel);
+#ifdef HAS_XBOX_AUDIO
+  m_soundBuffer->SetHeadroom(0);
 
-  return true;
+  // Set the default mixbins headroom to appropriate level as set in the settings file (to allow the maximum volume)
+  for (DWORD i = 0; i < mixbins.dwMixBinCount;i++)
+    directSound->SetMixBinHeadroom(i, DWORD(g_advancedSettings.m_audioHeadRoom / 6));
+#endif
+
+  return true; 
 }
 
 bool CGUISound::FillBuffer(LPBYTE pbData, int iLength)
@@ -271,4 +255,3 @@ bool CGUISound::LoadWav(const CStdString& strFile, WAVEFORMATEX* wfx, LPBYTE* pp
   return (*ppWavData!=NULL);
 }
 
-#endif

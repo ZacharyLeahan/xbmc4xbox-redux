@@ -1,7 +1,7 @@
 /*
 * XBMC
-* Copyright (C) 2003 by The Joker / Avalaunch team
-*
+* 2003 by The Joker / Avalaunch team
+* 
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,33 +18,30 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "system.h"
-#include "utils/log.h"
+#include "stdafx.h" 
 /*
- Redbook   : CDDA
+ Redbook   : CDDA 
  Yellowbook : CDROM
 ISO9660
  CD-ROM Mode 1 divides the 2352 byte data area into:
-  -12  bytes of synchronisation
-  -4  bytes of header information
-  -2048 bytes of user information
-  -288 bytes of error correction and detection codes.
-
- CD-ROM Mode 2 redefines the use of the 2352 byte data area as follows:
-  -12 bytes of synchronisation
-  -4 bytes of header information
-  -2336 bytes of user data.
-
+  -12  bytes of synchronisation 
+  -4  bytes of header information 
+  -2048 bytes of user information 
+  -288 bytes of error correction and detection codes. 
+ 
+ CD-ROM Mode 2 redefines the use of the 2352 byte data area as follows: 
+  -12 bytes of synchronisation 
+  -4 bytes of header information 
+  -2336 bytes of user data. 
+ 
  ISO9660 specs:
  http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-119.pdf
-
-
+ 
+ 
 */
 #include "iso9660.h"
-#include "utils/CharsetConverter.h"
 
 #include "DetectDVDType.h"  // for MODE2_DATA_SIZE etc.
-#include <cdio/bytesex.h>
 //#define _DEBUG_OUTPUT 1
 
 static CRITICAL_SECTION m_critSection;
@@ -53,13 +50,6 @@ class iso9660 m_isoReader;
 #define RET_ERR -1
 
 using namespace std;
-
-#ifndef HAS_DVD_DRIVE
-extern "C"
-{
-  void cdio_warn(const char* msg, ...) { CLog::Log(LOGWARNING, msg); }
-}
-#endif
 
 //******************************************************************************************************************
 const string iso9660::ParseName(struct iso9660_Directory& isodir)
@@ -130,7 +120,6 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
   DWORD iso9660searchpointer;
   struct iso9660_Directory isodir;
   struct iso9660_Directory curr_dir;
-  WORD wSectorSize = from_723(m_info.iso.logical_block_size);
 
 
   struct iso_directories *point = m_lastpath;
@@ -165,18 +154,18 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
   m_vecDirsAndFiles.push_back(pDir);
 
 
-  ::SetFilePointer( m_info.ISO_HANDLE, wSectorSize * sector, 0, FILE_BEGIN );
+  ::SetFilePointer( m_info.ISO_HANDLE, m_info.iso.wSectorSizeLE * sector, 0, FILE_BEGIN );
   DWORD lpNumberOfBytesRead = 0;
 
-  pCurr_dir_cache = (char*)malloc( 16*wSectorSize );
+  pCurr_dir_cache = (char*)malloc( 16*m_info.iso.wSectorSizeLE );
   if (!pCurr_dir_cache )
   {
     OutputDebugString("out of memory\n");
     return NULL;
   }
 
-  BOOL bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache, wSectorSize, &lpNumberOfBytesRead, NULL );
-  if (!bResult || lpNumberOfBytesRead != wSectorSize)
+  BOOL bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache, m_info.iso.wSectorSizeLE, &lpNumberOfBytesRead, NULL );
+  if (!bResult || lpNumberOfBytesRead != m_info.iso.wSectorSizeLE)
   {
     OutputDebugString("unable to read\n");
 
@@ -185,19 +174,18 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
   memcpy( &isodir, pCurr_dir_cache, sizeof(isodir) );
   memcpy( &curr_dir, pCurr_dir_cache, sizeof(isodir) );
 
-  DWORD curr_dirSize = from_733(curr_dir.size);
-  if ( curr_dirSize > wSectorSize )
+  if ( curr_dir.dwFileLengthLE > m_info.iso.wSectorSizeLE )
   {
     free( pCurr_dir_cache );
-    pCurr_dir_cache = (char*)malloc( 16 * from_733(isodir.size) );
+    pCurr_dir_cache = (char*)malloc( 16 * isodir.dwFileLengthLE );
     if (!pCurr_dir_cache )
     {
       OutputDebugString("out of memory\n");
       return NULL;
     }
-    ::SetFilePointer( m_info.ISO_HANDLE, wSectorSize * sector, 0, FILE_BEGIN );
-    bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache , curr_dirSize, &lpNumberOfBytesRead, NULL );
-    if (!bResult || lpNumberOfBytesRead != curr_dirSize)
+    ::SetFilePointer( m_info.ISO_HANDLE, m_info.iso.wSectorSizeLE * sector, 0, FILE_BEGIN );
+    bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache , curr_dir.dwFileLengthLE, &lpNumberOfBytesRead, NULL );
+    if (!bResult || lpNumberOfBytesRead != curr_dir.dwFileLengthLE)
     {
       OutputDebugString("unable to read\n");
       return NULL;
@@ -251,9 +239,9 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
       iso9660searchpointer += isodir.ucRecordLength;
     else
     {
-      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % wSectorSize)) + wSectorSize;
+      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % m_info.iso.wSectorSizeLE)) + m_info.iso.wSectorSizeLE;
     }
-    if ( curr_dirSize <= iso9660searchpointer )
+    if ( curr_dir.dwFileLengthLE <= iso9660searchpointer )
     {
       break;
     }
@@ -272,7 +260,7 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
         {
           bContinue = true;
           isodir.FileName[isodir.Len_Fi] = isodir.FileName[isodir.Len_Fi + 1] = 0; //put terminator by its length
-          temp_text = GetThinText(isodir.FileName, isodir.Len_Fi );
+          temp_text = GetThinText((WCHAR*)(isodir.FileName), isodir.Len_Fi/2 );
           //     temp_text.resize(isodir.Len_Fi);
         }
 
@@ -319,9 +307,9 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
           //OutputDebugString( strTmp.c_str());
 #endif
 
-          pFile_Pointer->Location = from_733(isodir.extent);
+          pFile_Pointer->Location = isodir.dwFileLocationLE;
           pFile_Pointer->dirpointer = NULL;
-          pFile_Pointer ->Length = from_733(isodir.size);
+          pFile_Pointer ->Length = isodir.dwFileLengthLE;
 
           IsoDateTimeToFileTime(&isodir.DateTime, &pFile_Pointer->filetime);
 
@@ -341,9 +329,9 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
 
     else
     {
-      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % wSectorSize)) + wSectorSize;
+      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % m_info.iso.wSectorSizeLE)) + m_info.iso.wSectorSizeLE;
     }
-    if ( from_733(curr_dir.size) <= iso9660searchpointer )
+    if ( curr_dir.dwFileLengthLE <= iso9660searchpointer )
     {
       free( pCurr_dir_cache );
       pCurr_dir_cache = NULL;
@@ -362,7 +350,7 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
         {
           bContinue = true;
           isodir.FileName[isodir.Len_Fi] = isodir.FileName[isodir.Len_Fi + 1] = 0; //put terminator by its length
-          temp_text = GetThinText(isodir.FileName, isodir.Len_Fi);
+          temp_text = GetThinText((WCHAR*)(isodir.FileName), isodir.Len_Fi/2 );
           //     temp_text.resize(isodir.Len_Fi);
         }
         if (!m_info.joliet && isodir.FileName[0] >= 0x20 )
@@ -406,16 +394,15 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
 
           strcpy( pFile_Pointer->name , temp_text.c_str());
 
-          DWORD dwFileLocation = from_733(isodir.extent);
 #ifdef _DEBUG_OUTPUT
           CStdString strTmp;
-          strTmp.Format("adding directory sector : %X, File : %s     size = %u     pos = %x\r", sector, temp_text.c_str(), from_733(isodir.size), dwFileLocation );
+          strTmp.Format("adding directory sector : %X, File : %s     size = %u     pos = %x\r", sector, temp_text.c_str(), isodir.dwFileLengthLE, isodir.dwFileLocationLE );
           OutputDebugString( strTmp.c_str());
 #endif
 
-          pFile_Pointer->Location = dwFileLocation;
+          pFile_Pointer->Location = isodir.dwFileLocationLE;
           pFile_Pointer->dirpointer = NULL;
-          pFile_Pointer->Length = from_733(isodir.size);
+          pFile_Pointer->Length = isodir.dwFileLengthLE;
 
           IsoDateTimeToFileTime(&isodir.DateTime, &pFile_Pointer->filetime);
 
@@ -423,7 +410,7 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
           if ( strlen( path ) > 1 ) strPath += "\\";
           strPath += temp_text;
 
-          pFile_Pointer->dirpointer = ReadRecursiveDirFromSector( dwFileLocation, strPath.c_str() );
+          pFile_Pointer->dirpointer = ReadRecursiveDirFromSector( isodir.dwFileLocationLE, strPath.c_str() );
 
           pFile_Pointer->type = 2;
         }
@@ -438,8 +425,6 @@ iso9660::iso9660( )
   memset(m_isoFiles, 0, sizeof(m_isoFiles));
   InitializeCriticalSection(&m_critSection);
   m_hCDROM = NULL;
-  m_lastpath = NULL;
-  m_searchpointer = NULL;
   Reset();
 }
 
@@ -484,26 +469,24 @@ void iso9660::Scan()
     m_info.HeaderPos = 0x8000;
     int current = 0x8000;
 
-    WORD wSectorSize = from_723(m_info.iso.logical_block_size);
-
     // first check if first file in the current VD has a rock-ridge NM. if it has, disable joliet
-    ::SetFilePointer( m_info.ISO_HANDLE, wSectorSize * from_733(((iso9660_Directory*)(&m_info.iso.szRootDir))->extent), 0, FILE_BEGIN );
-
+    ::SetFilePointer( m_info.ISO_HANDLE, m_info.iso.wSectorSizeLE * ((iso9660_Directory*)(&m_info.iso.szRootDir))->dwFileLocationLE, 0, FILE_BEGIN );
+    
     DWORD lpNumberOfBytesRead;
-    char* pCurr_dir_cache = (char*)malloc( 16*wSectorSize );
+    char* pCurr_dir_cache = (char*)malloc( 16*m_info.iso.wSectorSizeLE );
     iso9660_Directory isodir;
-    BOOL bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache, wSectorSize, &lpNumberOfBytesRead, NULL );
+    BOOL bResult = ::ReadFile( m_info.ISO_HANDLE, pCurr_dir_cache, m_info.iso.wSectorSizeLE, &lpNumberOfBytesRead, NULL );
     memcpy( &isodir, pCurr_dir_cache, sizeof(isodir));
 
     int iso9660searchpointer=0;
     if ( isodir.ucRecordLength )
       iso9660searchpointer += isodir.ucRecordLength;
     else
-      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % wSectorSize)) + wSectorSize;
-
+      iso9660searchpointer = (iso9660searchpointer - (iso9660searchpointer % m_info.iso.wSectorSizeLE)) + m_info.iso.wSectorSizeLE;
+    
     memcpy( &isodir, pCurr_dir_cache + iso9660searchpointer,min(sizeof(isodir), sizeof(m_info.isodir)));
     free(pCurr_dir_cache);
-    if (bResult && lpNumberOfBytesRead == wSectorSize)
+    if (bResult && lpNumberOfBytesRead == m_info.iso.wSectorSizeLE)
       bResult = IsRockRidge(isodir);
     while ( m_info.iso.byOne != 255)
     {
@@ -528,7 +511,7 @@ void iso9660::Scan()
   }
 
   memcpy( &m_info.isodir, &m_info.iso.szRootDir, sizeof(m_info.isodir) );
-  ReadRecursiveDirFromSector( from_733(m_info.isodir.extent), "\\" );
+  m_dirtree = ReadRecursiveDirFromSector( m_info.isodir.dwFileLocationLE, "\\" );
   LeaveCriticalSection(&m_critSection);
 }
 
@@ -589,7 +572,7 @@ struct iso_dirtree *iso9660::FindFolder( char *Folder )
 {
   char *work;
 
-  work = (char *)malloc(from_723(m_info.iso.logical_block_size));
+  work = (char *)malloc(m_info.iso.wSectorSizeLE);
 
   char *temp;
   struct iso_directories *lastpath = NULL;;
@@ -694,10 +677,10 @@ bool iso9660::FindClose( HANDLE szLocalFolder )
 
 
 //******************************************************************************************************************
-string iso9660::GetThinText(BYTE* strTxt, int iLen )
+string iso9660::GetThinText(WCHAR* strTxt, int iLen )
 {
   // convert from "fat" text (UTF-16BE) to "thin" text (UTF-8)
-  CStdString16 strTxtUnicode((uint16_t*)strTxt, iLen / 2);
+  CStdStringW strTxtUnicode(strTxt, iLen);
   CStdString utf8String;
 
   g_charsetConverter.utf16BEtoUTF8(strTxtUnicode, utf8String);
@@ -732,7 +715,7 @@ HANDLE iso9660::OpenFile(const char *filename)
 
   *(pointer2 + 1) = 0;
 
-  intptr_t loop = (intptr_t)FindFirstFile( work, &fileinfo );
+  int loop = (int)FindFirstFile( work, &fileinfo );
   while ( loop > 0)
   {
     if ( !stricmp(fileinfo.cFileName, pointer ) )
@@ -904,7 +887,7 @@ long iso9660::ReadFile(HANDLE hFile, byte *pBuffer, long lSize)
   while (lSize > 0 && pContext->m_dwFilePos <= pContext->m_dwFileSize)
   {
     pContext->m_dwCurrentBlock = (DWORD) (pContext->m_dwFilePos / sectorSize);
-    int64_t iOffsetInBuffer = pContext->m_dwFilePos - (sectorSize * pContext->m_dwCurrentBlock);
+    __int64 iOffsetInBuffer = pContext->m_dwFilePos - (sectorSize * pContext->m_dwCurrentBlock);
     pContext->m_dwCurrentBlock += pContext->m_dwStartBlock;
 
     //char szBuf[256];
@@ -934,7 +917,7 @@ long iso9660::ReadFile(HANDLE hFile, byte *pBuffer, long lSize)
     }
     else
     {
-      CLog::Log(LOGDEBUG, "iso9660::ReadFile() hit EOF");
+      printf("EOF");
       break;
     }
   }
@@ -942,12 +925,12 @@ long iso9660::ReadFile(HANDLE hFile, byte *pBuffer, long lSize)
   return iBytesRead;
 }
 //************************************************************************************
-int64_t iso9660::Seek(HANDLE hFile, int64_t lOffset, int whence)
+__int64 iso9660::Seek(HANDLE hFile, __int64 lOffset, int whence)
 {
   iso9660::isofile* pContext = GetFileContext(hFile);
   if (!pContext) return -1;
 
-  int64_t dwFilePos = pContext->m_dwFilePos;
+  __int64 dwFilePos = pContext->m_dwFilePos;
   switch (whence)
   {
   case SEEK_SET:
@@ -977,7 +960,7 @@ int64_t iso9660::Seek(HANDLE hFile, int64_t lOffset, int whence)
 
 
 //************************************************************************************
-int64_t iso9660::GetFileSize(HANDLE hFile)
+__int64 iso9660::GetFileSize(HANDLE hFile)
 {
   iso9660::isofile* pContext = GetFileContext(hFile);
   if (!pContext) return -1;
@@ -985,7 +968,7 @@ int64_t iso9660::GetFileSize(HANDLE hFile)
 }
 
 //************************************************************************************
-int64_t iso9660::GetFilePosition(HANDLE hFile)
+__int64 iso9660::GetFilePosition(HANDLE hFile)
 {
   iso9660::isofile* pContext = GetFileContext(hFile);
   if (!pContext) return -1;
@@ -995,7 +978,7 @@ int64_t iso9660::GetFilePosition(HANDLE hFile)
 //************************************************************************************
 void iso9660::FreeFileContext(HANDLE hFile)
 {
-  intptr_t iFile = (intptr_t)hFile;
+  int iFile = (int)hFile;
   if (iFile >= 1 && iFile < MAX_ISO_FILES)
   {
     if (m_isoFiles[iFile ]) delete m_isoFiles[iFile ];
@@ -1020,7 +1003,7 @@ HANDLE iso9660::AllocFileContext()
 //************************************************************************************
 iso9660::isofile* iso9660::GetFileContext(HANDLE hFile)
 {
-  intptr_t iFile = (intptr_t)hFile;
+  int iFile = (int)hFile;
   if (iFile >= 1 && iFile < MAX_ISO_FILES)
   {
     return m_isoFiles[iFile];

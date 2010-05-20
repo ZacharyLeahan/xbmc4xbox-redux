@@ -19,6 +19,8 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "RarDirectory.h"
 #include "RarManager.h"
 #include "utils/log.h"
@@ -26,7 +28,7 @@
 #include "URL.h"
 #include "FileItem.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   CRarDirectory::CRarDirectory()
   {
@@ -66,7 +68,7 @@ namespace XFILE
           continue;
         CUtil::AddFileToFolder(strSlashPath,items[iEntry]->m_strPath+strOptions,items[iEntry]->m_strPath);
         items[iEntry]->m_iDriveType = 0;
-        //CLog::Log(LOGDEBUG, "RarXFILE::GetDirectory() retrieved file: %s", items[iEntry]->m_strPath.c_str());
+        //CLog::Log(LOGDEBUG, "RarDirectory::GetDirectory() retrieved file: %s", items[iEntry]->m_strPath.c_str());
       }
       return( true);
     }
@@ -82,7 +84,7 @@ namespace XFILE
 
     return false;
   }
-
+  
   bool CRarDirectory::ContainsFiles(const CStdString& strPath)
   {
     CFileItemList items;
@@ -90,10 +92,10 @@ namespace XFILE
     {
       if (items.Size() > 1)
         return true;
-
+      
       return false;
     }
-
+    
     return false;
   }
 }

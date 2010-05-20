@@ -20,10 +20,8 @@
  *
  */
 
-#include "StdString.h"
+#include "tinyXml/TinyXML.h"
 #include <map>
-
-class TiXmlElement;
 
 class CLangCodeExpander
 {
@@ -42,9 +40,9 @@ protected:
 
   typedef std::map<CStdString, CStdString> STRINGLOOKUPTABLE;
   STRINGLOOKUPTABLE m_mapUser;
-
+  
   bool LookupInDb(CStdString& desc, const CStdString& code);
   bool LookupInMap(CStdString& desc, const CStdString& code);
-};
+  };
 
 extern CLangCodeExpander g_LangCodeExpander;

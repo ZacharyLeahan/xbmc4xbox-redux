@@ -1,6 +1,6 @@
 /*!
 \file GUIWindow.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIWINDOW_H
@@ -71,7 +71,7 @@ public:
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 class CGUIWindow : public CGUIControlGroup
 {
@@ -83,22 +83,9 @@ public:
 
   bool Initialize();  // loads the window
   bool Load(const CStdString& strFileName, bool bContainsPath = false);
-
+  
   void CenterWindow();
-  
-  /*! \brief Main render function, called every frame.
-   Window classes should override this only if they need to alter how something is rendered.
-   General updating on a per-frame basis should be handled in FrameMove instead, as Render
-   is not necessarily re-entrant.
-   \sa FrameMove
-   */
   virtual void Render();
-  
-  /*! \brief Main update function, called every frame prior to rendering
-   Any window that requires updating on a frame by frame basis (such as to maintain
-   timers and the like) should override this function.
-   */
-  virtual void FrameMove() {};
 
   // Close should never be called on this base class (only on derivatives) - its here so that window-manager can use a general close
   virtual void Close(bool forceClose = false);
@@ -110,15 +97,17 @@ public:
   // and does not need to be passed further down the line (to our global action handlers)
   virtual bool OnAction(const CAction &action);
 
+  virtual bool OnMouse(const CPoint &point);
+  bool HandleMouse(CGUIControl *pControl, const CPoint &point);
   bool OnMove(int fromControl, int moveAction);
   virtual bool OnMessage(CGUIMessage& message);
 
   bool ControlGroupHasFocus(int groupID, int controlID);
-  virtual bool HasID(int controlID) const { return controlID >= m_controlID && controlID < m_controlID + m_idRange; };
+  virtual bool HasID(int id) { return (id >= m_controlID && id < m_controlID + m_idRange); };
   void SetIDRange(int range) { m_idRange = range; };
   int GetIDRange() const { return m_idRange; };
   int GetPreviousWindow() { return m_previousWindow; };
-  CRect GetScaledBounds() const;
+  FRECT GetScaledBounds() const;
   virtual void ClearAll();
   virtual void AllocResources(bool forceLoad = false);
   virtual void FreeResources(bool forceUnLoad = false);
@@ -147,63 +136,27 @@ public:
 
   virtual void ResetControlStates();
 
-  void       SetRunActionsManually();
-  void       RunLoadActions();
-  void       RunUnloadActions();
+  void SetProperty(const CStdString &strKey, const char *strValue);
+  void SetProperty(const CStdString &strKey, const CStdString &strValue);
+  void SetProperty(const CStdString &strKey, int nVal);
+  void SetProperty(const CStdString &strKey, bool bVal);
+  void SetProperty(const CStdString &strKey, double dVal);
 
-  /*! \brief Set a property
-   Sets the value of a property referenced by a key.
-   \param key name of the property to set
-   \param value value to set, may be a string, integer, boolean or double.
-   \sa GetProperty
-   */
-  void SetProperty(const CStdString &key, const CStdString &value);
-  void SetProperty(const CStdString &key, const char *value);
-  void SetProperty(const CStdString &key, int value);
-  void SetProperty(const CStdString &key, bool value);
-  void SetProperty(const CStdString &key, double value);
+  CStdString GetProperty(const CStdString &strKey) const;
+  int        GetPropertyInt(const CStdString &strKey) const;
+  bool       GetPropertyBOOL(const CStdString &strKey) const;
+  double     GetPropertyDouble(const CStdString &strKey) const;
 
-  /*! \brief Retreive a property
-   \param key name of the property to retrieve
-   \return value of the property, empty if it doesn't exist
-   \sa SetProperty, GetPropertyInt, GetPropertyBool, GetPropertyDouble
-   */
-  CStdString GetProperty(const CStdString &key) const;
-
-  /*! \brief Retreive an integer property
-   \param key name of the property to retrieve
-   \return value of the property, 0 if it doesn't exist
-   \sa SetProperty, GetProperty
-   */
-  int        GetPropertyInt(const CStdString &key) const;
-
-  /*! \brief Retreive a boolean property
-   \param key name of the property to retrieve
-   \return value of the property, false if it doesn't exist
-   \sa SetProperty, GetProperty
-   */
-  bool       GetPropertyBool(const CStdString &key) const;
-
-  /*! \brief Retreive a double precision property
-   \param key name of the property to retrieve
-   \return value of the property, 0 if it doesn't exist
-   \sa SetProperty, GetProperty
-   */
-  double     GetPropertyDouble(const CStdString &key) const;
-
-  /*! \brief Clear a all the window's properties
-   \sa SetProperty, HasProperty, GetProperty
-   */
   void ClearProperties();
+  void ClearProperty(const CStdString &strKey);
 
 #ifdef _DEBUG
   void DumpTextureUse();
 #endif
 
-  bool HasSaveLastControl() const { return !m_defaultAlways; };
+  bool HasSaveLastControl() const { return m_saveLastControl; };
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual bool LoadXML(const CStdString& strPath, const CStdString &strLowerPath);  ///< Loads from the given file
   bool Load(TiXmlDocument &xmlDoc);                 ///< Loads from the given XML document
   virtual void LoadAdditionalTags(TiXmlElement *root) {}; ///< Load additional information from the XML document
@@ -213,8 +166,8 @@ protected:
   virtual void OnWindowLoaded();
   virtual void OnInitWindow();
   virtual void OnDeinitWindow(int nextWindowID);
-  EVENT_RESULT OnMouseAction(const CAction &action);
-  virtual bool RenderAnimation(unsigned int time);
+  virtual bool OnMouseAction();
+  virtual bool RenderAnimation(DWORD time);
   virtual bool CheckAnimation(ANIMATION_TYPE animType);
 
   CAnimation *GetAnimation(ANIMATION_TYPE animType, bool checkConditions = true);
@@ -241,8 +194,6 @@ protected:
   void ChangeButtonToEdit(int id, bool singleLabel = false);
 //#endif
 
-  void RunActions(std::vector<CGUIActionDescriptor>& actions);
-
   int m_idRange;
   bool m_bRelativeCoords;
   OVERLAY_STATE m_overlayState;
@@ -255,15 +206,10 @@ protected:
 
   int m_renderOrder;      // for render order of dialogs
 
-  /*! \brief Grabs the window's top,left position in skin coordinates
-   The window origin may change based on <origin> tag conditions in the skin.
-
-   \return the window's origin in skin coordinates
-   */
-  virtual CPoint GetPosition() const;
   std::vector<COrigin> m_origins;  // positions of dialogs depending on base window
 
   // control states
+  bool m_saveLastControl;
   int m_lastControlID;
   std::vector<CControlState> m_controlStates;
   int m_previousWindow;
@@ -279,12 +225,6 @@ protected:
 
   std::map<CStdString, CStdString, icompare> m_mapProperties;
 
-  std::vector<CGUIActionDescriptor> m_loadActions;
-  std::vector<CGUIActionDescriptor> m_unloadActions;
-
-  bool m_manualRunActions;
-
-  int m_exclusiveMouseControl; ///< \brief id of child control that wishes to receive all mouse events \sa GUI_MSG_EXCLUSIVE_MOUSE
 };
 
 #endif

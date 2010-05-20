@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNode.h"
 #include "Util.h"
 #include "QueryParams.h"
@@ -46,11 +47,9 @@
 #include "URL.h"
 #include "AdvancedSettings.h"
 #include "FileItem.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 //  Constructor is protected use ParseURL()
 CDirectoryNode::CDirectoryNode(NODE_TYPE Type, const CStdString& strName, CDirectoryNode* pParent)
@@ -193,7 +192,7 @@ CStdString CDirectoryNode::BuildPath()
 
   if (!m_strName.IsEmpty())
     array.insert(array.begin(), m_strName);
-
+  
   CDirectoryNode* pParent=m_pParent;
   while (pParent!=NULL)
   {
@@ -324,6 +323,7 @@ void CDirectoryNode::AddQueuingFolder(CFileItemList& items)
   if (pItem)
   {
     pItem->m_bIsFolder = true;
+    CStdString strFake;
     pItem->SetSpecialSort(g_advancedSettings.m_bMusicLibraryAllItemsOnBottom ? SORT_ON_BOTTOM : SORT_ON_TOP);
     pItem->SetCanQueue(false);
     pItem->SetLabelPreformated(true);

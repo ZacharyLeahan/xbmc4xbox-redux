@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowSlideShow.h"
 #include "Application.h"
 #include "Picture.h"
@@ -30,20 +30,15 @@
 #include "utils/GUIInfoManager.h"
 #include "FileSystem/Directory.h"
 #include "GUIDialogPictureInfo.h"
-#include "GUIUserMessages.h"
 #include "GUIWindowManager.h"
 #include "Settings.h"
-#include "GUISettings.h"
 #include "FileItem.h"
-#include "Texture.h"
-#include "WindowingFactory.h"
-#include "Texture.h"
-#include "LocalizeStrings.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
-using namespace XFILE;
+#ifdef _XBOX
+#define RELOAD_ON_ZOOM
+#endif
+
+using namespace DIRECTORY;
 
 #define MAX_ZOOM_FACTOR                     10
 #define MAX_PICTURE_SIZE             2048*2048
@@ -87,40 +82,37 @@ void CBackgroundPicLoader::Create(CGUIWindowSlideShow *pCallback)
 
 void CBackgroundPicLoader::Process()
 {
-  unsigned int totalTime = 0;
-  unsigned int count = 0;
+  DWORD totalTime = 0;
+  DWORD count = 0;
   while (!m_bStop)
   { // loop around forever, waiting for the app to call LoadPic
     if (WaitForSingleObject(m_loadPic, 10) == WAIT_OBJECT_0)
     {
       if (m_pCallback)
       {
-        unsigned int start = CTimeUtils::GetTimeMS();
-        CBaseTexture* texture = new CTexture();
-        unsigned int originalWidth = 0;
-        unsigned int originalHeight = 0;
-        texture->LoadFromFile(m_strFileName, m_maxWidth, m_maxHeight, g_guiSettings.GetBool("pictures.useexifrotation"), &originalWidth, &originalHeight);
-        totalTime += CTimeUtils::GetTimeMS() - start;
+        CPicture pic;
+        DWORD start = timeGetTime();
+        IDirect3DTexture8 *pTexture = pic.Load(m_strFileName, m_maxWidth, m_maxHeight);
+        totalTime += timeGetTime() - start;
         count++;
         // tell our parent
-        bool bFullSize = ((int)texture->GetWidth() < m_maxWidth) && ((int)texture->GetHeight() < m_maxHeight);
+        bool bFullSize = ((int)pic.GetWidth() < m_maxWidth) && ((int)pic.GetHeight() < m_maxHeight);
         if (!bFullSize)
         {
-          int iSize = texture->GetWidth() * texture->GetHeight() - MAX_PICTURE_SIZE;
-          if ((iSize + (int)texture->GetWidth() > 0) || (iSize + (int)texture->GetHeight() > 0))
+          int iSize = pic.GetWidth() * pic.GetHeight() - MAX_PICTURE_SIZE;
+          if ((iSize + (int)pic.GetWidth() > 0) || (iSize + (int)pic.GetHeight() > 0))
             bFullSize = true;
-          if (!bFullSize && texture->GetWidth() == g_Windowing.GetMaxTextureSize())
+          if (!bFullSize && (int)pic.GetWidth() == g_graphicsContext.GetMaxTextureSize())
             bFullSize = true;
-          if (!bFullSize && texture->GetHeight() == g_Windowing.GetMaxTextureSize())
+          if (!bFullSize && (int)pic.GetHeight() == g_graphicsContext.GetMaxTextureSize())
             bFullSize = true;
         }
-        m_pCallback->OnLoadPic(m_iPic, m_iSlideNumber, texture, originalWidth, originalHeight, bFullSize);
+        m_pCallback->OnLoadPic(m_iPic, m_iSlideNumber, pTexture, pic.GetWidth(), pic.GetHeight(), pic.GetOriginalWidth(), pic.GetOriginalHeight(), pic.GetExifInfo()->Orientation, bFullSize);
         m_isLoading = false;
       }
     }
   }
-  CLog::Log(LOGDEBUG, "Time for loading %u images: %u ms, average %u ms",
-            count, totalTime, totalTime / count);
+  CLog::Log(LOGDEBUG, "Time for loading %lu images: %lu ms, average %lu ms", count, totalTime, totalTime / count);
 }
 
 void CBackgroundPicLoader::LoadPic(int iPic, int iSlideNumber, const CStdString &strFileName, const int maxWidth, const int maxHeight)
@@ -139,7 +131,7 @@ CGUIWindowSlideShow::CGUIWindowSlideShow(void)
 {
   m_pBackgroundLoader = NULL;
   m_slides = new CFileItemList;
-  m_Resolution = RES_INVALID;
+  m_Resolution = INVALID;
   Reset();
 }
 
@@ -338,7 +330,7 @@ void CGUIWindowSlideShow::Render()
     m_bLoadNextPic = false;
     // load using the background loader
     int maxWidth, maxHeight;
-    GetCheckedSize((float)g_settings.m_ResInfo[m_Resolution].iWidth * zoomamount[m_iZoomFactor - 1],
+    GetCheckedSize((float)g_settings.m_ResInfo[m_Resolution].iWidth * zoomamount[m_iZoomFactor - 1], 
                     (float)g_settings.m_ResInfo[m_Resolution].iHeight * zoomamount[m_iZoomFactor - 1],
                     maxWidth, maxHeight);
     m_pBackgroundLoader->LoadPic(m_iCurrentPic, m_iCurrentSlide, m_slides->Get(m_iCurrentSlide)->m_strPath, maxWidth, maxHeight);
@@ -381,7 +373,7 @@ void CGUIWindowSlideShow::Render()
     { // load the next image
       CLog::Log(LOGDEBUG, "Loading the next image %s", m_slides->Get(m_iNextSlide)->m_strPath.c_str());
       int maxWidth, maxHeight;
-      GetCheckedSize((float)g_settings.m_ResInfo[m_Resolution].iWidth * zoomamount[m_iZoomFactor - 1],
+      GetCheckedSize((float)g_settings.m_ResInfo[m_Resolution].iWidth * zoomamount[m_iZoomFactor - 1], 
                      (float)g_settings.m_ResInfo[m_Resolution].iHeight * zoomamount[m_iZoomFactor - 1],
                      maxWidth, maxHeight);
       m_pBackgroundLoader->LoadPic(1 - m_iCurrentPic, m_iNextSlide, m_slides->Get(m_iNextSlide)->m_strPath, maxWidth, maxHeight);
@@ -462,8 +454,8 @@ bool CGUIWindowSlideShow::OnAction(const CAction &action)
     g_windowManager.PreviousWindow();
     return true;
   }
-
-  switch (action.GetID())
+    
+  switch (action.id)
   {
   case ACTION_SHOW_CODEC:
     {
@@ -546,10 +538,10 @@ bool CGUIWindowSlideShow::OnAction(const CAction &action)
   case ACTION_ZOOM_LEVEL_7:
   case ACTION_ZOOM_LEVEL_8:
   case ACTION_ZOOM_LEVEL_9:
-    Zoom((action.GetID() - ACTION_ZOOM_LEVEL_NORMAL) + 1);
+    Zoom((action.id - ACTION_ZOOM_LEVEL_NORMAL) + 1);
     break;
   case ACTION_ANALOG_MOVE:
-    Move(action.GetAmount()*PICTURE_MOVE_AMOUNT_ANALOG, -action.GetAmount(1)*PICTURE_MOVE_AMOUNT_ANALOG);
+    Move(action.amount1*PICTURE_MOVE_AMOUNT_ANALOG, -action.amount2*PICTURE_MOVE_AMOUNT_ANALOG);
     break;
   default:
     return CGUIWindow::OnAction(action);
@@ -581,8 +573,7 @@ bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
     {
       if (m_Resolution != g_guiSettings.m_LookAndFeelResolution)
       {
-        //FIXME: Use GUI resolution for now
-        //g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution, TRUE);
+        g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution, TRUE);
       }
 
       //   Reset();
@@ -591,6 +582,9 @@ bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
         m_ImageLib.Unload();
       }
       g_windowManager.ShowOverlay(OVERLAY_STATE_SHOWN);
+      // set screen filters to video filters so that we
+      // get sharper images
+      g_graphicsContext.SetScreenFilters(false);
       FreeResources();
     }
     break;
@@ -598,25 +592,24 @@ bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
   case GUI_MSG_WINDOW_INIT:
     {
       m_Resolution = (RESOLUTION) g_guiSettings.GetInt("pictures.displayresolution");
-
-      //FIXME: Use GUI resolution for now
-      if (0 /*m_Resolution != g_guiSettings.m_LookAndFeelResolution && m_Resolution != INVALID && m_Resolution!=AUTORES*/)
+      if (m_Resolution != g_guiSettings.m_LookAndFeelResolution && m_Resolution != INVALID)
       {
-        g_graphicsContext.SetVideoResolution(m_Resolution);
-      }
-      else
-      {
-        m_Resolution = g_graphicsContext.GetVideoResolution();
+        g_graphicsContext.SetVideoResolution(m_Resolution, TRUE);
       }
 
       CGUIWindow::OnMessage(message);
       if (g_application.IsPlayingVideo())
         g_application.StopPlaying();
+      // clear as much memory as possible
+      g_TextureManager.Flush();
       if (message.GetParam1() != WINDOW_PICTURES)
       {
         m_ImageLib.Load();
       }
       g_windowManager.ShowOverlay(OVERLAY_STATE_HIDDEN);
+      // set screen filters to video filters so that we
+      // get sharper images
+      g_graphicsContext.SetScreenFilters(true);
 
       // turn off slideshow if we only have 1 image
       if (m_slides->Size() <= 1)
@@ -708,15 +701,21 @@ void CGUIWindowSlideShow::Move(float fX, float fY)
   }
 }
 
-void CGUIWindowSlideShow::OnLoadPic(int iPic, int iSlideNumber, CBaseTexture* pTexture, int iOriginalWidth, int iOriginalHeight, bool bFullSize)
+void CGUIWindowSlideShow::OnLoadPic(int iPic, int iSlideNumber, LPDIRECT3DTEXTURE8 pTexture, int iWidth, int iHeight, int iOriginalWidth, int iOriginalHeight, int iRotate, bool bFullSize)
 {
+  if (!g_guiSettings.GetBool("pictures.useexifrotation"))
+    iRotate = 1;
   if (pTexture)
   {
     // set the pic's texture + size etc.
     CSingleLock lock(m_slideSection);
     if (iSlideNumber >= m_slides->Size())
     { // throw this away - we must have cleared the slideshow while we were still loading
-      delete pTexture;
+#ifndef HAS_SDL
+      pTexture->Release();
+#else
+      SDL_FreeSurface(pTexture);
+#endif
       return;
     }
     CLog::Log(LOGDEBUG, "Finished background loading %s", m_slides->Get(iSlideNumber)->m_strPath.c_str());
@@ -724,19 +723,19 @@ void CGUIWindowSlideShow::OnLoadPic(int iPic, int iSlideNumber, CBaseTexture* pT
     {
       if (m_Image[m_iCurrentPic].IsLoaded() && m_Image[m_iCurrentPic].SlideNumber() != iSlideNumber)
       { // wrong image (ie we finished loading the next image, not the current image)
-        delete pTexture;
+        pTexture->Release();
         return;
       }
-      m_Image[m_iCurrentPic].UpdateTexture(pTexture);
+      m_Image[m_iCurrentPic].UpdateTexture(pTexture, iWidth, iHeight);
       m_Image[m_iCurrentPic].SetOriginalSize(iOriginalWidth, iOriginalHeight, bFullSize);
       m_bReloadImage = false;
     }
     else
     {
       if (m_bSlideShow)
-        m_Image[iPic].SetTexture(iSlideNumber, pTexture, g_guiSettings.GetBool("slideshow.displayeffects") ? CSlideShowPic::EFFECT_RANDOM : CSlideShowPic::EFFECT_NONE);
+        m_Image[iPic].SetTexture(iSlideNumber, pTexture, iWidth, iHeight, iRotate, g_guiSettings.GetBool("slideshow.displayeffects") ? CSlideShowPic::EFFECT_RANDOM : CSlideShowPic::EFFECT_NONE);
       else
-        m_Image[iPic].SetTexture(iSlideNumber, pTexture, CSlideShowPic::EFFECT_NO_TIMEOUT);
+        m_Image[iPic].SetTexture(iSlideNumber, pTexture, iWidth, iHeight, iRotate, CSlideShowPic::EFFECT_NO_TIMEOUT);
       m_Image[iPic].SetOriginalSize(iOriginalWidth, iOriginalHeight, bFullSize);
       m_Image[iPic].Zoom(m_iZoomFactor, true);
 
@@ -830,7 +829,7 @@ void CGUIWindowSlideShow::AddItems(const CStdString &strPath, path_set *recursiv
 
   // fetch directory and sort accordingly
   CFileItemList items;
-  if (!CDirectory::GetDirectory(strPath, items, g_settings.m_pictureExtensions,false,false,DIR_CACHE_ONCE,true,true))
+  if (!CDirectory::GetDirectory(strPath, items, g_stSettings.m_pictureExtensions))
     return;
   items.Sort(SORT_METHOD_LABEL, SORT_ORDER_ASC);
 
@@ -860,12 +859,11 @@ void CGUIWindowSlideShow::GetCheckedSize(float width, float height, int &maxWidt
   }
   maxWidth = (int)width;
   maxHeight = (int)height;
-  if (maxWidth > g_Windowing.GetMaxTextureSize()) maxWidth = g_graphicsContext.GetMaxTextureSize();
-  if (maxHeight > g_Windowing.GetMaxTextureSize()) maxHeight = g_graphicsContext.GetMaxTextureSize();
+  if (maxWidth > g_graphicsContext.GetMaxTextureSize()) maxWidth = g_graphicsContext.GetMaxTextureSize();
+  if (maxHeight > g_graphicsContext.GetMaxTextureSize()) maxHeight = g_graphicsContext.GetMaxTextureSize();
 #else
-  maxWidth = g_Windowing.GetMaxTextureSize();
-  maxHeight = g_Windowing.GetMaxTextureSize();
+  maxWidth = g_graphicsContext.GetMaxTextureSize();
+  maxHeight = g_graphicsContext.GetMaxTextureSize();
 #endif
 }
-
 

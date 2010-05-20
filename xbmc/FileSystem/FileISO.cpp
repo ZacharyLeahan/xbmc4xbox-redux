@@ -18,6 +18,7 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "FileISO.h"
 #include "URL.h"
 
@@ -64,32 +65,32 @@ bool CFileISO::Open(const CURL& url)
 }
 
 //*********************************************************************************************
-unsigned int CFileISO::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileISO::Read(void *lpBuf, __int64 uiBufSize)
 {
   if (!m_bOpened) return 0;
   char *pData = (char *)lpBuf;
 
-  if (m_cache.getSize() > 0)
+  if (m_cache.Size() > 0)
   {
-    long lTotalBytesRead = 0;
+    long lTotalBytesRead = 0;    
     while (uiBufSize > 0)
     {
-      if (m_cache.getMaxReadSize() )
+      if (m_cache.GetMaxReadSize() )
       {
-        long lBytes2Read = m_cache.getMaxReadSize();
+        long lBytes2Read = m_cache.GetMaxReadSize();
         if (lBytes2Read > uiBufSize) lBytes2Read = (long)uiBufSize;
-        m_cache.ReadData(pData, lBytes2Read );
+        m_cache.ReadBinary(pData, lBytes2Read );
         uiBufSize -= lBytes2Read ;
         pData += lBytes2Read;
         lTotalBytesRead += lBytes2Read ;
       }
 
-      if (m_cache.getMaxWriteSize() > 5000)
+      if (m_cache.GetMaxWriteSize() > 5000)
       {
         byte buffer[5000];
         long lBytesRead = m_isoReader.ReadFile( m_hFile, buffer, sizeof(buffer));
         if (lBytesRead > 0)
-          m_cache.WriteData((char*)buffer, lBytesRead);
+          m_cache.WriteBinary((char*)buffer, lBytesRead);
         else
           return 0;
       }
@@ -110,24 +111,24 @@ void CFileISO::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileISO::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileISO::Seek(__int64 iFilePosition, int iWhence)
 {
   if (!m_bOpened) return -1;
-  int64_t lNewPos = m_isoReader.Seek(m_hFile, iFilePosition, iWhence);
+  __int64 lNewPos = m_isoReader.Seek(m_hFile, iFilePosition, iWhence);
   if(lNewPos >= 0)
     m_cache.Clear();
   return lNewPos;
 }
 
 //*********************************************************************************************
-int64_t CFileISO::GetLength()
+__int64 CFileISO::GetLength()
 {
   if (!m_bOpened) return -1;
   return m_isoReader.GetFileSize(m_hFile);
 }
 
 //*********************************************************************************************
-int64_t CFileISO::GetPosition()
+__int64 CFileISO::GetPosition()
 {
   if (!m_bOpened) return -1;
   return m_isoReader.GetFilePosition(m_hFile);

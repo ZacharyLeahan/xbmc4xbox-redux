@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowVideoPlaylist.h"
 #include "PlayListFactory.h"
 #include "Util.h"
@@ -29,18 +30,14 @@
 #include "GUIDialogSmartPlaylistEditor.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogKeyboard.h"
-#include "GUIUserMessages.h"
 #include "Favourites.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace PLAYLIST;
 
 #define CONTROL_BTNVIEWASICONS     2
 #define CONTROL_BTNSORTBY          3
 #define CONTROL_BTNSORTASC         4
+#define CONTROL_LIST              50
 #define CONTROL_LABELFILES        12
 
 #define CONTROL_BTNSHUFFLE        20
@@ -126,7 +123,7 @@ bool CGUIWindowVideoPlaylist::OnMessage(CGUIMessage& message)
         if (!g_partyModeManager.IsEnabled())
         {
           g_playlistPlayer.SetShuffle(PLAYLIST_VIDEO, !(g_playlistPlayer.IsShuffled(PLAYLIST_VIDEO)));
-          g_settings.m_bMyVideoPlaylistShuffle = g_playlistPlayer.IsShuffled(PLAYLIST_VIDEO);
+          g_stSettings.m_bMyVideoPlaylistShuffle = g_playlistPlayer.IsShuffled(PLAYLIST_VIDEO);
           g_settings.Save();
           UpdateButtons();
           Update(m_vecItems->m_strPath);
@@ -169,7 +166,7 @@ bool CGUIWindowVideoPlaylist::OnMessage(CGUIMessage& message)
           g_playlistPlayer.SetRepeat(PLAYLIST_VIDEO, PLAYLIST::REPEAT_NONE);
 
         // save settings
-        g_settings.m_bMyVideoPlaylistRepeat = g_playlistPlayer.GetRepeat(PLAYLIST_VIDEO) == PLAYLIST::REPEAT_ALL;
+        g_stSettings.m_bMyVideoPlaylistRepeat = g_playlistPlayer.GetRepeat(PLAYLIST_VIDEO) == PLAYLIST::REPEAT_ALL;
         g_settings.Save();
 
         UpdateButtons();
@@ -192,23 +189,23 @@ bool CGUIWindowVideoPlaylist::OnMessage(CGUIMessage& message)
 
 bool CGUIWindowVideoPlaylist::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PARENT_DIR)
+  if (action.id == ACTION_PARENT_DIR)
   {
     // Playlist has no parent dirs
     return true;
   }
-  if (action.GetID() == ACTION_SHOW_PLAYLIST)
+  if (action.id == ACTION_SHOW_PLAYLIST)
   {
     g_windowManager.PreviousWindow();
     return true;
   }
-  if ((action.GetID() == ACTION_MOVE_ITEM_UP) || (action.GetID() == ACTION_MOVE_ITEM_DOWN))
+  if ((action.id == ACTION_MOVE_ITEM_UP) || (action.id == ACTION_MOVE_ITEM_DOWN))
   {
     int iItem = -1;
     int iFocusedControl = GetFocusedControlID();
     if (m_viewControl.HasControl(iFocusedControl))
       iItem = m_viewControl.GetSelectedItem();
-    OnMove(iItem, action.GetID());
+    OnMove(iItem, action.id);
     return true;
   }
   return CGUIWindowVideoBase::OnAction(action);
@@ -371,7 +368,7 @@ void CGUIWindowVideoPlaylist::SavePlayList()
     // need 2 rename it
     CStdString strPath, strFolder;
     CUtil::AddFileToFolder(g_guiSettings.GetString("system.playlistspath"), "video", strFolder);
-    strNewFileName = CUtil::MakeLegalFileName(strNewFileName);
+    CUtil::RemoveIllegalChars( strNewFileName );
     strNewFileName += ".m3u";
     CUtil::AddFileToFolder(strFolder, strNewFileName, strPath);
 

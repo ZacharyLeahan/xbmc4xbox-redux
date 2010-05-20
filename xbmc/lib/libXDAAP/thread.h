@@ -37,15 +37,11 @@
 #define ts_mutex      pthread_mutex_t
 #define ts_condition  pthread_cond_t
 
-#ifdef __APPLE__
-	#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE 
-#endif 
-	
 #define ts_mutex_create(m)            pthread_mutex_init(& m, NULL)
 #define ts_mutex_create_recursive(m)  do { \
         pthread_mutexattr_t attr; \
         pthread_mutexattr_init(&attr) ; \
-        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP); \
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE); \
         pthread_mutex_init(& m, &attr); \
         pthread_mutexattr_destroy(&attr) ; \
     } while (0)
@@ -68,10 +64,14 @@
 #define ts_thread_cb(name)            static void* name(void *arg)
 #define ts_thread_defaultret          NULL
 
-#elif defined(_WIN32) /* win32 */
+#elif defined(SYSTEM_WIN32) /* win32 */
 
 #define THREADS_WIN32
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #include <windows.h>
+#endif
 
 #define ts_thread     HANDLE
 #define ts_mutex      HANDLE

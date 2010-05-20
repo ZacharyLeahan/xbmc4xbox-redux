@@ -23,8 +23,7 @@
 
 #include "utils/Thread.h"
 #include "ICodec.h"
-#include "utils/CriticalSection.h"
-#include "utils/RingBuffer.h"
+#include "ringholdbuffer.h"
 
 class CFileItem;
 
@@ -74,7 +73,7 @@ public:
   unsigned int GetDataSize();
   void *GetData(unsigned int size);
   void PrefixData(void *data, unsigned int size);
-  ICodec *GetCodec() const { return m_codec; }
+  ICodec *GetCodec() { return m_codec; }
 
 private:
   void ProcessAudio(float *data, int numsamples);
@@ -85,7 +84,7 @@ private:
   // block size (number of bytes per sample * number of channels)
   int m_blockSize;
   // pcm buffer
-  CRingBuffer m_pcmBuffer;
+  CRingHoldBuffer m_pcmBuffer;
 
   // output buffer (for transferring data from the Pcm Buffer to the rest of the audio chain)
   float m_outputBuffer[OUTPUT_SAMPLES];

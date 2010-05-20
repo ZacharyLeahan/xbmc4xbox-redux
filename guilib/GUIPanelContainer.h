@@ -1,6 +1,6 @@
 /*!
 \file GUIPanelContainer.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -30,7 +30,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIPanelContainer : public CGUIBaseContainer
 {
@@ -59,7 +59,6 @@ protected:
   unsigned int GetRows() const;
   virtual int  CorrectOffset(int offset, int cursor) const;
   virtual bool SelectItemFromPoint(const CPoint &point);
-  virtual int GetCursorFromPoint(const CPoint &point, CPoint *itemPoint = NULL) const;
   void SetCursor(int cursor);
   virtual void SelectItem(int item);
   virtual bool HasPreviousPage() const;

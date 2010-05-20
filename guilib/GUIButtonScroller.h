@@ -23,10 +23,6 @@
 
 #include "GUIControl.h"
 #include "GUITexture.h"
-#include "GUIActionDescriptor.h"
-#include "GUILabel.h"
-
-class TiXmlNode;
 
 class CButton
 {
@@ -45,7 +41,7 @@ public:
   int id;
   int info;
   std::string strLabel;
-  std::vector<CGUIActionDescriptor> clickActions;
+  std::vector<CStdString> clickActions;
   CGUITexture *imageFocus;
   CGUITexture *imageNoFocus;
 };
@@ -66,11 +62,13 @@ public:
   virtual void OnRight();
   virtual void OnDown();
   virtual bool OnMouseOver(const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
   virtual void Render();
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   void ClearButtons();
   void AddButton(const std::string &strLabel, const CStdString &strExecute, const int iIcon);
   void SetActiveButton(int iButton);
@@ -81,7 +79,6 @@ public:
   void LoadButtons(TiXmlNode *node);
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   int GetNext(int iCurrent) const;
   int GetPrevious(int iCurrent);

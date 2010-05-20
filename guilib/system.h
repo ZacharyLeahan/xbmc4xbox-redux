@@ -21,241 +21,102 @@
  *
  */
 
-#if defined(HAVE_CONFIG_H) && !defined(_WIN32)
-#include "../config.h"
-#endif
-
-/*****************
- * All platforms
- *****************/
-#ifndef HAS_SDL
-#define HAS_SDL
-#endif
-
+#ifdef _XBOX
+#include <xtl.h>
+#include <xvoice.h>
+#include <xonline.h>
+#define HAS_XBOX_D3D
+#define HAS_RAM_CONTROL
+#define HAS_XFONT
+#define HAS_FILESYSTEM
+#define HAS_GAMEPAD
+#define HAS_IR_REMOTE
 #define HAS_DVD_DRIVE
-#define HAS_DVD_SWSCALE
-#define HAS_DVDPLAYER
-#define HAS_EVENT_SERVER
-#define HAS_KARAOKE
-#define HAS_SCREENSAVER
-#define HAS_PYTHON
-#define HAS_SHOUTCAST
-#define HAS_SYSINFO
-#define HAS_UPNP
+#define HAS_XBOX_HARDWARE
+#define HAS_XBOX_NETWORK
 #define HAS_VIDEO_PLAYBACK
-#define HAS_VISUALISATION
-
-#ifdef HAVE_LIBMICROHTTPD
-#define HAS_WEB_SERVER
-#define HAS_WEB_INTERFACE
-#endif
-
-#define HAS_JSONRPC
-#define HAS_HTTPAPI
-
 #define HAS_AC3_CODEC
 #define HAS_DTS_CODEC
-#define HAS_CDDA_RIPPER
-#ifdef HAVE_ASAP_CODEC
-#define HAS_ASAP_CODEC
-#endif
-
-#define HAS_FILESYSTEM
-#define HAS_FILESYSTEM_SMB
-#define HAS_FILESYSTEM_CDDA
-#define HAS_FILESYSTEM_RTV
-#define HAS_FILESYSTEM_DAAP
-#define HAS_FILESYSTEM_SAP
-#define HAS_FILESYSTEM_VTP
-#define HAS_FILESYSTEM_HTSP
-#define HAS_FILESYSTEM_MMS
-
-/**********************
- * Non-free Components
- **********************/
-
-#if defined(_LINUX) || defined(__APPLE__)
-  #if defined(HAVE_XBMC_NONFREE)
-    #define HAS_FILESYSTEM_RAR
-    #define HAS_FILESYSTEM_CCX
-  #endif
-#else
-  #define HAS_FILESYSTEM_RAR
-  #define HAS_FILESYSTEM_CCX
-#endif
-
-/*****************
- * Win32 Specific
- *****************/
-
-#ifdef _WIN32
-#define HAS_SDL_JOYSTICK
-#define HAS_WIN32_NETWORK
-#define HAS_IRSERVERSUITE
-#define HAS_AUDIO
-#define HAVE_LIBCRYSTALHD
+#define HAS_AC3_CDDA_CODEC
+#define HAS_DTS_CDDA_CODEC
+#define HAS_WMA_CODEC
+#define HAS_XBOX_AUDIO
+#define HAS_AUDIO_PASS_THROUGH
+#define HAS_FTP_SERVER
 #define HAS_WEB_SERVER
-#define HAS_WEB_INTERFACE
-#define HAVE_LIBSSH
-#endif
-
-/*****************
- * Mac Specific
- *****************/
-
-#ifdef __APPLE__
-#define HAS_ZEROCONF
-#define HAS_GL
-#define HAS_LINUX_NETWORK
-#define HAS_SDL_AUDIO
-#define HAS_SDL_OPENGL
-#define HAS_SDL_WIN_EVENTS
-#define HAS_LIBBDNAV
-#endif
-
-/*****************
- * Linux Specific
- *****************/
-
-#if defined(_LINUX) && !defined(__APPLE__)
-#ifndef HAS_SDL_OPENGL
-#define HAS_SDL_OPENGL
-#endif
-#if defined(HAVE_LIBAVAHI_COMMON) && defined(HAVE_LIBAVAHI_CLIENT)
-#define HAS_ZEROCONF
-#define HAS_AVAHI
-#endif
+#define HAS_TIME_SERVER
+#define HAS_VISUALISATION
+#define HAS_KARAOKE
+#undef HAS_CREDITS
+#define HAS_MODPLAYER
+#define HAS_SYSINFO
+#define HAS_SCREENSAVER
+#define HAS_MIKMOD
+#define HAS_SECTIONS
+#define HAS_UPNP
 #define HAS_LCD
-#define HAS_DBUS
-#define HAS_DBUS_SERVER
-#define HAS_GL
-#define HAS_GLX
-#define HAS_LINUX_NETWORK
-#define HAS_SDL_AUDIO
-#define HAS_LIRC
-#define HAS_SDL_WIN_EVENTS
-#ifdef HAVE_LIBPULSE
-#define HAS_PULSEAUDIO
-#endif
-#ifdef HAVE_LIBXRANDR
-#define HAS_XRANDR
-#endif
-#define HAS_LIBBDNAV
-#endif
+#define HAS_UNDOCUMENTED
+#define HAS_SECTIONS
+#define HAS_CDDA_RIPPER
+#define HAS_PYTHON
+#define HAS_AUDIO
+#define HAS_EVENT_SERVER
+#define SPYCE_SUPPORT
+#undef HAS_NEW_KARAOKE
+#else
+#undef HAS_XBOX_D3D
+#undef HAS_RAM_CONTROL
+#undef HAS_XFONT
+#undef HAS_FILESYSTEM
+#undef HAS_GAMEPAD
+#undef HAS_IR_REMOTE
+#undef HAS_DVD_DRIVE
+#undef HAS_XBOX_HARDWARE
+#undef HAS_XBOX_NETWORK
+#define HAS_VIDEO_PLAYBACK
+#undef HAS_AC3_CODEC
+#undef HAS_DTS_CODEC
+#undef HAS_AC3_CDDA_CODEC
+#undef HAS_DTS_CDDA_CODEC
+#define HAS_WMA_CODEC
+#undef HAS_XBOX_AUDIO
+#undef HAS_AUDIO_PASS_THROUGH
+#undef HAS_FTP_SERVER
+#undef HAS_WEB_SERVER
+#undef SPYCE_SUPPORT
+#undef HAS_TIME_SERVER
+#undef HAS_VISUALISATION
+#undef HAS_KARAOKE
+#undef HAS_CREDITS
+#undef HAS_MODPLAYER
+#undef HAS_SYSINFO
+#undef HAS_SCREENSAVER
+#undef HAS_MIKMOD
+#undef HAS_SECTIONS
+#define HAS_UPNP
+#undef HAS_LCD
+#undef HAS_UNDOCUMENTED
+#undef HAS_SECTIONS
+#undef HAS_CDDA_RIPPER
+#define HAS_PYTHON
+#define HAS_AUDIO
+#undef HAS_NEW_KARAOKE
 
-#ifdef HAVE_LIBSSH
-#define HAS_FILESYSTEM_SFTP
-#endif
-
-/*****************
- * SVN revision
- *****************/
-
-#ifdef __APPLE__
-#include "../svn_revision.h"
-#endif
-
-#ifndef SVN_REV
-#define SVN_REV "Unknown"
-#endif
-
-/****************************************
- * Additional platform specific includes
- ****************************************/
-
-#ifdef _WIN32
+// additional includes and defines
 #if !(defined(_WINSOCKAPI_) || defined(_WINSOCK_H))
 #include <winsock2.h>
 #endif
 #include <windows.h>
 #define DIRECTINPUT_VERSION 0x0800
-#include "mmsystem.h"
 #include "DInput.h"
 #include "DSound.h"
 #define DSSPEAKER_USE_DEFAULT DSSPEAKER_STEREO
 #define LPDIRECTSOUND8 LPDIRECTSOUND
 #undef GetFreeSpace
-#include "PlatformInclude.h"
-#include "D3D9.h"   // On Win32, we're always using DirectX for something, whether it be the actual rendering
-#include "D3DX9.h"  // or the reference video clock.
-#ifdef HAS_SDL
-#include "SDL\SDL.h"
-#endif
 #endif
 
-#ifdef _LINUX
-#include <unistd.h>
-#include <time.h>
-#include <sys/time.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <errno.h>
-#include "PlatformInclude.h"
-#endif
+#include "../xbmc/xbox/PlatformInclude.h"
 
-// ARM does not support certain features... disable them here!
-#ifdef _ARMEL
-#undef HAS_AVAHI
-#undef HAS_ZEROCONF
-#undef HAS_VISUALISATION
-#undef HAS_FILESYSTEM_HTSP
+#ifndef SVN_REV
+#define SVN_REV "Unknown"
 #endif
-
-// EGL detected. Dont use GLX!
-#ifdef HAVE_LIBEGL
-#undef HAS_GLX
-#define HAS_EGL
-#endif
-
-// GLES2.0 detected. Dont use GL!
-#ifdef HAVE_LIBGLESV2
-#undef HAS_GL
-#define HAS_GLES 2
-#endif
-
-// GLES1.0 detected. Dont use GL!
-#ifdef HAVE_LIBGLES
-#undef HAS_GL
-#define HAS_GLES 1
-#endif
-
-#ifdef HAS_GL
-#ifdef _WIN32
-#include "GL/glew.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
-//#include <GL/wglext.h>
-#elif defined(__APPLE__)
-#include <GL/glew.h>
-#include <OpenGL/gl.h>
-#elif defined(_LINUX)
-#include <GL/glew.h>
-#include <GL/gl.h>
-#endif
-#endif
-
-#if HAS_GLES == 2
-#ifdef _ARMEL	// PowerVR SGX Header
-// not sure about this one tg2 (arm) does not have gl2extimg.h
-//#include <GLES2/gl2extimg.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#else
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#endif
-#endif
-
-#define SAFE_DELETE(p)       { delete (p);     (p)=NULL; }
-#define SAFE_DELETE_ARRAY(p) { delete[] (p);   (p)=NULL; }
-#define SAFE_RELEASE(p)      { if(p) { (p)->Release(); (p)=NULL; } }
-
-// Useful pixel colour manipulation macros
-#define GET_A(color)            ((color >> 24) & 0xFF)
-#define GET_R(color)            ((color >> 16) & 0xFF)
-#define GET_G(color)            ((color >>  8) & 0xFF)
-#define GET_B(color)            ((color >>  0) & 0xFF)
-

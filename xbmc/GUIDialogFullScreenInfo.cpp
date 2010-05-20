@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogFullScreenInfo.h"
 
 CGUIDialogFullScreenInfo::CGUIDialogFullScreenInfo(void)

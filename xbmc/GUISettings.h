@@ -21,52 +21,26 @@
  *
  */
 
+#include "tinyXML/tinyxml.h"
 #include <vector>
 #include <map>
-#include "Resolution.h"
-#include "addons/IAddon.h"
-
-class TiXmlNode;
-class TiXmlElement;
+#include "GraphicContext.h"
 
 // Render Methods
-#define RENDER_METHOD_AUTO      0
-#define RENDER_METHOD_ARB       1
-#define RENDER_METHOD_GLSL      2
-#define RENDER_METHOD_SOFTWARE  3
-#define RENDER_OVERLAYS         99   // to retain compatibility
-
-// Scaling options.
-#define SOFTWARE_UPSCALING_DISABLED   0
-#define SOFTWARE_UPSCALING_SD_CONTENT 1
-#define SOFTWARE_UPSCALING_ALWAYS     2
-
-// Apple Remote options.
-#define APPLE_REMOTE_DISABLED     0
-#define APPLE_REMOTE_STANDARD     1
-#define APPLE_REMOTE_UNIVERSAL    2
-#define APPLE_REMOTE_MULTIREMOTE  3
+#define RENDER_LQ_RGB_SHADER   0
+#define RENDER_OVERLAYS      1
+#define RENDER_HQ_RGB_SHADER   2
+#define RENDER_HQ_RGB_SHADERV2   3
 
 // Subtitle colours
 
 #define SUBTITLE_COLOR_START  0
 #define SUBTITLE_COLOR_END    7
 
-// Karaoke colours
-
-// If you want to add more colors, it should be done the following way:
-// 1. Increase KARAOKE_COLOR_END
-// 2. Add a new color description in language/English/strings.xml in block
-//    with id 22040 + KARAOKE_COLOR_END value
-// 3. Add a new color hex mask into gLyricColors structure in karaoke/karaokelyricstext.cpp
-#define KARAOKE_COLOR_START  0
-#define KARAOKE_COLOR_END    4
-
 // CDDA ripper defines
 #define CDDARIP_ENCODER_LAME     0
 #define CDDARIP_ENCODER_VORBIS   1
 #define CDDARIP_ENCODER_WAV      2
-#define CDDARIP_ENCODER_FLAC     3
 
 #define CDDARIP_QUALITY_CBR      0
 #define CDDARIP_QUALITY_MEDIUM   1
@@ -74,9 +48,7 @@ class TiXmlElement;
 #define CDDARIP_QUALITY_EXTREME  3
 
 #define AUDIO_ANALOG      0
-#define AUDIO_IEC958      1
-#define AUDIO_HDMI        2
-#define AUDIO_IS_BITSTREAM(x) ((x) == AUDIO_IEC958 || (x) == AUDIO_HDMI)
+#define AUDIO_DIGITAL      1
 
 #define VIDEO_NORMAL 0
 #define VIDEO_LETTERBOX 1
@@ -87,7 +59,6 @@ class TiXmlElement;
 #define LCD_TYPE_LCD_HD44780 1
 #define LCD_TYPE_LCD_KS0073  2
 #define LCD_TYPE_VFD         3
-#define LCD_TYPE_LCDPROC     4
 
 #define MODCHIP_SMARTXX   0
 #define MODCHIP_XENIUM    1
@@ -123,14 +94,17 @@ class TiXmlElement;
 #define APM_HIPOWER_STANDBY 2
 #define APM_LOPOWER_STANDBY 3
 
-#define SETTINGS_TYPE_BOOL      1
-#define SETTINGS_TYPE_FLOAT     2
-#define SETTINGS_TYPE_INT       3
-#define SETTINGS_TYPE_STRING    4
-#define SETTINGS_TYPE_HEX       5
+#define NETWORK_DASH   0
+#define NETWORK_DHCP   1
+#define NETWORK_STATIC  2
+
+#define SETTINGS_TYPE_BOOL   1
+#define SETTINGS_TYPE_FLOAT   2
+#define SETTINGS_TYPE_INT    3
+#define SETTINGS_TYPE_STRING  4
+#define SETTINGS_TYPE_HEX    5
 #define SETTINGS_TYPE_SEPARATOR 6
 #define SETTINGS_TYPE_PATH      7
-#define SETTINGS_TYPE_ADDON     8
 
 #define CHECKMARK_CONTROL           1
 #define SPIN_CONTROL_FLOAT          2
@@ -141,11 +115,10 @@ class TiXmlElement;
 #define EDIT_CONTROL_HIDDEN_INPUT   7
 #define EDIT_CONTROL_NUMBER_INPUT   8
 #define EDIT_CONTROL_IP_INPUT       9
-#define EDIT_CONTROL_MD5_INPUT     10
-#define BUTTON_CONTROL_STANDARD    11
-#define BUTTON_CONTROL_MISC_INPUT  12
-#define BUTTON_CONTROL_PATH_INPUT  13
-#define SEPARATOR_CONTROL          14
+#define BUTTON_CONTROL_STANDARD    10
+#define BUTTON_CONTROL_MISC_INPUT  11
+#define BUTTON_CONTROL_PATH_INPUT  12
+#define SEPARATOR_CONTROL          13
 
 #define RESUME_NO  0
 #define RESUME_YES 1
@@ -154,29 +127,6 @@ class TiXmlElement;
 #define REPLAY_GAIN_NONE 0
 #define REPLAY_GAIN_ALBUM 1
 #define REPLAY_GAIN_TRACK 2
-
-//AV sync options
-#define SYNC_DISCON 0
-#define SYNC_SKIPDUP 1
-#define SYNC_RESAMPLE 2
-
-//resampler quality
-#define RESAMPLE_LOW 0
-#define RESAMPLE_MID 1
-#define RESAMPLE_HIGH 2
-#define RESAMPLE_REALLYHIGH 3
-
-enum PowerState
-{
-  POWERSTATE_QUIT       = 0,
-  POWERSTATE_SHUTDOWN,
-  POWERSTATE_HIBERNATE,
-  POWERSTATE_SUSPEND,
-  POWERSTATE_REBOOT,
-  POWERSTATE_MINIMIZE,
-  POWERSTATE_NONE,
-  POWERSTATE_ASK
-};
 
 // replay gain settings struct for quick access by the player multiple
 // times per second (saves doing settings lookup)
@@ -266,23 +216,14 @@ class CSettingInt : public CSetting
 public:
   CSettingInt(int iOrder, const char *strSetting, int iLabel, int iData, int iMin, int iStep, int iMax, int iControlType, const char *strFormat);
   CSettingInt(int iOrder, const char *strSetting, int iLabel, int iData, int iMin, int iStep, int iMax, int iControlType, int iFormat, int iLabelMin);
-  CSettingInt(int iOrder, const char *strSetting, int iLabel, int iData, const std::map<int,int>& entries, int iControlType);
   virtual ~CSettingInt() {};
 
   virtual int GetType() { return SETTINGS_TYPE_INT; };
   virtual void FromString(const CStdString &strValue);
   virtual CStdString ToString();
 
-  void SetData(int iData)
-  { 
-    m_iData = iData;
-    if (m_entries.empty())
-    {
-      if (m_iData < m_iMin) m_iData = m_iMin; 
-      if (m_iData > m_iMax) m_iData = m_iMax;
-    }
-  }
-  int GetData() const { return m_iData; };
+  void SetData(int iData) { m_iData = iData; if (m_iData < m_iMin) m_iData = m_iMin; if (m_iData > m_iMax) m_iData = m_iMax;};
+int GetData() const { return m_iData; };
 
   int m_iMin;
   int m_iStep;
@@ -290,7 +231,6 @@ public:
   int m_iFormat;
   int m_iLabelMin;
   CStdString m_strFormat;
-  std::map<int,int> m_entries;
 
 protected:
   int m_iData;
@@ -335,20 +275,6 @@ public:
   virtual int GetType() { return SETTINGS_TYPE_PATH; };
 };
 
-class CSettingAddon : public CSettingString
-{
-public:
-  CSettingAddon(int iOrder, const char *strSetting, int iLabel, const char *strData, const ADDON::TYPE type, const CONTENT_TYPE content);
-  virtual ~CSettingAddon() {};
-  virtual int GetType() { return SETTINGS_TYPE_ADDON; };
-  void SetData(int);
-  int GetPos();
-
-  std::map<CStdString,CStdString> m_entries;
-  const ADDON::TYPE m_type;
-  const CONTENT_TYPE m_content;
-};
-
 class CSettingSeparator : public CSetting
 {
 public:
@@ -365,13 +291,11 @@ public:
   {
     m_strCategory = strCategory;
     m_labelID = labelID;
-    m_entries = 0;
   }
   ~CSettingsCategory() {};
 
   CStdString m_strCategory;
   int m_labelID;
-  int m_entries;
 };
 
 typedef std::vector<CSettingsCategory *> vecSettingsCategory;
@@ -391,12 +315,11 @@ public:
     m_vecCategories.clear();
   };
 
-  CSettingsCategory* AddCategory(const char *strCategory, int labelID)
+  void AddCategory(const char *strCategory, int labelID)
   {
     CSettingsCategory *pCategory = new CSettingsCategory(strCategory, labelID);
     if (pCategory)
       m_vecCategories.push_back(pCategory);
-    return pCategory;
   }
   void GetCategories(vecSettingsCategory &vecCategories);
   int GetLabelID() { return m_labelID; };
@@ -418,36 +341,32 @@ public:
   void Initialize();
 
   void AddGroup(int groupID, int labelID);
-  CSettingsCategory* AddCategory(int groupID, const char *strCategory, int labelID);
+  void AddCategory(int groupID, const char *strCategory, int labelID);
   CSettingsGroup *GetGroup(int windowID);
 
-  void AddBool(CSettingsCategory* cat, const char *strSetting, int iLabel, bool bSetting, int iControlType = CHECKMARK_CONTROL);
+  void AddBool(int iOrder, const char *strSetting, int iLabel, bool bSetting, int iControlType = CHECKMARK_CONTROL);
   bool GetBool(const char *strSetting) const;
   void SetBool(const char *strSetting, bool bSetting);
   void ToggleBool(const char *strSetting);
 
-  void AddFloat(CSettingsCategory* cat, const char *strSetting, int iLabel, float fSetting, float fMin, float fStep, float fMax, int iControlType = SPIN_CONTROL_FLOAT);
+  void AddFloat(int iOrder, const char *strSetting, int iLabel, float fSetting, float fMin, float fStep, float fMax, int iControlType = SPIN_CONTROL_FLOAT);
   float GetFloat(const char *strSetting) const;
   void SetFloat(const char *strSetting, float fSetting);
 
-  void AddInt(CSettingsCategory* cat, const char *strSetting, int iLabel, int fSetting, int iMin, int iStep, int iMax, int iControlType, const char *strFormat = NULL);
-  void AddInt(CSettingsCategory* cat, const char *strSetting, int iLabel, int iData, int iMin, int iStep, int iMax, int iControlType, int iFormat, int iLabelMin=-1);
-  void AddInt(CSettingsCategory* cat, const char *strSetting, int iLabel, int iData, const std::map<int,int>& entries, int iControlType);
-  void AddSpin(unsigned int id, int label, int *current, std::vector<std::pair<int, int> > &values);
+  void AddInt(int iOrder, const char *strSetting, int iLabel, int fSetting, int iMin, int iStep, int iMax, int iControlType, const char *strFormat = NULL);
+  void AddInt(int iOrder, const char *strSetting, int iLabel, int iData, int iMin, int iStep, int iMax, int iControlType, int iFormat, int iLabelMin=-1);
   int GetInt(const char *strSetting) const;
   void SetInt(const char *strSetting, int fSetting);
 
-  void AddHex(CSettingsCategory* cat, const char *strSetting, int iLabel, int fSetting, int iMin, int iStep, int iMax, int iControlType, const char *strFormat = NULL);
+  void AddHex(int iOrder, const char *strSetting, int iLabel, int fSetting, int iMin, int iStep, int iMax, int iControlType, const char *strFormat = NULL);
 
-  void AddString(CSettingsCategory* cat, const char *strSetting, int iLabel, const char *strData, int iControlType = EDIT_CONTROL_INPUT, bool bAllowEmpty = false, int iHeadingString = -1);
-  void AddPath(CSettingsCategory* cat, const char *strSetting, int iLabel, const char *strData, int iControlType = EDIT_CONTROL_INPUT, bool bAllowEmpty = false, int iHeadingString = -1);
-
-  void AddDefaultAddon(CSettingsCategory* cat, const char *strSetting, int iLabel, const char *strData, const ADDON::TYPE type, const CONTENT_TYPE content = CONTENT_NONE);
+  void AddString(int iOrder, const char *strSetting, int iLabel, const char *strData, int iControlType = EDIT_CONTROL_INPUT, bool bAllowEmpty = false, int iHeadingString = -1);
+  void AddPath(int iOrder, const char *strSetting, int iLabel, const char *strData, int iControlType = EDIT_CONTROL_INPUT, bool bAllowEmpty = false, int iHeadingString = -1);
 
   const CStdString &GetString(const char *strSetting, bool bPrompt=true) const;
   void SetString(const char *strSetting, const char *strData);
 
-  void AddSeparator(CSettingsCategory* cat, const char *strSetting);
+  void AddSeparator(int iOrder, const char *strSetting);
 
   CSetting *GetSetting(const char *strSetting);
 
@@ -456,11 +375,8 @@ public:
   void SaveXML(TiXmlNode *pRootNode);
   void LoadMasterLock(TiXmlElement *pRootElement);
 
-  RESOLUTION GetResolution() const;
-  static RESOLUTION GetResFromString(const CStdString &res);
-  void SetResolution(RESOLUTION res);
-
-  //m_LookAndFeelResolution holds the real gui resolution
+  //m_LookAndFeelResolution holds the real gui resolution,
+  //also when g_guiSettings.GetInt("videoscreen.resolution") is set to AUTORES
   RESOLUTION m_LookAndFeelResolution;
   ReplayGainSettings m_replayGain;
 

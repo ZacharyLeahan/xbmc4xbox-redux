@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "SharedSection.h"
 
 #define MAXSHAREDACCESSES 5000
@@ -40,34 +41,28 @@ CSharedSection::~CSharedSection()
 void CSharedSection::EnterShared()
 {
   EnterCriticalSection(&m_critSection);
-  ResetEvent(m_eventFree);
-  m_sharedLock++;
+  if( !m_exclusive )
+  { //exclusve will be set if this thread already owns this object
+    ResetEvent(m_eventFree);
+    InterlockedIncrement(&m_sharedLock);
+  }
   LeaveCriticalSection(&m_critSection);
 }
 
 void CSharedSection::LeaveShared()
 {
-  EnterCriticalSection(&m_critSection);
-  m_sharedLock--;
-  if (m_sharedLock == 0)
+  if( !m_exclusive )
   {
-    LeaveCriticalSection(&m_critSection);
-    SetEvent(m_eventFree);
-    return;
+    if( InterlockedDecrement(&m_sharedLock) == 0 ) 
+      SetEvent(m_eventFree);
   }
-  LeaveCriticalSection(&m_critSection);
 }
 
 void CSharedSection::EnterExclusive()
 {
   EnterCriticalSection(&m_critSection);
-  while( m_sharedLock != 0 )
-  {
-    LeaveCriticalSection(&m_critSection);
+  if( InterlockedCompareExchange(&m_sharedLock, 0, 0) != 0 )
     WaitForSingleObject(m_eventFree, INFINITE);
-    EnterCriticalSection(&m_critSection);
-  }
-
   m_exclusive = true;
 }
 

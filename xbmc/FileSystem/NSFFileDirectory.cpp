@@ -19,12 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "NSFFileDirectory.h"
 #include "MusicInfoTagLoaderNSF.h"
 #include "MusicInfoTag.h"
 
 using namespace MUSIC_INFO;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CNSFFileDirectory::CNSFFileDirectory(void)
 {

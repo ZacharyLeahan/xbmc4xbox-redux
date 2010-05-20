@@ -26,9 +26,9 @@
  *
  **********************************************************************/
 
+
+#include "stdafx.h"
 #include "dataset.h"
-#include "utils/log.h"
-#include <cstring>
 
 #ifndef __GNUC__
 #pragma warning (disable:4800)
@@ -119,11 +119,7 @@ void Dataset::setSqlParams(const char *sqlFrmt, sqlType t, ...) {
   char sqlCmd[DB_BUFF_MAX+1];
 
   va_start(ap, t);
-#ifndef _LINUX
   _vsnprintf(sqlCmd, DB_BUFF_MAX-1, sqlFrmt, ap);
-#else
-  vsnprintf(sqlCmd, DB_BUFF_MAX-1, sqlFrmt, ap);
-#endif
   va_end(ap);
 
    switch (t) {
@@ -500,13 +496,9 @@ DbErrors::DbErrors(const char *msg, ...) {
   va_list vl;
   va_start(vl, msg);
   char buf[DB_BUFF_MAX]="";
-#ifndef _LINUX
   _vsnprintf(buf, DB_BUFF_MAX-1, msg, vl);
-#else
-  vsnprintf(buf, DB_BUFF_MAX-1, msg, vl);
-#endif
   va_end(vl);
-  msg_ =   "SQL: ";
+  msg_ =   "SQLite: ";
   msg_ += buf;
 
   CLog::Log(LOGERROR, "%s", msg_.c_str());

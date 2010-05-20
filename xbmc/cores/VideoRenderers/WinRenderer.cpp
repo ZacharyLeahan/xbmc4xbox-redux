@@ -18,70 +18,56 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#ifdef HAS_DX
-
+ 
+#include "stdafx.h"
 #include "WinRenderer.h"
-#include "Application.h"
 #include "Util.h"
+#include "XBVideoConfig.h"
 #include "Settings.h"
-#include "Texture.h"
-#include "WindowingFactory.h"
-#include "AdvancedSettings.h"
-#include "SingleLock.h"
-#include "utils/log.h"
-#include "FileSystem/File.h"
-#include "MathUtils.h"
-#include "VideoShaders/ConvolutionKernels.h"
-#include "cores/dvdplayer/DVDCodecs/Video/DXVA.h"
+
 
 // http://www.martinreddy.net/gfx/faqs/colorconv.faq
 
 YUVRANGE yuv_range_lim =  { 16, 235, 16, 240, 16, 240 };
 YUVRANGE yuv_range_full = {  0, 255,  0, 255,  0, 255 };
 
-static float yuv_coef_bt601[4][4] =
-{
-    { 1.0f,      1.0f,     1.0f,     0.0f },
-    { 0.0f,     -0.344f,   1.773f,   0.0f },
-    { 1.403f,   -0.714f,   0.0f,     0.0f },
-    { 0.0f,      0.0f,     0.0f,     0.0f }
+YUVCOEF yuv_coef_bt601 = {
+     0.0f,   1.403f,
+  -0.344f,  -0.714f,
+   1.773f,     0.0f,
 };
 
-static float yuv_coef_bt709[4][4] =
-{
-    { 1.0f,      1.0f,     1.0f,     0.0f },
-    { 0.0f,     -0.1870f,  1.8556f,  0.0f },
-    { 1.5701f,  -0.4664f,  0.0f,     0.0f },
-    { 0.0f,      0.0f,     0.0f,     0.0f }
+YUVCOEF yuv_coef_bt709 = {
+     0.0f,  1.5701f,
+ -0.1870f, -0.4664f,
+  1.8556f,     0.0f, /* page above have the 1.8556f as negative */
 };
 
-static float yuv_coef_ebu[4][4] =
-{
-    { 1.0f,      1.0f,     1.0f,     0.0f },
-    { 0.0f,     -0.3960f,  2.029f,   0.0f },
-    { 1.140f,   -0.581f,   0.0f,     0.0f },
-    { 0.0f,      0.0f,     0.0f,     0.0f }
+YUVCOEF yuv_coef_ebu = {
+    0.0f,  1.140f,
+ -0.396f, -0.581f,
+  2.029f,    0.0f, 
 };
 
-static float yuv_coef_smtp240m[4][4] =
-{
-    { 1.0f,      1.0f,     1.0f,     0.0f },
-    { 0.0f,     -0.2253f,  1.8270f,  0.0f },
-    { 1.5756f,  -0.5000f,  0.0f,     0.0f },
-    { 0.0f,      0.0f,     0.0f,     0.0f }
+YUVCOEF yuv_coef_smtp240m = {
+     0.0f,  1.5756f,
+ -0.2253f, -0.5000f, /* page above have the 0.5000f as positive */
+  1.8270f,     0.0f,  
 };
 
-CWinRenderer::CWinRenderer()
+
+CWinRenderer::CWinRenderer(LPDIRECT3DDEVICE8 pDevice)
 {
+  m_pD3DDevice = pDevice;
+  m_fSourceFrameRatio = 1.0f;
+  m_iResolution = PAL_4x3;
+  memset(m_pOSDYTexture,0,sizeof(LPDIRECT3DTEXTURE8)*NUM_BUFFERS);
+  memset(m_pOSDATexture,0,sizeof(LPDIRECT3DTEXTURE8)*NUM_BUFFERS);
+  memset(m_YUVTexture, 0, sizeof(m_YUVTexture));
+
+  m_hLowMemShader = 0;
   m_iYV12RenderBuffer = 0;
-  m_NumYV12Buffers = 0;
 
-  m_scalingMethod = VS_SCALINGMETHOD_LINEAR;
-  m_scalingMethodGui = (ESCALINGMETHOD)-1;
-
-  m_bUseHQScaler = false;
-  m_bFilterInitialized = false;
 }
 
 CWinRenderer::~CWinRenderer()
@@ -89,9 +75,390 @@ CWinRenderer::~CWinRenderer()
   UnInit();
 }
 
+//********************************************************************************************************
+void CWinRenderer::DeleteOSDTextures(int index)
+{
+  CSingleLock lock(g_graphicsContext);
+
+  if (m_pOSDYTexture[index])
+    SAFE_RELEASE(m_pOSDYTexture[index]);
+
+  if (m_pOSDATexture[index])
+    SAFE_RELEASE(m_pOSDATexture[index]);
+  
+  m_iOSDTextureHeight[index] = 0;
+  m_iOSDTextureWidth = 0;
+}
+
+void CWinRenderer::Setup_Y8A8Render()
+{
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+
+  m_pD3DDevice->SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE );
+  m_pD3DDevice->SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
+
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_stSettings.m_maxFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_stSettings.m_minFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MAGFILTER, D3DTEXF_POINT /*g_stSettings.m_maxFilter*/ );
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_MINFILTER, D3DTEXF_POINT /*g_stSettings.m_minFilter*/ );
+
+  m_pD3DDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
+  m_pD3DDevice->SetRenderState( D3DRS_FOGENABLE, FALSE );
+  m_pD3DDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+  m_pD3DDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_CCW );
+  m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+  m_pD3DDevice->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_INVSRCALPHA );
+  m_pD3DDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_SRCALPHA );
+  m_pD3DDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+  m_pD3DDevice->SetVertexShader( D3DFVF_XYZRHW | D3DFVF_TEX2 );
+}
+
+//***************************************************************************************
+// CalculateFrameAspectRatio()
+//
+// Considers the source frame size and output frame size (as suggested by mplayer)
+// to determine if the pixels in the source are not square.  It calculates the aspect
+// ratio of the output frame.  We consider the cases of VCD, SVCD and DVD separately,
+// as these are intended to be viewed on a non-square pixel TV set, so the pixels are
+// defined to be the same ratio as the intended display pixels.
+// These formats are determined by frame size.
+//***************************************************************************************
+void CWinRenderer::CalculateFrameAspectRatio(int desired_width, int desired_height)
+{
+  m_fSourceFrameRatio = (float)desired_width / desired_height;
+
+  // Check whether mplayer has decided that the size of the video file should be changed
+  // This indicates either a scaling has taken place (which we didn't ask for) or it has
+  // found an aspect ratio parameter from the file, and is changing the frame size based
+  // on that.
+  if (m_iSourceWidth == desired_width && m_iSourceHeight == desired_height)
+    return ;
+
+  // mplayer is scaling in one or both directions.  We must alter our Source Pixel Ratio
+  float fImageFrameRatio = (float)m_iSourceWidth / m_iSourceHeight;
+
+  // OK, most sources will be correct now, except those that are intended
+  // to be displayed on non-square pixel based output devices (ie PAL or NTSC TVs)
+  // This includes VCD, SVCD, and DVD (and possibly others that we are not doing yet)
+  // For this, we can base the pixel ratio on the pixel ratios of PAL and NTSC,
+  // though we will need to adjust for anamorphic sources (ie those whose
+  // output frame ratio is not 4:3) and for SVCDs which have 2/3rds the
+  // horizontal resolution of the default NTSC or PAL frame sizes
+
+  // The following are the defined standard ratios for PAL and NTSC pixels
+  float fPALPixelRatio = 128.0f / 117.0f;
+  float fNTSCPixelRatio = 4320.0f / 4739.0f;
+
+  // Calculate the correction needed for anamorphic sources
+  float fNon4by3Correction = m_fSourceFrameRatio / (4.0f / 3.0f);
+
+  // Finally, check for a VCD, SVCD or DVD frame size as these need special aspect ratios
+  if (m_iSourceWidth == 352)
+  { // VCD?
+    if (m_iSourceHeight == 240) // NTSC
+      m_fSourceFrameRatio = fImageFrameRatio * fNTSCPixelRatio;
+    if (m_iSourceHeight == 288) // PAL
+      m_fSourceFrameRatio = fImageFrameRatio * fPALPixelRatio;
+  }
+  if (m_iSourceWidth == 480)
+  { // SVCD?
+    if (m_iSourceHeight == 480) // NTSC
+      m_fSourceFrameRatio = fImageFrameRatio * 3.0f / 2.0f * fNTSCPixelRatio * fNon4by3Correction;
+    if (m_iSourceHeight == 576) // PAL
+      m_fSourceFrameRatio = fImageFrameRatio * 3.0f / 2.0f * fPALPixelRatio * fNon4by3Correction;
+  }
+  if (m_iSourceWidth == 720)
+  { // DVD?
+    if (m_iSourceHeight == 480) // NTSC
+      m_fSourceFrameRatio = fImageFrameRatio * fNTSCPixelRatio * fNon4by3Correction;
+    if (m_iSourceHeight == 576) // PAL
+      m_fSourceFrameRatio = fImageFrameRatio * fPALPixelRatio * fNon4by3Correction;
+  }
+}
+
+//***********************************************************************************************************
+void CWinRenderer::CopyAlpha(int w, int h, unsigned char* src, unsigned char *srca, int srcstride, unsigned char* dst, unsigned char* dsta, int dststride)
+{
+  for (int y = 0; y < h; ++y)
+  {
+    memcpy(dst, src, w);
+    memcpy(dsta, srca, w);
+    src += srcstride;
+    srca += srcstride;
+    dst += dststride;
+    dsta += dststride;
+  }
+}
+
+void CWinRenderer::DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
+{
+  // OSD is drawn after draw_slice / put_image
+  // this means that the buffer has already been handed off to the RGB converter
+  // solution: have separate OSD textures
+
+  // if it's down the bottom, use sub alpha blending
+  //  m_SubsOnOSD = (y0 > (int)(rs.bottom - rs.top) * 4 / 5);
+
+  //Sometimes happens when switching between fullscreen and small window
+  if( w == 0 || h == 0 )
+  {
+    CLog::Log(LOGINFO, "Zero dimensions specified to DrawAlpha, skipping");
+    return;
+  }
+
+  //use temporary rect for calculation to avoid messing with module-rect while other functions might be using it.
+  DRAWRECT osdRect;
+  RESOLUTION res = GetResolution();
+
+  if (w > m_iOSDTextureWidth)
+  {
+    //delete osdtextures so they will be recreated with the correct width
+    for (int i = 0; i < 2; ++i)
+    {
+      DeleteOSDTextures(i);
+    }
+    m_iOSDTextureWidth = w;
+  }
+  else
+  {
+    // clip to buffer
+    if (w > m_iOSDTextureWidth) w = m_iOSDTextureWidth;
+    if (h > g_settings.m_ResInfo[res].Overscan.bottom - g_settings.m_ResInfo[res].Overscan.top)
+    {
+      h = g_settings.m_ResInfo[res].Overscan.bottom - g_settings.m_ResInfo[res].Overscan.top;
+    }
+  }
+
+  // scale to fit screen
+  const RECT& rv = g_graphicsContext.GetViewWindow();
+
+  // Vobsubs are defined to be 720 wide.
+  // NOTE: This will not work nicely if we are allowing mplayer to render text based subs
+  //       as it'll want to render within the pixel width it is outputting.
+
+  float xscale;
+  float yscale;
+
+  if(true /*isvobsub*/) // xbox_video.cpp is fixed to 720x576 osd, so this should be fine
+  { // vobsubs are given to us unscaled
+    // scale them up to the full output, assuming vobsubs have same 
+    // pixel aspect ratio as the movie, and are 720 pixels wide
+
+    float pixelaspect = m_fSourceFrameRatio * m_iSourceHeight / m_iSourceWidth;
+    xscale = (rv.right - rv.left) / 720.0f;
+    yscale = xscale * g_settings.m_ResInfo[res].fPixelRatio / pixelaspect;
+  }
+  else
+  { // text subs/osd assume square pixels, but will render to full size of view window
+    // if mplayer could be fixed to use monitorpixelaspect when rendering it's osd
+    // this would give perfect output, however monitorpixelaspect currently doesn't work
+    // that way
+    xscale = 1.0f;
+    yscale = 1.0f;
+  }
+  
+  // horizontal centering, and align to bottom of subtitles line
+  osdRect.left = (float)rv.left + (float)(rv.right - rv.left - (float)w * xscale) / 2.0f;
+  osdRect.right = osdRect.left + (float)w * xscale;
+  float relbottom = ((float)(g_settings.m_ResInfo[res].iSubtitles - g_settings.m_ResInfo[res].Overscan.top)) / (g_settings.m_ResInfo[res].Overscan.bottom - g_settings.m_ResInfo[res].Overscan.top);
+  osdRect.bottom = (float)rv.top + (float)(rv.bottom - rv.top) * relbottom;
+  osdRect.top = osdRect.bottom - (float)h * yscale;
+
+  RECT rc = { 0, 0, w, h };
+
+  int iOSDBuffer = (m_iOSDRenderBuffer + 1) % m_NumOSDBuffers;
+
+  //if new height is heigher than current osd-texture height, recreate the textures with new height.
+  if (h > m_iOSDTextureHeight[iOSDBuffer])
+  {
+    CSingleLock lock(g_graphicsContext);
+
+    DeleteOSDTextures(iOSDBuffer);
+    m_iOSDTextureHeight[iOSDBuffer] = h;
+    // Create osd textures for this buffer with new size
+    if (
+      D3D_OK != m_pD3DDevice->CreateTexture(m_iOSDTextureWidth, m_iOSDTextureHeight[iOSDBuffer], 1, 0, D3DFMT_LIN_L8, D3DPOOL_DEFAULT, &m_pOSDYTexture[iOSDBuffer]) ||
+      D3D_OK != m_pD3DDevice->CreateTexture(m_iOSDTextureWidth, m_iOSDTextureHeight[iOSDBuffer], 1, 0, D3DFMT_LIN_A8, D3DPOOL_DEFAULT, &m_pOSDATexture[iOSDBuffer])
+    )
+    {
+      CLog::Log(LOGERROR, "Could not create OSD/Sub textures");
+      DeleteOSDTextures(iOSDBuffer);
+      return;
+    }
+    else
+    {
+      CLog::Log(LOGDEBUG, "Created OSD textures (%i)", iOSDBuffer);
+    }
+  }
+
+  // draw textures
+  D3DLOCKED_RECT lr, lra;
+  if (
+    (D3D_OK == m_pOSDYTexture[iOSDBuffer]->LockRect(0, &lr, &rc, 0)) &&
+    (D3D_OK == m_pOSDATexture[iOSDBuffer]->LockRect(0, &lra, &rc, 0))
+  )
+  {
+    //clear the textures
+    memset(lr.pBits, 0, lr.Pitch*m_iOSDTextureHeight[iOSDBuffer]);
+    memset(lra.pBits, 0, lra.Pitch*m_iOSDTextureHeight[iOSDBuffer]);
+    //draw the osd/subs
+    CopyAlpha(w, h, src, srca, stride, (BYTE*)lr.pBits, (BYTE*)lra.pBits, lr.Pitch);
+  }
+  m_pOSDYTexture[iOSDBuffer]->UnlockRect(0);
+  m_pOSDATexture[iOSDBuffer]->UnlockRect(0);
+
+  //set module variables to calculated values
+  m_OSDRect = osdRect;
+  m_OSDWidth = (float)w;
+  m_OSDHeight = (float)h;
+  m_OSDRendered = true;
+}
+
+//********************************************************************************************************
+void CWinRenderer::RenderOSD()
+{
+  int iRenderBuffer = m_iOSDRenderBuffer;
+
+  if (!m_pOSDYTexture[iRenderBuffer] || !m_pOSDATexture[iRenderBuffer])
+    return ;
+  if (!m_OSDWidth || !m_OSDHeight)
+    return ;
+
+  CSingleLock lock(g_graphicsContext);
+
+  //copy alle static vars to local vars because they might change during this function by mplayer callbacks
+  float osdWidth = m_OSDWidth;
+  float osdHeight = m_OSDHeight;
+  DRAWRECT osdRect = m_OSDRect;
+  //  if (!viewportRect.bottom && !viewportRect.right)
+  //    return;
+
+  // Set state to render the image
+  m_pD3DDevice->SetTexture(0, m_pOSDYTexture[iRenderBuffer]);
+  m_pD3DDevice->SetTexture(1, m_pOSDATexture[iRenderBuffer]);
+  Setup_Y8A8Render();
+
+  // clip the output if we are not in FSV so that zoomed subs don't go all over the GUI
+  if ( !(g_graphicsContext.IsFullScreenVideo() || g_graphicsContext.IsCalibrating() ))
+    g_graphicsContext.ClipToViewWindow();
+
+  struct CUSTOMVERTEX {
+      FLOAT x, y, z;
+      FLOAT rhw;
+      DWORD color;
+      FLOAT tu, tv;   // Texture coordinates
+      FLOAT tu2, tv2;
+  };
+
+  CUSTOMVERTEX verts[4] =
+  {
+    { osdRect.left         , osdRect.top            , 0.0f,
+      1.0f, 0,
+      0.0f                 , 0.0f,
+      0.0f                 , 0.0f,
+    }, 
+    { osdRect.right        , osdRect.top            , 0.0f,
+      1.0f, 0,
+      osdWidth / m_OSDWidth, 0.0f,
+      osdWidth / m_OSDWidth, 0.0f,
+    }, 
+    { osdRect.right        , osdRect.bottom         , 0.0f,
+      1.0f, 0,
+      osdWidth / m_OSDWidth, osdHeight / m_OSDHeight,
+      osdWidth / m_OSDWidth, osdHeight / m_OSDHeight,
+    }, 
+    { osdRect.left         , osdRect.bottom         , 0.0f,
+      1.0f, 0,
+      0.0f                 , osdHeight / m_OSDHeight,
+      0.0f                 , osdHeight / m_OSDHeight,
+    }
+  };
+
+  m_pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(CUSTOMVERTEX));
+  m_pD3DDevice->SetTexture(0, NULL);
+  m_pD3DDevice->SetTexture(1, NULL);
+}
+
+//********************************************************************************************************
+//Get resolution based on current mode.
+RESOLUTION CWinRenderer::GetResolution()
+{
+  if (g_graphicsContext.IsFullScreenVideo() || g_graphicsContext.IsCalibrating())
+  {
+    return m_iResolution;
+  }
+  return g_graphicsContext.GetVideoResolution();
+}
+
+float CWinRenderer::GetAspectRatio()
+{
+  float fWidth = (float)m_iSourceWidth - g_stSettings.m_currentVideoSettings.m_CropLeft - g_stSettings.m_currentVideoSettings.m_CropRight;
+  float fHeight = (float)m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropTop - g_stSettings.m_currentVideoSettings.m_CropBottom;
+  return m_fSourceFrameRatio * fWidth / fHeight * m_iSourceHeight / m_iSourceWidth;
+}
+
+void CWinRenderer::GetVideoRect(RECT &rectSrc, RECT &rectDest)
+{
+  rectSrc = rs;
+  rectDest = rd;
+}
+
+void CWinRenderer::CalcNormalDisplayRect(float fOffsetX1, float fOffsetY1, float fScreenWidth, float fScreenHeight, float fInputFrameRatio, float fZoomAmount)
+{
+  // scale up image as much as possible
+  // and keep the aspect ratio (introduces with black bars)
+  // calculate the correct output frame ratio (using the users pixel ratio setting
+  // and the output pixel ratio setting)
+
+  float fOutputFrameRatio = fInputFrameRatio / g_settings.m_ResInfo[GetResolution()].fPixelRatio;
+
+  // maximize the movie width
+  float fNewWidth = fScreenWidth;
+  float fNewHeight = fNewWidth / fOutputFrameRatio;
+
+  if (fNewHeight > fScreenHeight)
+  {
+    fNewHeight = fScreenHeight;
+    fNewWidth = fNewHeight * fOutputFrameRatio;
+  }
+
+  // Scale the movie up by set zoom amount
+  fNewWidth *= fZoomAmount;
+  fNewHeight *= fZoomAmount;
+
+  // Centre the movie
+  float fPosY = (fScreenHeight - fNewHeight) / 2;
+  float fPosX = (fScreenWidth - fNewWidth) / 2;
+
+  rd.left = (int)(fPosX + fOffsetX1);
+  rd.right = (int)(rd.left + fNewWidth + 0.5f);
+  rd.top = (int)(fPosY + fOffsetY1);
+  rd.bottom = (int)(rd.top + fNewHeight + 0.5f);
+}
+
+
 void CWinRenderer::ManageTextures()
 {
-  int neededbuffers = 2;
+  int neededbuffers = 0;
+  if (m_NumOSDBuffers != 2)
+  {
+    m_NumOSDBuffers = 2;
+    m_iOSDRenderBuffer = 0;
+    m_OSDWidth = m_OSDHeight = 0;
+    // buffers will be created on demand in DrawAlpha()
+  }
+  neededbuffers = 2;
 
   if( m_NumYV12Buffers < neededbuffers )
   {
@@ -103,31 +470,182 @@ void CWinRenderer::ManageTextures()
   else if( m_NumYV12Buffers > neededbuffers )
   {
     m_NumYV12Buffers = neededbuffers;
-    m_iYV12RenderBuffer = m_iYV12RenderBuffer % m_NumYV12Buffers;
+    m_iYV12RenderBuffer = m_iYV12RenderBuffer % m_NumYV12Buffers;    
 
     for(int i = m_NumYV12Buffers-1; i>=neededbuffers;i--)
       DeleteYV12Texture(i);
   }
 }
 
-bool CWinRenderer::Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags)
+void CWinRenderer::ManageDisplay()
 {
-  if(m_sourceWidth  != width
-  || m_sourceHeight != height)
+  const RECT& rv = g_graphicsContext.GetViewWindow();
+  float fScreenWidth = (float)rv.right - rv.left;
+  float fScreenHeight = (float)rv.bottom - rv.top;
+  float fOffsetX1 = (float)rv.left;
+  float fOffsetY1 = (float)rv.top;
+
+  // source rect
+  rs.left = g_stSettings.m_currentVideoSettings.m_CropLeft;
+  rs.top = g_stSettings.m_currentVideoSettings.m_CropTop;
+  rs.right = m_iSourceWidth - g_stSettings.m_currentVideoSettings.m_CropRight;
+  rs.bottom = m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropBottom;
+
+  CalcNormalDisplayRect(fOffsetX1, fOffsetY1, fScreenWidth, fScreenHeight, GetAspectRatio() * g_stSettings.m_fPixelRatio, g_stSettings.m_fZoomAmount);
+}
+
+void CWinRenderer::ChooseBestResolution(float fps)
+{
+  bool bUsingPAL = g_videoConfig.HasPAL();    // current video standard:PAL or NTSC
+  bool bCanDoWidescreen = g_videoConfig.HasWidescreen(); // can widescreen be enabled?
+  bool bWideScreenMode = false;
+
+  // If the resolution selection is on Auto the following rules apply :
+  //
+  // BIOS Settings     ||Display resolution
+  // WS|480p|720p/1080i||4:3 Videos     |16:6 Videos
+  // ------------------||------------------------------
+  // - | X  |    X     || 480p 4:3      | 720p
+  // - | X  |    -     || 480p 4:3      | 480p 4:3
+  // - | -  |    X     || 720p          | 720p
+  // - | -  |    -     || NTSC/PAL 4:3  |NTSC/PAL 4:3
+  // X | X  |    X     || 720p          | 720p
+  // X | X  |    -     || 480p 4:3      | 480p 16:9
+  // X | -  |    X     || 720p          | 720p
+  // X | -  |    -     || NTSC/PAL 4:3  |NTSC/PAL 16:9
+
+  // Work out if the framerate suits PAL50 or PAL60
+  bool bPal60 = false;
+  if (bUsingPAL && g_guiSettings.GetInt("videoplayer.framerateconversions") == FRAME_RATE_USE_PAL60 && g_videoConfig.HasPAL60())
   {
-    m_sourceWidth = width;
-    m_sourceHeight = height;
-    // need to recreate textures
-    m_NumYV12Buffers = 0;
-    m_iYV12RenderBuffer = 0;
+    // yes we're in PAL
+    // yes PAL60 is allowed
+    // yes dashboard PAL60 settings is enabled
+    // Calculate the framerate difference from a divisor of 120fps and 100fps
+    // (twice 60fps and 50fps to allow for 2:3 IVTC pulldown)
+    float fFrameDifference60 = abs(120.0f / fps - floor(120.0f / fps + 0.5f));
+    float fFrameDifference50 = abs(100.0f / fps - floor(100.0f / fps + 0.5f));
+    // Make a decision based on the framerate difference
+    if (fFrameDifference60 < fFrameDifference50)
+      bPal60 = true;
   }
 
-  m_flags = flags;
+  // If the display resolution was specified by the user then use it, unless
+  // it's a PAL setting, whereby we use the above setting to autoswitch to PAL60
+  // if appropriate
+  RESOLUTION DisplayRes = (RESOLUTION) g_guiSettings.GetInt("videoplayer.displayresolution");
+  if ( DisplayRes != AUTORES )
+  {
+    if (bPal60)
+    {
+      if (DisplayRes == PAL_16x9) DisplayRes = PAL60_16x9;
+      if (DisplayRes == PAL_4x3) DisplayRes = PAL60_4x3;
+    }
+    CLog::Log(LOGNOTICE, "Display resolution USER : %s (%d)", g_settings.m_ResInfo[DisplayRes].strMode, DisplayRes);
+    m_iResolution = DisplayRes;
+    return;
+  }
+
+  // Work out if framesize suits 4:3 or 16:9
+  // Uses the frame aspect ratio of 8/(3*sqrt(3)) (=1.53960) which is the optimal point
+  // where the percentage of black bars to screen area in 4:3 and 16:9 is equal
+  static const float fOptimalSwitchPoint = 8.0f / (3.0f*sqrt(3.0f));
+  if (bCanDoWidescreen && m_fSourceFrameRatio > fOptimalSwitchPoint)
+    bWideScreenMode = true;
+
+  // We are allowed to switch video resolutions, so we must
+  // now decide which is the best resolution for the video we have
+  if (bUsingPAL)  // PAL resolutions
+  {
+    // Currently does not allow HDTV solutions, as it is my beleif
+    // that the XBox hardware only allows HDTV resolutions for NTSC systems.
+    // this may need revising as more knowledge is obtained.
+    if (bPal60)
+    {
+      if (bWideScreenMode)
+        m_iResolution = PAL60_16x9;
+      else
+        m_iResolution = PAL60_4x3;
+    }
+    else    // PAL50
+    {
+      if (bWideScreenMode)
+        m_iResolution = PAL_16x9;
+      else
+        m_iResolution = PAL_4x3;
+    }
+  }
+  else      // NTSC resolutions
+  {
+    if (bCanDoWidescreen)
+    { // The TV set has a wide screen (16:9)
+      // So we always choose the best HD widescreen resolution no matter what
+      // the video aspect ratio is
+      // If the TV has no HD support widescreen mode is chossen according to video AR
+
+      if (g_videoConfig.Has1080i())     // Widescreen TV with 1080i res
+        m_iResolution = HDTV_1080i;
+      else if (g_videoConfig.Has720p()) // Widescreen TV with 720p res
+        m_iResolution = HDTV_720p;
+      else if (g_videoConfig.Has480p()) // Widescreen TV with 480p
+      {
+        if (bWideScreenMode) // Choose widescreen mode according to video AR
+          m_iResolution = HDTV_480p_16x9;
+        else
+          m_iResolution = HDTV_480p_4x3;
+    }
+      else if (bWideScreenMode)         // Standard 16:9 TV set with no HD
+        m_iResolution = NTSC_16x9;
+      else
+        m_iResolution = NTSC_4x3;
+    }
+    else
+    { // The TV set has a 4:3 aspect ratio
+      // So 4:3 video sources will best fit the screen with 4:3 resolution
+      // We choose 16:9 resolution only for 16:9 video sources
+
+      if (m_fSourceFrameRatio >= 16.0f / 9.0f)
+    {
+        // The video fits best into widescreen modes so they are
+        // the first choices
+        if (g_videoConfig.Has1080i())
+          m_iResolution = HDTV_1080i;
+        else if (g_videoConfig.Has720p())
+          m_iResolution = HDTV_720p;
+        else if (g_videoConfig.Has480p())
+          m_iResolution = HDTV_480p_4x3;
+        else
+          m_iResolution = NTSC_4x3;
+      }
+      else
+      {
+        // The video fits best into 4:3 modes so 480p
+        // is the first choice
+        if (g_videoConfig.Has480p())
+          m_iResolution = HDTV_480p_4x3;
+        else if (g_videoConfig.Has1080i())
+          m_iResolution = HDTV_1080i;
+        else if (g_videoConfig.Has720p())
+          m_iResolution = HDTV_720p;
+        else
+          m_iResolution = NTSC_4x3;
+      }
+    }
+  }
+
+  CLog::Log(LOGNOTICE, "Display resolution AUTO : %s (%d)", g_settings.m_ResInfo[m_iResolution].strMode, m_iResolution);
+}
+
+bool CWinRenderer::Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags)
+{
+  m_fps = fps;
+  m_iSourceWidth = width;
+  m_iSourceHeight = height;
 
   // calculate the input frame aspect ratio
   CalculateFrameAspectRatio(d_width, d_height);
-  ChooseBestResolution(fps);
-  SetViewMode(g_settings.m_currentVideoSettings.m_ViewMode);
+  ChooseBestResolution(m_fps);
+  SetViewMode(g_stSettings.m_currentVideoSettings.m_ViewMode);
 
   ManageDisplay();
 
@@ -136,22 +654,7 @@ bool CWinRenderer::Configure(unsigned int width, unsigned int height, unsigned i
 
 int CWinRenderer::NextYV12Texture()
 {
-  if(m_NumYV12Buffers)
-    return (m_iYV12RenderBuffer + 1) % m_NumYV12Buffers;
-  else
-    return -1;
-}
-
-void CWinRenderer::AddProcessor(DXVA::CProcessor* processor, int64_t id)
-
-{
-  int source = NextYV12Texture();
-  if(source < 0)
-    return;
-  SVideoBuffer& buf = m_VideoBuffers[source];
-  SAFE_RELEASE(buf.proc);
-  buf.proc = processor->Acquire();
-  buf.id   = id;
+  return (m_iYV12RenderBuffer + 1) % m_NumYV12Buffers;
 }
 
 int CWinRenderer::GetImage(YV12Image *image, int source, bool readonly)
@@ -163,18 +666,20 @@ int CWinRenderer::GetImage(YV12Image *image, int source, bool readonly)
   if( source < 0 )
     return -1;
 
-  SVideoBuffer &buf = m_VideoBuffers[source];
+  YUVPLANES &planes = m_YUVTexture[source];
 
   image->cshift_x = 1;
   image->cshift_y = 1;
-  image->height = m_sourceHeight;
-  image->width = m_sourceWidth;
+  image->height = m_iSourceHeight;
+  image->width = m_iSourceWidth;
   image->flags = 0;
 
+  D3DLOCKED_RECT rect;
   for(int i=0;i<3;i++)
   {
-    image->stride[i] = buf.planes[i].rect.Pitch;
-    image->plane[i]  = (BYTE*)buf.planes[i].rect.pBits;
+    planes[i]->LockRect(0, &rect, NULL, 0);
+    image->stride[i] = rect.Pitch;
+    image->plane[i] = (BYTE*)rect.pBits;
   }
 
   return source;
@@ -182,7 +687,15 @@ int CWinRenderer::GetImage(YV12Image *image, int source, bool readonly)
 
 void CWinRenderer::ReleaseImage(int source, bool preserve)
 {
-  // no need to release anything here since we're using system memory
+  if( source == AUTOSOURCE )
+    source = NextYV12Texture();
+
+  if( source < 0 )
+    return;
+
+  YUVPLANES &planes = m_YUVTexture[source];
+  for(int i=0;i<3;i++)
+    planes[i]->UnlockRect(0);
 }
 
 void CWinRenderer::Reset()
@@ -192,42 +705,47 @@ void CWinRenderer::Reset()
 void CWinRenderer::Update(bool bPauseDrawing)
 {
   if (!m_bConfigured) return;
+  
+  CSingleLock lock(g_graphicsContext);
   ManageDisplay();
+  ManageTextures();
 }
 
 void CWinRenderer::RenderUpdate(bool clear, DWORD flags, DWORD alpha)
 {
-  if (!m_bConfigured) return;
-  ManageTextures();
-
+  if (!m_YUVTexture[m_iYV12RenderBuffer][0]) return ;
+  
   CSingleLock lock(g_graphicsContext);
 
   ManageDisplay();
-  LPDIRECT3DDEVICE9 pD3DDevice = g_Windowing.Get3DDevice();
+  ManageTextures();
   if (clear)
-    pD3DDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, m_clearColour, 1.0f, 0L );
+    m_pD3DDevice->Clear( 0L, NULL, D3DCLEAR_TARGET, m_clearColour, 1.0f, 0L );
 
   if(alpha < 255)
-    pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+    m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
   else
-    pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+    m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
 
   Render(flags);
 }
 
 void CWinRenderer::FlipPage(int source)
-{
-  if(source == AUTOSOURCE)
-    source = NextYV12Texture();
-
-  m_VideoBuffers[m_iYV12RenderBuffer].StartDecode();
-
+{  
   if( source >= 0 && source < m_NumYV12Buffers )
     m_iYV12RenderBuffer = source;
   else
-    m_iYV12RenderBuffer = 0;
+    m_iYV12RenderBuffer = NextYV12Texture();
 
-  m_VideoBuffers[m_iYV12RenderBuffer].StartRender();
+  /* we always decode into to the next buffer */
+  ++m_iOSDRenderBuffer %= m_NumOSDBuffers;
+
+  /* if osd wasn't rendered this time around, previuse should not be */
+  /* displayed on next frame */
+  if( !m_OSDRendered )
+    m_OSDWidth = m_OSDHeight = 0;
+
+  m_OSDRendered = false;
 
 #ifdef MP_DIRECTRENDERING
   __asm wbinvd
@@ -239,15 +757,14 @@ void CWinRenderer::FlipPage(int source)
 
 unsigned int CWinRenderer::DrawSlice(unsigned char *src[], int stride[], int w, int h, int x, int y)
 {
-  /*
   BYTE *s;
   BYTE *d;
   int i, p;
-
+  
   int index = NextYV12Texture();
   if( index < 0 )
     return -1;
-
+  
   D3DLOCKED_RECT rect;
   RECT target;
 
@@ -276,7 +793,7 @@ unsigned int CWinRenderer::DrawSlice(unsigned char *src[], int stride[], int w, 
   target.top>>=1;
   target.bottom>>=1;
   target.left>>=1;
-  target.right>>=1;
+  target.right>>=1; 
 
   // copy U
   p = 1;
@@ -303,7 +820,6 @@ unsigned int CWinRenderer::DrawSlice(unsigned char *src[], int stride[], int w, 
     d += rect.Pitch;
   }
   planes[p]->UnlockRect(0);
-  */
 
   return 0;
 }
@@ -313,12 +829,59 @@ unsigned int CWinRenderer::PreInit()
   CSingleLock lock(g_graphicsContext);
   m_bConfigured = false;
   UnInit();
-  m_resolution = RES_PAL_4x3;
+  m_iResolution = PAL_4x3;
+
+  m_iOSDRenderBuffer = 0;
+  m_iYV12RenderBuffer = 0;
+  m_NumOSDBuffers = 0;
+  m_NumYV12Buffers = 0;
+  m_OSDHeight = m_OSDWidth = 0;
+  m_OSDRendered = false;
+
+  m_iOSDTextureWidth = 0;
+  m_iOSDTextureHeight[0] = 0;
+  m_iOSDTextureHeight[1] = 0;
 
   // setup the background colour
   m_clearColour = (g_advancedSettings.m_videoBlackBarColour & 0xff) * 0x010101;
+  // low memory pixel shader
+  if (!m_hLowMemShader)
+  {
+    // lowmem shader (not as accurate, but no need for interleaving of YUV)
+    const char *lowmem =
+      "ps.1.3\n"
+      "def c0, 0      ,0.18664,0.96032,0\n"
+      "def c1, 0.76120,0.38738,0      ,0\n"
+      "def c2, 1,0,1,1\n"
+      "def c3, 0.0625,0.0625,0.0625,0\n"
+      "def c4, 0.58219,0.58219,0.58219,0.5\n"
+      "def c5, 0.03639,0.03639,0.03639,0\n"
+      "tex t0\n"
+      "tex t1\n"
+      "tex t2\n"
+      //"xmma_x2 r0,r1,discard, t1_bias,c0, t2_bias,c1\n"
+      "mul_x2 r0,t1_bias,c0\n"
+      "mul_x2 r1,t2_bias,c1\n"
+      //"xmma discard,discard,r0, r0,c2_bx2, r1,c2_bx2\n"
+      "mul r0, r0,c2_bx2\n"
+      "mad r0, r1, c2_bx2, r0\n"
+      //"xmma_x2 discard,discard,r1, t0,c4, -c3,c4\n"
+      "mul r1, t0,c4\n"
+      "add_x2 r1, r1, -c5\n"
+      "add_sat r0, r0,r1\n";
 
-  g_Windowing.Get3DDevice()->GetDeviceCaps(&m_deviceCaps);
+    LPD3DXBUFFER pShader, pError;
+	  HRESULT hr;
+	  hr = D3DXAssembleShader(lowmem, strlen(lowmem),  NULL, NULL, &pShader, &pError);
+	  if (FAILED(hr))
+    {
+      CLog::Log(LOGERROR, "CWinRenderer::PreInit: Call to D3DXAssembleShader failed!" );
+      CLog::Log(LOGERROR,  (char*)pError->GetBufferPointer());
+      return 1;
+    }
+    //m_pD3DDevice->CreatePixelShader((D3DPIXELSHADERDEF*)pShader->GetBufferPointer(), &m_hLowMemShader);
+    pShader->Release();
+  }
 
   return 0;
 }
@@ -327,181 +890,262 @@ void CWinRenderer::UnInit()
 {
   CSingleLock lock(g_graphicsContext);
 
-  m_YUV2RGBEffect.Release();
-  m_YUV2RGBHQScalerEffect.Release();
-  m_HQKernelTexture.Release();
-
-  m_bConfigured = false;
-  m_bFilterInitialized = false;
-
-  for(int i = 0; i < NUM_BUFFERS; i++)
+  // YV12 textures, subtitle and osd stuff
+  for (int i = 0; i < NUM_BUFFERS; ++i)
+  {
     DeleteYV12Texture(i);
-
-  m_NumYV12Buffers = 0;
-}
-
-bool CWinRenderer::LoadEffect(CD3DEffect &effect, CStdString filename)
-{
-  XFILE::CFileStream file;
-  if(!file.Open(filename))
-  {
-    CLog::Log(LOGERROR, "CWinRenderer::LoadEffect - failed to open file %s", filename.c_str());
-    return false;
+    DeleteOSDTextures(i);
   }
 
-  CStdString pStrEffect;
-  getline(file, pStrEffect, '\0');
-
-  if (!effect.Create(pStrEffect))
+  if (m_hLowMemShader)
   {
-    CLog::Log(LOGERROR, "D3DXCreateEffectFromFile %s failed", pStrEffect.c_str());
-    return false;
-  }
-
-  return true;
-}
-
-void CWinRenderer::UpdateVideoFilter()
-{
-  if (m_scalingMethodGui == g_settings.m_currentVideoSettings.m_ScalingMethod && m_bFilterInitialized)
-    return;
-
-  m_bFilterInitialized = true;
-
-  m_scalingMethodGui = g_settings.m_currentVideoSettings.m_ScalingMethod;
-  m_scalingMethod    = m_scalingMethodGui;
-
-  if(m_YUV2RGBHQScalerEffect.Get())
-    m_YUV2RGBHQScalerEffect.Release();
-
-  if(m_HQKernelTexture.Get())
-    m_HQKernelTexture.Release();
-
-  CStdString effectString;
-
-  switch (m_scalingMethod)
-  {
-  case VS_SCALINGMETHOD_NEAREST:
-  case VS_SCALINGMETHOD_LINEAR:
-    m_bUseHQScaler = false;
-    break;
-
-  case VS_SCALINGMETHOD_CUBIC:
-  case VS_SCALINGMETHOD_LANCZOS2:
-  case VS_SCALINGMETHOD_LANCZOS3_FAST:
-    effectString = "special://xbmc/system/shaders/yuv2rgb_4x4_d3d.fx";
-    m_bUseHQScaler = true;
-    break;
-
-  case VS_SCALINGMETHOD_LANCZOS3:
-    effectString = "special://xbmc/system/shaders/yuv2rgb_6x6_d3d.fx";
-    m_bUseHQScaler = true;
-    break;
-
-  case VS_SCALINGMETHOD_SINC8:
-  case VS_SCALINGMETHOD_NEDI:
-    CLog::Log(LOGERROR, "D3D: TODO: This scaler has not yet been implemented");
-    break;
-
-  case VS_SCALINGMETHOD_BICUBIC_SOFTWARE:
-  case VS_SCALINGMETHOD_LANCZOS_SOFTWARE:
-  case VS_SCALINGMETHOD_SINC_SOFTWARE:
-    CLog::Log(LOGERROR, "D3D: TODO: Software scaling has not yet been implemented");
-    break;
-
-  case VS_SCALINGMETHOD_AUTO:
-    effectString = "special://xbmc/system/shaders/yuv2rgb_4x4_d3d.fx";
-    m_bUseHQScaler = true;
-    break;
-
-  default:
-    break;
-  }
-
-  if(m_bUseHQScaler)
-  {
-
-    if(m_scalingMethod == VS_SCALINGMETHOD_AUTO && m_sourceWidth >= 1280)
-    {
-      m_bUseHQScaler = false;
-      return;
-    }
-
-    if(!LoadEffect(m_YUV2RGBHQScalerEffect, effectString))
-    {
-      CLog::Log(LOGERROR, __FUNCTION__": Failed to load shader %s.", effectString.c_str());
-      g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Error, "Video Renderering", "Failed to init video scaler, falling back to bilinear scaling.");
-      m_bUseHQScaler = false;
-      return;
-    }
-
-    if (!m_HQKernelTexture.Create(256, 1, 1, g_Windowing.DefaultD3DUsage(), D3DFMT_A16B16G16R16F, g_Windowing.DefaultD3DPool()))
-    {
-      CLog::Log(LOGERROR, __FUNCTION__": Failed to create kernel texture.");
-      g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Error, "Video Renderering", "Failed to init video scaler, falling back to bilinear scaling.");
-      m_YUV2RGBHQScalerEffect.Release();
-      m_bUseHQScaler = false;
-      return;
-    }
-
-    CConvolutionKernel kern(m_scalingMethod == VS_SCALINGMETHOD_AUTO ? VS_SCALINGMETHOD_LANCZOS3_FAST : m_scalingMethod, 256);
-
-    float *kernelVals = kern.GetFloatPixels();
-    D3DXFLOAT16 float16Vals[256*4];
-
-    for(int i = 0; i < 256*4; i++)
-      float16Vals[i] = kernelVals[i];
-
-    D3DLOCKED_RECT lr;
-    m_HQKernelTexture.LockRect(0, &lr, NULL, D3DLOCK_DISCARD);
-    memcpy(lr.pBits, float16Vals, sizeof(D3DXFLOAT16)*256*4);
-    m_HQKernelTexture.UnlockRect(0);
+    m_pD3DDevice->DeletePixelShader(m_hLowMemShader);
+    m_hLowMemShader = 0;
   }
 }
 
 void CWinRenderer::Render(DWORD flags)
 {
-  if(CONF_FLAGS_FORMAT_MASK(m_flags) == CONF_FLAGS_FORMAT_DXVA)
+  if( flags & RENDER_FLAG_NOOSD ) return;
+
+  /* general stuff */
+  RenderOSD();
+}
+
+void CWinRenderer::SetViewMode(int iViewMode)
+{
+  if (iViewMode < VIEW_MODE_NORMAL || iViewMode > VIEW_MODE_CUSTOM) iViewMode = VIEW_MODE_NORMAL;
+  g_stSettings.m_currentVideoSettings.m_ViewMode = iViewMode;
+
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_NORMAL)
+  { // normal mode...
+    g_stSettings.m_fPixelRatio = 1.0;
+    g_stSettings.m_fZoomAmount = 1.0;
+    return ;
+  }
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_CUSTOM)
   {
-    CWinRenderer::RenderProcessor(flags);
-    return;
+    g_stSettings.m_fZoomAmount = g_stSettings.m_currentVideoSettings.m_CustomZoomAmount;
+    g_stSettings.m_fPixelRatio = g_stSettings.m_currentVideoSettings.m_CustomPixelRatio;
+    return ;
   }
 
-  UpdateVideoFilter();
+  // get our calibrated full screen resolution
+  float fOffsetX1 = (float)g_settings.m_ResInfo[m_iResolution].Overscan.left;
+  float fOffsetY1 = (float)g_settings.m_ResInfo[m_iResolution].Overscan.top;
+  float fScreenWidth = (float)(g_settings.m_ResInfo[m_iResolution].Overscan.right - g_settings.m_ResInfo[m_iResolution].Overscan.left);
+  float fScreenHeight = (float)(g_settings.m_ResInfo[m_iResolution].Overscan.bottom - g_settings.m_ResInfo[m_iResolution].Overscan.top);
+  // and the source frame ratio
+  float fSourceFrameRatio = GetAspectRatio();
 
-  //If the GUI is active or we don't need scaling use the bilinear filter.
-  if(!m_bUseHQScaler
-    || !g_graphicsContext.IsFullScreenVideo()
-    || g_graphicsContext.IsCalibrating()
-    || (m_destRect.Width() == m_sourceWidth && m_destRect.Height() == m_sourceHeight))
-  {
-    RenderLowMem(m_YUV2RGBEffect, flags);
+  if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ZOOM)
+  { // zoom image so no black bars
+    g_stSettings.m_fPixelRatio = 1.0;
+    // calculate the desired output ratio
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    // now calculate the correct zoom amount.  First zoom to full height.
+    float fNewHeight = fScreenHeight;
+    float fNewWidth = fNewHeight * fOutputFrameRatio;
+    g_stSettings.m_fZoomAmount = fNewWidth / fScreenWidth;
+    if (fNewWidth < fScreenWidth)
+    { // zoom to full width
+      fNewWidth = fScreenWidth;
+      fNewHeight = fNewWidth / fOutputFrameRatio;
+      g_stSettings.m_fZoomAmount = fNewHeight / fScreenHeight;
+    }
   }
-  else
-  {
-    RenderLowMem(m_YUV2RGBHQScalerEffect, flags);
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_4x3)
+  { // stretch image to 4:3 ratio
+    g_stSettings.m_fZoomAmount = 1.0;
+    if (m_iResolution == PAL_4x3 || m_iResolution == PAL60_4x3 || m_iResolution == NTSC_4x3 || m_iResolution == HDTV_480p_4x3)
+    { // stretch to the limits of the 4:3 screen.
+      // incorrect behaviour, but it's what the users want, so...
+      g_stSettings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
+    }
+    else
+    {
+      // now we need to set g_stSettings.m_fPixelRatio so that
+      // fOutputFrameRatio = 4:3.
+      g_stSettings.m_fPixelRatio = (4.0f / 3.0f) / fSourceFrameRatio;
+    }
+  }
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_14x9)
+  { // stretch image to 14:9 ratio
+    // now we need to set g_stSettings.m_fPixelRatio so that
+    // fOutputFrameRatio = 14:9.
+    g_stSettings.m_fPixelRatio = (14.0f / 9.0f) / fSourceFrameRatio;
+    // calculate the desired output ratio
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    // now calculate the correct zoom amount.  First zoom to full height.
+    float fNewHeight = fScreenHeight;
+    float fNewWidth = fNewHeight * fOutputFrameRatio;
+    g_stSettings.m_fZoomAmount = fNewWidth / fScreenWidth;
+    if (fNewWidth < fScreenWidth)
+    { // zoom to full width
+      fNewWidth = fScreenWidth;
+      fNewHeight = fNewWidth / fOutputFrameRatio;
+      g_stSettings.m_fZoomAmount = fNewHeight / fScreenHeight;
+    }
+  }
+  else if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_STRETCH_16x9)
+  { // stretch image to 16:9 ratio
+    g_stSettings.m_fZoomAmount = 1.0;
+    if (m_iResolution == PAL_4x3 || m_iResolution == PAL60_4x3 || m_iResolution == NTSC_4x3 || m_iResolution == HDTV_480p_4x3)
+    { // now we need to set g_stSettings.m_fPixelRatio so that
+      // fOutputFrameRatio = 16:9.
+      g_stSettings.m_fPixelRatio = (16.0f / 9.0f) / fSourceFrameRatio;
+    }
+    else
+    { // stretch to the limits of the 16:9 screen.
+      // incorrect behaviour, but it's what the users want, so...
+      g_stSettings.m_fPixelRatio = (fScreenWidth / fScreenHeight) * g_settings.m_ResInfo[m_iResolution].fPixelRatio / fSourceFrameRatio;
+    }
+  }
+  else // if (g_stSettings.m_currentVideoSettings.m_ViewMode == VIEW_MODE_ORIGINAL)
+  { // zoom image so that the height is the original size
+    g_stSettings.m_fPixelRatio = 1.0;
+    // get the size of the media file
+    // calculate the desired output ratio
+    float fOutputFrameRatio = fSourceFrameRatio * g_stSettings.m_fPixelRatio / g_settings.m_ResInfo[m_iResolution].fPixelRatio;
+    // now calculate the correct zoom amount.  First zoom to full width.
+    float fNewWidth = fScreenWidth;
+    float fNewHeight = fNewWidth / fOutputFrameRatio;
+    if (fNewHeight > fScreenHeight)
+    { // zoom to full height
+      fNewHeight = fScreenHeight;
+      fNewWidth = fNewHeight * fOutputFrameRatio;
+    }
+    // now work out the zoom amount so that no zoom is done
+    g_stSettings.m_fZoomAmount = (m_iSourceHeight - g_stSettings.m_currentVideoSettings.m_CropTop - g_stSettings.m_currentVideoSettings.m_CropBottom) / fNewHeight;
   }
 }
 
-void CWinRenderer::RenderLowMem(CD3DEffect &effect, DWORD flags)
+void CWinRenderer::AutoCrop(bool bCrop)
 {
-  //If no effect is loaded, use the default.
-  if (!effect.Get())
-    LoadEffect(effect, "special://xbmc/system/shaders/yuv2rgb_d3d.fx");
+  if (!m_YUVTexture[0][PLANE_Y]) return ;
 
+  if (bCrop)
+  {
+    CSingleLock lock(g_graphicsContext);
+
+    // apply auto-crop filter - only luminance needed, and we run vertically down 'n'
+    // runs down the image.
+    int min_detect = 8;                                // reasonable amount (what mplayer uses)
+    int detect = (min_detect + 16)*m_iSourceWidth;     // luminance should have minimum 16
+    D3DLOCKED_RECT lr;
+    m_YUVTexture[0][PLANE_Y]->LockRect(0, &lr, NULL, 0);
+    int total;
+    // Crop top
+    BYTE *s = (BYTE *)lr.pBits;
+    g_stSettings.m_currentVideoSettings.m_CropTop = m_iSourceHeight/2;
+    for (unsigned int y = 0; y < m_iSourceHeight/2; y++)
+    {
+      total = 0;
+      for (unsigned int x = 0; x < m_iSourceWidth; x++)
+        total += s[x];
+      s += lr.Pitch;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropTop = y;
+        break;
+      }
+    }
+    // Crop bottom
+    s = (BYTE *)lr.pBits + (m_iSourceHeight-1)*lr.Pitch;
+    g_stSettings.m_currentVideoSettings.m_CropBottom = m_iSourceHeight/2;
+    for (unsigned int y = (int)m_iSourceHeight; y > m_iSourceHeight/2; y--)
+    {
+      total = 0;
+      for (unsigned int x = 0; x < m_iSourceWidth; x++)
+        total += s[x];
+      s -= lr.Pitch;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropBottom = m_iSourceHeight - y;
+        break;
+      }
+    }
+    // Crop left
+    s = (BYTE *)lr.pBits;
+    g_stSettings.m_currentVideoSettings.m_CropLeft = m_iSourceWidth/2;
+    for (unsigned int x = 0; x < m_iSourceWidth/2; x++)
+    {
+      total = 0;
+      for (unsigned int y = 0; y < m_iSourceHeight; y++)
+        total += s[y * lr.Pitch];
+      s++;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropLeft = x;
+        break;
+      }
+    }
+    // Crop right
+    s = (BYTE *)lr.pBits + (m_iSourceWidth-1);
+    g_stSettings.m_currentVideoSettings.m_CropRight= m_iSourceWidth/2;
+    for (unsigned int x = (int)m_iSourceWidth-1; x > m_iSourceWidth/2; x--)
+    {
+      total = 0;
+      for (unsigned int y = 0; y < m_iSourceHeight; y++)
+        total += s[y * lr.Pitch];
+      s--;
+      if (total > detect)
+      {
+        g_stSettings.m_currentVideoSettings.m_CropRight = m_iSourceWidth - x;
+        break;
+      }
+    }
+    m_YUVTexture[0][PLANE_Y]->UnlockRect(0);
+  }
+  else
+  { // reset to defaults
+    g_stSettings.m_currentVideoSettings.m_CropLeft = 0;
+    g_stSettings.m_currentVideoSettings.m_CropRight = 0;
+    g_stSettings.m_currentVideoSettings.m_CropTop = 0;
+    g_stSettings.m_currentVideoSettings.m_CropBottom = 0;
+  }
+  SetViewMode(g_stSettings.m_currentVideoSettings.m_ViewMode);
+}
+
+void CWinRenderer::RenderLowMem(DWORD flags)
+{
   CSingleLock lock(g_graphicsContext);
 
   int index = m_iYV12RenderBuffer;
-  SVideoBuffer& buf = m_VideoBuffers[index];
-
   // set scissors if we are not in fullscreen video
   if ( !(g_graphicsContext.IsFullScreenVideo() || g_graphicsContext.IsCalibrating() ))
   {
     g_graphicsContext.ClipToViewWindow();
   }
 
-  LPDIRECT3DDEVICE9 pD3DDevice = g_Windowing.Get3DDevice();
-  pD3DDevice->SetFVF( D3DFVF_XYZRHW | D3DFVF_TEX3 );
+  for (int i = 0; i < 3; ++i)
+  {
+    m_pD3DDevice->SetTexture(i, m_YUVTexture[index][i]);
+    m_pD3DDevice->SetTextureStageState( i, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP );
+    m_pD3DDevice->SetTextureStageState( i, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP );
+    m_pD3DDevice->SetTextureStageState( i, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+    m_pD3DDevice->SetTextureStageState( i, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
+  }
+
+
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE  );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+  m_pD3DDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
+
+  m_pD3DDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
+
+
+  m_pD3DDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
+  m_pD3DDevice->SetRenderState( D3DRS_FOGENABLE, FALSE );
+  m_pD3DDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+  m_pD3DDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_CCW );
+ 
+  m_pD3DDevice->SetRenderState( D3DRS_LIGHTING, FALSE );  // was m_pD3DDevice->SetRenderState( D3DRS_YUVENABLE, FALSE ); ???
+  m_pD3DDevice->SetVertexShader( D3DFVF_XYZRHW | D3DFVF_TEX3 );
+  m_pD3DDevice->SetPixelShader( m_hLowMemShader );
 
   //See RGB renderer for comment on this
   #define CHROMAOFFSET_HORIZ 0.25f
@@ -515,178 +1159,59 @@ void CWinRenderer::RenderLowMem(CD3DEffect &effect, DWORD flags)
       FLOAT tu3, tv3;
   };
 
-  CUSTOMVERTEX verts[4] =
+  CUSTOMVERTEX verts[4] = 
   {
     {
-      m_destRect.x1                                                      ,  m_destRect.y1, 0.0f, 1.0f,
-      (m_sourceRect.x1) / m_sourceWidth                                  , (m_sourceRect.y1) / m_sourceHeight,
-      (m_sourceRect.x1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1),
-      (m_sourceRect.x1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1)
+      (float)rd.left                                                     , (float)rd.top, 0.0f, 1.0f,
+      ((float)rs.left) / m_iSourceWidth                                  , ((float)rs.top) / m_iSourceHeight,
+      ((float)rs.left / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.top / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1),
+      ((float)rs.left / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.top / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1)
     },
     {
-      m_destRect.x2                                                      ,  m_destRect.y1, 0.0f, 1.0f,
-      (m_sourceRect.x2) / m_sourceWidth                                  , (m_sourceRect.y1) / m_sourceHeight,
-      (m_sourceRect.x2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1),
-      (m_sourceRect.x2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1)
+      (float)rd.right                                                     , (float)rd.top, 0.0f, 1.0f,
+      ((float)rs.right) / m_iSourceWidth                                  , ((float)rs.top) / m_iSourceHeight,
+      ((float)rs.right / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.top / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1),
+      ((float)rs.right / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.top / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1)
     },
     {
-      m_destRect.x2                                                      ,  m_destRect.y2, 0.0f, 1.0f,
-      (m_sourceRect.x2) / m_sourceWidth                                  , (m_sourceRect.y2) / m_sourceHeight,
-      (m_sourceRect.x2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1),
-      (m_sourceRect.x2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1) , (m_sourceRect.y2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1)
+      (float)rd.right                                                     , (float)rd.bottom, 0.0f, 1.0f,
+      ((float)rs.right) / m_iSourceWidth                                  , ((float)rs.bottom) / m_iSourceHeight,
+      ((float)rs.right / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.bottom / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1),
+      ((float)rs.right / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1) , ((float)rs.bottom / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1)
     },
     {
-      m_destRect.x1                                                       ,  m_destRect.y2, 0.0f, 1.0f,
-      (m_sourceRect.x1) / m_sourceWidth                                   , (m_sourceRect.y2) / m_sourceHeight,
-      (m_sourceRect.x1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1)  , (m_sourceRect.y2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1),
-      (m_sourceRect.x1 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceWidth>>1)  , (m_sourceRect.y2 / 2.0f + CHROMAOFFSET_HORIZ) / (m_sourceHeight>>1)
+      (float)rd.left                                                      , (float)rd.bottom, 0.0f, 1.0f,
+      ((float)rs.left) / m_iSourceWidth                                   , ((float)rs.bottom) / m_iSourceHeight,
+      ((float)rs.left / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1)  , ((float)rs.bottom / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1),
+      ((float)rs.left / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceWidth>>1)  , ((float)rs.bottom / 2.0f + CHROMAOFFSET_HORIZ) / (m_iSourceHeight>>1)
     }
   };
 
-  for(int i = 0; i < 4; i++)
-  {
-    verts[i].x -= 0.5;
-    verts[i].y -= 0.5;
-  }
+  m_pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(CUSTOMVERTEX));
+  m_pD3DDevice->SetTexture(0, NULL);
+  m_pD3DDevice->SetTexture(1, NULL);
+  m_pD3DDevice->SetTexture(2, NULL);
 
-  float contrast   = g_settings.m_currentVideoSettings.m_Contrast * 0.02f;
-  float blacklevel = g_settings.m_currentVideoSettings.m_Brightness * 0.01f - 0.5f;
+  m_pD3DDevice->SetPixelShader( NULL );
 
-  D3DXMATRIX temp, mat;
-  D3DXMatrixIdentity(&mat);
-
-  if (!(m_flags & CONF_FLAGS_YUV_FULLRANGE))
-  {
-    D3DXMatrixTranslation(&temp, - 16.0f / 255
-                               , - 16.0f / 255
-                               , - 16.0f / 255);
-    D3DXMatrixMultiply(&mat, &mat, &temp);
-
-    D3DXMatrixScaling(&temp, 255.0f / (235 - 16)
-                           , 255.0f / (240 - 16)
-                           , 255.0f / (240 - 16));
-    D3DXMatrixMultiply(&mat, &mat, &temp);
-  }
-
-  D3DXMatrixTranslation(&temp, 0.0f, - 0.5f, - 0.5f);
-  D3DXMatrixMultiply(&mat, &mat, &temp);
-
-  switch(CONF_FLAGS_YUVCOEF_MASK(m_flags))
-  {
-   case CONF_FLAGS_YUVCOEF_240M:
-     memcpy(temp.m, yuv_coef_smtp240m, 4*4*sizeof(float)); break;
-   case CONF_FLAGS_YUVCOEF_BT709:
-     memcpy(temp.m, yuv_coef_bt709   , 4*4*sizeof(float)); break;
-   case CONF_FLAGS_YUVCOEF_BT601:
-     memcpy(temp.m, yuv_coef_bt601   , 4*4*sizeof(float)); break;
-   case CONF_FLAGS_YUVCOEF_EBU:
-     memcpy(temp.m, yuv_coef_ebu     , 4*4*sizeof(float)); break;
-   default:
-     memcpy(temp.m, yuv_coef_bt601   , 4*4*sizeof(float)); break;
-  }
-  temp.m[3][3] = 1.0f;
-  D3DXMatrixMultiply(&mat, &mat, &temp);
-
-  D3DXMatrixTranslation(&temp, blacklevel, blacklevel, blacklevel);
-  D3DXMatrixMultiply(&mat, &mat, &temp);
-
-  D3DXMatrixScaling(&temp, contrast, contrast, contrast);
-  D3DXMatrixMultiply(&mat, &mat, &temp);
-
-  float texSteps[] = {1.0f/(float)m_sourceWidth,        1.0f/(float)m_sourceHeight,
-                      1.0f/(float)(m_sourceWidth >> 1), 1.0f/(float)(m_sourceHeight >> 1)};
-
-  effect.SetMatrix( "g_ColorMatrix", &mat);
-  effect.SetTechnique( "YUV2RGB_T" );
-  effect.SetTexture( "g_YTexture",  buf.planes[0].texture ) ;
-  effect.SetTexture( "g_UTexture",  buf.planes[1].texture ) ;
-  effect.SetTexture( "g_VTexture",  buf.planes[2].texture ) ;
-  effect.SetTexture( "g_KernelTexture", m_HQKernelTexture );
-  effect.SetFloatArray("g_YStep", &texSteps[0], 2);
-  effect.SetFloatArray("g_UVStep", &texSteps[2], 2);
-
-  UINT cPasses, iPass;
-  if (!effect.Begin( &cPasses, 0 ))
-  {
-    CLog::Log(LOGERROR, "CWinRenderer::RenderLowMem - failed to begin d3d effect");
-    return;
-  }
-
-  for( iPass = 0; iPass < cPasses; iPass++ )
-  {
-    if (!effect.BeginPass( iPass ))
-    {
-      CLog::Log(LOGERROR, "CWinRenderer::RenderLowMem - failed to begin d3d effect pass");
-      break;
-    }
-
-    pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(CUSTOMVERTEX));
-    pD3DDevice->SetTexture(0, NULL);
-    pD3DDevice->SetTexture(1, NULL);
-    pD3DDevice->SetTexture(2, NULL);
-
-    effect.EndPass() ;
-  }
-
-  effect.End() ;
-  pD3DDevice->SetPixelShader( NULL );
 }
 
-void CWinRenderer::RenderProcessor(DWORD flags)
-{
-  CSingleLock lock(g_graphicsContext);
-  RECT rect;
-  rect.top    = m_destRect.y1;
-  rect.bottom = m_destRect.y2;
-  rect.left   = m_destRect.x1;
-  rect.right  = m_destRect.x2;
-
-  SVideoBuffer& image = m_VideoBuffers[m_iYV12RenderBuffer];
-  if(image.proc == NULL)
-    return;
-
-  IDirect3DSurface9* target;
-  if(FAILED(g_Windowing.Get3DDevice()->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &target)))
-  {
-    CLog::Log(LOGERROR, "CWinRenderer::RenderSurface - failed to get back buffer");
-    return;
-  }
-
-  image.proc->Render(rect, target, image.id);
-
-  target->Release();
-}
-
-void CWinRenderer::CreateThumbnail(CBaseTexture *texture, unsigned int width, unsigned int height)
+void CWinRenderer::CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height)
 {
   CSingleLock lock(g_graphicsContext);
 
-  // create a new render surface to copy out of - note, this may be slow on some hardware
-  // due to the TRUE parameter - you're supposed to use GetRenderTargetData.
-  LPDIRECT3DSURFACE9 surface = NULL;
-  LPDIRECT3DDEVICE9 pD3DDevice = g_Windowing.Get3DDevice();
-  if (D3D_OK == pD3DDevice->CreateRenderTarget(width, height, D3DFMT_LIN_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &surface, NULL))
-  {
-    LPDIRECT3DSURFACE9 oldRT;
-    CRect saveSize = m_destRect;
-    m_destRect.SetRect(0, 0, (float)width, (float)height);
-    pD3DDevice->GetRenderTarget(0, &oldRT);
-    pD3DDevice->SetRenderTarget(0, surface);
-    pD3DDevice->BeginScene();
-    RenderLowMem(m_YUV2RGBEffect, 0);
-    pD3DDevice->EndScene();
-    m_destRect = saveSize;
-    pD3DDevice->SetRenderTarget(0, oldRT);
-    oldRT->Release();
-
-    D3DLOCKED_RECT lockedRect;
-    if (D3D_OK == surface->LockRect(&lockedRect, NULL, NULL))
-    {
-      texture->LoadFromMemory(width, height, lockedRect.Pitch, XB_FMT_A8R8G8B8, (unsigned char *)lockedRect.pBits);
-      surface->UnlockRect();
-    }
-    surface->Release();
-  }
+  LPDIRECT3DSURFACE8 oldRT;
+  RECT saveSize = rd;
+  rd.left = rd.top = 0;
+  rd.right = width;
+  rd.bottom = height;
+  m_pD3DDevice->GetRenderTarget(&oldRT);
+  m_pD3DDevice->SetRenderTarget(surface, NULL);
+  m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+  RenderLowMem(0);
+  rd = saveSize;
+  m_pD3DDevice->SetRenderTarget(oldRT, NULL);
+  oldRT->Release();
 }
 
 //********************************************************************************************************
@@ -695,135 +1220,61 @@ void CWinRenderer::CreateThumbnail(CBaseTexture *texture, unsigned int width, un
 void CWinRenderer::DeleteYV12Texture(int index)
 {
   CSingleLock lock(g_graphicsContext);
-  SVideoBuffer &buf = m_VideoBuffers[index];
-  buf.Clear();
-  m_NumYV12Buffers = 0;
+  YUVPLANES &planes = m_YUVTexture[index];
+
+  if (planes[0] || planes[1] || planes[2])
+    CLog::Log(LOGDEBUG, "Deleted YV12 texture (%i)", index);
+
+  if (planes[0])
+    SAFE_RELEASE(planes[0]);
+  if (planes[1])
+    SAFE_RELEASE(planes[1]);
+  if (planes[2])
+    SAFE_RELEASE(planes[2]);  
 }
 
 void CWinRenderer::ClearYV12Texture(int index)
-{
-  SVideoBuffer &buf = m_VideoBuffers[index];
-  memset(buf.planes[0].rect.pBits, 0,   buf.planes[0].rect.Pitch * m_sourceHeight);
-  memset(buf.planes[1].rect.pBits, 128, buf.planes[1].rect.Pitch * m_sourceHeight>>1);
-  memset(buf.planes[2].rect.pBits, 128, buf.planes[2].rect.Pitch * m_sourceHeight>>1);
+{  
+  YUVPLANES &planes = m_YUVTexture[index];
+  D3DLOCKED_RECT rect;
+  
+  planes[0]->LockRect(0, &rect, NULL, D3DLOCK_DISCARD);
+  memset(rect.pBits, 0,   rect.Pitch * m_iSourceHeight);
+  planes[0]->UnlockRect(0);
+
+  planes[1]->LockRect(0, &rect, NULL, D3DLOCK_DISCARD);
+  memset(rect.pBits, 128, rect.Pitch * m_iSourceHeight>>1);
+  planes[1]->UnlockRect(0);
+
+  planes[2]->LockRect(0, &rect, NULL, D3DLOCK_DISCARD);
+  memset(rect.pBits, 128, rect.Pitch * m_iSourceHeight>>1);
+  planes[2]->UnlockRect(0);
 }
+
+
+
 
 bool CWinRenderer::CreateYV12Texture(int index)
 {
+
   CSingleLock lock(g_graphicsContext);
   DeleteYV12Texture(index);
-
-  SVideoBuffer &buf = m_VideoBuffers[index];
-
-  if ( !buf.planes[0].texture.Create(m_sourceWidth    , m_sourceHeight    , 1, g_Windowing.DefaultD3DUsage(), D3DFMT_L8, g_Windowing.DefaultD3DPool())
-    || !buf.planes[1].texture.Create(m_sourceWidth / 2, m_sourceHeight / 2, 1, g_Windowing.DefaultD3DUsage(), D3DFMT_L8, g_Windowing.DefaultD3DPool())
-    || !buf.planes[2].texture.Create(m_sourceWidth / 2, m_sourceHeight / 2, 1, g_Windowing.DefaultD3DUsage(), D3DFMT_L8, g_Windowing.DefaultD3DPool()))
+  if (
+    D3D_OK != m_pD3DDevice->CreateTexture(m_iSourceWidth, m_iSourceHeight, 1, 0, D3DFMT_L8, D3DPOOL_MANAGED, &m_YUVTexture[index][0]) ||
+    D3D_OK != m_pD3DDevice->CreateTexture(m_iSourceWidth / 2, m_iSourceHeight / 2, 1, 0, D3DFMT_L8, D3DPOOL_MANAGED, &m_YUVTexture[index][1]) ||
+    D3D_OK != m_pD3DDevice->CreateTexture(m_iSourceWidth / 2, m_iSourceHeight / 2, 1, 0, D3DFMT_L8, D3DPOOL_MANAGED, &m_YUVTexture[index][2]))
   {
-    CLog::Log(LOGERROR, "Unable to create YV12 video texture %i", index);
+    CLog::Log(LOGERROR, "Unable to create YV12 texture %i", index);
     return false;
   }
-
-  buf.StartDecode();
-
   ClearYV12Texture(index);
-
-  if(index == m_iYV12RenderBuffer)
-    buf.StartRender();
-
   CLog::Log(LOGDEBUG, "created yv12 texture %i", index);
   return true;
 }
 
-bool CWinRenderer::Supports(EINTERLACEMETHOD method)
-{
-  if(CONF_FLAGS_FORMAT_MASK(m_flags) == CONF_FLAGS_FORMAT_DXVA)
-  {
-    if(method == VS_INTERLACEMETHOD_NONE)
-      return true;
-    return false;
-  }
 
-  if(method == VS_INTERLACEMETHOD_NONE
-  || method == VS_INTERLACEMETHOD_AUTO
-  || method == VS_INTERLACEMETHOD_DEINTERLACE)
-    return true;
-
-  return false;
-}
-
-bool CWinRenderer::Supports(ERENDERFEATURE feature)
-{
-  if(feature == RENDERFEATURE_BRIGHTNESS)
-    return true;
-  
-  if(feature == RENDERFEATURE_CONTRAST)
-    return true;
-
-  return false;
-}
-
-bool CWinRenderer::Supports(ESCALINGMETHOD method)
-{
-  if(CONF_FLAGS_FORMAT_MASK(m_flags) == CONF_FLAGS_FORMAT_DXVA)
-  {
-    if(method == VS_SCALINGMETHOD_LINEAR)
-      return true;
-    return false;
-  }
-
-  if(D3DSHADER_VERSION_MAJOR(m_deviceCaps.PixelShaderVersion) >= 3)
-  {
-    if(method == VS_SCALINGMETHOD_LINEAR
-    || method == VS_SCALINGMETHOD_CUBIC
-    || method == VS_SCALINGMETHOD_LANCZOS2
-    || method == VS_SCALINGMETHOD_LANCZOS3_FAST
-    || method == VS_SCALINGMETHOD_LANCZOS3
-    || method == VS_SCALINGMETHOD_AUTO)
-      return true;
-  }
-  else if(method == VS_SCALINGMETHOD_LINEAR)
-    return true;
-
-  return false;
-}
-
-void CWinRenderer::SVideoBuffer::Clear()
-{
-  SAFE_RELEASE(proc);
-  id = 0;
-  for(unsigned i = 0; i < MAX_PLANES; i++)
-  {
-    planes[i].texture.Release();
-    memset(&planes[i].rect, 0, sizeof(planes[i].rect));
-  }
-}
-
-void CWinRenderer::SVideoBuffer::StartRender()
-{
-  for(unsigned i = 0; i < MAX_PLANES; i++)
-  {
-    if(planes[i].rect.pBits)
-      planes[i].texture.UnlockRect(0);
-    memset(&planes[i].rect, 0, sizeof(planes[i].rect));
-  }
-}
-
-void CWinRenderer::SVideoBuffer::StartDecode()
-{
-  SAFE_RELEASE(proc);
-  id = 0;
-  for(unsigned i = 0; i < MAX_PLANES; i++)
-  {
-    if(planes[i].texture.LockRect(0, &planes[i].rect, NULL, 0) == false)
-    {
-      memset(&planes[i].rect, 0, sizeof(planes[i].rect));
-      CLog::Log(LOGERROR, "CWinRenderer::SVideoBuffer::StartDecode - failed to lock texture into memory");
-    }
-  }
-}
-
-CPixelShaderRenderer::CPixelShaderRenderer()
-    : CWinRenderer()
+CPixelShaderRenderer::CPixelShaderRenderer(LPDIRECT3DDEVICE8 pDevice)
+    : CWinRenderer(pDevice)
 {
 }
 
@@ -839,9 +1290,7 @@ bool CPixelShaderRenderer::Configure(unsigned int width, unsigned int height, un
 
 void CPixelShaderRenderer::Render(DWORD flags)
 {
+  // this is the low memory renderer
+  CWinRenderer::RenderLowMem(flags);
   CWinRenderer::Render(flags);
 }
-
-
-
-#endif

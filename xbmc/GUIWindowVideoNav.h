@@ -35,10 +35,10 @@ public:
 
   virtual bool OnAction(const CAction &action);
   virtual bool OnMessage(CGUIMessage& message);
-  virtual void FrameMove();
+  virtual void Render();
 
   virtual void OnPrepareFileItems(CFileItemList &items);
-  virtual void OnInfo(CFileItem* pItem, ADDON::ScraperPtr &info);
+  virtual void OnInfo(CFileItem* pItem, const SScraperInfo&info);
   static bool CanDelete(const CStdString& strPath);
   static bool DeleteItem(CFileItem* pItem, bool bUnavailable=false);
 

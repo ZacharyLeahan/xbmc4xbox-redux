@@ -39,8 +39,7 @@ public:
     SOURCE_TYPE_DVD          = 2,
     SOURCE_TYPE_VIRTUAL_DVD  = 3,
     SOURCE_TYPE_REMOTE       = 4,
-    SOURCE_TYPE_VPATH        = 5,
-    SOURCE_TYPE_REMOVABLE    = 6
+    SOURCE_TYPE_VPATH        = 5
   };
   CMediaSource() { m_iDriveType=SOURCE_TYPE_UNKNOWN; m_iLockMode=LOCK_MODE_EVERYONE; m_iBadPwdCount=0; m_iHasLock=0; m_ignore=false; };
   virtual ~CMediaSource() {};
@@ -114,5 +113,4 @@ typedef std::vector<CMediaSource> VECSOURCES;
 */
 typedef std::vector<CMediaSource>::iterator IVECSOURCES;
 
-void AddOrReplace(VECSOURCES& sources, const VECSOURCES& extras);
 void AddOrReplace(VECSOURCES& sources, const CMediaSource& source);

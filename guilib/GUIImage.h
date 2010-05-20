@@ -1,6 +1,6 @@
 /*!
 \file guiImage.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIIMAGECONTROL_H
@@ -34,7 +34,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 
 class CGUIImage : public CGUIControl
@@ -71,11 +71,11 @@ public:
   virtual void UpdateVisibility(const CGUIListItem *item = NULL);
   virtual bool OnAction(const CAction &action) ;
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
   virtual bool IsDynamicallyAllocated() { return m_bDynamicResourceAlloc; };
-  virtual void SetInvalid();
   virtual bool CanFocus() const;
   virtual void UpdateInfo(const CGUIListItem *item = NULL);
 
@@ -85,7 +85,6 @@ public:
   virtual void SetWidth(float width);
   virtual void SetHeight(float height);
   virtual void SetPosition(float posX, float posY);
-  virtual CStdString GetDescription() const;
   void SetCrossFade(unsigned int time);
 
   const CStdString& GetFileName() const;

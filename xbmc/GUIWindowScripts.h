@@ -30,7 +30,7 @@ public:
   virtual ~CGUIWindowScripts(void);
   virtual bool OnMessage(CGUIMessage& message);
   virtual bool OnAction(const CAction &action);
-  virtual void FrameMove();
+  virtual void Render();
 
 protected:
   virtual bool Update(const CStdString &strDirectory);
@@ -43,5 +43,4 @@ protected:
   bool m_bViewOutput;
   int m_scriptSize;
   VECSOURCES m_shares;
-  CStdString m_debug;
 };

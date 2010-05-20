@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 
 #ifdef HAS_EVENT_SERVER
 
@@ -33,8 +33,6 @@
 #include <map>
 #include <queue>
 #include "FileSystem/File.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace EVENTCLIENT;
 using namespace EVENTPACKET;
@@ -89,7 +87,7 @@ void CEventButtonState::Load()
       else if ( (m_mapName.length() > 3) &&
                 (m_mapName.compare(0, 3, "LI:") == 0) ) // starts with LI: ?
       {
-#if defined(HAS_LIRC) || defined(HAS_IRSERVERSUITE)
+#ifdef HAS_LIRC
         string lircDevice = m_mapName.substr(3);
         m_iKeyCode = CButtonTranslator::GetInstance().TranslateLircRemoteString( lircDevice.c_str(),
                                                                    m_buttonName.c_str() );
@@ -137,7 +135,7 @@ bool CEventClient::AddPacket(CEventPacket *packet)
       m_bSequenceError = true;
       delete m_seqPackets[ packet->Sequence() ];
     }
-
+ 
     m_seqPackets[ packet->Sequence() ] = packet;
     if (m_seqPackets.size() == packet->Size())
     {
@@ -201,19 +199,19 @@ void CEventClient::ProcessEvents()
 
 bool CEventClient::GetNextAction(CEventAction &action)
 {
-  EnterCriticalSection(&m_critSection);
+  CSingleLock lock(m_critSection);
   if (m_actionQueue.size() > 0)
   {
     // grab the next action in line
     action = m_actionQueue.front();
     m_actionQueue.pop();
-    LeaveCriticalSection(&m_critSection);
+    lock.Leave();
     return true;
   }
   else
   {
     // we got nothing
-    LeaveCriticalSection(&m_critSection);
+    lock.Leave();
     return false;
   }
 }
@@ -304,7 +302,7 @@ bool CEventClient::OnPacketHELO(CEventPacket *packet)
   ParseUInt32(payload, psize, reserved);
 
   // image data if any
-  string iconfile = "special://temp/helo";
+  string iconfile = "Z:\\helo";
   if (m_eLogoType != LT_NONE && psize>0)
   {
     switch (m_eLogoType)
@@ -575,7 +573,7 @@ bool CEventClient::OnPacketNOTIFICATION(CEventPacket *packet)
   ParseUInt32(payload, psize, reserved);
 
   // image data if any
-  string iconfile = "special://temp/notification";
+  string iconfile = "Z:\\notification";
   if (m_eLogoType != LT_NONE && psize>0)
   {
     switch (m_eLogoType)
@@ -652,9 +650,10 @@ bool CEventClient::OnPacketACTION(CEventPacket *packet)
   {
   case AT_EXEC_BUILTIN:
   case AT_BUTTON:
-    EnterCriticalSection(&m_critSection);
-    m_actionQueue.push(CEventAction(actionString.c_str(), actionType));
-    LeaveCriticalSection(&m_critSection);
+    {
+      CSingleLock lock(m_critSection);
+      m_actionQueue.push(CEventAction(actionString.c_str(), actionType));
+    }
     break;
 
   default:
@@ -794,11 +793,11 @@ bool CEventClient::GetMousePos(float& x, float& y)
   if (m_bMouseMoved)
   {
     x = (float)((m_iMouseX / 65535.0f) *
-                (g_graphicsContext.GetViewWindow().x2
-                 -g_graphicsContext.GetViewWindow().x1));
+                (g_graphicsContext.GetViewWindow().right
+                 -g_graphicsContext.GetViewWindow().left));
     y = (float)((m_iMouseY / 65535.0f) *
-                (g_graphicsContext.GetViewWindow().y2
-                 -g_graphicsContext.GetViewWindow().y1));
+                (g_graphicsContext.GetViewWindow().bottom
+                 -g_graphicsContext.GetViewWindow().top));
     m_bMouseMoved = false;
     return true;
   }
@@ -807,7 +806,7 @@ bool CEventClient::GetMousePos(float& x, float& y)
 
 bool CEventClient::CheckButtonRepeat(unsigned int &next)
 {
-  unsigned int now = CTimeUtils::GetTimeMS();
+  unsigned int now = timeGetTime();
 
   if ( next == 0 )
   {

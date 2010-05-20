@@ -1,24 +1,3 @@
-/*
- *      Copyright (C) 2004-2009 Team XBMC
- *      http://www.xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
- *
- */
-
 // XBMCTex.cpp : Defines the entry point for the console application.
 //
 
@@ -28,12 +7,9 @@
 #include <algorithm>
 #include "cmdlineargs.h"
 #include "Surface.h"
-#include "EndianSwap.h"
 
 #ifdef _LINUX
-#ifndef __APPLE__
 #include <linux/limits.h>
-#endif
 #include <string.h>
 #include "XFileUtils.h"
 #include "PlatformDefs.h"
@@ -132,11 +108,6 @@ void CommitXPR(const char* Filename)
 {
 	if (!XPRFile.nImages)
 		return;
-        
-	// Conversion for big-endian systems
-	// flags is used/updated in different places
-	// so swap it only before to call AddFile
-	*XPRFile.flags = Endian_SwapLE32(*XPRFile.flags);
 
 	const void* Buffers[2] = { headerBuf, imageData };
 	DWORD Sizes[2] = { headerSize, imageSize };
@@ -201,7 +172,7 @@ void WriteXPRHeader(DWORD* pal, int nImages, DWORD nLoops = 0)
     imageData = (BYTE*)realloc(imageData, 1024);
 
 		*XPRFile.flags |= XPRFLAG_PALETTE;
-		XPRFile.D3DPal->Common = Endian_SwapLE32(1 | (3 << 16));
+		XPRFile.D3DPal->Common = 1 | (3 << 16);
 		XPRFile.D3DPal->Data = 0;
 		XPRFile.D3DPal->Lock = 0;
 		memcpy(imageData, pal, 1024);
@@ -244,7 +215,7 @@ void AppendXPRImage(CSurface &surface, XB_D3DFORMAT fmt)
 	SetTextureHeader(surface.Width(), surface.Height(), 1, 0, fmt, 
 		&XPRFile.Texture[XPRFile.nImages].D3DTex, imageSize, surface.Pitch());
 	if (!(*XPRFile.flags & XPRFLAG_ANIM))
-                XPRFile.Texture[XPRFile.nImages].RealSize = Endian_SwapLE32((surface.Info().width & 0xffff) | ((surface.Info().height & 0xffff) << 16));
+		XPRFile.Texture[XPRFile.nImages].RealSize = (surface.Info().width & 0xffff) | ((surface.Info().height & 0xffff) << 16);
 	++XPRFile.nImages;
 
 	imageSize += Size;
@@ -389,7 +360,6 @@ void ConvertFile(const char* Dir, const char* Filename)
 	FixTransparency(srcSurface);
 
 	// Use a paletted texture if possible as it's lossless + only 4 bytes per pixel (guaranteed smaller)
-#ifdef _XBOX
 	CSurface tempSurface;
 	DWORD pal[256];
   if (ConvertP8(srcSurface, tempSurface, pal))
@@ -401,16 +371,14 @@ void ConvertFile(const char* Dir, const char* Filename)
 		WriteXPR(OutFilename, tempSurface, XB_D3DFMT_P8, pal);
 		return;
   }
-#endif
+
   // we are going to use a 32bit texture, so work out what type to use
   // test linear format versus non-linear format
   // Linear format requires 64 pixel aligned width, whereas
   // Non-linear format requires power of 2 width and height
   bool useLinearFormat(false);
-#ifdef _XBOX
   UINT linearWidth = (srcSurface.Info().width + 0x3f) & ~0x3f;
   if (linearWidth * srcSurface.Info().height < srcSurface.Width() * srcSurface.Height())
-#endif
     useLinearFormat = true;
 
 	// Use A8R8G8B8
@@ -490,8 +458,8 @@ void ConvertAnim(const char* Dir, const char* Filename)
 	WriteXPRHeader((DWORD*)pal, nImages);
 	if (nImages > 1)
 	{
-		XPRFile.AnimInfo->RealSize = Endian_SwapLE32((Anim.FrameWidth & 0xffff) | ((Anim.FrameHeight & 0xffff) << 16));
-		XPRFile.AnimInfo->nLoops = Endian_SwapLE32(Anim.nLoops);
+		XPRFile.AnimInfo->RealSize = (Anim.FrameWidth & 0xffff) | ((Anim.FrameHeight & 0xffff) << 16);
+		XPRFile.AnimInfo->nLoops = Anim.nLoops;
 	}
 
 	int nActualImages = 0;
@@ -511,7 +479,7 @@ void ConvertAnim(const char* Dir, const char* Filename)
 		CAnimatedGif* pGif = Anim.m_vecimg[i];
 
 		if (nImages > 1)
-			XPRFile.Texture[i].RealSize = Endian_SwapLE32(pGif->Delay);
+			XPRFile.Texture[i].RealSize = pGif->Delay;
 
 		// generate sha1 hash
 		SHA1((BYTE*)pGif->Raster, pGif->BytesPerRow * pGif->Height, HashBuf[i]);
@@ -678,7 +646,7 @@ int main(int argc, char* argv[])
 			valid = true;
 #ifdef _LINUX
       char *c = NULL;
-      while ((c = (char *)strchr(OutputFilename, '\\')) != NULL) *c = '/';
+      while ((c = strchr(OutputFilename, '\\')) != NULL) *c = '/';
 #endif
 		}
     else if (!stricmp(args[i], "-noprotect") || !stricmp(args[i], "-p"))

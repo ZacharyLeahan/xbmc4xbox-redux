@@ -19,14 +19,14 @@
  *
  */
 
+#include "include.h"
 #include "GUIListItemLayout.h"
 #include "FileItem.h"
 #include "GUIControlFactory.h"
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIListLabel.h"
 #include "GUIImage.h"
-#include "tinyXML/tinyxml.h"
 
 using namespace std;
 
@@ -71,7 +71,7 @@ float CGUIListItemLayout::Size(ORIENTATION orientation) const
   return (orientation == HORIZONTAL) ? m_width : m_height;
 }
 
-void CGUIListItemLayout::Render(CGUIListItem *item, int parentID, unsigned int time)
+void CGUIListItemLayout::Render(CGUIListItem *item, int parentID, DWORD time)
 {
   if (m_invalidated)
   { // need to update our item
@@ -79,7 +79,6 @@ void CGUIListItemLayout::Render(CGUIListItem *item, int parentID, unsigned int t
     // let's use a static cast with a virtual base function
     CFileItem *fileItem = item->IsFileItem() ? (CFileItem *)item : new CFileItem(*item);
     m_isPlaying = g_infoManager.GetBool(LISTITEM_ISPLAYING, parentID, item);
-    m_group.SetInvalid();
     m_group.UpdateInfo(fileItem);
     m_invalidated = false;
     // delete our temporary fileitem
@@ -122,7 +121,7 @@ void CGUIListItemLayout::LoadControl(TiXmlElement *child, CGUIControlGroup *grou
 {
   if (!group) return;
 
-  CRect rect(group->GetXPosition(), group->GetYPosition(), group->GetXPosition() + group->GetWidth(), group->GetYPosition() + group->GetHeight());
+  FRECT rect = { group->GetXPosition(), group->GetYPosition(), group->GetXPosition() + group->GetWidth(), group->GetYPosition() + group->GetHeight() };
 
   CGUIControlFactory factory;
   CGUIControl *control = factory.Create(0, rect, child, true);  // true indicating we're inside a list for the
@@ -145,9 +144,9 @@ void CGUIListItemLayout::LoadControl(TiXmlElement *child, CGUIControlGroup *grou
 void CGUIListItemLayout::LoadLayout(TiXmlElement *layout, bool focused)
 {
   m_focused = focused;
-  g_SkinInfo->ResolveIncludes(layout);
-  g_SkinInfo->ResolveConstant(layout->Attribute("width"), m_width);
-  g_SkinInfo->ResolveConstant(layout->Attribute("height"), m_height);
+  g_SkinInfo.ResolveIncludes(layout);
+  g_SkinInfo.ResolveConstant(layout->Attribute("width"), m_width);
+  g_SkinInfo.ResolveConstant(layout->Attribute("height"), m_height);
   const char *condition = layout->Attribute("condition");
   if (condition)
     m_condition = g_infoManager.TranslateString(condition);
@@ -159,9 +158,6 @@ void CGUIListItemLayout::LoadLayout(TiXmlElement *layout, bool focused)
     LoadControl(child, &m_group);
     child = child->NextSiblingElement("control");
   }
-  // ensure width and height are valid
-  m_width = std::max(1.0f, m_width);
-  m_height = std::max(1.0f, m_height);
 }
 
 //#ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
@@ -184,18 +180,13 @@ void CGUIListItemLayout::CreateListControlLayouts(float width, float height, boo
   image->SetAspectRatio(CAspectRatio::AR_KEEP);
   m_group.AddControl(image);
   float x = iconWidth + labelInfo.offsetX + 10;
-  CGUIListLabel *label = new CGUIListLabel(0, 0, x, labelInfo.offsetY, width - x - 18, height, labelInfo, CGUIInfoLabel("$INFO[ListItem.Label]"), false);
+  CGUIListLabel *label = new CGUIListLabel(0, 0, x, labelInfo.offsetY, width - x - 18, height, labelInfo, CGUIInfoLabel("$INFO[ListItem.Label]"), false, CScrollInfo::defaultSpeed);
   m_group.AddControl(label);
   x = labelInfo2.offsetX ? labelInfo2.offsetX : m_width - 16;
-  label = new CGUIListLabel(0, 0, x, labelInfo2.offsetY, x - iconWidth - 20, height, labelInfo2, CGUIInfoLabel("$INFO[ListItem.Label2]"), false);
+  label = new CGUIListLabel(0, 0, x, labelInfo2.offsetY, x - iconWidth - 20, height, labelInfo2, CGUIInfoLabel("$INFO[ListItem.Label2]"), false, CScrollInfo::defaultSpeed);
   m_group.AddControl(label);
 }
 //#endif
-
-void CGUIListItemLayout::FreeResources(bool immediately)
-{
-  m_group.FreeResources(immediately);
-}
 
 #ifdef _DEBUG
 void CGUIListItemLayout::DumpTextureUse()

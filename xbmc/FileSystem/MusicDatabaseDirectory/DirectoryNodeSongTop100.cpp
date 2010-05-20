@@ -19,10 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeSongTop100.h"
 #include "MusicDatabase.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeSongTop100::CDirectoryNodeSongTop100(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_SONG_TOP100, strName, pParent)

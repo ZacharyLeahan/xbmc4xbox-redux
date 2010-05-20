@@ -19,19 +19,16 @@
  *
  */
 
+#include "stdafx.h"
 #include "pyutil.h"
 #include <wchar.h>
-#include <vector>
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "tinyXML/tinyxml.h"
-#include "utils/CharsetConverter.h"
-#include "CriticalSection.h"
-#include "SingleLock.h"
 
 using namespace std;
 
 static int iPyXBMCGUILockRef = 0;
-static TiXmlDocument pySkinReferences;
+static TiXmlDocument pySkinReferences; 
 
 #ifndef __GNUC__
 #pragma code_seg("PY_TEXT")
@@ -49,15 +46,8 @@ namespace PYXBMC
     //              for non-unicode data?
     if (PyUnicode_Check(pObject))
     {
-      // this will probably not really work since the python DLL assumes that
-      // that wchar_t is 2 bytes and linux is actually 4 bytes. That's why
-      // so building a CStdStringW will not work
-      //
       CStdString utf8String;
-
-      CStdStringW utf16String = (wchar_t*) PyUnicode_AsUnicode(pObject);
-      g_charsetConverter.wToUTF8(utf16String, utf8String);
-
+      g_charsetConverter.wToUTF8(PyUnicode_AsUnicode(pObject), utf8String);
       buf = utf8String;
       return 1;
     }
@@ -68,7 +58,7 @@ namespace PYXBMC
       buf = utf8String;
       return 1;
     }
-
+    
     // Object is not a unicode or a normal string.
     buf = "";
     if (pos != -1) PyErr_Format(PyExc_TypeError, "argument %.200i must be unicode or str", pos);
@@ -105,7 +95,7 @@ namespace PYXBMC
     control.SetAttribute("type", cControlType);
     TiXmlElement filler("description");
     control.InsertEndChild(filler);
-    g_SkinInfo->ResolveIncludes(&control, cControlType);
+    g_SkinInfo.ResolveIncludes(&control, cControlType);
 
     // ok, now check for our texture type
     TiXmlElement *pTexture = control.FirstChildElement(cTextureType);
@@ -140,35 +130,5 @@ namespace PYXBMC
     memset(type_object, 0, sizeof(PyTypeObject));
     memcpy(type_object, &py_type_object_header, size);
   }
+
 }
-
-
-typedef std::pair<int(*)(void*), void*> Func;
-typedef std::vector<Func> CallQueue;
-CallQueue g_callQueue;
-CCriticalSection g_critSectionPyCall;
-
-void _PyXBMC_AddPendingCall(int(*func)(void*), void *arg)
-{
-  CSingleLock lock(g_critSectionPyCall);
-  g_callQueue.push_back(Func(func, arg));
-}
-
-void _PyXBMC_MakePendingCalls()
-{
-  CSingleLock lock(g_critSectionPyCall);
-  CallQueue::iterator iter = g_callQueue.begin();
-  while (iter != g_callQueue.end())
-  {
-    int(*f)(void*) = (*iter).first;
-    void* arg = (*iter).second;
-    g_callQueue.erase(iter);
-    lock.Leave();
-    if (f)
-      f(arg);
-    //(*((*iter).first))((*iter).second);
-    lock.Enter();
-    iter = g_callQueue.begin();
-  }
-}
-

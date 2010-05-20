@@ -1,6 +1,6 @@
 /*!
 \file GUISpinControlEx.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_SPINCONTROLEX_H
@@ -34,7 +34,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUISpinControlEx : public CGUISpinControl
 {
@@ -49,13 +49,14 @@ public:
   virtual void SetWidth(float width);
   virtual float GetHeight() const { return m_buttonControl.GetHeight();};
   virtual void SetHeight(float height);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   const CStdString GetCurrentLabel() const;
   void SetText(const std::string & aLabel) {m_buttonControl.SetLabel(aLabel);};
   virtual void SetVisible(bool bVisible);
+  const CLabelInfo& GetButtonLabelInfo() { return m_buttonControl.GetLabelInfo(); };
   virtual void SetEnabled(bool bEnable);
   virtual float GetXPosition() const { return m_buttonControl.GetXPosition();};
   virtual float GetYPosition() const { return m_buttonControl.GetYPosition();};
@@ -63,9 +64,8 @@ public:
   virtual bool HitTest(const CPoint &point) const { return m_buttonControl.HitTest(point); };
   void SetSpinPosition(float spinPosX);
 
-  void SetItemInvalid(bool invalid);
+  void SettingsCategorySetSpinTextColor(const CGUIInfoColor &color);
 protected:
-  virtual void RenderText(float posX, float width);
   virtual void UpdateColors();
   CGUIButtonControl m_buttonControl;
   float m_spinPosX;

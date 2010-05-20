@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogButtonMenu.h"
 #include "GUILabelControl.h"
 #include "GUIButtonControl.h"
@@ -26,8 +27,8 @@
 
 #define CONTROL_BUTTON_LABEL  3100
 
-CGUIDialogButtonMenu::CGUIDialogButtonMenu(int id, const CStdString &xmlFile)
-: CGUIDialog(id, xmlFile)
+CGUIDialogButtonMenu::CGUIDialogButtonMenu(void)
+    : CGUIDialog(WINDOW_DIALOG_BUTTON_MENU, "DialogButtonMenu.xml")
 {
 }
 
@@ -46,7 +47,7 @@ bool CGUIDialogButtonMenu::OnMessage(CGUIMessage &message)
   return bRet;
 }
 
-void CGUIDialogButtonMenu::FrameMove()
+void CGUIDialogButtonMenu::Render()
 {
   // get the label control
   CGUILabelControl *pLabel = (CGUILabelControl *)GetControl(CONTROL_BUTTON_LABEL);
@@ -60,5 +61,5 @@ void CGUIDialogButtonMenu::FrameMove()
       pLabel->SetLabel(pButton->GetLabel());
     }
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }

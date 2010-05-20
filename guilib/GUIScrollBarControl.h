@@ -1,6 +1,6 @@
 /*!
 \file GUIScrollBar.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUISCROLLBAR_H
@@ -34,7 +34,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIScrollBar :
       public CGUIControl
@@ -51,19 +51,21 @@ public:
 
   virtual void Render();
   virtual bool OnAction(const CAction &action);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetRange(int pageSize, int numItems);
   virtual bool OnMessage(CGUIMessage& message);
   void SetValue(int value);
   int GetValue() const;
+  virtual bool HitTest(const CPoint &point) const;
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseDrag(const CPoint &offset, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
   virtual CStdString GetDescription() const;
   virtual bool IsVisible() const;
 protected:
-  virtual bool HitTest(const CPoint &point) const;
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   void UpdateBarSize();
   virtual void Move(int iNumSteps);

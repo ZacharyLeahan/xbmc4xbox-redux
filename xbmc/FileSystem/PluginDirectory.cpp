@@ -20,33 +20,27 @@
  */
 
 
-#include "system.h"
+#include "stdafx.h"
 #include "PluginDirectory.h"
 #include "Util.h"
-#include "addons/AddonManager.h"
-#include "addons/IAddon.h"
 #ifdef HAS_PYTHON
 #include "lib/libPython/XBPython.h"
 #endif
 #include "../utils/SingleLock.h"
+#include "PluginSettings.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
 #include "FileSystem/File.h"
 #include "GUISettings.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
-#include "StringUtils.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 using namespace std;
-using namespace ADDON;
 
 vector<CPluginDirectory *> CPluginDirectory::globalHandles;
 CCriticalSection CPluginDirectory::m_handleLock;
 
-CPluginDirectory::CPluginDirectory()
+CPluginDirectory::CPluginDirectory(void)
 {
   m_fetchComplete = CreateEvent(NULL, false, false, NULL);
   m_listItems = new CFileItemList;
@@ -79,23 +73,31 @@ bool CPluginDirectory::StartScript(const CStdString& strPath)
 {
   CURL url(strPath);
 
-  if (!CAddonMgr::Get().GetAddon(url.GetHostName(), m_addon, ADDON_PLUGIN))
-  {
-    CLog::Log(LOGERROR, "Unable to find plugin %s", url.GetHostName().c_str());
-    return false;
-  }
+  CStdString fileName;
+  
+  // path is special://home/plugins/<path from here>
+  CStdString pathToScript = "special://home/plugins/";
+  CUtil::AddFileToFolder(pathToScript, url.GetHostName(), pathToScript);
+  CUtil::AddFileToFolder(pathToScript, url.GetFileName(), pathToScript);
+  CUtil::AddFileToFolder(pathToScript, "default.py", pathToScript);
 
-  if (m_addon->HasSettings())
-    m_addon->LoadSettings();
+  // base path
+  CStdString basePath = "plugin://";
+  CUtil::AddFileToFolder(basePath, url.GetHostName(), basePath);
+  CUtil::AddFileToFolder(basePath, url.GetFileName(), basePath);
 
-  // get options
+  // options
   CStdString options = url.GetOptions();
   CUtil::RemoveSlashAtEnd(options); // This MAY kill some scripts (eg though with a URL ending with a slash), but
                                     // is needed for all others, as XBMC adds slashes to "folders"
-  url.SetOptions(""); // do this because we can then use the url to generate the basepath
-                      // which is passed to the plugin (and represents the share)
 
-  CStdString basePath(url.Get());
+  // Load the plugin settings
+  CLog::Log(LOGDEBUG, "%s - URL for plugin settings: %s", __FUNCTION__, url.GetFileName().c_str() );
+  g_currentPluginSettings.Load(url);
+
+  // Load language strings
+  LoadPluginStrings(url);
+
   // reset our wait event, and grab a new handle
   ResetEvent(m_fetchComplete);
   int handle = getNewHandle(this);
@@ -114,18 +116,18 @@ bool CPluginDirectory::StartScript(const CStdString& strPath)
   const char *plugin_argv[] = {basePath.c_str(), strHandle.c_str(), options.c_str(), NULL };
 
   // run the script
-  CLog::Log(LOGDEBUG, "%s - calling plugin %s('%s','%s','%s')", __FUNCTION__, m_addon->Name().c_str(), plugin_argv[0], plugin_argv[1], plugin_argv[2]);
+  CLog::Log(LOGDEBUG, "%s - calling plugin %s('%s','%s','%s')", __FUNCTION__, pathToScript.c_str(), plugin_argv[0], plugin_argv[1], plugin_argv[2]);
   bool success = false;
 #ifdef HAS_PYTHON
-  CStdString file = m_addon->Path() + m_addon->LibName();
-  if (g_pythonParser.evalFile(file.c_str(), 3, (const char**)plugin_argv) >= 0)
+  if (g_pythonParser.evalFile(pathToScript.c_str(), 3, (const char**)plugin_argv) >= 0)
   { // wait for our script to finish
-    CStdString scriptName = m_addon->Name();
-    success = WaitOnScriptResult(file, scriptName);
+    CStdString scriptName = url.GetFileName();
+    CUtil::RemoveSlashAtEnd(scriptName);
+    success = WaitOnScriptResult(pathToScript, scriptName);
   }
   else
 #endif
-    CLog::Log(LOGERROR, "Unable to run plugin %s", m_addon->Name().c_str());
+    CLog::Log(LOGERROR, "Unable to run plugin %s", pathToScript.c_str());
 
   // free our handle
   removeHandle(handle);
@@ -135,7 +137,6 @@ bool CPluginDirectory::StartScript(const CStdString& strPath)
 
 bool CPluginDirectory::GetPluginResult(const CStdString& strPath, CFileItem &resultItem)
 {
-  CURL url(strPath);
   CPluginDirectory* newDir = new CPluginDirectory();
 
   bool success = newDir->StartScript(strPath);
@@ -155,7 +156,7 @@ bool CPluginDirectory::AddItem(int handle, const CFileItem *item, int totalItems
     CLog::Log(LOGERROR, " %s - called with an invalid handle.", __FUNCTION__);
     return false;
   }
-
+  
   CPluginDirectory *dir = globalHandles[handle];
   CFileItemPtr pItem(new CFileItem(*item));
   dir->m_listItems->Add(pItem);
@@ -172,7 +173,7 @@ bool CPluginDirectory::AddItems(int handle, const CFileItemList *items, int tota
     CLog::Log(LOGERROR, " %s - called with an invalid handle.", __FUNCTION__);
     return false;
   }
-
+  
   CPluginDirectory *dir = globalHandles[handle];
   CFileItemList pItemList = *items;
   dir->m_listItems->Append(pItemList);
@@ -199,6 +200,9 @@ void CPluginDirectory::EndOfDirectory(int handle, bool success, bool replaceList
 
   if (!dir->m_listItems->HasSortDetails())
     dir->m_listItems->AddSortMethod(SORT_METHOD_NONE, 552, LABEL_MASKS("%L", "%D"));
+
+  // Unload temporary language strings
+  ClearPluginStrings();
 
   // set the event to mark that we're done
   SetEvent(dir->m_fetchComplete);
@@ -299,11 +303,6 @@ void CPluginDirectory::AddSortMethod(int handle, SORT_METHOD sortMethod)
         dir->m_listItems->AddSortMethod(SORT_METHOD_GENRE, 515, LABEL_MASKS("%T", "%G"));
         break;
       }
-    case SORT_METHOD_COUNTRY:
-      {
-        dir->m_listItems->AddSortMethod(SORT_METHOD_COUNTRY, 574, LABEL_MASKS("%T", "%G"));
-        break;
-      }
     case SORT_METHOD_VIDEO_TITLE:
       {
         dir->m_listItems->AddSortMethod(SORT_METHOD_VIDEO_TITLE, 369, LABEL_MASKS("%T", "%D"));
@@ -367,7 +366,7 @@ void CPluginDirectory::AddSortMethod(int handle, SORT_METHOD sortMethod)
         dir->m_listItems->AddSortMethod(SORT_METHOD_PRODUCTIONCODE,20368,LABEL_MASKS("%H. %T","%P", "%H. %T","%P"));
         break;
       }
-    default:
+    default:  
       break;
   }
 }
@@ -375,6 +374,10 @@ void CPluginDirectory::AddSortMethod(int handle, SORT_METHOD sortMethod)
 bool CPluginDirectory::GetDirectory(const CStdString& strPath, CFileItemList& items)
 {
   CURL url(strPath);
+  if (url.GetFileName().IsEmpty())
+  { // called with no script - should never happen
+    return GetPluginsDirectory(url.GetHostName(), items);
+  }
 
   bool success = this->StartScript(strPath);
 
@@ -387,27 +390,29 @@ bool CPluginDirectory::GetDirectory(const CStdString& strPath, CFileItemList& it
 bool CPluginDirectory::RunScriptWithParams(const CStdString& strPath)
 {
   CURL url(strPath);
-  if (url.GetHostName().IsEmpty()) // called with no script - should never happen
+  if (url.GetFileName().IsEmpty()) // called with no script - should never happen
     return false;
 
-  AddonPtr addon;
-  if (!CAddonMgr::Get().GetAddon(url.GetHostName(), addon, ADDON_PLUGIN))
-  {
-    CLog::Log(LOGERROR, "Unable to find plugin %s", url.GetHostName().c_str());
-    return false;
-  }
+  // Load the settings incase they changed while in the plugins directory
+  g_currentPluginSettings.Load(url);
 
-  if (addon->HasSettings())
-    addon->LoadSettings();
+  // Load language strings
+  LoadPluginStrings(url);
+
+  // path is special://home/plugins/<path from here>
+  CStdString pathToScript = "special://home/plugins/";
+  CUtil::AddFileToFolder(pathToScript, url.GetHostName(), pathToScript);
+  CUtil::AddFileToFolder(pathToScript, url.GetFileName(), pathToScript);
+  CUtil::AddFileToFolder(pathToScript, "default.py", pathToScript);
 
   // options
   CStdString options = url.GetOptions();
   CUtil::RemoveSlashAtEnd(options); // This MAY kill some scripts (eg though with a URL ending with a slash), but
                                     // is needed for all others, as XBMC adds slashes to "folders"
-  url.SetOptions(""); // do this because we can then use the url to generate the basepath
-                      // which is passed to the plugin (and represents the share)
-
-  CStdString basePath(url.Get());
+  // base path
+  CStdString basePath = "plugin://";
+  CUtil::AddFileToFolder(basePath, url.GetHostName(), basePath);
+  CUtil::AddFileToFolder(basePath, url.GetFileName(), basePath);
 
   // setup our parameters to send the script
   CStdString strHandle;
@@ -419,20 +424,76 @@ bool CPluginDirectory::RunScriptWithParams(const CStdString& strPath)
 
   // run the script
 #ifdef HAS_PYTHON
-  CStdString file = addon->Path() + addon->LibName();
-  CLog::Log(LOGDEBUG, "%s - calling plugin %s('%s','%s','%s')", __FUNCTION__, addon->Name().c_str(), argv[0], argv[1], argv[2]);
-  if (g_pythonParser.evalFile(file.c_str(), 3, (const char**)argv) >= 0)
+  CLog::Log(LOGDEBUG, "%s - calling plugin %s('%s','%s','%s')", __FUNCTION__, pathToScript.c_str(), argv[0], argv[1], argv[2]);
+  if (g_pythonParser.evalFile(pathToScript.c_str(), 3, (const char**)argv) >= 0)
     return true;
   else
 #endif
-    CLog::Log(LOGERROR, "Unable to run plugin %s", addon->Name().c_str());
+    CLog::Log(LOGERROR, "Unable to run plugin %s", pathToScript.c_str());
 
   return false;
 }
 
-bool CPluginDirectory::HasPlugins(const CONTENT_TYPE &type)
+bool CPluginDirectory::HasPlugins(const CStdString &type)
 {
-  return CAddonMgr::Get().HasAddons(ADDON_PLUGIN, type);
+  CStdString path = "special://home/plugins/";
+  CUtil::AddFileToFolder(path, type, path);
+  CFileItemList items;
+  if (CDirectory::GetDirectory(path, items, "/", false))
+  {
+    for (int i = 0; i < items.Size(); i++)
+    {
+      CFileItemPtr item = items[i];
+      if (item->m_bIsFolder && !item->IsParentFolder() && !item->m_bIsShareOrDrive)
+      {
+        CStdString defaultPY;
+        CUtil::AddFileToFolder(item->m_strPath, "default.py", defaultPY);
+        if (XFILE::CFile::Exists(defaultPY))
+          return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool CPluginDirectory::GetPluginsDirectory(const CStdString &type, CFileItemList &items)
+{
+  // retrieve our folder
+  CStdString pluginsFolder = "special://home/plugins";
+  CUtil::AddFileToFolder(pluginsFolder, type, pluginsFolder);
+  CUtil::AddSlashAtEnd(pluginsFolder);
+
+  if (!CDirectory::GetDirectory(pluginsFolder, items, "*.py", false))
+    return false;
+
+  items.m_strPath.Replace("special://home/plugins/", "plugin://");
+
+  // flatten any folders - TODO: Assigning of thumbs
+  for (int i = 0; i < items.Size(); i++)
+  {
+    CFileItemPtr item = items[i];
+    item->SetThumbnailImage("");
+    item->SetCachedProgramThumb();
+    if (!item->HasThumbnail())
+      item->SetUserProgramThumb();
+    if (!item->HasThumbnail())
+    {
+      CFileItem item2(item->m_strPath);
+      CUtil::AddFileToFolder(item->m_strPath,"default.py",item2.m_strPath);
+      item2.m_bIsFolder = false;
+      item2.SetCachedProgramThumb();
+      if (!item2.HasThumbnail())
+        item2.SetUserProgramThumb();
+      if (item2.HasThumbnail())
+      {
+        XFILE::CFile::Cache(item2.GetThumbnailImage(),item->GetCachedProgramThumb());
+        item->SetThumbnailImage(item->GetCachedProgramThumb());
+      }
+    }
+    item->m_strPath.Replace("special://home/plugins/", "plugin://");
+    item->m_strPath.Replace("\\", "/");
+  }
+  return true;
 }
 
 bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CStdString &scriptName)
@@ -440,9 +501,9 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CS
   const unsigned int timeBeforeProgressBar = 1500;
   const unsigned int timeToKillScript = 1000;
 
-  unsigned int startTime = CTimeUtils::GetTimeMS();
+  DWORD startTime = timeGetTime();
   CGUIDialogProgress *progressBar = NULL;
-
+  
   CLog::Log(LOGDEBUG, "%s - waiting on the %s plugin...", __FUNCTION__, scriptName.c_str());
   while (true)
   {
@@ -467,7 +528,7 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CS
     }
 
     // check whether we should pop up the progress dialog
-    if (!progressBar && CTimeUtils::GetTimeMS() - startTime > timeBeforeProgressBar)
+    if (!progressBar && timeGetTime() - startTime > timeBeforeProgressBar)
     { // loading takes more then 1.5 secs, show a progress dialog
       progressBar = (CGUIDialogProgress *)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
       if (progressBar)
@@ -498,9 +559,9 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CS
         if (!m_cancelled)
         {
           m_cancelled = true;
-          startTime = CTimeUtils::GetTimeMS();
+          startTime = timeGetTime();
         }
-        if (m_cancelled && CTimeUtils::GetTimeMS() - startTime > timeToKillScript)
+        if (m_cancelled && timeGetTime() - startTime > timeToKillScript)
         { // cancel our script
 #ifdef HAS_PYTHON
           int id = g_pythonParser.getScriptId(scriptPath.c_str());
@@ -533,37 +594,9 @@ void CPluginDirectory::SetResolvedUrl(int handle, bool success, const CFileItem 
 
   dir->m_success = success;
   *dir->m_fileResult = *resultItem;
-
+  
   // set the event to mark that we're done
   SetEvent(dir->m_fetchComplete);
-}
-
-CStdString CPluginDirectory::GetSetting(int handle, const CStdString &strID)
-{
-  if (handle < 0 || handle >= (int)globalHandles.size())
-  {
-    CLog::Log(LOGERROR, "%s called with an invalid handle.", __FUNCTION__);
-    return "";
-  }
-
-  CPluginDirectory *dir = globalHandles[handle];
-  if(dir->m_addon)
-    return dir->m_addon->GetSetting(strID);
-  else
-    return "";
-}
-
-void CPluginDirectory::SetSetting(int handle, const CStdString &strID, const CStdString &value)
-{
-  if (handle < 0 || handle >= (int)globalHandles.size())
-  {
-    CLog::Log(LOGERROR, "%s called with an invalid handle.", __FUNCTION__);
-    return;
-  }
-
-  CPluginDirectory *dir = globalHandles[handle];
-  if(dir->m_addon)
-    dir->m_addon->UpdateSetting(strID, value);
 }
 
 void CPluginDirectory::SetContent(int handle, const CStdString &strContent)
@@ -589,6 +622,35 @@ void CPluginDirectory::SetProperty(int handle, const CStdString &strProperty, co
 
   CPluginDirectory *dir = globalHandles[handle];
   dir->m_listItems->SetProperty(strProperty, strValue);
+}
+
+void CPluginDirectory::LoadPluginStrings(const CURL &url)
+{
+  // Path where the plugin resides
+  CStdString pathToPlugin = "special://home/plugins/";
+  CUtil::AddFileToFolder(pathToPlugin, url.GetHostName(), pathToPlugin);
+  CUtil::AddFileToFolder(pathToPlugin, url.GetFileName(), pathToPlugin);
+
+  // Path where the language strings reside
+  CStdString pathToLanguageFile = pathToPlugin;
+  CStdString pathToFallbackLanguageFile = pathToPlugin;
+  CUtil::AddFileToFolder(pathToLanguageFile, "resources", pathToLanguageFile);
+  CUtil::AddFileToFolder(pathToFallbackLanguageFile, "resources", pathToFallbackLanguageFile);
+  CUtil::AddFileToFolder(pathToLanguageFile, "language", pathToLanguageFile);
+  CUtil::AddFileToFolder(pathToFallbackLanguageFile, "language", pathToFallbackLanguageFile);
+  CUtil::AddFileToFolder(pathToLanguageFile, g_guiSettings.GetString("locale.language"), pathToLanguageFile);
+  CUtil::AddFileToFolder(pathToFallbackLanguageFile, "english", pathToFallbackLanguageFile);
+  CUtil::AddFileToFolder(pathToLanguageFile, "strings.xml", pathToLanguageFile);
+  CUtil::AddFileToFolder(pathToFallbackLanguageFile, "strings.xml", pathToFallbackLanguageFile);
+
+  // Load language strings temporarily
+  g_localizeStringsTemp.Load(pathToLanguageFile, pathToFallbackLanguageFile);
+}
+
+void CPluginDirectory::ClearPluginStrings()
+{
+  // Unload temporary language strings
+  g_localizeStringsTemp.Clear();
 }
 
 

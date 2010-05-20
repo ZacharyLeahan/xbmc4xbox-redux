@@ -19,10 +19,7 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#include "system.h"
+#include "stdafx.h"
 #include "FactoryDirectory.h"
 #include "HDDirectory.h"
 #include "SpecialProtocolDirectory.h"
@@ -34,25 +31,22 @@
 #include "MusicDatabaseDirectory.h"
 #include "MusicSearchDirectory.h"
 #include "VideoDatabaseDirectory.h"
-#include "AddonsDirectory.h"
 #include "ShoutcastDirectory.h"
 #include "LastFMDirectory.h"
 #include "FTPDirectory.h"
 #include "HTTPDirectory.h"
 #include "DAVDirectory.h"
 #include "Application.h"
-#include "StringUtils.h"
-#include "addons/Addon.h"
 #include "utils/log.h"
 
 #ifdef HAS_FILESYSTEM_SMB
-#ifdef _WIN32
+#ifdef _WIN32PC
 #include "WINSMBDirectory.h"
 #else
 #include "SMBDirectory.h"
 #endif
 #endif
-#if defined(HAS_FILESYSTEM_CCX)
+#ifdef HAS_CCXSTREAM
 #include "XBMSDirectory.h"
 #endif
 #ifdef HAS_FILESYSTEM_CDDA
@@ -61,44 +55,29 @@
 #include "PluginDirectory.h"
 #ifdef HAS_FILESYSTEM
 #include "ISO9660Directory.h"
-#ifdef HAS_FILESYSTEM_RTV
+#include "SMBDirectory.h"
+#include "XBMSDirectory.h"
+#include "CDDADirectory.h"
 #include "RTVDirectory.h"
-#endif
-#ifdef HAS_FILESYSTEM_DAAP
+#include "SndtrkDirectory.h"
 #include "DAAPDirectory.h"
-#endif
+#include "MemUnitDirectory.h"
+#include "HTSPDirectory.h"
 #endif
 #ifdef HAS_UPNP
 #include "UPnPDirectory.h"
 #endif
-#ifdef HAS_FILESYSTEM_SAP
-#include "SAPDirectory.h"
-#endif
-#ifdef HAS_FILESYSTEM_VTP
-#include "VTPDirectory.h"
-#endif
-#ifdef HAS_FILESYSTEM_HTSP
-#include "HTSPDirectory.h"
-#endif
-#include "../utils/Network.h"
+#include "xbox/Network.h"
 #include "ZipDirectory.h"
-#ifdef HAS_FILESYSTEM_RAR
 #include "RarDirectory.h"
-#endif
 #include "DirectoryTuxBox.h"
 #include "HDHomeRun.h"
 #include "MythDirectory.h"
 #include "FileItem.h"
 #include "URL.h"
 #include "RSSDirectory.h"
-#ifdef HAS_ZEROCONF
-#include "ZeroconfDirectory.h"
-#endif
-#ifdef HAS_FILESYSTEM_SFTP
-#include "SFTPDirectory.h"
-#endif
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 /*!
  \brief Create a IDirectory object of the share type specified in \e strPath .
@@ -110,7 +89,7 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
 {
   CURL url(strPath);
 
-  CFileItem item(strPath, false);
+  CFileItem item;
   IFileDirectory* pDir=CFactoryFileDirectory::Create(strPath, &item);
   if (pDir)
     return pDir;
@@ -119,18 +98,17 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
 
   if (strProtocol.size() == 0 || strProtocol == "file") return new CHDDirectory();
   if (strProtocol == "special") return new CSpecialProtocolDirectory();
-  if (strProtocol == "addons") return new CAddonsDirectory();
-#if defined(HAS_FILESYSTEM_CDDA) && defined(HAS_DVD_DRIVE)
+#ifdef HAS_FILESYSTEM_CDDA
   if (strProtocol == "cdda") return new CCDDADirectory();
 #endif
 #ifdef HAS_FILESYSTEM
   if (strProtocol == "iso9660") return new CISO9660Directory();
+  if (strProtocol == "cdda") return new CCDDADirectory();
+  if (strProtocol == "soundtrack") return new CSndtrkDirectory();
 #endif
   if (strProtocol == "plugin") return new CPluginDirectory();
   if (strProtocol == "zip") return new CZipDirectory();
-#ifdef HAS_FILESYSTEM_RAR
   if (strProtocol == "rar") return new CRarDirectory();
-#endif
   if (strProtocol == "virtualpath") return new CVirtualPathDirectory();
   if (strProtocol == "multipath") return new CMultiPathDirectory();
   if (strProtocol == "stack") return new CStackDirectory();
@@ -139,10 +117,13 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
   if (strProtocol == "musicdb") return new CMusicDatabaseDirectory();
   if (strProtocol == "musicsearch") return new CMusicSearchDirectory();
   if (strProtocol == "videodb") return new CVideoDatabaseDirectory();
-  if (strProtocol == "filereader")
+  if (strProtocol == "filereader") 
     return CFactoryDirectory::Create(url.GetFileName());
+#ifdef HAS_XBOX_HARDWARE
+  if (strProtocol.Left(3) == "mem") return new CMemUnitDirectory();
+#endif
 
-  if( g_application.getNetwork().IsAvailable(true) )  // true to wait for the network (if possible)
+  if( g_network.IsAvailable(true) )
   {
     if (strProtocol == "shout") return new CShoutcastDirectory();
     if (strProtocol == "lastfm") return new CLastFMDirectory();
@@ -150,26 +131,11 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
     if (strProtocol == "ftp" ||  strProtocol == "ftpx" ||  strProtocol == "ftps") return new CFTPDirectory();
     if (strProtocol == "http" || strProtocol == "https") return new CHTTPDirectory();
     if (strProtocol == "dav" || strProtocol == "davs") return new CDAVDirectory();
-#ifdef HAS_FILESYSTEM_SFTP
-    if (strProtocol == "sftp" || strProtocol == "ssh") return new CSFTPDirectory();
-#endif
-#ifdef HAS_FILESYSTEM_SMB
-#ifdef _WIN32
-    if (strProtocol == "smb") return new CWINSMBDirectory();
-#else
-    if (strProtocol == "smb") return new CSMBDirectory();
-#endif
-#endif
-#ifdef HAS_FILESYSTEM_CCX
-    if (strProtocol == "xbms") return new CXBMSDirectory();
-#endif
 #ifdef HAS_FILESYSTEM
-#ifdef HAS_FILESYSTEM_DAAP
+    if (strProtocol == "smb") return new CSMBDirectory();
     if (strProtocol == "daap") return new CDAAPDirectory();
-#endif
-#ifdef HAS_FILESYSTEM_RTV
+    if (strProtocol == "xbms") return new CXBMSDirectory();
     if (strProtocol == "rtv") return new CRTVDirectory();
-#endif
 #endif
 #ifdef HAS_UPNP
     if (strProtocol == "upnp") return new CUPnPDirectory();
@@ -178,18 +144,7 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
     if (strProtocol == "myth") return new CMythDirectory();
     if (strProtocol == "cmyth") return new CMythDirectory();
     if (strProtocol == "rss") return new CRSSDirectory();
-#ifdef HAS_FILESYSTEM_SAP
-    if (strProtocol == "sap") return new CSAPDirectory();
-#endif
-#ifdef HAS_FILESYSTEM_VTP
-    if (strProtocol == "vtp") return new CVTPDirectory();
-#endif
-#ifdef HAS_FILESYSTEM_HTSP
     if (strProtocol == "htsp") return new CHTSPDirectory();
-#endif
-#ifdef HAS_ZEROCONF
-    if (strProtocol == "zeroconf") return new CZeroconfDirectory();
-#endif
   }
 
   CLog::Log(LOGWARNING, "CFactoryDirectory::Create - Unsupported protocol %s", strProtocol.c_str());

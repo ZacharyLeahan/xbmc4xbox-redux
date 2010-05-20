@@ -1,3 +1,4 @@
+#include "../../xbox/PlatformDefs.h"
 #include "rar.hpp"
 #include "UnrarX.hpp"
 #include "GUIWindowManager.h"
@@ -49,7 +50,7 @@ void main(int argc, char *argv[])
 }
 #else
 
-#if !defined(GUI) && !defined(RARDLL) && !defined(_XBOX) && !defined(_LINUX) && !defined(_XBMC)
+#if !defined(GUI) && !defined(RARDLL) && !defined(_XBOX) && !defined(XBMC)
 int main(int argc, char *argv[])
 {
 #ifdef _UNIX
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
 
 #endif /* __XBOX__TEST__ */
 
-#if defined(_XBOX) || defined(_LINUX) || defined(_XBMC)
+#if defined(_XBOX) || defined(XBMC)
 /*-------------------------------------------------------------------------*\
                                XBOX interface
 \*-------------------------------------------------------------------------*/
@@ -239,8 +240,7 @@ int urarlib_get(char *rarfile, char *targetPath, char *fileToExtract, char *libp
 
           if (bShowProgress)
           {
-            // temporary workaround to avoid deadlocks caused by dvdplayer halting app thread
-            pExtract->GetDataIO().m_pDlgProgress = NULL;//(CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
+            pExtract->GetDataIO().m_pDlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
           }
 
           int64_t iOff=0;

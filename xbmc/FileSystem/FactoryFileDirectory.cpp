@@ -20,10 +20,7 @@
  */
 
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#include "system.h"
+#include "stdafx.h"
 #include "Util.h"
 #include "FactoryFileDirectory.h"
 #ifdef HAS_FILESYSTEM
@@ -31,12 +28,9 @@
 #include "NSFFileDirectory.h"
 #include "SIDFileDirectory.h"
 #include "ASAPFileDirectory.h"
-#include "RSSDirectory.h"
 #include "cores/paplayer/ASAPCodec.h"
 #endif
-#ifdef HAS_FILESYSTEM_RAR
 #include "RarDirectory.h"
-#endif
 #include "ZipDirectory.h"
 #include "SmartPlaylistDirectory.h"
 #include "SmartPlaylist.h"
@@ -44,12 +38,14 @@
 #include "PlayListFactory.h"
 #include "FileSystem/Directory.h"
 #include "FileSystem/File.h"
+#include "FileSystem/RarManager.h"
 #include "FileSystem/ZipManager.h"
 #include "AdvancedSettings.h"
 #include "GUISettings.h"
 #include "FileItem.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace PLAYLIST;
 using namespace std;
 
@@ -98,7 +94,6 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
     delete pDir;
     return NULL;
   }
-#ifdef HAS_ASAP_CODEC
   if (ASAPCodec::IsSupportedFormat(strExtension) && CFile::Exists(strPath))
   {
     IFileDirectory* pDir=new CASAPFileDirectory;
@@ -110,24 +105,25 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
     return NULL;
   }
 #endif
-
-  if (pItem->IsRSS())
-    return new CRSSDirectory();
-
-#endif
   if (strExtension.Equals(".zip"))
   {
-    CStdString strUrl;
+    CStdString strUrl; 
     CUtil::CreateArchivePath(strUrl, "zip", strPath, "");
+
+    if (!g_guiSettings.GetBool("filelists.unrollarchives"))
+    {
+      pItem->m_strPath = strUrl;
+      return new CZipDirectory;
+    }
 
     CFileItemList items;
     CDirectory::GetDirectory(strUrl, items, strMask);
     if (items.Size() == 0) // no files
       pItem->m_bIsFolder = true;
-    else if (items.Size() == 1 && items[0]->m_idepth == 0)
+    else if (items.Size() == 1 && items[0]->m_idepth == 0) 
     {
       // one STORED file - collapse it down
-      *pItem = *items[0];
+      *pItem = *items[0]; 
     }
     else
     { // compressed or more than one file -> create a zip dir
@@ -138,7 +134,7 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
   }
   if (strExtension.Equals(".rar") || strExtension.Equals(".001"))
   {
-    CStdString strUrl;
+    CStdString strUrl; 
     CUtil::CreateArchivePath(strUrl, "rar", strPath, "");
 
     vector<CStdString> tokens;
@@ -154,7 +150,7 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
       if (token.Left(4).CompareNoCase("part") == 0) // only list '.part01.rar'
       {
         // need this crap to avoid making mistakes - yeyh for the new rar naming scheme :/
-        struct __stat64 stat;
+        __stat64 stat;
         int digits = token.size()-4;
         CStdString strNumber, strFormat;
         strFormat.Format("part%%0%ii",digits);
@@ -168,6 +164,12 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
         }
       }
     }
+    
+    if (!g_guiSettings.GetBool("filelists.unrollarchives"))
+    {
+      pItem->m_strPath = strUrl;
+      return new CRarDirectory;
+    }
 
     CFileItemList items;
     CDirectory::GetDirectory(strUrl, items, strMask);
@@ -179,14 +181,9 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
       *pItem = *items[0];
     }
     else
-    {
-#ifdef HAS_FILESYSTEM_RAR
-      // compressed or more than one file -> create a rar dir
+    { // compressed or more than one file -> create a rar dir
       pItem->m_strPath = strUrl;
       return new CRarDirectory;
-#else
-      return NULL;
-#endif
     }
     return NULL;
   }
@@ -206,7 +203,7 @@ IFileDirectory* CFactoryFileDirectory::Create(const CStdString& strPath, CFileIt
   { // Playlist file
     // currently we only return the directory if it contains
     // more than one file.  Reason is that .pls and .m3u may be used
-    // for links to http streams etc.
+    // for links to http streams etc. 
     IFileDirectory *pDir = new CPlaylistFileDirectory();
     CFileItemList items;
     if (pDir->GetDirectory(strPath, items))

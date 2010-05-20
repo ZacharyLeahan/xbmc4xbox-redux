@@ -19,16 +19,19 @@
  *
  */
 
+#include "stdafx.h"
 #include "SmartPlaylistDirectory.h"
 #include "utils/log.h"
 #include "SmartPlaylist.h"
 #include "MusicDatabase.h"
 #include "VideoDatabase.h"
+#include "Playlist.h"
 #include "FileSystem/Directory.h"
 #include "FileSystem/File.h"
-#include "FileItem.h"
 
-namespace XFILE
+using namespace PLAYLIST;
+
+namespace DIRECTORY
 {
   CSmartPlaylistDirectory::CSmartPlaylistDirectory()
   {
@@ -108,7 +111,7 @@ namespace XFILE
       db.Close();
       items.Append(items2);
       if (items2.Size())
-        items.SetContent("musicvideos");
+      items.SetContent("musicvideos");
       playlist.SetType(type);
     }
     // go through and set the playlist order
@@ -147,15 +150,15 @@ namespace XFILE
         if (item->GetLabel().CompareNoCase(name) == 0)
         { // found :)
           return item->m_strPath;
-        }
+        } 
       }
     }
     return "";
   }
 
   bool CSmartPlaylistDirectory::Remove(const char *strPath)
-  {
-    return XFILE::CFile::Delete(strPath);
+  { 
+    return XFILE::CFile::Delete(strPath); 
   }
 }
 

@@ -19,14 +19,14 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicSearchDirectory.h"
 #include "MusicDatabase.h"
 #include "URL.h"
 #include "FileItem.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CMusicSearchDirectory::CMusicSearchDirectory(void)
 {
@@ -48,13 +48,12 @@ bool CMusicSearchDirectory::GetDirectory(const CStdString& strPath, CFileItemLis
 
   // and retrieve the search details
   items.m_strPath = strPath;
-  unsigned int time = CTimeUtils::GetTimeMS();
+  DWORD time = timeGetTime();
   CMusicDatabase db;
   db.Open();
   db.Search(search, items);
   db.Close();
-  CLog::Log(LOGDEBUG, "%s (%s) took %u ms",
-            __FUNCTION__, strPath.c_str(), CTimeUtils::GetTimeMS() - time);
+  CLog::Log(LOGDEBUG, "%s (%s) took %lu ms", __FUNCTION__, strPath.c_str(), timeGetTime() - time);
   return true;
 }
 

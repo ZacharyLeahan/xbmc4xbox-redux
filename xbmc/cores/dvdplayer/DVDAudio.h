@@ -21,31 +21,12 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#include "cores/AudioRenderers/IAudioRenderer.h"
-#include "cores/AudioRenderers/IAudioCallback.h"
+#include "cores/mplayer/IDirectSoundRenderer.h"
+#include "cores/mplayer/IAudioCallback.h"
 #include "utils/CriticalSection.h"
 
-#ifndef _LINUX
 enum CodecID;
-#else
-extern "C" {
-#if (defined USE_EXTERNAL_FFMPEG)
-  #if (defined HAVE_LIBAVCODEC_AVCODEC_H)
-    #include <libavcodec/avcodec.h>
-  #elif (defined HAVE_FFMPEG_AVCODEC_H)
-    #include <ffmpeg/avcodec.h>
-  #endif
-#else
-  #include "libavcodec/avcodec.h"
-#endif
-}
-#endif
 typedef struct stDVDAudioFrame DVDAudioFrame;
-
-class CSingleLock;
 
 class CDVDAudio
 {
@@ -73,7 +54,7 @@ public:
 
   void SetSpeed(int iSpeed);
 
-  IAudioRenderer* m_pAudioDecoder;
+  IDirectSoundRenderer* m_pAudioDecoder;
 protected:
   DWORD AddPacketsRenderer(unsigned char* data, DWORD len, CSingleLock &lock);
   IAudioCallback* m_pCallback;

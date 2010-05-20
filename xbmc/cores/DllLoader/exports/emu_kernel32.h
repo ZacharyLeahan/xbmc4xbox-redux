@@ -22,13 +22,10 @@
  *
  */
 
-#include "StdString.h"
-#include "system.h"
-
 #define MAX_LEADBYTES             12
 #define MAX_DEFAULTCHAR           2
 
-#if defined (_XBOX) || defined (_LINUX)
+#ifdef _XBOX
 typedef struct _STARTUPINFOA
 {
   DWORD cb;
@@ -64,8 +61,6 @@ CPINFO, *LPCPINFO;
 #define STD_OUTPUT_HANDLE       ((DWORD) -11)
 #define STD_ERROR_HANDLE        ((DWORD) -12)
 
-#define ERROR_INVALID_PARAMETER (87L)
-
 //SYSTEM_INFO definition take from Winnt headers.
 typedef struct _SYSTEM_INFO
 {
@@ -75,7 +70,7 @@ typedef struct _SYSTEM_INFO
     {
       WORD wProcessorArchitecture;
       WORD wReserved;
-    } x;
+    };
   };
   DWORD dwPageSize;
   LPVOID lpMinimumApplicationAddress;
@@ -91,9 +86,9 @@ SYSTEM_INFO, *LPSYSTEM_INFO;
 #endif
 
 typedef DWORD LCTYPE;
-#if defined (_XBOX) || defined (_LINUX)
+#ifdef _XBOX
 typedef BOOL (*PHANDLER_ROUTINE)(DWORD);
-
+ 
 typedef struct _OSVERSIONINFO
 {
   DWORD dwOSVersionInfoSize;
@@ -116,59 +111,6 @@ typedef struct _OSVERSIONINFOW
 }
 OSVERSIONINFOW, *LPOSVERSIONINFOW;
 
-#ifdef _LINUX
-#define EXCEPTION_MAXIMUM_PARAMETERS 15
-typedef struct _EXCEPTION_RECORD {
-  DWORD ExceptionCode;
-  DWORD ExceptionFlags;
-  struct _EXCEPTION_RECORD* ExceptionRecord;
-  PVOID ExceptionAddress;
-  DWORD NumberParameters;
-  ULONG_PTR ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-} EXCEPTION_RECORD,
- *PEXCEPTION_RECORD;
-
-#define LPOVERLAPPED void *
-#endif
-
-#endif
-
-#ifdef _LINUX
-#define LANG_ENGLISH 0x09
-#define SUBLANG_ENGLISH_US 0x01
-#define MAKELCID(lgid, srtid)  ((DWORD)((((DWORD)((WORD  )(srtid))) << 16) | ((DWORD)((WORD  )(lgid)))))
-#define MAKELANGID(p, s)       ((((WORD  )(s)) << 10) | (WORD  )(p))
-#define SORT_DEFAULT 0x00
-
-#define LANG_NEUTRAL 0x00
-#define SUBLANG_NEUTRAL 0x00
-#define SUBLANG_DEFAULT 0x01
-#define SUBLANG_SYS_DEFAULT 0x02
-
-#define LANG_SYSTEM_DEFAULT    (MAKELANGID(LANG_NEUTRAL, SUBLANG_SYS_DEFAULT))
-#define LANG_USER_DEFAULT      (MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT))
-#define LOCALE_SYSTEM_DEFAULT  (MAKELCID(LANG_SYSTEM_DEFAULT, SORT_DEFAULT))
-#define LOCALE_USER_DEFAULT    (MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT))
-#define LOCALE_NEUTRAL         (MAKELCID(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT))
-
-#define PROCESSOR_ARCHITECTURE_UNKNOWN 0xFFFF
-
-#define PF_FLOATING_POINT_PRECISION_ERRATA  0
-#define PF_FLOATING_POINT_EMULATED          1
-#define PF_COMPARE_EXCHANGE_DOUBLE          2
-#define PF_MMX_INSTRUCTIONS_AVAILABLE       3
-#define PF_PPC_MOVEMEM_64BIT_OK             4
-#define PF_ALPHA_BYTE_INSTRUCTIONS          5
-#define PF_XMMI_INSTRUCTIONS_AVAILABLE      6
-#define PF_3DNOW_INSTRUCTIONS_AVAILABLE     7
-#define PF_RDTSC_INSTRUCTION_AVAILABLE      8
-#define PF_PAE_ENABLED                      9
-
-#define ERROR_INVALID_FUNCTION 1
-
-#define HGLOBAL void *
-#define HRSRC   void *
-
 #endif
 
 #define ATOM unsigned short
@@ -176,7 +118,7 @@ typedef struct _EXCEPTION_RECORD {
 // LOCAL defines from mingw
 #define MAX_LEADBYTES 	12
 #define MAX_DEFAULTCHAR	2
-#if defined (_XBOX) || defined (_LINUX)
+#ifdef _XBOX
 #define LOCALE_NOUSEROVERRIDE	0x80000000
 #define LOCALE_USE_CP_ACP	0x40000000
 #if (WINVER >= 0x0400)
@@ -586,13 +528,12 @@ typedef struct _EXCEPTION_RECORD {
 #endif /* (WINVER >= 0x0500) */
 #ifndef  _BASETSD_H
 typedef long LONG_PTR;
-#endif
+#endif 
 #endif
 
 //All kernel32 function should use WINAPI calling convention.
 //When doing emulation or interception, the calling convention should
 //match exactly the target dlls suppose to use.   Monkeyhappy
-extern "C" HANDLE WINAPI dllFindFirstFileA(LPCTSTR lpFileName, LPWIN32_FIND_DATA lpFindFileData);
 extern "C" BOOL WINAPI dllFindClose(HANDLE hFile);
 extern "C" UINT WINAPI dllGetAtomNameA( ATOM nAtom, LPTSTR lpBuffer, int nSize);
 extern "C" ATOM WINAPI dllFindAtomA( LPCTSTR lpString);
@@ -602,7 +543,7 @@ extern "C" BOOL WINAPI dllTerminateThread(HANDLE tHread, DWORD dwExitCode);
 extern "C" HANDLE WINAPI dllGetCurrentThread(void);
 extern "C" DWORD WINAPI dllGetCurrentThreadId(VOID);
 extern "C" DWORD WINAPI dllGetCurrentProcessId(void);
-extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HMODULE);
+extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HANDLE);
 
 //dllLoadLibraryA, dllFreeLibrary, dllGetProcAddress are from dllLoader,
 //they are wrapper functions of COFF/PE32 loader.
@@ -678,6 +619,9 @@ extern "C" BOOL WINAPI dllTlsSetValue(int dwTlsIndex, LPVOID lpTlsValue);
 extern "C" BOOL WINAPI dllTlsFree(DWORD dwTlsIndex);
 extern "C" DWORD WINAPI dllTlsAlloc();
 
+extern "C" HANDLE WINAPI dllFindFirstFileA(LPCSTR s, LPWIN32_FIND_DATAA lpfd);
+extern "C" BOOL WINAPI dllFindNextFileA(HANDLE h, LPWIN32_FIND_DATAA lpfd);
+
 extern "C" BOOL WINAPI dllFileTimeToLocalFileTime(CONST FILETIME *lpFileTime, LPFILETIME lpLocalFileTime);
 extern "C" BOOL WINAPI dllFileTimeToSystemTime(CONST FILETIME *lpFileTime, LPSYSTEMTIME lpSystemTime);
 extern "C" DWORD WINAPI dllGetTimeZoneInformation(LPTIME_ZONE_INFORMATION lpTimeZoneInformation);
@@ -695,18 +639,7 @@ extern "C" int WINAPI dllSetEnvironmentVariableA(const char *name, const char *v
 extern "C" int WINAPI dllCreateDirectoryA(const char *pathname, void *sa);
 
 extern "C" DWORD WINAPI dllWaitForSingleObject(HANDLE hHandle, DWORD dwMiliseconds);
-
-// in linux we didnt define the handle array -  const.
-// the reason is that in linux we implement it as
-// a pointer to an object and the wait function does change it.
-// so - to avoid conversions we change the spec of the function.
-// come to think about it - it makes more senes that it wont be const.
-#ifdef _LINUX
-extern "C" DWORD WINAPI dllWaitForMultipleObjects(DWORD nCount, HANDLE *lpHandles, BOOL fWaitAll, DWORD dwMilliseconds);
-#else
 extern "C" DWORD WINAPI dllWaitForMultipleObjects(DWORD nCount, CONST HANDLE *lpHandles, BOOL fWaitAll, DWORD dwMilliseconds);
-#endif
-
 extern "C" BOOL WINAPI dllGetProcessAffinityMask(HANDLE hProcess, LPDWORD lpProcessAffinityMask, LPDWORD lpSystemAffinityMask);
 
 extern "C" HGLOBAL WINAPI dllLoadResource(HMODULE module, HRSRC res);
@@ -752,9 +685,5 @@ extern "C" DWORD WINAPI dllGetTempPathA(DWORD nBufferLength, LPTSTR lpBuffer);
 
 
 extern "C" BOOL WINAPI dllDVDReadFileLayerChangeHack(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
-
-extern "C" LPVOID WINAPI dllLockResource(HGLOBAL hResData);
-extern "C" SIZE_T WINAPI dllGlobalSize(HGLOBAL hMem);
-extern "C" DWORD  WINAPI dllSizeofResource(HMODULE hModule, HRSRC hResInfo);
 
 #endif // _EMU_KERNEL32_H_

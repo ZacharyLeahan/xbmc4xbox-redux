@@ -22,7 +22,7 @@
 
 #include "DirectoryNode.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   namespace MUSICDATABASEDIRECTORY
   {

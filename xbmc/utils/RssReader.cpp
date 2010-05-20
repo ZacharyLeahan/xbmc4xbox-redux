@@ -19,23 +19,20 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "RssReader.h"
 #include "utils/HTMLUtil.h"
-#include "../utils/Network.h"
-#include "Application.h"
-#include "CharsetConverter.h"
+#include "xbox/network.h"
+#include "GUISettings.h"
 #include "URL.h"
 #include "FileSystem/File.h"
 #include "FileSystem/FileCurl.h"
 #ifdef __APPLE__
-#include "CocoaInterface.h"
+#include "CocoaUtils.h"
 #endif
-#include "Settings.h"
-#include "LocalizeStrings.h"
+#include "SystemInfo.h"
 #include "GUIRSSControl.h"
-#include "utils/TimeUtils.h"
-#include "SingleLock.h"
-#include "log.h"
 
 using namespace std;
 using namespace XFILE;
@@ -50,6 +47,8 @@ CRssReader::CRssReader() : CThread()
   m_spacesBetweenFeeds = 0;
   m_bIsRunning = false;
   m_SavedScrollPos = 0;
+
+  m_userAgent = g_sysinfo.GetUserAgent();
 }
 
 CRssReader::~CRssReader()
@@ -64,9 +63,9 @@ CRssReader::~CRssReader()
 void CRssReader::Create(IRssObserver* aObserver, const vector<string>& aUrls, const vector<int> &times, int spacesBetweenFeeds, bool rtl)
 {
   CSingleLock lock(*this);
-
+  
   m_pObserver = aObserver;
-  m_spacesBetweenFeeds = spacesBetweenFeeds;
+  m_spacesBetweenFeeds = spacesBetweenFeeds; 
   m_vecUrls = aUrls;
   m_strFeed.resize(aUrls.size());
   m_strColors.resize(aUrls.size());
@@ -91,7 +90,7 @@ void CRssReader::requestRefresh()
 }
 
 void CRssReader::AddToQueue(int iAdd)
-{
+{  
   CSingleLock lock(*this);
   if (iAdd < (int)m_vecUrls.size())
     m_vecQueue.push_back(iAdd);
@@ -111,7 +110,7 @@ void CRssReader::OnExit()
 int CRssReader::GetQueueSize()
 {
   CSingleLock lock(*this);
-  return m_vecQueue.size();
+  return m_vecQueue.size(); 
 }
 
 void CRssReader::Process()
@@ -119,7 +118,7 @@ void CRssReader::Process()
   while (GetQueueSize())
   {
     EnterCriticalSection(*this);
-
+    
     int iFeed = m_vecQueue.front();
     m_vecQueue.erase(m_vecQueue.begin());
 
@@ -127,31 +126,31 @@ void CRssReader::Process()
     m_strColors[iFeed] = "";
 
     CFileCurl http;
-    http.SetUserAgent(g_settings.m_userAgent);
+    http.SetUserAgent(m_userAgent);
     http.SetTimeout(2);
     CStdString strXML;
     CStdString strUrl = m_vecUrls[iFeed];
 
     LeaveCriticalSection(*this);
-
+    
     int nRetries = 3;
     CURL url(strUrl);
 
     // we wait for the network to come up
-    if ((url.GetProtocol() == "http" || url.GetProtocol() == "https") && !g_application.getNetwork().IsAvailable(true))
+    if ((url.GetProtocol() == "http" || url.GetProtocol() == "https") && !g_network.IsAvailable())
       strXML = "<rss><item><title>"+g_localizeStrings.Get(15301)+"</title></item></rss>";
     else
     {
-      unsigned int starttime = CTimeUtils::GetTimeMS();
+      DWORD starttime = timeGetTime();
       while ( (!m_bStop) && (nRetries > 0) )
       {
-        unsigned int currenttimer = CTimeUtils::GetTimeMS() - starttime;
+        DWORD currenttimer = timeGetTime() - starttime;
         if (currenttimer > 15000)
         {
           CLog::Log(LOGERROR,"Timeout whilst retrieving %s", strUrl.c_str());
           http.Cancel();
           break;
-        }
+        } 
         nRetries--;
 
         if (url.GetProtocol() != "http" && url.GetProtocol() != "https")
@@ -211,7 +210,6 @@ void CRssReader::getFeed(vecText &text)
   {
     for (int j = 0; j < m_spacesBetweenFeeds; j++)
       text.push_back(L' ');
-
     for (unsigned int j = 0; j < m_strFeed[i].size(); j++)
     {
       character_t letter = m_strFeed[i][j] | ((m_strColors[i][j] - 48) << 16);
@@ -280,7 +278,7 @@ void CRssReader::GetNewsItems(TiXmlElement* channelXmlNode, int iFeed)
           // This usually happens in right-to-left languages where they want to
           // specify in the RSS body that the text should be RTL.
           // <title>
-          //  <div dir="RTL">��� ����: ���� �� �����</div>
+          //		<div dir="RTL">òìå áøùú: ùîøå òì òöîëí</div> 
           // </title>
           if (htmlText.Equals("div") || htmlText.Equals("span"))
           {
@@ -319,7 +317,7 @@ void CRssReader::GetNewsItems(TiXmlElement* channelXmlNode, int iFeed)
 
 void CRssReader::fromRSSToUTF16(const CStdStringA& strSource, CStdStringW& strDest)
 {
-  CStdString flippedStrSource;
+	CStdString flippedStrSource;
   CStdString strSourceUtf8;
 
   g_charsetConverter.stringCharsetToUtf8(m_encoding, strSource, strSourceUtf8);
@@ -338,11 +336,11 @@ bool CRssReader::Parse(LPSTR szBuffer, int iFeed)
   m_encoding = "UTF-8";
   if (m_xml.RootElement())
   {
-    TiXmlDeclaration *tiXmlDeclaration = m_xml.RootElement()->Parent()->FirstChild()->ToDeclaration();
-    if (tiXmlDeclaration != NULL && strlen(tiXmlDeclaration->Encoding()) > 0)
-    {
-      m_encoding = tiXmlDeclaration->Encoding();
-    }
+	TiXmlDeclaration *tiXmlDeclaration = m_xml.RootElement()->Parent()->FirstChild()->ToDeclaration();
+	if (tiXmlDeclaration != NULL && strlen(tiXmlDeclaration->Encoding()) > 0)
+	{
+		m_encoding = tiXmlDeclaration->Encoding();
+	}
   }
 
   CLog::Log(LOGDEBUG, "RSS feed encoding: %s", m_encoding.c_str());
@@ -391,18 +389,15 @@ bool CRssReader::Parse(int iFeed)
   GetNewsItems(rssXmlNode,iFeed);
 
   // avoid trailing ' - '
-  if (m_strFeed[iFeed].size() > 3 && m_strFeed[iFeed].Mid(m_strFeed[iFeed].size()-3) == L" - ")
+  if (m_strFeed[iFeed].size() > 3 && m_strFeed[iFeed].Mid(m_strFeed[iFeed].size()-3) == L" - " && !m_rtlText)
   {
-    if (m_rtlText)
-    {
-      m_strFeed[iFeed].erase(0, 3);
-      m_strColors[iFeed].erase(0, 3);
-    }
-    else
-    {
-      m_strFeed[iFeed].erase(m_strFeed[iFeed].length()-3);
-      m_strColors[iFeed].erase(m_strColors[iFeed].length()-3);
-    }
+    m_strFeed[iFeed].erase(m_strFeed[iFeed].length()-3);
+    m_strColors[iFeed].erase(m_strColors[iFeed].length()-3);
+  }
+  else if (m_strFeed[iFeed].size() > 3 && m_strFeed[iFeed].Mid(m_strFeed[iFeed].size()-3) == L" - " && m_rtlText)
+  {
+    m_strFeed[iFeed].erase(0, 3);
+    m_strColors[iFeed].erase(0, 3);
   }
   return true;
 }
@@ -457,7 +452,7 @@ CRssManager::~CRssManager()
 }
 
 void CRssManager::Start()
- {
+ { 
    m_bActive = true;
 }
 

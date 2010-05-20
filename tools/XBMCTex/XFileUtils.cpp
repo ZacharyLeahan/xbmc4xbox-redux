@@ -34,6 +34,7 @@
 #include <sys/vfs.h>
 #else
 #include <sys/param.h>
+#include <sys/mount.h>
 #endif
 #include <regex.h>
 #include <dirent.h>

@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "Mutex.h"
 
 
@@ -75,10 +76,7 @@ HANDLE CMutex::GetHandle()
   return m_hMutex;
 }
 
-bool CMutex::WaitMSec(unsigned int milliSeconds)
+void CMutex::WaitMSec(DWORD dwMillSeconds)
 {
-  if (m_hMutex &&
-      WaitForSingleObject(m_hMutex, milliSeconds) == WAIT_OBJECT_0)
-    return true;
-  return false;
+  if (m_hMutex) WaitForSingleObject(m_hMutex, dwMillSeconds);
 }

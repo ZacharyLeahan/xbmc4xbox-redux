@@ -31,13 +31,11 @@
  */
 
 #include "StdString.h"
-#include "CriticalSection.h"
 #include "Thread.h"
+#include "tinyxml/tinyxml.h"
 
 #include <vector>
 #include <list>
-
-#include "tinyXML/tinyxml.h"
 
 #define RSS_COLOR_BODY  0
 #define RSS_COLOR_HEADLINE 1
@@ -48,7 +46,7 @@ typedef std::vector<character_t> vecText;
 
 class IRssObserver;
 
-class CRssReader : public CThread,
+class CRssReader : public CThread, 
                    public CCriticalSection
 {
 public:
@@ -77,7 +75,7 @@ private:
   int GetQueueSize();
 
   IRssObserver* m_pObserver;
-
+  
   std::vector<CStdStringW> m_strFeed;
   std::vector<CStdStringW> m_strColors;
   std::vector<SYSTEMTIME *> m_vecTimeStamps;
@@ -91,6 +89,7 @@ private:
   CStdString m_encoding;
   bool m_rtlText;
   bool m_requestRefresh;
+  CStdString m_userAgent;
 };
 
 class CRssManager

@@ -19,10 +19,9 @@
  *
  */
 
+#include "include.h"
 #include "GUIResizeControl.h"
 #include "GUIWindowManager.h"
-#include "Key.h"
-#include "utils/TimeUtils.h"
 
 // time to reset accelerated cursors (digital movement)
 #define MOVE_TIME_OUT 500L
@@ -32,8 +31,8 @@ CGUIResizeControl::CGUIResizeControl(int parentID, int controlID, float posX, fl
     , m_imgFocus(posX, posY, width, height, textureFocus)
     , m_imgNoFocus(posX, posY, width, height, textureNoFocus)
 {
-  m_frameCounter = 0;
-  m_lastMoveTime = 0;
+  m_dwFrameCounter = 0;
+  m_dwLastMoveTime = 0;
   m_fSpeed = 1.0;
   m_fAnalogSpeed = 2.0f; // TODO: implement correct analog speed
   m_fAcceleration = 0.2f; // TODO: implement correct computation of acceleration
@@ -57,18 +56,18 @@ void CGUIResizeControl::Render()
   }
   if (HasFocus())
   {
-    unsigned int alphaCounter = m_frameCounter + 2;
-    unsigned int alphaChannel;
-    if ((alphaCounter % 128) >= 64)
-      alphaChannel = alphaCounter % 64;
+    DWORD dwAlphaCounter = m_dwFrameCounter + 2;
+    DWORD dwAlphaChannel;
+    if ((dwAlphaCounter % 128) >= 64)
+      dwAlphaChannel = dwAlphaCounter % 64;
     else
-      alphaChannel = 63 - (alphaCounter % 64);
+      dwAlphaChannel = 63 - (dwAlphaCounter % 64);
 
-    alphaChannel += 192;
-    SetAlpha( (unsigned char)alphaChannel );
+    dwAlphaChannel += 192;
+    SetAlpha( (unsigned char)dwAlphaChannel );
     m_imgFocus.SetVisible(true);
     m_imgNoFocus.SetVisible(false);
-    m_frameCounter++;
+    m_dwFrameCounter++;
   }
   else
   {
@@ -84,16 +83,16 @@ void CGUIResizeControl::Render()
 
 bool CGUIResizeControl::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SELECT_ITEM)
+  if (action.id == ACTION_SELECT_ITEM)
   {
     // button selected - send message to parent
     CGUIMessage message(GUI_MSG_CLICKED, GetID(), GetParentID());
     SendWindowMessage(message);
     return true;
   }
-  if (action.GetID() == ACTION_ANALOG_MOVE)
+  if (action.id == ACTION_ANALOG_MOVE)
   {
-    Resize(m_fAnalogSpeed*action.GetAmount(), -m_fAnalogSpeed*action.GetAmount(1));
+    Resize(m_fAnalogSpeed*action.amount1, -m_fAnalogSpeed*action.amount2);
     return true;
   }
   return CGUIControl::OnAction(action);
@@ -123,34 +122,29 @@ void CGUIResizeControl::OnRight()
   Resize(m_fSpeed, 0);
 }
 
-EVENT_RESULT CGUIResizeControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIResizeControl::OnMouseDrag(const CPoint &offset, const CPoint &point)
 {
-  if (event.m_id == ACTION_MOUSE_DRAG)
-  {
-    if (event.m_state == 1)
-    { // grab exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-      SendWindowMessage(msg);
-    }
-    else if (event.m_state == 3)
-    { // release exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-      SendWindowMessage(msg);
-    }
-    Resize(event.m_offsetX, event.m_offsetY);
-    return EVENT_RESULT_HANDLED;
-  }
-  return EVENT_RESULT_UNHANDLED;
+  g_Mouse.SetState(MOUSE_STATE_DRAG);
+  g_Mouse.SetExclusiveAccess(GetID(), GetParentID(), point);
+  Resize(offset.x, offset.y);
+  return true;
+}
+
+bool CGUIResizeControl::OnMouseClick(int button, const CPoint &point)
+{
+  if (button != MOUSE_LEFT_BUTTON) return false;
+  g_Mouse.EndExclusiveAccess(GetID(), GetParentID());
+  return true;
 }
 
 void CGUIResizeControl::UpdateSpeed(int nDirection)
 {
-  if (CTimeUtils::GetFrameTime() - m_lastMoveTime > MOVE_TIME_OUT)
+  if (timeGetTime() - m_dwLastMoveTime > MOVE_TIME_OUT)
   {
     m_fSpeed = 1;
     m_nDirection = DIRECTION_NONE;
   }
-  m_lastMoveTime = CTimeUtils::GetFrameTime();
+  m_dwLastMoveTime = timeGetTime();
   if (nDirection == m_nDirection)
   { // accelerate
     m_fSpeed += m_fAcceleration;
@@ -163,21 +157,28 @@ void CGUIResizeControl::UpdateSpeed(int nDirection)
   }
 }
 
+void CGUIResizeControl::PreAllocResources()
+{
+  CGUIControl::PreAllocResources();
+  m_imgFocus.PreAllocResources();
+  m_imgNoFocus.PreAllocResources();
+}
+
 void CGUIResizeControl::AllocResources()
 {
   CGUIControl::AllocResources();
-  m_frameCounter = 0;
+  m_dwFrameCounter = 0;
   m_imgFocus.AllocResources();
   m_imgNoFocus.AllocResources();
   m_width = m_imgFocus.GetWidth();
   m_height = m_imgFocus.GetHeight();
 }
 
-void CGUIResizeControl::FreeResources(bool immediately)
+void CGUIResizeControl::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
-  m_imgFocus.FreeResources(immediately);
-  m_imgNoFocus.FreeResources(immediately);
+  CGUIControl::FreeResources();
+  m_imgFocus.FreeResources();
+  m_imgNoFocus.FreeResources();
 }
 
 void CGUIResizeControl::DynamicResourceAlloc(bool bOnOff)
@@ -185,13 +186,6 @@ void CGUIResizeControl::DynamicResourceAlloc(bool bOnOff)
   CGUIControl::DynamicResourceAlloc(bOnOff);
   m_imgFocus.DynamicResourceAlloc(bOnOff);
   m_imgNoFocus.DynamicResourceAlloc(bOnOff);
-}
-
-void CGUIResizeControl::SetInvalid()
-{
-  CGUIControl::SetInvalid();
-  m_imgFocus.SetInvalid();
-  m_imgNoFocus.SetInvalid();
 }
 
 void CGUIResizeControl::Resize(float x, float y)

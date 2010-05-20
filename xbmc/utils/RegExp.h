@@ -23,13 +23,19 @@
 #ifndef REGEXP_H
 #define REGEXP_H
 
+#ifdef _XBOX
+#include <xtl.h>
+#endif
+
 #include <string>
 #include <vector>
 
 namespace PCRE {
 #ifdef _WIN32
 #define PCRE_STATIC
-#include "lib/pcre/pcre.h"
+#include "lib/libpcre/pcre.h"
+#elif defined (__APPLE__)
+#include "lib/libpcre/pcre.h"
 #else
 #include <pcre.h>
 #endif

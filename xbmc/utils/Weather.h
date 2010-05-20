@@ -22,9 +22,6 @@
  */
 
 #include "InfoLoader.h"
-#include "StdString.h"
-
-#include <map>
 
 class TiXmlElement;
 
@@ -38,82 +35,24 @@ class TiXmlElement;
 #define WEATHER_LABEL_CURRENT_DEWP 27
 #define WEATHER_LABEL_CURRENT_HUMI 28
 
-struct day_forecast
+struct day_forcast
 {
-  CStdString m_icon;
-  CStdString m_overview;
-  CStdString m_day;
-  CStdString m_high;
-  CStdString m_low;
+  char m_szIcon[256];
+  char m_szOverview[256];
+  char m_szDay[20];
+  char m_szHigh[15];
+  char m_szLow[15];
 };
 
 #define NUM_DAYS 4
 
-class CWeatherInfo
+class CBackgroundWeatherLoader : public CBackgroundLoader
 {
 public:
-  day_forecast forecast[NUM_DAYS];
+  CBackgroundWeatherLoader(CInfoLoader *pCallback) : CBackgroundLoader(pCallback) {};
 
-  void Reset()
-  {
-    lastUpdateTime = "";
-    currentIcon = "";
-    currentConditions = "";
-    currentTemperature = "";
-    currentFeelsLike = "";
-    currentWind = "";
-    currentHumidity = "";
-    currentUVIndex = "";
-    currentDewPoint = "";
-
-    for (int i = 0; i < NUM_DAYS; i++)
-    {
-      forecast[i].m_icon = "";
-      forecast[i].m_overview = "";
-      forecast[i].m_day = "";
-      forecast[i].m_high = "";
-      forecast[i].m_low = "";
-    }
-  };
-
-  CStdString lastUpdateTime;
-  CStdString location;
-  CStdString currentIcon;
-  CStdString currentConditions;
-  CStdString currentTemperature;
-  CStdString currentFeelsLike;
-  CStdString currentUVIndex;
-  CStdString currentWind;
-  CStdString currentDewPoint;
-  CStdString currentHumidity;
-  CStdString busyString;
-  CStdString naIcon;
-};
-
-class CWeatherJob : public CJob
-{
-public:
-  CWeatherJob(const CStdString &areaCode);
-
-  virtual bool DoWork();
-
-  const CWeatherInfo &GetInfo() const;
-private:
-  bool LoadWeather(const CStdString& strWeatherFile); //parse strWeatherFile
-  void GetString(const TiXmlElement* pRootElement, const CStdString& strTagName, CStdString &value, const CStdString& strDefaultValue);
-  void GetInteger(const TiXmlElement* pRootElement, const CStdString& strTagName, int& iValue);
-  void LocalizeOverview(CStdString &str);
-  void LocalizeOverviewToken(CStdString &str);
-  void LocalizeDay(CStdString &day);
-  void LoadLocalizedToken();
-  int ConvertSpeed(int speed);
-  std::map<CStdString, int> m_localizedTokens;
-  typedef std::map<CStdString, int>::const_iterator ilocalizedTokens;
-
-  CWeatherInfo m_info;
-  CStdString m_areaCode;
-
-  static bool m_imagesOkay;
+protected:
+  virtual void GetInformation();
 };
 
 class CWeather : public CInfoLoader
@@ -122,31 +61,52 @@ public:
   CWeather(void);
   virtual ~CWeather(void);
   static bool GetSearchResults(const CStdString &strSearch, CStdString &strResult);
+  bool LoadWeather(const CStdString& strWeatherFile); //parse strWeatherFile
 
-  CStdString GetLocation(int iLocation);
-  const CStdString &GetLastUpdateTime() const { return m_info.lastUpdateTime; };
-  const day_forecast &GetForecast(int day) const;
+  char *GetLocation(int iLocation);
+  char *GetLastUpdateTime() { return m_szLastUpdateTime; };
   bool IsFetched();
   void Reset();
 
   void SetArea(int iArea) { m_iCurWeather = iArea; };
   int GetArea() const { return m_iCurWeather; };
+  CStdString GetAreaCode(const CStdString &codeAndCity) const;
+  CStdString GetAreaCity(const CStdString &codeAndCity) const;
 
-  static CStdString GetAreaCode(const CStdString &codeAndCity);
-  static CStdString GetAreaCity(const CStdString &codeAndCity);
-
+  day_forcast m_dfForcast[NUM_DAYS];
+  bool m_bImagesOkay;
 protected:
-  virtual CJob *GetJob() const;
-  virtual CStdString TranslateInfo(int info) const;
-  virtual CStdString BusyInfo(int info) const;
-  virtual void OnJobComplete(unsigned int jobID, bool success, CJob *job);
+  virtual const char *TranslateInfo(int info);
+  virtual const char *BusyInfo(int info);
+  virtual DWORD TimeToNextRefreshInMs();
 
-private:
+  void GetString(const TiXmlElement* pRootElement, const CStdString& strTagName, char* szValue, const CStdString& strDefaultValue);
+  void GetInteger(const TiXmlElement* pRootElement, const CStdString& strTagName, int& iValue);
+  void LocalizeOverview(char *szStr);
+  void LocalizeOverviewToken(char *szStr, bool bAppendSpace = true);
+  void LocalizeDay(char *szDay);
+  void LoadLocalizedToken();
+  int ConvertSpeed(int speed);
+  std::map<CStdString, int> m_localizedTokens;
+  typedef std::map<CStdString, int>::const_iterator ilocalizedTokens;
 
-  CStdString m_location[3];
+  char m_szLocation[3][100];
+
+  // Last updated
+  char m_szLastUpdateTime[256];
+  // Now weather
+  char m_szCurrentIcon[256];
+  char m_szCurrentConditions[256];
+  char m_szCurrentTemperature[10];
+  char m_szCurrentFeelsLike[10];
+  char m_szCurrentUVIndex[10];
+  char m_szCurrentWind[256];
+  char m_szCurrentDewPoint[10];
+  char m_szCurrentHumidity[10];
+  char m_szBusyString[256];
+  char m_szNAIcon[256];
+
   unsigned int m_iCurWeather;
-
-  CWeatherInfo m_info;
 };
 
 extern CWeather g_weatherManager;

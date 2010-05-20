@@ -24,12 +24,6 @@
 
 #include "GraphicContext.h"
 
-#ifdef HAS_GL
-#include "LinuxRendererGL.h"
-#elif !defined(HAS_XBOX_D3D)
-#include "WinRenderer.h"
-#else
-
 //#define MP_DIRECTRENDERING
 
 #ifdef MP_DIRECTRENDERING
@@ -62,7 +56,7 @@ typedef struct YV12Image
 #define IMAGE_FLAG_READING   0x02 /* image is in use after a call to GetImage, caller is only reading */
 #define IMAGE_FLAG_DYNAMIC   0x04 /* image was allocated due to a call to GetImage */
 #define IMAGE_FLAG_RESERVED  0x08 /* image is reserved, must be asked for specifically used to preserve images */
-
+#define IMAGE_FLAG_READY     0x16 /* image is ready to be uploaded to texture memory */
 #define IMAGE_FLAG_INUSE (IMAGE_FLAG_WRITING | IMAGE_FLAG_READING | IMAGE_FLAG_RESERVED)
 
 
@@ -72,6 +66,7 @@ typedef struct YV12Image
 #define RENDER_FLAG_FIELDMASK   0x03
 
 #define RENDER_FLAG_NOOSD       0x04 /* don't draw any osd */
+#define RENDER_FLAG_NOOSDALPHA  0x08 /* don't allow alpha when osd is drawn */
 
 /* these two flags will be used if we need to render same image twice (bob deinterlacing) */
 #define RENDER_FLAG_NOLOCK      0x10   /* don't attempt to lock texture before rendering */
@@ -95,16 +90,12 @@ struct DRAWRECT
   float bottom;
 };
 
-#ifndef _LINUX
-static enum EFIELDSYNC
-#else
 enum EFIELDSYNC
-#endif
 {
   FS_NONE,
   FS_ODD,
   FS_EVEN,
-  FS_BOTH,
+  FS_BOTH
 };
 
 struct YUVRANGE
@@ -128,19 +119,13 @@ extern YUVCOEF yuv_coef_bt709;
 extern YUVCOEF yuv_coef_ebu;
 extern YUVCOEF yuv_coef_smtp240m;
 
-#ifdef HAS_DX
 static const DWORD FVF_VERTEX = D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1;
 static const DWORD FVF_Y8A8VERTEX = D3DFVF_XYZRHW | D3DFVF_TEX2;
-#endif
 
 class CXBoxRenderer
 {
 public:
-#ifdef HAS_DX
   CXBoxRenderer(LPDIRECT3DDEVICE8 pDevice);
-#else
-  CXBoxRenderer();
-#endif
   ~CXBoxRenderer();
 
   virtual void GetVideoRect(RECT &rs, RECT &rd);
@@ -148,15 +133,11 @@ public:
   virtual void Update(bool bPauseDrawing);
   virtual void SetupScreenshot() {};
   virtual void SetViewMode(int iViewMode);
-
-#ifdef HAS_DX
   void CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height);
-#else
-  void CreateThumbnail(SDL_Surface * surface, unsigned int width, unsigned int height);
-#endif
 
   // Player functions
   virtual bool Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags);
+  virtual bool IsConfigured() { return m_bConfigured; }
   virtual int          GetImage(YV12Image *image, int source = AUTOSOURCE, bool readonly = false);
   virtual void         ReleaseImage(int source, bool preserve = false);
   virtual unsigned int DrawSlice(unsigned char *src[], int stride[], int w, int h, int x, int y);
@@ -166,8 +147,9 @@ public:
   virtual void         UnInit();
   virtual void         Reset(); /* resets renderer after seek for example */
 
+  void AutoCrop(bool bCrop);
   void RenderUpdate(bool clear, DWORD flags = 0, DWORD alpha = 255);
-  RESOLUTION GetResolution();
+  RESOLUTION GetResolution();  
 
 protected:
   virtual void Render(DWORD flags);
@@ -188,11 +170,7 @@ protected:
 
   // low memory renderer (default PixelShaderRenderer)
   void RenderLowMem(DWORD flags);
-
-#ifdef HAS_DX
   static const DWORD FVF_YV12VERTEX = D3DFVF_XYZRHW | D3DFVF_TEX3;
-#endif
-
   int m_iYV12RenderBuffer;
   int m_NumYV12Buffers;
 
@@ -211,14 +189,8 @@ protected:
   bool m_bConfigured;
 
   // OSD stuff
-#ifndef _LINUX
   LPDIRECT3DTEXTURE8 m_pOSDYTexture[NUM_BUFFERS];
   LPDIRECT3DTEXTURE8 m_pOSDATexture[NUM_BUFFERS];
-#else
-  SDL_Surface * m_pOSDYTexture[NUM_BUFFERS];
-  SDL_Surface * m_pOSDATexture[NUM_BUFFERS];
-#endif
-
   float m_OSDWidth;
   float m_OSDHeight;
   DRAWRECT m_OSDRect;
@@ -231,11 +203,7 @@ protected:
   // Raw data used by renderer
   YV12Image m_image[NUM_BUFFERS];
 
-#ifndef _LINUX
   typedef LPDIRECT3DTEXTURE8 YUVPLANES[MAX_PLANES];
-#else
-  typedef SDL_Surface * YUVPLANES[MAX_PLANES];
-#endif
   typedef YUVPLANES          YUVFIELDS[MAX_FIELDS];
   typedef YUVFIELDS          YUVBUFFERS[NUM_BUFFERS];
 
@@ -251,10 +219,8 @@ protected:
   // field index 0 is full image, 1 is odd scanlines, 2 is even scanlines
   YUVBUFFERS m_YUVTexture;
 
-#ifdef HAS_DX
   // render device
   LPDIRECT3DDEVICE8 m_pD3DDevice;
-#endif
 
   // pixel shader (low memory shader used in all renderers while in GUI)
   DWORD m_hLowMemShader;
@@ -267,10 +233,8 @@ protected:
   HANDLE m_eventTexturesDone[NUM_BUFFERS];
   HANDLE m_eventOSDDone[NUM_BUFFERS];
 
+  float m_aspecterror;
 };
 
-#endif // _LINUX
-
 #endif
-
 

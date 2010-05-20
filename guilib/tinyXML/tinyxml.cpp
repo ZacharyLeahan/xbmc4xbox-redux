@@ -857,10 +857,6 @@ TiXmlDocument::TiXmlDocument() : TiXmlNode( TiXmlNode::DOCUMENT )
 {
 	tabsize = 4;
 	useMicrosoftBOM = false;
-#ifdef HAS_ICONV	
-	convertToUtf8 = false;
-	iconvContext = (iconv_t) -1;
-#endif	
 	ClearError();
 }
 
@@ -868,10 +864,6 @@ TiXmlDocument::TiXmlDocument( const char * documentName ) : TiXmlNode( TiXmlNode
 {
 	tabsize = 4;
 	useMicrosoftBOM = false;
-#ifdef HAS_ICONV  
-  convertToUtf8 = false;
-  iconvContext = (iconv_t) -1;
-#endif  	
 	value = documentName;
 	ClearError();
 }
@@ -882,11 +874,7 @@ TiXmlDocument::TiXmlDocument( const std::string& documentName ) : TiXmlNode( TiX
 {
 	tabsize = 4;
 	useMicrosoftBOM = false;
-#ifdef HAS_ICONV  
-  convertToUtf8 = false;
-  iconvContext = (iconv_t) -1;
-#endif	
-  value = documentName;
+    value = documentName;
 	ClearError();
 }
 #endif
@@ -897,16 +885,6 @@ TiXmlDocument::TiXmlDocument( const TiXmlDocument& copy ) : TiXmlNode( TiXmlNode
 	copy.CopyTo( this );
 }
 
-TiXmlDocument::~TiXmlDocument() 
-{
-#ifdef HAS_ICONV
-  if (iconvContext != (iconv_t) -1)
-  {
-    iconv_close(iconvContext);
-    iconvContext = (iconv_t) -1;
-  }
-#endif    
-}
 
 void TiXmlDocument::operator=( const TiXmlDocument& copy )
 {
@@ -962,7 +940,7 @@ bool TiXmlDocument::LoadFile( const char* _filename, TiXmlEncoding encoding )
 
 	// Get the file size, so we can pre-allocate the string. HUGE speed impact.
 	long length = -1;
-	int64_t filelen = file.GetLength();
+	__int64 filelen = file.GetLength();
 	if (filelen > 0)
 		length = (long)filelen;
 
@@ -1174,7 +1152,7 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	char*  buf = (char*)malloc(length+1);
 	long   pos = 0;
 	long   len;
-        while( (len = fread(buf+pos, 1, length-pos, file)) > 0 ) {
+	while( (len = fread(buf+pos, 1, length-pos, file)) > 0 ) {
 		pos += len;
 		assert(pos <= length);
 		if(pos == length) {
@@ -1245,8 +1223,8 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	Parse( data.c_str(), 0, encoding );
 
 	if (  Error() )
-        return false;
-    else
+		return false;
+	else
 		return true;
 }
 
@@ -1277,11 +1255,7 @@ void TiXmlDocument::CopyTo( TiXmlDocument* target ) const
 	target->tabsize = tabsize;
 	target->errorLocation = errorLocation;
 	target->useMicrosoftBOM = useMicrosoftBOM;
-#ifdef HAS_ICONV
-	target->convertToUtf8 = convertToUtf8;
-	target->iconvContext = (iconv_t) -1;
-#endif	
-	
+
 	TiXmlNode* node = 0;
 	for ( node = firstChild; node; node = node->NextSibling() )
 	{

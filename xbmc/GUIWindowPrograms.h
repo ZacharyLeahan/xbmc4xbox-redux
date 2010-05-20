@@ -33,6 +33,8 @@ public:
   CGUIWindowPrograms(void);
   virtual ~CGUIWindowPrograms(void);
   virtual bool OnMessage(CGUIMessage& message);
+
+  void PopulateTrainersList();
 protected:
   virtual void OnItemLoaded(CFileItem* pItem) {};
   virtual bool Update(const CStdString& strDirectory);
@@ -42,6 +44,7 @@ protected:
   virtual bool OnContextButton(int itemNumber, CONTEXT_BUTTON button);
 
   int GetRegion(int iItem, bool bReload=false);
+  bool OnChooseVideoModeAndLaunch(int iItem);
 
   CGUIDialogProgress* m_dlgProgress;
 

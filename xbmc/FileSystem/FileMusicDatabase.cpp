@@ -19,11 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "FileMusicDatabase.h"
 #include "MusicDatabase.h"
 #include "Util.h"
 #include "URL.h"
-#include "StringUtils.h"
 
 #include <sys/stat.h>
 
@@ -43,7 +43,7 @@ CStdString CFileMusicDatabase::TranslateUrl(const CURL& url)
   CMusicDatabase musicDatabase;
   if (!musicDatabase.Open())
     return "";
-
+  
   CStdString strFileName=CUtil::GetFileName(url.Get());
   CStdString strExtension;
   CUtil::GetExtension(strFileName, strExtension);
@@ -57,14 +57,14 @@ CStdString CFileMusicDatabase::TranslateUrl(const CURL& url)
   CSong song;
   if (!musicDatabase.GetSongById(idSong, song))
     return "";
-
+  
   CStdString strExtensionFromDb;
   CUtil::GetExtension(song.strFileName, strExtensionFromDb);
 
   if (!strExtensionFromDb.Equals(strExtension))
     return "";
-
-  return song.strFileName;
+ 
+  return song.strFileName; 
 }
 
 bool CFileMusicDatabase::Open(const CURL& url)
@@ -82,12 +82,12 @@ int CFileMusicDatabase::Stat(const CURL& url, struct __stat64* buffer)
   return m_file.Stat(TranslateUrl(url), buffer);
 }
 
-unsigned int CFileMusicDatabase::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileMusicDatabase::Read(void* lpBuf, __int64 uiBufSize)
 {
   return m_file.Read(lpBuf, uiBufSize);
 }
 
-int64_t CFileMusicDatabase::Seek(int64_t iFilePosition, int iWhence /*=SEEK_SET*/)
+__int64 CFileMusicDatabase::Seek(__int64 iFilePosition, int iWhence /*=SEEK_SET*/)
 {
   return m_file.Seek(iFilePosition, iWhence);
 }
@@ -97,12 +97,12 @@ void CFileMusicDatabase::Close()
   m_file.Close();
 }
 
-int64_t CFileMusicDatabase::GetPosition()
+__int64 CFileMusicDatabase::GetPosition()
 {
   return m_file.GetPosition();
 }
 
-int64_t CFileMusicDatabase::GetLength()
+__int64 CFileMusicDatabase::GetLength()
 {
   return m_file.GetLength();
 }

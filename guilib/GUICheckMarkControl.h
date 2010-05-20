@@ -1,6 +1,6 @@
 /*!
 \file GUICheckMarkControl.h
-\brief
+\brief 
 */
 
 #ifndef CGUILIB_GUICHECKMARK_CONTROL_H
@@ -30,12 +30,12 @@
  */
 
 #include "GUITexture.h"
-#include "GUILabel.h"
+#include "GUITextLayout.h"
 #include "GUIControl.h"
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUICheckMarkControl: public CGUIControl
 {
@@ -47,29 +47,28 @@ public:
   virtual void Render();
   virtual bool OnAction(const CAction &action) ;
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
 
   void SetLabel(const std::string& strLabel);
   const std::string GetLabel() const { return m_strLabel; };
-  const CLabelInfo& GetLabelInfo() const { return m_label.GetLabelInfo(); };
+  const CLabelInfo& GetLabelInfo() const { return m_label; };
   void SetSelected(bool bOnOff);
   bool GetSelected() const;
+  bool OnMouseClick(int button, const CPoint &point);
 
   void PythonSetLabel(const CStdString &strFont, const std::string &strText, color_t textColor);
   void PythonSetDisabledColor(color_t disabledColor);
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
-  CGUILabel::COLOR GetTextColor() const;
-  
   CGUITexture m_imgCheckMark;
   CGUITexture m_imgCheckMarkNoFocus;
 
-  CGUILabel  m_label;
+  CLabelInfo m_label;
+  CGUITextLayout m_textLayout;
   std::string m_strLabel;
   bool m_bSelected;
 };

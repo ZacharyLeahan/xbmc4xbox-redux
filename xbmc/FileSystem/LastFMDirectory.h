@@ -27,7 +27,7 @@
 
 class CGUIDialogProgress;
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CLastFMDirectory :
       public IDirectory, public IRunnable
@@ -71,7 +71,7 @@ protected:
 
   CStdString m_strSource;
   CStdString m_strDestination;
-
+  
   CGUIDialogProgress* m_dlgProgress;
 };
 }

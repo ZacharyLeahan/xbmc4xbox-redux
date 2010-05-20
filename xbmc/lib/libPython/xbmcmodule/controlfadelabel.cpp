@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "GUIFadeLabelControl.h"
 #include "GUIFontManager.h"
@@ -70,7 +56,7 @@ namespace PYXBMC
     self = (ControlFadeLabel*)type->tp_alloc(type, 0);
     if (!self) return NULL;
     new(&self->strFont) string();
-    new(&self->vecLabels) std::vector<string>();
+    new(&self->vecLabels) std::vector<string>();    
 
     // set up default values in case they are not supplied
     self->strFont = "font13";
@@ -103,11 +89,11 @@ namespace PYXBMC
   }
 
   void ControlFadeLabel_Dealloc(Control* self)
-  {
+  {  
     ControlFadeLabel *pControl = (ControlFadeLabel*)self;
     pControl->vecLabels.clear();
     pControl->vecLabels.~vector();
-    pControl->strFont.~string();
+    pControl->strFont.~string();    
     self->ob_type->tp_free((PyObject*)self);
   }
 
@@ -124,8 +110,9 @@ namespace PYXBMC
       (float)pControl->dwPosY,
       (float)pControl->dwWidth,
       (float)pControl->dwHeight,
-      label,
+      label, 
       true,
+      CScrollInfo::defaultSpeed,
       0,
       true);
 

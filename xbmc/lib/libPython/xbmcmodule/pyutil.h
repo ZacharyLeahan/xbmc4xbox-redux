@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,24 +21,7 @@
  *
  */
 
-#include "StdString.h"
-
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 
 #ifdef __cplusplus
@@ -44,9 +29,9 @@ extern "C" {
 #endif
 
 // credits and version information
-#define PY_XBMC_AUTHOR    "J. Mulder <darkie@xbmc.org>"
-#define PY_XBMC_CREDITS   "XBMC TEAM."
-#define PY_XBMC_PLATFORM  "XBOX"
+#define PY_XBMC_AUTHOR		"J. Mulder <darkie@xbmc.org>"
+#define PY_XBMC_CREDITS		"XBMC TEAM."
+#define PY_XBMC_PLATFORM	"XBOX"
 
 namespace PYXBMC
 {
@@ -58,16 +43,6 @@ namespace PYXBMC
 
   void  PyXBMCInitializeTypeObject(PyTypeObject* type_object);
 }
-
-// Python doesn't play nice with PyXBMC_AddPendingCall
-// and PyXBMC_MakePendingCalls as it only allows them from
-// the main python thread, which isn't what we want, so we have our own versions.
-
-#define PyXBMC_AddPendingCall _PyXBMC_AddPendingCall
-#define PyXBMC_MakePendingCalls _PyXBMC_MakePendingCalls
-
-void _PyXBMC_AddPendingCall(int(*func)(void*), void *arg);
-void _PyXBMC_MakePendingCalls();
 
 #ifdef __cplusplus
 }

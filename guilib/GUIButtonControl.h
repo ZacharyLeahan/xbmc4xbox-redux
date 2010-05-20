@@ -1,6 +1,6 @@
 /*!
 \file GUIButtonControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIBUTTONCONTROL_H
@@ -30,12 +30,12 @@
  */
 
 #include "GUITexture.h"
-#include "GUILabel.h"
+#include "GUITextLayout.h"
 #include "GUIControl.h"
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIButtonControl : public CGUIControl
 {
@@ -50,19 +50,20 @@ public:
 
   virtual void Render();
   virtual bool OnAction(const CAction &action) ;
+  virtual bool OnMouseClick(int button, const CPoint &point);
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   virtual void SetLabel(const std::string & aLabel);
   virtual void SetLabel2(const std::string & aLabel2);
-  void SetClickActions(const std::vector<CGUIActionDescriptor>& clickActions) { m_clickActions = clickActions; };
-  const std::vector<CGUIActionDescriptor> &GetClickActions() const { return m_clickActions; };
-  void SetFocusActions(const std::vector<CGUIActionDescriptor>& focusActions) { m_focusActions = focusActions; };
-  void SetUnFocusActions(const std::vector<CGUIActionDescriptor>& unfocusActions) { m_unfocusActions = unfocusActions; };
-  const CLabelInfo& GetLabelInfo() const { return m_label.GetLabelInfo(); };
+  void SetClickActions(const std::vector<CStdString>& clickActions) { m_clickActions = clickActions; };
+  const std::vector<CStdString> &GetClickActions() const { return m_clickActions; };
+  void SetFocusActions(const std::vector<CStdString>& focusActions) { m_focusActions = focusActions; };
+  void SetUnFocusActions(const std::vector<CStdString>& unfocusActions) { m_unfocusActions = unfocusActions; };
+  const CLabelInfo& GetLabelInfo() const { return m_label; };
   virtual CStdString GetLabel() const { return GetDescription(); };
   virtual CStdString GetLabel2() const;
   void SetSelected(bool bSelected);
@@ -72,6 +73,7 @@ public:
   void PythonSetLabel(const CStdString &strFont, const std::string &strText, color_t textColor, color_t shadowColor, color_t focusedColor);
   void PythonSetDisabledColor(color_t disabledColor);
 
+  void RAMSetTextColor(color_t textColor);
   void SettingsCategorySetTextAlign(uint32_t align);
 
   virtual void OnClick();
@@ -79,26 +81,24 @@ public:
 
   virtual void UpdateColors();
 protected:
-  friend class CGUISpinControlEx;
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   void OnFocus();
   void OnUnFocus();
   virtual void RenderText();
-  CGUILabel::COLOR GetTextColor() const;
 
   CGUITexture m_imgFocus;
   CGUITexture m_imgNoFocus;
-  unsigned int  m_focusCounter;
+  DWORD m_dwFocusCounter;
   unsigned char m_alpha;
 
   CGUIInfoLabel  m_info;
   CGUIInfoLabel  m_info2;
-  CGUILabel      m_label;
-  CGUILabel      m_label2;
+  CLabelInfo m_label;
+  CGUITextLayout m_textLayout;
+  CGUITextLayout m_textLayout2;
 
-  std::vector<CGUIActionDescriptor> m_clickActions;
-  std::vector<CGUIActionDescriptor> m_focusActions;
-  std::vector<CGUIActionDescriptor> m_unfocusActions;
+  std::vector<CStdString> m_clickActions;
+  std::vector<CStdString> m_focusActions;
+  std::vector<CStdString> m_unfocusActions;
 
   bool m_bSelected;
 };

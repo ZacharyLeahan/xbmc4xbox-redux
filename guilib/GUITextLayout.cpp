@@ -19,6 +19,7 @@
  *
  */
 
+#include "include.h"
 #include "GUITextLayout.h"
 #include "GUIFont.h"
 #include "GUIControl.h"
@@ -170,9 +171,9 @@ void CGUITextLayout::RenderOutline(float x, float y, color_t color, color_t outl
   m_font->End();
 }
 
-bool CGUITextLayout::Update(const CStdString &text, float maxWidth, bool forceUpdate /*= false*/, bool forceLTRReadingOrder /*= false*/)
+bool CGUITextLayout::Update(const CStdString &text, float maxWidth, bool forceLTRReadingOrder /*= false*/)
 {
-  if (text == m_lastText && !forceUpdate)
+  if (text == m_lastText)
     return false;
 
   // convert to utf16

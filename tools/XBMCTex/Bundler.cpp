@@ -1,26 +1,4 @@
-/*
- *      Copyright (C) 2004-2009 Team XBMC
- *      http://www.xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
- *
- */
-
 #include "Bundler.h"
-#include "EndianSwap.h"
 
 #ifdef _LINUX
 #include <lzo1x.h>
@@ -44,20 +22,17 @@ bool CBundler::StartBundle()
 	return true;
 }
 
-// On big-endian systems, to generate the same bundle on little-endian systems,
-// we need to swap all the values in the header
-
 int CBundler::WriteBundle(const char* Filename, int NoProtect)
 {
 	// calc data offset
 	DWORD headerSize = sizeof(XPR_FILE_HEADER) + FileHeaders.size() * sizeof(FileHeader_t);
 
 	// setup header
-	XPRHeader.dwMagic = Endian_SwapLE32(XPR_MAGIC_HEADER_VALUE | ((2+(NoProtect << 7)) << 24)); // version 2
-	XPRHeader.dwHeaderSize = Endian_SwapLE32(headerSize);
+	XPRHeader.dwMagic = XPR_MAGIC_HEADER_VALUE | ((2+(NoProtect << 7)) << 24); // version 2
+	XPRHeader.dwHeaderSize = headerSize;
 
 	headerSize = (headerSize + (ALIGN-1)) & ~(ALIGN-1);
-	XPRHeader.dwTotalSize = Endian_SwapLE32(headerSize + DataSize);
+	XPRHeader.dwTotalSize = headerSize + DataSize;
 
 	// create our header in memory
 	BYTE *headerBuf = (BYTE *)malloc(headerSize);
@@ -69,10 +44,7 @@ int CBundler::WriteBundle(const char* Filename, int NoProtect)
 
 	for (std::list<FileHeader_t>::iterator i = FileHeaders.begin(); i != FileHeaders.end(); ++i)
 	{
-		// Swap values on big-endian systems
-		i->Offset = Endian_SwapLE32(i->Offset + headerSize);
-		i->UnpackedSize = Endian_SwapLE32(i->UnpackedSize);
-		i->PackedSize = Endian_SwapLE32(i->PackedSize);
+		i->Offset += headerSize;
 		memcpy(buf, &(*i), sizeof(FileHeader_t));
 		buf += sizeof(FileHeader_t);
 	}

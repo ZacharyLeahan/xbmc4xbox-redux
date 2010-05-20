@@ -31,15 +31,14 @@
 
 #pragma once
 
-#include "system.h" // for HAS_DVD_DRIVE
+#include "xbox/IoSupport.h"
 
-#ifdef HAS_DVD_DRIVE
-
-#include "../utils/IoSupport.h"
-
-#include <cdio/cdio.h>
+#include "lib/libcdio/intTypes.h"
+#include "lib/libcdio/Types.h"
+#include "lib/libcdio/cdio.h"
+#include "lib/libcdio/cd_Types.h"
+#include "lib/libcdio/cdtext.h"
 #include "../utils/CriticalSection.h"
-#include "../guilib/StdString.h"
 
 namespace MEDIA_DETECT
 {
@@ -285,7 +284,6 @@ public:
   char* GetDeviceFileName();
 
 private:
-  static char* s_defaultDevice;
   CCriticalSection m_critSection;
   static CLibcdio* m_pInstance;
 };
@@ -308,7 +306,7 @@ public:
 
   void PrintAnalysis(int fs, int num_audio);
 
-  CCdInfo* GetCdInfo(char* cDeviceFileName=NULL);
+  CCdInfo* GetCdInfo();
   void GetCdTextInfo(trackinfo *pti, int trackNum);
 
 protected:
@@ -354,5 +352,3 @@ private:
 };
 
 }
-
-#endif

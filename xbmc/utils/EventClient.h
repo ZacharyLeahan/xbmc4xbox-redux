@@ -22,13 +22,12 @@
  *
  */
 
+#include "include.h"
 #include "Thread.h"
 #include "CriticalSection.h"
 #include "Socket.h"
 #include "EventPacket.h"
 #include "GUISettings.h"
-
-#include <list>
 #include <map>
 #include <queue>
 
@@ -157,8 +156,8 @@ namespace EVENTCLIENT
 
     void RefreshSettings()
     {
-      m_iRepeatDelay = g_guiSettings.GetInt("services.esinitialdelay");
-      m_iRepeatSpeed = g_guiSettings.GetInt("services.escontinuousdelay");
+      m_iRepeatDelay = g_guiSettings.GetInt("remoteevents.initialdelay");
+      m_iRepeatSpeed = g_guiSettings.GetInt("remoteevents.continuousdelay");
     }
 
     SOCKETS::CAddress& Address()

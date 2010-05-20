@@ -20,21 +20,17 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "IAudioDeviceChangedCallback.h"
 #include "utils/CriticalSection.h"
-#include "utils/log.h"
-#include "StdString.h"
-
-#include <map>
 
 // forward definitions
 class CAction;
 class CGUISound;
-class TiXmlNode;
 
 enum WINDOW_SOUND { SOUND_INIT = 0, SOUND_DEINIT };
 
-class CGUIAudioManager
+class CGUIAudioManager : public IAudioDeviceChangedCallback
 {
   class CWindowSounds
   {
@@ -45,10 +41,10 @@ class CGUIAudioManager
 
 public:
   CGUIAudioManager();
-          ~CGUIAudioManager();
+  virtual ~CGUIAudioManager();
 
-          void        Initialize(int iDevice);
-          void        DeInitialize(int iDevice);
+  virtual void        Initialize(int iDevice);
+  virtual void        DeInitialize(int iDevice);
 
           bool        Load();
 
@@ -78,7 +74,7 @@ private:
   pythonSoundsMap     m_pythonSounds;
 
   CStdString          m_strMediaDir;
-  bool                m_bInitialized;
+  bool                m_bEnabled;
 
   CCriticalSection    m_cs;
 };

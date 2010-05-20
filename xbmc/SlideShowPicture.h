@@ -20,13 +20,7 @@
  *
  */
 
-#include "utils/CriticalSection.h"
-#include "gui3d.h"
-#include "StdString.h"
-
 typedef uint32_t color_t;
-
-class CBaseTexture;
 
 class CSlideShowPic
 {
@@ -44,9 +38,8 @@ public:
   CSlideShowPic();
   ~CSlideShowPic();
 
-  void SetTexture(int iSlideNumber, CBaseTexture* pTexture, DISPLAY_EFFECT dispEffect = EFFECT_RANDOM, TRANSISTION_EFFECT transEffect = FADEIN_FADEOUT);
-  void UpdateTexture(CBaseTexture* pTexture);
-
+  void SetTexture(int iSlideNumber, LPDIRECT3DTEXTURE8 pTexture, int iWidth, int iHeight, int iRotate, DISPLAY_EFFECT dispEffect = EFFECT_RANDOM, TRANSISTION_EFFECT transEffect = FADEIN_FADEOUT);
+  void UpdateTexture(IDirect3DTexture8 *pTexture, int iWidth, int iHeight);
   bool IsLoaded() const { return m_bIsLoaded;};
   void UnLoad() {m_bIsLoaded = false;};
   void Render();
@@ -75,13 +68,19 @@ public:
 
   void Move(float dX, float dY);
   float GetZoom() const { return m_fZoomAmount;};
-
+  
   bool m_bIsComic;
 private:
   void Process();
+  void Render(float *x, float *y, IDirect3DTexture8 *pTexture, color_t color, _D3DFILLMODE fillmode = D3DFILL_SOLID );
 
-  void Render(float *x, float *y, CBaseTexture* pTexture, color_t color);
-  CBaseTexture *m_pImage;
+  struct VERTEX
+  {
+    D3DXVECTOR4 p;
+    D3DCOLOR col;
+    FLOAT tu, tv;
+  };
+  static const DWORD FVF_VERTEX = D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1;
 
   int m_iOriginalWidth;
   int m_iOriginalHeight;
@@ -90,6 +89,7 @@ private:
   bool m_bIsFinished;
   bool m_bDrawNextImage;
   CStdString m_strFileName;
+  IDirect3DTexture8* m_pImage;
   float m_fWidth;
   float m_fHeight;
   color_t m_alpha;

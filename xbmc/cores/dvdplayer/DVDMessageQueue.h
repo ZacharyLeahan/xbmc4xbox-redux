@@ -85,31 +85,26 @@ class CDVDMessageQueue
 public:
   CDVDMessageQueue(const std::string &owner);
   virtual ~CDVDMessageQueue();
-
+  
   void  Init();
   void  Flush(CDVDMsg::Message message = CDVDMsg::DEMUXER_PACKET);
   void  Abort();
   void  End();
 
   MsgQueueReturnCode Put(CDVDMsg* pMsg, int priority = 0);
-
+ 
   /**
    * msg,       message type from DVDMessage.h
    * timeout,   timeout in msec
-   * priority,  minimum priority to get, outputs returned packets priority
    */
-  MsgQueueReturnCode Get(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds, int &priority);
-  MsgQueueReturnCode Get(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds)
-  {
-    int priority = 0;
-    return Get(pMsg, iTimeoutInMilliSeconds, priority);
-  }
+  MsgQueueReturnCode Get(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds, int priority = 0);
 
+  
   int GetDataSize() const               { return m_iDataSize; }
   unsigned GetPacketCount(CDVDMsg::Message type);
   bool ReceivedAbortRequest()           { return m_bAbortRequest; }
   void WaitUntilEmpty();
-
+  
   // non messagequeue related functions
   bool IsFull() const                   { return GetLevel() == 100; }
   int  GetLevel() const;
@@ -123,7 +118,7 @@ private:
 
   HANDLE m_hEvent;
   mutable CCriticalSection m_section;
-
+  
   bool m_bAbortRequest;
   bool m_bInitialized;
   bool m_bCaching;

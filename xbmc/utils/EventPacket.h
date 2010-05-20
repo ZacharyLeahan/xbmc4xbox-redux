@@ -22,6 +22,8 @@
  *
  */
 
+#include "include.h"
+
 namespace EVENTPACKET
 {
   const int PACKET_SIZE       = 1024;
@@ -228,7 +230,7 @@ namespace EVENTPACKET
       m_cMajVer = '0';
       m_cMinVer = '0';
       m_eType = PT_LAST;
-
+      
       Parse(datasize, data);
     }
 

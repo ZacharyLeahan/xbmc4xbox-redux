@@ -19,30 +19,24 @@
  *
  */
 
-#include "system.h"
+#include "include.h"
 #include "GUIWindow.h"
 #include "GUIWindowManager.h"
-#include "Key.h"
 #include "LocalizeStrings.h"
+#include "TextureManager.h"
 #include "Settings.h"
 #include "GUIControlFactory.h"
 #include "GUIControlGroup.h"
-#include "GUIControlProfiler.h"
 #ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
 #include "GUIEditControl.h"
 #endif
 
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "utils/GUIInfoManager.h"
-#include "utils/log.h"
 #include "utils/SingleLock.h"
 #include "utils/TimeUtils.h"
 #include "ButtonTranslator.h"
 #include "XMLUtils.h"
-
-#ifdef HAS_PERFORMANCE_SAMPLE
-#include "utils/PerformanceSample.h"
-#endif
 
 using namespace std;
 
@@ -51,6 +45,7 @@ CGUIWindow::CGUIWindow(int id, const CStdString &xmlFile)
   SetID(id);
   SetProperty("xmlfile", xmlFile);
   m_idRange = 1;
+  m_saveLastControl = false;
   m_lastControlID = 0;
   m_bRelativeCoords = false;
   m_overlayState = OVERLAY_STATE_PARENT_WINDOW;   // Use parent or previous window's state
@@ -63,8 +58,6 @@ CGUIWindow::CGUIWindow(int id, const CStdString &xmlFile)
   m_dynamicResourceAlloc = true;
   m_previousWindow = WINDOW_INVALID;
   m_animationsEnabled = true;
-  m_manualRunActions = false;
-  m_exclusiveMouseControl = 0;
 }
 
 CGUIWindow::~CGUIWindow(void)
@@ -72,30 +65,22 @@ CGUIWindow::~CGUIWindow(void)
 
 bool CGUIWindow::Load(const CStdString& strFileName, bool bContainsPath)
 {
-#ifdef HAS_PERFORMANCE_SAMPLE
-  CPerformanceSample aSample("WindowLoad-" + strFileName, true);
-#endif
-
   if (m_windowLoaded)
     return true;      // no point loading if it's already there
-
+    
   int64_t start;
   start = CurrentHostCounter();
 
-  RESOLUTION resToUse = RES_INVALID;
+  RESOLUTION resToUse = INVALID;
   CLog::Log(LOGINFO, "Loading skin file: %s", strFileName.c_str());
-  
+  TiXmlDocument xmlDoc;
   // Find appropriate skin folder + resolution to load from
   CStdString strPath;
   CStdString strLowerPath;
   if (bContainsPath)
     strPath = strFileName;
   else
-  {
-    // FIXME: strLowerPath needs to eventually go since resToUse can get incorrectly overridden
-    strLowerPath =  g_SkinInfo->GetSkinPath(CStdString(strFileName).ToLower(), &resToUse);
-    strPath = g_SkinInfo->GetSkinPath(strFileName, &resToUse);
-  }
+    strPath = g_SkinInfo.GetSkinPath(strFileName, &resToUse);
 
   if (!bContainsPath)
     m_coordsRes = resToUse;
@@ -119,7 +104,7 @@ bool CGUIWindow::LoadXML(const CStdString &strPath, const CStdString &strLowerPa
     SetID(WINDOW_INVALID);
     return false;
   }
-
+  
   return Load(xmlDoc);
 }
 
@@ -134,17 +119,12 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
 
   // set the scaling resolution so that any control creation or initialisation can
   // be done with respect to the correct aspect ratio
-  g_graphicsContext.SetScalingResolution(m_coordsRes, m_needsScaling);
+  g_graphicsContext.SetScalingResolution(m_coordsRes, 0, 0, m_needsScaling);
 
   // Resolve any includes that may be present
-  g_SkinInfo->ResolveIncludes(pRootElement);
+  g_SkinInfo.ResolveIncludes(pRootElement);
   // now load in the skin file
   SetDefaults();
-
-
-  CGUIControlFactory::GetMultipleString(pRootElement, "onload", m_loadActions);
-  CGUIControlFactory::GetMultipleString(pRootElement, "onunload", m_unloadActions);
-  CGUIControlFactory::GetHitRect(pRootElement, m_hitRect);
 
   TiXmlElement *pChild = pRootElement->FirstChildElement();
   while (pChild)
@@ -159,13 +139,13 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
     }
     else if (strValue == "previouswindow" && pChild->FirstChild())
     {
-      m_previousWindow = CButtonTranslator::TranslateWindow(pChild->FirstChild()->Value());
+      m_previousWindow = CButtonTranslator::TranslateWindowString(pChild->FirstChild()->Value());
     }
     else if (strValue == "defaultcontrol" && pChild->FirstChild())
     {
       const char *always = pChild->Attribute("always");
       if (always && strcmpi(always, "true") == 0)
-        m_defaultAlways = true;
+        m_saveLastControl = false;
       m_defaultControl = atoi(pChild->FirstChild()->Value());
     }
     else if (strValue == "visible" && pChild->FirstChild())
@@ -174,7 +154,7 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
     }
     else if (strValue == "animation" && pChild->FirstChild())
     {
-      CRect rect(0, 0, (float)g_settings.m_ResInfo[m_coordsRes].iWidth, (float)g_settings.m_ResInfo[m_coordsRes].iHeight);
+      FRECT rect = { 0, 0, (float)g_settings.m_ResInfo[m_coordsRes].iWidth, (float)g_settings.m_ResInfo[m_coordsRes].iHeight };
       CAnimation anim;
       anim.Create(pChild, rect);
       m_animations.push_back(anim);
@@ -186,7 +166,7 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
     else if (strValue == "coordinates")
     {
       // resolve any includes within coordinates tag (such as multiple origin includes)
-      g_SkinInfo->ResolveIncludes(pChild);
+      g_SkinInfo.ResolveIncludes(pChild);
       TiXmlNode* pSystem = pChild->FirstChild("system");
       if (pSystem)
       {
@@ -201,8 +181,8 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
       while (originElement)
       {
         COrigin origin;
-        g_SkinInfo->ResolveConstant(originElement->Attribute("x"), origin.x);
-        g_SkinInfo->ResolveConstant(originElement->Attribute("y"), origin.y);
+        g_SkinInfo.ResolveConstant(originElement->Attribute("x"), origin.x);
+        g_SkinInfo.ResolveConstant(originElement->Attribute("y"), origin.y);
         if (originElement->FirstChild())
           origin.condition = g_infoManager.TranslateString(originElement->FirstChild()->Value());
         m_origins.push_back(origin);
@@ -211,14 +191,14 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
     }
     else if (strValue == "camera")
     { // z is fixed
-      g_SkinInfo->ResolveConstant(pChild->Attribute("x"), m_camera.x);
-      g_SkinInfo->ResolveConstant(pChild->Attribute("y"), m_camera.y);
+      g_SkinInfo.ResolveConstant(pChild->Attribute("x"), m_camera.x);
+      g_SkinInfo.ResolveConstant(pChild->Attribute("y"), m_camera.y);
       m_hasCamera = true;
     }
     else if (strValue == "controls")
     {
       // resolve any includes within controls tag (such as whole <control> includes)
-      g_SkinInfo->ResolveIncludes(pChild);
+      g_SkinInfo.ResolveIncludes(pChild);
 
       TiXmlElement *pControl = pChild->FirstChildElement();
       while (pControl)
@@ -251,13 +231,13 @@ void CGUIWindow::LoadControl(TiXmlElement* pControl, CGUIControlGroup *pGroup)
   // get control type
   CGUIControlFactory factory;
 
-  CRect rect(0, 0, (float)g_settings.m_ResInfo[m_coordsRes].iWidth, (float)g_settings.m_ResInfo[m_coordsRes].iHeight);
+  FRECT rect = { 0, 0, (float)g_settings.m_ResInfo[m_coordsRes].iWidth, (float)g_settings.m_ResInfo[m_coordsRes].iHeight };
   if (pGroup)
   {
-    rect.x1 = pGroup->GetXPosition();
-    rect.y1 = pGroup->GetYPosition();
-    rect.x2 = rect.x1 + pGroup->GetWidth();
-    rect.y2 = rect.y1 + pGroup->GetHeight();
+    rect.left = pGroup->GetXPosition();
+    rect.top = pGroup->GetYPosition();
+    rect.right = rect.left + pGroup->GetWidth();
+    rect.bottom = rect.top + pGroup->GetHeight();
   }
   CGUIControl* pGUIControl = factory.Create(GetID(), rect, pControl);
   if (pGUIControl)
@@ -291,7 +271,7 @@ void CGUIWindow::LoadControl(TiXmlElement* pControl, CGUIControlGroup *pGroup)
   }
 }
 
-void CGUIWindow::OnWindowLoaded()
+void CGUIWindow::OnWindowLoaded() 
 {
   DynamicResourceAlloc(true);
 }
@@ -313,19 +293,38 @@ void CGUIWindow::Render()
   // to occur.
   if (!m_bAllocated) return;
 
-  g_graphicsContext.SetRenderingResolution(m_coordsRes, m_needsScaling);
-
-  m_renderTime = CTimeUtils::GetFrameTime();
-  // render our window animation - returns false if it needs to stop rendering
-  if (!RenderAnimation(m_renderTime))
-    return;
-
+  // find our origin point
+  float posX = m_posX;
+  float posY = m_posY;
+  for (unsigned int i = 0; i < m_origins.size(); i++)
+  {
+    // no condition implies true
+    if (!m_origins[i].condition || g_infoManager.GetBool(m_origins[i].condition, GetID()))
+    { // found origin
+      posX = m_origins[i].x;
+      posY = m_origins[i].y;
+      break;
+    }
+  }
+  g_graphicsContext.SetRenderingResolution(m_coordsRes, posX, posY, m_needsScaling);
   if (m_hasCamera)
     g_graphicsContext.SetCameraPosition(m_camera);
 
-  CGUIControlGroup::Render();
+  DWORD currentTime = timeGetTime();
+  // render our window animation - returns false if it needs to stop rendering
+  if (!RenderAnimation(currentTime))
+    return;
 
-  if (CGUIControlProfiler::IsRunning()) CGUIControlProfiler::Instance().EndFrame();
+  for (iControls i = m_children.begin(); i != m_children.end(); ++i)
+  {
+    CGUIControl *pControl = *i;
+    if (pControl)
+    {
+      pControl->UpdateVisibility();
+      pControl->DoRender(currentTime);
+    }
+  }
+  m_hasRendered = true;
 }
 
 void CGUIWindow::Close(bool forceClose)
@@ -335,8 +334,8 @@ void CGUIWindow::Close(bool forceClose)
 
 bool CGUIWindow::OnAction(const CAction &action)
 {
-  if (action.IsMouse() || action.IsGesture())
-    return EVENT_RESULT_UNHANDLED != OnMouseAction(action);
+  if (action.id == ACTION_MOUSE)
+    return OnMouseAction();
 
   CGUIControl *focusedControl = GetFocusedControl();
   if (focusedControl)
@@ -349,50 +348,113 @@ bool CGUIWindow::OnAction(const CAction &action)
   return false;
 }
 
-CPoint CGUIWindow::GetPosition() const
+// OnMouseAction - called by OnAction()
+bool CGUIWindow::OnMouseAction()
 {
+  // we need to convert the mouse coordinates to window coordinates
+  float posX = m_posX;
+  float posY = m_posY;
   for (unsigned int i = 0; i < m_origins.size(); i++)
   {
     // no condition implies true
     if (!m_origins[i].condition || g_infoManager.GetBool(m_origins[i].condition, GetID()))
     { // found origin
-      return CPoint(m_origins[i].x, m_origins[i].y);
+      posX = m_origins[i].x;
+      posY = m_origins[i].y;
+      break;
     }
   }
-  return CGUIControlGroup::GetPosition();
-}
-
-// OnMouseAction - called by OnAction()
-EVENT_RESULT CGUIWindow::OnMouseAction(const CAction &action)
-{
-  g_graphicsContext.SetScalingResolution(m_coordsRes, m_needsScaling);
-  CPoint mousePoint(action.GetAmount(0), action.GetAmount(1));
+  g_graphicsContext.SetScalingResolution(m_coordsRes, posX, posY, m_needsScaling);
+  CPoint mousePoint(g_Mouse.GetLocation());
   g_graphicsContext.InvertFinalCoords(mousePoint.x, mousePoint.y);
+  m_transform.InverseTransformPosition(mousePoint.x, mousePoint.y);
 
-  // create the mouse event
-  CMouseEvent event(action.GetID(), action.GetHoldTime(), action.GetAmount(2), action.GetAmount(3));
-  if (m_exclusiveMouseControl)
-  {
-    CGUIControl *child = (CGUIControl *)GetControl(m_exclusiveMouseControl);
-    if (child)
-    {
-      CPoint renderPos = child->GetRenderPosition() - CPoint(child->GetXPosition(), child->GetYPosition());
-      return child->OnMouseEvent(mousePoint - renderPos, event);
+  bool bHandled = false;
+  // check if we have exclusive access
+  if (g_Mouse.GetExclusiveWindowID() == GetID())
+  { // we have exclusive access to the mouse...
+    CGUIControl *pControl = (CGUIControl *)GetControl(g_Mouse.GetExclusiveControlID());
+    if (pControl)
+    { // this control has exclusive access to the mouse
+      HandleMouse(pControl, mousePoint + g_Mouse.GetExclusiveOffset());
+      return true;
     }
   }
 
-  UnfocusFromPoint(mousePoint);
-
-  return SendMouseEvent(mousePoint, event);
+  // run through the controls, and unfocus all those that aren't under the pointer,
+  for (iControls i = m_children.begin(); i != m_children.end(); ++i)
+  {
+    CGUIControl *pControl = *i;
+    pControl->UnfocusFromPoint(mousePoint);
+  }
+  // and find which one is under the pointer
+  // go through in reverse order to make sure we start with the ones on top
+  bool controlUnderPointer(false);
+  for (vector<CGUIControl *>::reverse_iterator i = m_children.rbegin(); i != m_children.rend(); ++i)
+  {
+    CGUIControl *pControl = *i;
+    CGUIControl *focusableControl = NULL;
+    CPoint controlPoint;
+    if (pControl->CanFocusFromPoint(mousePoint, &focusableControl, controlPoint))
+    {
+      controlUnderPointer = focusableControl->OnMouseOver(controlPoint);
+      bHandled = HandleMouse(focusableControl, controlPoint);
+      if (bHandled || controlUnderPointer)
+        break;
+    }
+  }
+  if (!bHandled)
+  { // haven't handled this action - call the window message handlers
+    bHandled = OnMouse(mousePoint);
+  }
+  // and unfocus everything otherwise
+  if (!controlUnderPointer)
+    m_focusedControl = 0;
+  return bHandled;
 }
 
-EVENT_RESULT CGUIWindow::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+// Handles any mouse actions that are not handled by a control
+// default is to go back a window on a right click.
+// This function should be overridden for other windows
+bool CGUIWindow::OnMouse(const CPoint &point)
 {
-  if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
+  if (g_Mouse.bClick[MOUSE_RIGHT_BUTTON])
   { // no control found to absorb this click - go to previous menu
-    return OnAction(CAction(ACTION_PREVIOUS_MENU)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
+    CAction action;
+    action.id = ACTION_PREVIOUS_MENU;
+    return OnAction(action);
   }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+bool CGUIWindow::HandleMouse(CGUIControl *pControl, const CPoint &point)
+{
+  if (g_Mouse.bClick[MOUSE_LEFT_BUTTON])
+  { // Left click
+    return pControl->OnMouseClick(MOUSE_LEFT_BUTTON, point);
+  }
+  else if (g_Mouse.bClick[MOUSE_RIGHT_BUTTON])
+  { // Right click
+    return pControl->OnMouseClick(MOUSE_RIGHT_BUTTON, point);
+  }
+  else if (g_Mouse.bClick[MOUSE_MIDDLE_BUTTON])
+  { // Middle click
+    return pControl->OnMouseClick(MOUSE_MIDDLE_BUTTON, point);
+  }
+  else if (g_Mouse.bDoubleClick[MOUSE_LEFT_BUTTON])
+  { // Left double click
+    return pControl->OnMouseDoubleClick(MOUSE_LEFT_BUTTON, point);
+  }
+  else if (g_Mouse.bHold[MOUSE_LEFT_BUTTON] && g_Mouse.HasMoved())
+  { // Mouse Drag
+    return pControl->OnMouseDrag(g_Mouse.GetLastMove(), point);
+  }
+  else if (g_Mouse.GetWheel())
+  { // Mouse wheel
+    return pControl->OnMouseWheel(g_Mouse.GetWheel(), point);
+  }
+  // no mouse stuff done other than movement
+  return false;
 }
 
 /// \brief Called on window open.
@@ -420,11 +482,6 @@ void CGUIWindow::OnInitWindow()
   SetInitialVisibility();
   QueueAnimation(ANIM_TYPE_WINDOW_OPEN);
   g_windowManager.ShowOverlay(m_overlayState);
-
-  if (!m_manualRunActions)
-  {
-    RunLoadActions();
-  }
 }
 
 // Called on window close.
@@ -433,15 +490,10 @@ void CGUIWindow::OnInitWindow()
 // Override this function and call the base class before doing any dynamic memory freeing
 void CGUIWindow::OnDeinitWindow(int nextWindowID)
 {
-  if (!m_manualRunActions)
-  {
-    RunUnloadActions();
-  }
-
   if (nextWindowID != WINDOW_FULLSCREEN_VIDEO)
   {
     // Dialog animations are handled in Close() rather than here
-    if (HasAnimation(ANIM_TYPE_WINDOW_CLOSE) && !IsDialog() && IsActive())
+    if (HasAnimation(ANIM_TYPE_WINDOW_CLOSE) && !IsDialog())
     {
       // Perform the window out effect
       QueueAnimation(ANIM_TYPE_WINDOW_CLOSE);
@@ -548,19 +600,6 @@ bool CGUIWindow::OnMessage(CGUIMessage& message)
       return true;
     }
     break;
-  case GUI_MSG_EXCLUSIVE_MOUSE:
-    {
-      m_exclusiveMouseControl = message.GetSenderId();
-      return true;
-    }
-    break;
-  case GUI_MSG_GESTURE_NOTIFY:
-    {
-      CAction action(ACTION_GESTURE_NOTIFY, 0, (float)message.GetParam1(), (float)message.GetParam2(), 0, 0);
-      EVENT_RESULT result = OnMouseAction(action);
-      message.SetParam1(result);
-      return result != EVENT_RESULT_UNHANDLED;
-    }
   case GUI_MSG_NOTIFY_ALL:
     {
       // only process those notifications that come from this window, or those intended for every window
@@ -577,12 +616,6 @@ bool CGUIWindow::OnMessage(CGUIMessage& message)
             control->OnMessage(msg);
           }
         }
-        if (message.GetParam1() == GUI_MSG_WINDOW_RESIZE)
-        {
-          // invalidate controls to get them to recalculate sizing information
-          SetInvalid();
-          return true;
-        }
       }
     }
     break;
@@ -595,8 +628,8 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
 {
   CSingleLock lock(g_graphicsContext);
 
-  int64_t start;
-  start = CurrentHostCounter();
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
 
   // load skin xml fil
   CStdString xmlFile = GetProperty("xmlfile");
@@ -606,16 +639,25 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
   if (xmlFile.size() && (forceLoad || m_loadOnDemand || !m_windowLoaded))
     Load(xmlFile,bHasPath);
 
-  int64_t slend;
-  slend = CurrentHostCounter();
+  LARGE_INTEGER slend;
+  QueryPerformanceCounter(&slend);
 
   // and now allocate resources
+  g_TextureManager.StartPreLoad();
+  CGUIControlGroup::PreAllocResources();
+  g_TextureManager.EndPreLoad();
+
+  LARGE_INTEGER plend;
+  QueryPerformanceCounter(&plend);
+
   CGUIControlGroup::AllocResources();
 
-  int64_t end, freq;
-  end = CurrentHostCounter();
-  freq = CurrentHostFrequency();
-  CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load)", 1000.f * (end - start) / freq, 1000.f * (slend - start) / freq);
+  g_TextureManager.FlushPreLoad();
+
+  LARGE_INTEGER end, freq;
+  QueryPerformanceCounter(&end);
+  QueryPerformanceFrequency(&freq);
+  CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load, %.2f ms preload)", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (slend.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (plend.QuadPart - slend.QuadPart) / freq.QuadPart);
 
   m_bAllocated = true;
 }
@@ -681,7 +723,7 @@ bool CGUIWindow::IsAnimating(ANIMATION_TYPE animType)
   return CGUIControlGroup::IsAnimating(animType);
 }
 
-bool CGUIWindow::RenderAnimation(unsigned int time)
+bool CGUIWindow::RenderAnimation(DWORD time)
 {
   g_graphicsContext.ResetWindowTransform();
   if (m_animationsEnabled)
@@ -724,7 +766,7 @@ bool CGUIWindow::ControlGroupHasFocus(int groupID, int controlID)
 void CGUIWindow::SaveControlStates()
 {
   ResetControlStates();
-  if (!m_defaultAlways)
+  if (m_saveLastControl)
     m_lastControlID = GetFocusedControlID();
   for (iControls it = m_children.begin(); it != m_children.end(); ++it)
     (*it)->SaveStates(m_controlStates);
@@ -737,7 +779,7 @@ void CGUIWindow::RestoreControlStates()
     CGUIMessage message(GUI_MSG_ITEM_SELECT, GetID(), (*it).m_id, (*it).m_data);
     OnMessage(message);
   }
-  int focusControl = (!m_defaultAlways && m_lastControlID) ? m_lastControlID : m_defaultControl;
+  int focusControl = (m_saveLastControl && m_lastControlID) ? m_lastControlID : m_defaultControl;
   SET_CONTROL_FOCUS(focusControl, 0);
 }
 
@@ -785,7 +827,7 @@ bool CGUIWindow::OnMove(int fromControl, int moveAction)
 void CGUIWindow::SetDefaults()
 {
   m_renderOrder = 0;
-  m_defaultAlways = false;
+  m_saveLastControl = true;
   m_defaultControl = 0;
   m_bRelativeCoords = false;
   m_posX = m_posY = m_width = m_height = 0;
@@ -796,18 +838,16 @@ void CGUIWindow::SetDefaults()
   m_origins.clear();
   m_hasCamera = false;
   m_animationsEnabled = true;
-  m_hitRect.SetRect(0, 0, (float)g_settings.m_ResInfo[m_coordsRes].iWidth, (float)g_settings.m_ResInfo[m_coordsRes].iHeight);
 }
 
-CRect CGUIWindow::GetScaledBounds() const
+FRECT CGUIWindow::GetScaledBounds() const
 {
   CSingleLock lock(g_graphicsContext);
-  g_graphicsContext.SetScalingResolution(m_coordsRes, m_needsScaling);
-  CPoint pos(GetPosition());
-  CRect rect(pos.x, pos.y, pos.x + m_width, pos.y + m_height);
+  g_graphicsContext.SetScalingResolution(m_coordsRes, m_posX, m_posY, m_needsScaling);
+  FRECT rect = {0, 0, m_width, m_height};
   float z = 0;
-  g_graphicsContext.ScaleFinalCoords(rect.x1, rect.y1, z);
-  g_graphicsContext.ScaleFinalCoords(rect.x2, rect.y2, z);
+  g_graphicsContext.ScaleFinalCoords(rect.left, rect.top, z);
+  g_graphicsContext.ScaleFinalCoords(rect.right, rect.bottom, z);
   return rect;
 }
 
@@ -852,88 +892,67 @@ void CGUIWindow::ChangeButtonToEdit(int id, bool singleLabel /* = false*/)
 #endif
 }
 
-void CGUIWindow::SetProperty(const CStdString &key, const CStdString &value)
+void CGUIWindow::SetProperty(const CStdString &strKey, const char *strValue)
 {
-  m_mapProperties[key] = value;
+  m_mapProperties[strKey] = strValue;
 }
 
-void CGUIWindow::SetProperty(const CStdString &key, const char *value)
+void CGUIWindow::SetProperty(const CStdString &strKey, const CStdString &strValue)
 {
-  m_mapProperties[key] = value;
+  m_mapProperties[strKey] = strValue;
 }
 
-void CGUIWindow::SetProperty(const CStdString &key, int value)
+void CGUIWindow::SetProperty(const CStdString &strKey, int nVal)
 {
   CStdString strVal;
-  strVal.Format("%d", value);
-  SetProperty(key, strVal);
+  strVal.Format("%d",nVal);
+  SetProperty(strKey, strVal);
 }
 
-void CGUIWindow::SetProperty(const CStdString &key, bool value)
+void CGUIWindow::SetProperty(const CStdString &strKey, bool bVal)
 {
-  SetProperty(key, value ? "1" : "0");
+  SetProperty(strKey, bVal?"1":"0");
 }
 
-void CGUIWindow::SetProperty(const CStdString &key, double value)
+void CGUIWindow::SetProperty(const CStdString &strKey, double dVal)
 {
   CStdString strVal;
-  strVal.Format("%f", value);
-  SetProperty(key, strVal);
+  strVal.Format("%f",dVal);
+  SetProperty(strKey, strVal);
 }
 
-CStdString CGUIWindow::GetProperty(const CStdString &key) const
+CStdString CGUIWindow::GetProperty(const CStdString &strKey) const
 {
-  std::map<CStdString,CStdString,icompare>::const_iterator iter = m_mapProperties.find(key);
+  std::map<CStdString,CStdString,icompare>::const_iterator iter = m_mapProperties.find(strKey);
   if (iter == m_mapProperties.end())
     return "";
 
   return iter->second;
 }
 
-int CGUIWindow::GetPropertyInt(const CStdString &key) const
+int CGUIWindow::GetPropertyInt(const CStdString &strKey) const
 {
-  return atoi(GetProperty(key).c_str());
+  return atoi(GetProperty(strKey).c_str()) ;
 }
 
-bool CGUIWindow::GetPropertyBool(const CStdString &key) const
+bool CGUIWindow::GetPropertyBOOL(const CStdString &strKey) const
 {
-  return GetProperty(key) == "1";
+  return GetProperty(strKey) == "1";
 }
 
-double CGUIWindow::GetPropertyDouble(const CStdString &key) const
+double CGUIWindow::GetPropertyDouble(const CStdString &strKey) const
 {
-  return atof(GetProperty(key).c_str());
+  return atof(GetProperty(strKey).c_str()) ;
+}
+
+void CGUIWindow::ClearProperty(const CStdString &strKey)
+{
+  std::map<CStdString,CStdString,icompare>::iterator iter = m_mapProperties.find(strKey);
+  if (iter != m_mapProperties.end())
+    m_mapProperties.erase(iter);
 }
 
 void CGUIWindow::ClearProperties()
 {
   m_mapProperties.clear();
-}
-
-void CGUIWindow::RunActions(std::vector<CGUIActionDescriptor>& actions)
-{
-  vector<CGUIActionDescriptor> tempActions = actions;
-
-  // and execute our actions
-  for (unsigned int i = 0; i < tempActions.size(); i++)
-  {
-    CGUIMessage message(GUI_MSG_EXECUTE, 0, GetID());
-    message.SetAction(tempActions[i]);
-    g_windowManager.SendMessage(message);
-  }
-}
-
-void CGUIWindow::SetRunActionsManually()
-{
-  m_manualRunActions = true;
-}
-
-void CGUIWindow::RunLoadActions()
-{
-  RunActions(m_loadActions);
-}
-
-void CGUIWindow::RunUnloadActions()
-{
-  RunActions(m_unloadActions);
 }

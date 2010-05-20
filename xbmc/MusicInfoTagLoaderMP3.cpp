@@ -19,12 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "MusicInfoTagLoaderMP3.h"
 #include "APEv2Tag.h"
 #include "Id3Tag.h"
 #include "AdvancedSettings.h"
 #include "FileSystem/File.h"
-#include "utils/log.h"
 
 using namespace MUSIC_INFO;
 
@@ -87,7 +87,6 @@ bool CMusicInfoTagLoaderMP3::Load(const CStdString& strFileName, CMusicInfoTag& 
       m_replayGainInfo=id3tag.GetReplayGain();
     }
 
-#ifndef ARMEL_ // TODO this will probably be OK next time we sync to trunk
     // Check for an APEv2 tag
     CAPEv2Tag apeTag;
     if (PrioritiseAPETags() && apeTag.ReadTag(strFileName.c_str()))
@@ -136,7 +135,7 @@ bool CMusicInfoTagLoaderMP3::Load(const CStdString& strFileName, CMusicInfoTag& 
       if (apeTag.GetRating() > '0')
         tag.SetRating(apeTag.GetRating());
     }
-#endif
+
     tag.SetDuration(ReadDuration(strFileName));
 
     return tag.Loaded();
@@ -152,7 +151,6 @@ bool CMusicInfoTagLoaderMP3::Load(const CStdString& strFileName, CMusicInfoTag& 
 
 bool CMusicInfoTagLoaderMP3::ReadSeekAndReplayGainInfo(const CStdString &strFileName)
 {
-#ifndef ARMEL_ // TODO this will probably be OK next time we sync to trunk
   // First check for an APEv2 tag
   CAPEv2Tag apeTag;
   if (apeTag.ReadTag(strFileName.c_str()))
@@ -160,7 +158,7 @@ bool CMusicInfoTagLoaderMP3::ReadSeekAndReplayGainInfo(const CStdString &strFile
     if (apeTag.GetReplayGain().iHasGainInfo)
       m_replayGainInfo = apeTag.GetReplayGain();
   }
-#endif
+
   if (!m_replayGainInfo.iHasGainInfo)
   { // Nothing found query id3 tag
     CID3Tag id3tag;
@@ -181,9 +179,9 @@ bool CMusicInfoTagLoaderMP3::ReadSeekAndReplayGainInfo(const CStdString &strFile
 int CMusicInfoTagLoaderMP3::IsMp3FrameHeader(unsigned long head)
 {
   const long freqs[9] = { 44100, 48000, 32000,
-                          22050, 24000, 16000 ,
-                          11025 , 12000 , 8000 };
-
+			 22050, 24000, 16000 ,
+			 11025 , 12000 , 8000 };
+  
  const int tabsel_123[2][3][16] = {
   { {128,32,64,96,128,160,192,224,256,288,320,352,384,416,448,},
     {128,32,48,56, 64, 80, 96,112,128,160,192,224,256,320,384,},
@@ -215,13 +213,13 @@ int CMusicInfoTagLoaderMP3::IsMp3FrameHeader(unsigned long head)
     return 0;
 
   int srate = 0;
-  if(!((head >> 20) &  1))
-    srate = 6 + ((head>>10)&0x3);
-  else
-    srate = ((head>>10)&0x3) + ((1-((head >> 19) &  1)) * 3);
+	if(!((head >> 20) &  1)) 
+		srate			= 6 + ((head>>10)&0x3);		
+	else 
+		srate			= ((head>>10)&0x3) + ((1-((head >> 19) &  1)) * 3);
 
-  int framesize = tabsel_123[1 - ((head >> 19) &  1)][(4-((head>>17)&3))-1][((head>>12)&0xf)]*144000/(freqs[srate]<<(1 - ((head >> 19) &  1)))+((head>>9)&0x1);
-  return framesize;
+ 	int framesize = tabsel_123[1 - ((head >> 19) &  1)][(4-((head>>17)&3))-1][((head>>12)&0xf)]*144000/(freqs[srate]<<(1 - ((head >> 19) &  1)))+((head>>9)&0x1);
+	return framesize;
 }
 
 //TODO: merge duplicate, but slitely different implemented) code and consts in IsMp3FrameHeader(above) and ReadDuration (below).
@@ -346,7 +344,7 @@ int CMusicInfoTagLoaderMP3::ReadDuration(const CStdString& strFileName)
       if ((j + 4) >= iScanSize)
       {
         //no valid frame found in buffer
-        firstValidFrameLocation = -1;
+	      firstValidFrameLocation = -1;
         break;
       }
     }
@@ -410,9 +408,9 @@ int CMusicInfoTagLoaderMP3::ReadDuration(const CStdString& strFileName)
     }*/
 
     if (
-      (i == firstValidFrameLocation) ||
+      (i == firstValidFrameLocation) || 
       (
-        (firstValidFrameLocation == -1) &&
+        (firstValidFrameLocation == -1) && 
         (IsMp3FrameHeader(mpegheader))
       )
     )
@@ -565,7 +563,7 @@ int CMusicInfoTagLoaderMP3::ReadDuration(const CStdString& strFileName)
         if (ReadLAMETagInfo(xing - 0x24))
         {
           // calculate new (more accurate) duration:
-          int64_t lastSample = (int64_t)frame_count * (int64_t)tpfbs[layer] - m_seekInfo.GetFirstSample() - m_seekInfo.GetLastSample();
+          __int64 lastSample = (__int64)frame_count * (__int64)tpfbs[layer] - m_seekInfo.GetFirstSample() - m_seekInfo.GetLastSample();
           m_seekInfo.SetDuration((float)lastSample / frequency);
         }
       }

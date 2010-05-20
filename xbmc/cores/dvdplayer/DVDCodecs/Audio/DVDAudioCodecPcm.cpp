@@ -18,7 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDAudioCodecPcm.h"
 #include "DVDStreamInfo.h"
 #include "DVDCodecs/DVDCodecs.h"
@@ -126,12 +127,12 @@ CDVDAudioCodecPcm::~CDVDAudioCodecPcm()
 bool CDVDAudioCodecPcm::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
   SetDefault();
-
+  
   m_codecID = hints.codec;
   m_iSourceChannels = hints.channels;
   m_iSourceSampleRate = hints.samplerate;
   m_iSourceBitrate = 16;
-
+  
   switch (m_codecID)
   {
     case CODEC_ID_PCM_ALAW:
@@ -169,7 +170,7 @@ int CDVDAudioCodecPcm::Decode(BYTE* pData, int iSize)
     samples = (short*)m_decodedData;
     src = pData;
     int buf_size = iSize;
-
+    
     if (iSize > AVCODEC_MAX_AUDIO_FRAME_SIZE / 2)
         iSize = AVCODEC_MAX_AUDIO_FRAME_SIZE / 2;
 
@@ -262,7 +263,7 @@ int CDVDAudioCodecPcm::Decode(BYTE* pData, int iSize)
     default:
         return -1;
     }
-
+    
     m_decodedDataSize = (BYTE*)samples - (BYTE*)m_decodedData;
     return iSize;
 }
@@ -291,23 +292,6 @@ void CDVDAudioCodecPcm::Reset()
 int CDVDAudioCodecPcm::GetChannels()
 {
   return m_iOutputChannels;
-}
-
-enum PCMChannels* CDVDAudioCodecPcm::GetChannelMap()
-{
-  static enum PCMChannels map[8][8] =
-  {
-    /* MONO   */ {PCM_FRONT_CENTER                                                                                                                                                    },
-    /* STEREO */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT                                                                                                                                     },
-    /* 3.0 ?  */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_FRONT_CENTER                                                                                                                   },
-    /* 4.0 ?  */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_BACK_LEFT   , PCM_BACK_RIGHT                                                                                                   },
-    /* 5.0    */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_FRONT_CENTER, PCM_BACK_LEFT    , PCM_BACK_RIGHT                                                                                },
-    /* 5.1    */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_FRONT_CENTER, PCM_LOW_FREQUENCY, PCM_BACK_LEFT , PCM_BACK_RIGHT                                                                },
-    /* 7.0 ?  */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_FRONT_CENTER, PCM_BACK_LEFT    , PCM_BACK_RIGHT, PCM_SIDE_LEFT , PCM_SIDE_RIGHT                                                },
-    /* 7.1 ?  */ {PCM_FRONT_LEFT, PCM_FRONT_RIGHT, PCM_FRONT_CENTER, PCM_LOW_FREQUENCY, PCM_BACK_LEFT , PCM_BACK_RIGHT, PCM_SIDE_LEFT , PCM_SIDE_RIGHT                                }
-  };
-
-  return map[m_iOutputChannels - 1];
 }
 
 int CDVDAudioCodecPcm::GetSampleRate()

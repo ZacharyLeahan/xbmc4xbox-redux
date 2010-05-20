@@ -21,8 +21,6 @@
  *
  */
 
-#include "system.h" // for HANDLE and SOCKET
-
 namespace AUTOPTR
 {
 class CAutoPtrHandle

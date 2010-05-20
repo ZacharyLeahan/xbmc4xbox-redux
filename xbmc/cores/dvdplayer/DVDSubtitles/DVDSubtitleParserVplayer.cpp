@@ -19,11 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "DVDSubtitleParserVplayer.h"
 #include "DVDCodecs/Overlay/DVDOverlayText.h"
 #include "DVDClock.h"
 #include "utils/RegExp.h"
-#include "StdString.h"
 
 using namespace std;
 
@@ -58,7 +58,7 @@ bool CDVDSubtitleParserVplayer::Open(CDVDStreamInfo &hints)
 
   CDVDOverlayText* pPrevOverlay = NULL;
 
-  while (m_pStream->ReadLine(line, sizeof(line)))
+  while (m_stringstream.getline(line, sizeof(line)))
   {
     if (reg.RegFind(line) > -1)
     {

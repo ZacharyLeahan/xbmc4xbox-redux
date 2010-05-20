@@ -105,11 +105,6 @@ static int idcin_probe(AVProbeData *p)
      * audio channels: 0 for no audio, or 1 or 2
      */
 
-    /* check we have enough data to do all checks, otherwise the
-       0-padding may cause a wrong recognition */
-    if (p->buf_size < 20)
-        return 0;
-
     /* check the video width */
     number = AV_RL32(&p->buf[0]);
     if ((number == 0) || (number > 1024))
@@ -260,8 +255,8 @@ static int idcin_read_packet(AVFormatContext *s,
         url_fseek(pb, 4, SEEK_CUR);
         chunk_size -= 4;
         ret= av_get_packet(pb, pkt, chunk_size);
-        if (ret < 0)
-            return ret;
+        if (ret != chunk_size)
+            return AVERROR(EIO);
         pkt->stream_index = idcin->video_stream_index;
         pkt->pts = idcin->pts;
     } else {
@@ -271,8 +266,8 @@ static int idcin_read_packet(AVFormatContext *s,
         else
             chunk_size = idcin->audio_chunk_size1;
         ret= av_get_packet(pb, pkt, chunk_size);
-        if (ret < 0)
-            return ret;
+        if (ret != chunk_size)
+            return AVERROR(EIO);
         pkt->stream_index = idcin->audio_stream_index;
         pkt->pts = idcin->pts;
 

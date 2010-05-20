@@ -40,47 +40,15 @@
 #define LOGFATAL   6
 #define LOGNONE    7
 
-#ifdef __GNUC__
-#define ATTRIB_LOG_FORMAT __attribute__((format(printf,2,3)))
-#else
-#define ATTRIB_LOG_FORMAT
-#endif
-
 class CLog
 {
-  static FILE* m_file;
+  static FILE* fd;
 public:
   CLog();
   virtual ~CLog(void);
   static void Close();
-  static void Log(int loglevel, const char *format, ... ) ATTRIB_LOG_FORMAT;
+  static void Log(int loglevel, const char *format, ... );
   static void DebugLog(const char *format, ...);
-  static void MemDump(char *pData, int length);
+  static void MemDump(BYTE *pData, int length);
   static void DebugLogMemory();
-  static bool Init(const char* path);
-#ifdef _WIN32
-  static bool InitW(const char* path);
-#endif
 };
-
-// GL Error checking macro
-// this function is useful for tracking down GL errors, which otherwise
-// just result in undefined behavior and can be difficult to track down.
-//
-// Just call it 'VerifyGLState()' after a sequence of GL calls
-//
-// if GL_DEBUGGING and HAS_GL are defined, the function checks
-// for GL errors and prints the current state of the various matrices;
-// if not it's just an empty inline stub, and thus won't affect performance
-// and will be optimized out.
-
-void _VerifyGLState(const char* szfile, const char* szfunction, int lineno);
-#if defined(GL_DEBUGGING) && defined(HAS_GL)
-#define VerifyGLState() _VerifyGLState(__FILE__, __FUNCTION__, __LINE__)
-#else
-#define VerifyGLState()
-#endif
-
-void LogGraphicsInfo();
-
-

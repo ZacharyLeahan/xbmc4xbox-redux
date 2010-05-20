@@ -31,10 +31,10 @@ class CDVDFileInfo
 public:
   // Extract a thumbnail immage from the media at strPath an image file in strTarget, optionally populating a streamdetails class with the data
   static bool ExtractThumb(const CStdString &strPath, const CStdString &strTarget, CStreamDetails *pStreamDetails);
-
+  
   // GetFileMetaData will fill pItem's properties according to what can be extracted from the file.
-  static void GetFileMetaData(const CStdString &strPath, CFileItem *pItem);
-
+  static void GetFileMetaData(const CStdString &strPath, CFileItem *pItem); 
+  
   // Probe the files streams and store the info in the VideoInfoTag
   static bool GetFileStreamDetails(CFileItem *pItem);
   static bool DemuxerToStreamDetails(CDVDDemux *pDemux, CStreamDetails &details);

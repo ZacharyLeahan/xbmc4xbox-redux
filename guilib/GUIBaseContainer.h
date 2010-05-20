@@ -1,6 +1,6 @@
 /*!
 \file GUIListContainer.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -35,7 +35,7 @@ typedef boost::shared_ptr<CGUIListItem> CGUIListItemPtr;
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 
 class CGUIBaseContainer : public CGUIControl
@@ -50,14 +50,17 @@ public:
   virtual void OnLeft();
   virtual void OnRight();
   virtual bool OnMouseOver(const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseDoubleClick(int button, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
   virtual bool OnMessage(CGUIMessage& message);
   virtual void SetFocus(bool bOnOff);
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void UpdateVisibility(const CGUIListItem *item = NULL);
 
   virtual unsigned int GetRows() const;
-
+  
   virtual bool HasNextPage() const;
   virtual bool HasPreviousPage() const;
 
@@ -67,7 +70,7 @@ public:
   virtual void SaveStates(std::vector<CControlState> &states);
   virtual int GetSelectedItem() const;
 
-  virtual void DoRender(unsigned int currentTime);
+  virtual void DoRender(DWORD currentTime);
   void LoadLayout(TiXmlElement *layout);
   void LoadContent(TiXmlElement *content);
 
@@ -94,13 +97,14 @@ public:
   virtual void DumpTextureUse();
 #endif
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   bool OnClick(int actionID);
+  virtual bool SelectItemFromPoint(const CPoint &point);
   virtual void Render();
   virtual void RenderItem(float posX, float posY, CGUIListItem *item, bool focused);
   virtual void Scroll(int amount);
   virtual bool MoveDown(bool wrapAround);
   virtual bool MoveUp(bool wrapAround);
+  virtual void MoveToItem(int item);
   virtual void ValidateOffset();
   virtual int  CorrectOffset(int offset, int cursor) const;
   virtual void UpdateLayout(bool refreshAllItems = false);
@@ -108,12 +112,10 @@ protected:
   virtual void UpdatePageControl(int offset);
   virtual void CalculateLayout();
   virtual void SelectItem(int item) {};
-  virtual bool SelectItemFromPoint(const CPoint &point) { return false; };
-  virtual int GetCursorFromPoint(const CPoint &point, CPoint *itemPoint = NULL) const { return -1; };
   virtual void Reset();
   virtual unsigned int GetNumItems() const { return m_items.size(); };
   virtual int GetCurrentPage() const;
-  bool InsideLayout(const CGUIListItemLayout *layout, const CPoint &point) const;
+  bool InsideLayout(const CGUIListItemLayout *layout, const CPoint &point);
 
   inline float Size() const;
   void MoveToRow(int row);
@@ -137,7 +139,7 @@ protected:
 
   int m_pageControl;
 
-  unsigned int m_renderTime;
+  DWORD m_renderTime;
 
   std::vector<CGUIListItemLayout> m_layouts;
   std::vector<CGUIListItemLayout> m_focusedLayouts;
@@ -145,19 +147,18 @@ protected:
   CGUIListItemLayout *m_layout;
   CGUIListItemLayout *m_focusedLayout;
 
-  void ScrollToOffset(int offset);
-  void SetContainerMoving(int direction);
+  virtual void ScrollToOffset(int offset);
   void UpdateScrollOffset();
 
-  unsigned int m_scrollLastTime;
-  int          m_scrollTime;
-  float        m_scrollOffset;
+  DWORD m_scrollLastTime;
+  int   m_scrollTime;
+  float m_scrollOffset;
 
   VIEW_TYPE m_type;
   CStdString m_label;
 
   bool m_staticContent;
-  unsigned int m_staticUpdateTime;
+  DWORD m_staticUpdateTime;
   std::vector<CGUIListItemPtr> m_staticItems;
   bool m_wasReset;  // true if we've received a Reset message until we've rendered once.  Allows
                     // us to make sure we don't tell the infomanager that we've been moving when

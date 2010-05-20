@@ -1,6 +1,6 @@
 /*!
 \file GUITexture.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUITEXTURE_H
@@ -31,9 +31,16 @@
 
 #include "TextureManager.h"
 #include "Geometry.h"
-#include "system.h" // HAS_GL, HAS_DX, etc
 
 typedef uint32_t color_t;
+
+struct FRECT
+{
+  float left;
+  float top;
+  float right;
+  float bottom;
+};
 
 // image alignment for <aspect>keep</aspect>, <aspect>scale</aspect> or <aspect>center</aspect>
 #define ASPECT_ALIGN_CENTER  0
@@ -71,11 +78,31 @@ public:
 class CTextureInfo
 {
 public:
-  CTextureInfo();
-  CTextureInfo(const CStdString &file);
-  CTextureInfo& operator=(const CTextureInfo &right);
+  CTextureInfo()
+  {
+    memset(&border, 0, sizeof(FRECT));
+    orientation = 0;
+    useLarge = false;
+  };
+
+  CTextureInfo(const CStdString &file)
+  {
+    memset(&border, 0, sizeof(FRECT));
+    orientation = 0;
+    useLarge = false;
+    filename = file;
+  }
+
+  void operator=(const CTextureInfo &right)
+  {
+    memcpy(&border, &right.border, sizeof(FRECT));
+    orientation = right.orientation;
+    diffuse = right.diffuse;
+    filename = right.filename;
+    useLarge = right.useLarge;
+  };
   bool       useLarge;
-  CRect      border;      // scaled  - unneeded if we get rid of scale on load
+  FRECT      border;      // scaled  - unneeded if we get rid of scale on load
   int        orientation; // orientation of the texture (0 - 7 == EXIForientation - 1)
   CStdString diffuse;     // diffuse overlay texture
   CStdString filename;    // main texture file
@@ -91,9 +118,9 @@ public:
   void Render();
 
   void DynamicResourceAlloc(bool bOnOff);
+  void PreAllocResources();
   void AllocResources();
   void FreeResources(bool immediately = false);
-  void SetInvalid();
 
   void SetVisible(bool visible);
   void SetAlpha(unsigned char alpha);
@@ -153,7 +180,7 @@ protected:
   // animations
   int m_currentLoop;
   unsigned int m_currentFrame;
-  uint32_t m_frameCounter;
+  DWORD m_frameCounter;
 
   float m_diffuseU, m_diffuseV;           // size of the diffuse frame (in tex coords)
   float m_diffuseScaleU, m_diffuseScaleV; // scale factor of the diffuse frame (from texture coords to diffuse tex coords)
@@ -166,20 +193,18 @@ protected:
   CTextureInfo m_info;
   CAspectRatio m_aspect;
 
-  CTextureArray m_diffuse;
-  CTextureArray m_texture;
+  int m_largeOrientation;   // orientation for large textures
+
+  CTexture m_diffuse;
+  CTexture m_texture;
 };
 
-
-#if defined(HAS_GL)
-#include "GUITextureGL.h"
-#define CGUITexture CGUITextureGL
-#elif defined(HAS_GLES)
-#include "GUITextureGLES.h"
-#define CGUITexture CGUITextureGLES
-#elif defined(HAS_DX)
+#ifndef HAS_SDL
 #include "GUITextureD3D.h"
-#define CGUITexture CGUITextureD3D
+#elif defined(HAS_SDL_2D)
+#include "GUITextureSDL.h"
+#elif defined(HAS_SDL_OPENGL)
+#include "GUITextureGL.h"
 #endif
 
 #endif

@@ -38,7 +38,7 @@ public:
 
 class DllStSound : public DllDynamic, DllStSoundInterface
 {
-  DECLARE_DLL_WRAPPER(DllStSound, DLL_PATH_YM_CODEC)
+  DECLARE_DLL_WRAPPER(DllStSound, q:\\system\\players\\paplayer\\stsoundlibrary.dll)
   DEFINE_METHOD1(int, LoadYM, (const char* p1))
   DEFINE_METHOD1(void, FreeYM, (int p1))
   DEFINE_METHOD3(int, FillBuffer, (int p1, char* p2, unsigned long p3))
@@ -56,4 +56,3 @@ class DllStSound : public DllDynamic, DllStSoundInterface
     RESOLVE_METHOD_RENAME(DLL_GetLength, GetLength)
   END_METHOD_RESOLVE()
 };
-

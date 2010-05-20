@@ -19,21 +19,20 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUISettings.h"
 #include "GUIDialogKeyboard.h"
 #include "GUILabelControl.h"
 #include "GUIButtonControl.h"
 #include "GUIDialogNumeric.h"
 #include "GUIDialogOK.h"
-#include "GUIUserMessages.h"
 #include "GUIWindowManager.h"
 #include "utils/RegExp.h"
 #include "GUIPassword.h"
 #include "utils/md5.h"
-#include "utils/TimeUtils.h"
-#include "Application.h"
+#include "xbox/XKGeneral.h"
+#include "Settings.h"
 #include "AdvancedSettings.h"
-#include "LocalizeStrings.h"
 
 // Symbol mapping (based on MS virtual keyboard - may need improving)
 static char symbol_map[37] = ")!@#$%^&*([]{}-_=+;:\'\",.<>/?\\|`~    ";
@@ -103,19 +102,19 @@ void CGUIDialogKeyboard::OnInitWindow()
 bool CGUIDialogKeyboard::OnAction(const CAction &action)
 {
   bool handled(true);
-  if (action.GetID() == ACTION_BACKSPACE)
+  if (action.id == ACTION_BACKSPACE)
   {
     Backspace();
   }
-  else if (action.GetID() == ACTION_ENTER)
+  else if (action.id == ACTION_ENTER)
   {
     OnOK();
   }
-  else if (action.GetID() == ACTION_CURSOR_LEFT)
+  else if (action.id == ACTION_CURSOR_LEFT)
   {
     MoveCursor( -1);
   }
-  else if (action.GetID() == ACTION_CURSOR_RIGHT)
+  else if (action.id == ACTION_CURSOR_RIGHT)
   {
     if ((unsigned int) GetCursorPos() == m_strEdit.size() && (m_strEdit.size() == 0 || m_strEdit[m_strEdit.size() - 1] != ' '))
     { // add a space
@@ -124,40 +123,65 @@ bool CGUIDialogKeyboard::OnAction(const CAction &action)
     else
       MoveCursor(1);
   }
-  else if (action.GetID() == ACTION_SHIFT)
+  else if (action.id == ACTION_SHIFT)
   {
     OnShift();
   }
-  else if (action.GetID() == ACTION_SYMBOLS)
+  else if (action.id == ACTION_SYMBOLS)
   {
     OnSymbols();
   }
-  else if (action.GetID() >= REMOTE_0 && action.GetID() <= REMOTE_9)
+  else if (action.id >= REMOTE_0 && action.id <= REMOTE_9)
   {
-    OnRemoteNumberClick(action.GetID());
+    OnRemoteNumberClick(action.id);
   }
-  else if (action.GetID() >= KEY_VKEY && action.GetID() < KEY_ASCII)
+  else if (action.id >= KEY_VKEY && action.id < KEY_ASCII)
   { // input from the keyboard (vkey, not ascii)
-    uint8_t b = action.GetID() & 0xFF;
+    uint8_t b = action.id & 0xFF;
     if (b == 0x24) // home
     {
-      MoveCursor(-GetCursorPos());
+      if (g_advancedSettings.m_bNavVKeyboard)
+      {
+        CAction action;
+        action.id = ACTION_MOVE_LEFT;
+        return OnAction(action);
+      }
+      else
+       MoveCursor( -1);
     }
-    else if (b == 0x23) // end
+    else if (b == 0x26 && g_advancedSettings.m_bNavVKeyboard)
     {
-      MoveCursor(m_strEdit.GetLength() - GetCursorPos());
-    }
-    else if (b == 0x25) // left
-    {
-      MoveCursor( -1);
+      CAction action;
+      action.id = ACTION_MOVE_UP;
+      return OnAction(action);
     }
     else if (b == 0x27) // right
     {
-      MoveCursor(1);
+      if (g_advancedSettings.m_bNavVKeyboard)
+      {
+        CAction action;
+        action.id = ACTION_MOVE_RIGHT;
+        return OnAction(action);
+      }
+      else
+       MoveCursor(1);
+    }
+    else if (b == 0x28 && g_advancedSettings.m_bNavVKeyboard)
+    {
+      CAction action;
+      action.id = ACTION_MOVE_DOWN;
+      return OnAction(action);
     }
     else if (b == 0x0D) // enter
     {
-      OnOK();
+      if (g_advancedSettings.m_bNavVKeyboard)
+      {
+        CAction action;
+        action.id = ACTION_SELECT_ITEM;
+        return OnAction(action);
+      }
+      else
+        OnOK();
     }
     else if (b == 0x2E) // delete
     {
@@ -169,15 +193,23 @@ bool CGUIDialogKeyboard::OnAction(const CAction &action)
     }
     else if (b == 0x08) Backspace();    // backspace
     else if (b == 0x1B) Close();        // escape
+    else if (b == 0x20) Character(b);   // space
   }
-  else if (action.GetID() >= KEY_ASCII)
+  else if (action.id >= KEY_ASCII)
   { // input from the keyboard
-    //char ch = action.GetID() & 0xFF;
-    switch (action.GetUnicode())
+    //char ch = action.id & 0xFF;
+    switch (action.unicode)
     {
     case 13:  // enter
     case 10:  // enter
-      OnOK();
+      if (g_advancedSettings.m_bNavVKeyboard)
+      {
+        CAction action;
+        action.id = ACTION_SELECT_ITEM;
+        return OnAction(action);
+      }
+      else
+        OnOK();
       break;
     case 8:   // backspace
       Backspace();
@@ -186,7 +218,7 @@ bool CGUIDialogKeyboard::OnAction(const CAction &action)
       Close();
       break;
     default:  //use character input
-      Character(action.GetUnicode());
+      Character(action.unicode);
       break;
     }
   }
@@ -284,19 +316,19 @@ void CGUIDialogKeyboard::Character(WCHAR ch)
   MoveCursor(1);
 }
 
-void CGUIDialogKeyboard::FrameMove()
+void CGUIDialogKeyboard::Render()
 {
   // reset the hide state of the label when the remote
   // sms style input times out
-  if (m_lastRemoteClickTime && m_lastRemoteClickTime + REMOTE_SMS_DELAY < CTimeUtils::GetFrameTime())
+  if (m_lastRemoteClickTime && m_lastRemoteClickTime + REMOTE_SMS_DELAY < timeGetTime())
   {
     // finished inputting a sms style character - turn off our shift and symbol states
     ResetShiftAndSymbols();
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
-void CGUIDialogKeyboard::UpdateLabel() // FIXME seems to be called twice for one USB SDL keyboard action/character
+void CGUIDialogKeyboard::UpdateLabel()
 {
   CGUILabelControl* pEdit = ((CGUILabelControl*)GetControl(CTL_LABEL_EDIT));
   if (pEdit)
@@ -305,7 +337,7 @@ void CGUIDialogKeyboard::UpdateLabel() // FIXME seems to be called twice for one
     if (m_hiddenInput)
     { // convert to *'s
       edit.Empty();
-      if (m_lastRemoteClickTime + REMOTE_SMS_DELAY > CTimeUtils::GetFrameTime() && m_strEdit.size())
+      if (m_lastRemoteClickTime + REMOTE_SMS_DELAY > timeGetTime() && m_strEdit.size())
       { // using the remove to input, so display the last key input
         edit.append(m_strEdit.size() - 1, L'*');
         edit.append(1, m_strEdit[m_strEdit.size() - 1]);
@@ -318,7 +350,7 @@ void CGUIDialogKeyboard::UpdateLabel() // FIXME seems to be called twice for one
     g_charsetConverter.wToUTF8(edit, utf8Edit);
     pEdit->SetLabel(utf8Edit);
     // Send off a search message
-    unsigned int now = CTimeUtils::GetFrameTime();
+    DWORD now = timeGetTime();
     // don't send until the REMOTE_SMS_DELAY has passed
     if (m_lastRemoteClickTime && m_lastRemoteClickTime + REMOTE_SMS_DELAY >= now)
       return;
@@ -369,7 +401,7 @@ void CGUIDialogKeyboard::OnClickButton(int iButtonControl)
 
 void CGUIDialogKeyboard::OnRemoteNumberClick(int key)
 {
-  unsigned int now = CTimeUtils::GetFrameTime();
+  DWORD now = timeGetTime();
 
   if (m_lastRemoteClickTime)
   { // a remote key has been pressed
@@ -540,8 +572,7 @@ bool CGUIDialogKeyboard::ShowAndGetInput(CStdString& aTextString, const CStdStri
   pKeyboard->SetHiddenInput(hiddenInput);
   pKeyboard->SetText(aTextString);
   // do this using a thread message to avoid render() conflicts
-  ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, WINDOW_DIALOG_KEYBOARD, g_windowManager.GetActiveWindow()};
-  g_application.getApplicationMessenger().SendMessage(tMsg, true);
+  pKeyboard->DoModalThreadSafe();
   pKeyboard->Close();
 
   // If have text - update this.
@@ -597,7 +628,7 @@ bool CGUIDialogKeyboard::ShowAndVerifyNewPassword(CStdString& newPassword, const
   // check the password
   if (checkInput == userInput)
   {
-    XBMC::XBMC_MD5 md5state;
+    XBMC::MD5 md5state;
     md5state.append(userInput);
     md5state.getDigest(newPassword);
     newPassword.ToLower();
@@ -639,7 +670,7 @@ int CGUIDialogKeyboard::ShowAndVerifyPassword(CStdString& strPassword, const CSt
       return 0;
 
     CStdString md5pword2;
-    XBMC::XBMC_MD5 md5state;
+    XBMC::MD5 md5state;
     md5state.append(strUserInput);
     md5state.getDigest(md5pword2);
     if (strPassword.Equals(md5pword2))
@@ -650,7 +681,7 @@ int CGUIDialogKeyboard::ShowAndVerifyPassword(CStdString& strPassword, const CSt
   {
     if (!strUserInput.IsEmpty())
     {
-      XBMC::XBMC_MD5 md5state;
+      XBMC::MD5 md5state;
       md5state.append(strUserInput);
       md5state.getDigest(strPassword);
       strPassword.ToLower();

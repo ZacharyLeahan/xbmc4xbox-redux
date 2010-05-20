@@ -1,6 +1,6 @@
 /*
  *      Copyright (C) 2005-2008 Team XBMC
- *      http://www.xbmc.org
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,20 +27,13 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "system.h"
-
-#ifdef HAS_DVD_DRIVE
-
+#include "stdafx.h"
 #include "cddb.h"
 #include "DNSNameCache.h"
 #include "Id3Tag.h"
 #include "AdvancedSettings.h"
-#include "StringUtils.h"
 #include "Util.h"
 #include "FileSystem/File.h"
-#include "utils/GUIInfoManager.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
 
 using namespace std;
 using namespace MUSIC_INFO;
@@ -74,8 +67,8 @@ bool Xcddb::openSocket()
 
   // connect to site directly
   CStdString strIpadres;
-  CDNSNameCache::Lookup(m_cddb_ip_adress, strIpadres);
-  if (strIpadres == "")
+  CDNSNameCache::Lookup(m_cddb_ip_adress, strIpadres); 
+  if (strIpadres == "") 
   {
     strIpadres = "130.179.31.49"; //"64.71.163.204";
     CLog::Log(LOGERROR, "Xcddb::openSocket DNS lookup for %s failed. Trying to use %s instead", m_cddb_ip_adress.c_str(), strIpadres.c_str());
@@ -146,8 +139,8 @@ string Xcddb::Recv(bool wait4point)
   do
   {
     int lenRead;
-
-    prevChar=tmpbuffer[0];
+    
+    prevChar=tmpbuffer[0]; 
     lenRead = recv((SOCKET)m_cddb_socket, (char*) & tmpbuffer, 1, 0);
 
     //Check if there was any error reading the buffer
@@ -161,12 +154,12 @@ string Xcddb::Recv(bool wait4point)
     str_buffer.push_back(tmpbuffer[0]);
     counter++;
   }while(wait4point ? prevChar != '\n' || tmpbuffer[0] != '.' : tmpbuffer[0] != '\n');
-
+  
 
   //##########################################################
   // Write captured data information to the xbmc log file
   CLog::Log(LOGDEBUG,"Xcddb::Recv Captured %d bytes // Buffer= %"PRIdS" bytes. Captured data follows on next line\n%s", counter, str_buffer.size(),(char *)str_buffer.c_str());
-
+  
 
   return str_buffer;
 }
@@ -223,7 +216,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo, int inexact_list_select)
     return false;
   }
 
-
+  
   //##########################################################
   // Quit
   if ( ! Send("quit") )
@@ -258,6 +251,316 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo, int inexact_list_select)
   return true;
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+//int Xcddb::queryCDinfo(int real_track_count, toc cdtoc[])
+//{
+//  // //writeLog("Xcddb::queryCDinfo - Start");
+//
+//  /* //writeLog("getHostByName start");
+//   struct hostent* hp=gethostbyname("freedb.freedb.org");
+//   //writeLog("hp->h_name=%s",hp->h_name);
+//   //writeLog("hp->h_aliases=%s",hp->h_aliases);
+//   //writeLog("hp->h_addr_list=%s",hp->h_addr_list);
+//   //writeLog("getHostByName end");
+//  */
+//  int lead_out = real_track_count;
+//  unsigned long discid = calc_disc_id(real_track_count, cdtoc);
+//  unsigned long frames[100];
+//
+//  bool bLoaded = queryCache( discid );
+//
+//  if ( bLoaded )
+//    return true;
+//
+//  for (int i = 0;i <= lead_out;i++)
+//  {
+//    frames[i] = (cdtoc[i].min * 75 * 60) + (cdtoc[i].sec * 75) + cdtoc[i].frame;
+//    if (i > 0 && frames[i] < frames[i - 1])
+//    {
+//      m_lastError = E_TOC_INCORRECT;
+//      return false;
+//    }
+//  }
+//  unsigned long complete_length = frames[lead_out] / 75;
+//
+//  // Socket öffnen
+//  if ( !openSocket() )
+//  {
+//    //writeLog("openSocket Failed");
+//    m_lastError = E_NETWORK_ERROR_OPEN_SOCKET;
+//    return false;
+//  }
+//
+//  // Erst mal was empfangen
+//  string recv_buffer = Recv(false);
+//  /*
+//  200 OK, read/write allowed
+//  201 OK, read only
+//  432 No connections allowed: permission denied
+//  433 No connections allowed: X users allowed, Y currently active
+//  434 No connections allowed: system load too high
+//  */
+//  if (recv_buffer.c_str()[0] == '2')
+//  {
+//    //OK
+//    //  //writeLog("Connection 2 cddb: OK");
+//    m_lastError = IN_PROGRESS;
+//  }
+//  else if (recv_buffer.c_str()[0] == '4')
+//  {
+//    //No connections allowed
+//    //writeLog("Connection 2 cddb: No connections allowed");
+//    m_lastError = 430 + (recv_buffer.c_str()[3] - 48);
+//    return false;
+//  }
+//
+//  // Jetzt hello Senden
+//  if ( ! Send("cddb hello xbox xbox xcddb 00.00.01"))
+//  {
+//    //writeLog("Send Failed");
+//    m_lastError = E_NETWORK_ERROR_SEND;
+//    return false;
+//  }
+//
+//  // hello Antwort
+//  recv_buffer = Recv(false);
+//  /*
+//  200 Handshake successful
+//  431 Handshake not successful, closing connection
+//  402 Already shook hands
+//  */
+//  if (recv_buffer.c_str()[0] == '2')
+//  {
+//    //OK
+//    ////writeLog("Hello 2 cddb: OK");
+//    m_lastError = IN_PROGRESS;
+//  }
+//  else if (recv_buffer.c_str()[0] == '4' && recv_buffer.c_str()[1] == '3')
+//  {
+//    //No connections allowed
+//    //writeLog("Hello 2 cddb: Handshake not successful, closing connection");
+//    m_lastError = E_CDDB_Handshake_not_successful;
+//    return false;
+//  }
+//  else if (recv_buffer.c_str()[0] == '4' && recv_buffer.c_str()[1] == '0')
+//  {
+//    //  //writeLog("Hello 2 cddb: Already shook hands, but it's OK");
+//    m_lastError = W_CDDB_already_shook_hands;
+//  }
+//
+//
+//  // Hier jetzt die CD abfragen
+//  //##########################################################
+//  char query_buffer[1024];
+//  strcpy(query_buffer, "");
+//  strcat(query_buffer, "cddb query");
+//  {
+//    char tmp_buffer[256];
+//    sprintf(tmp_buffer, " %08x", discid);
+//    strcat(query_buffer, tmp_buffer);
+//  }
+//  {
+//    char tmp_buffer[256];
+//    sprintf(tmp_buffer, " %u", real_track_count);
+//    strcat(query_buffer, tmp_buffer);
+//  }
+//  for (int i = 0;i < lead_out;i++)
+//  {
+//    char tmp_buffer[256];
+//    sprintf(tmp_buffer, " %u", frames[i]);
+//    strcat(query_buffer, tmp_buffer);
+//  }
+//  {
+//    char tmp_buffer[256];
+//    sprintf(tmp_buffer, " %u", complete_length);
+//    strcat(query_buffer, tmp_buffer);
+//  }
+//
+//  //cddb query
+//  if ( ! Send(query_buffer))
+//  {
+//    //writeLog("Send Failed");
+//    m_lastError = E_NETWORK_ERROR_SEND;
+//    return false;
+//  }
+//
+//  // Antwort
+//  // 200 rock d012180e Soundtrack / Hackers
+//  char read_buffer[1024];
+//  recv_buffer = Recv(false);
+//  // Hier antwort auswerten
+//  /*
+//  200 Found exact match
+//  211 Found inexact matches, list follows (until terminating marker)
+//  202 No match found
+//  403 Database entry is corrupt
+//  409 No handshake
+//  */
+//  char *tmp_str;
+//  tmp_str = (char *)recv_buffer.c_str();
+//  switch (tmp_str[0] - 48)
+//  {
+//  case 2:
+//    switch (tmp_str[1] - 48)
+//    {
+//    case 0:
+//      switch (tmp_str[2] - 48)
+//      {
+//      case 0:  //200
+//        strtok(tmp_str, " ");
+//        strcpy(read_buffer, "");
+//        strcat(read_buffer, "cddb read ");
+//        // categ
+//        strcat(read_buffer, strtok(0, " "));
+//        {
+//          char tmp_buffer[256];
+//          sprintf(tmp_buffer, " %08x", discid);
+//          strcat(read_buffer, tmp_buffer);
+//        }
+//        m_lastError = IN_PROGRESS;
+//        break;
+//      case 2:  //202
+//        m_lastError = E_NO_MATCH_FOUND;
+//        return false;
+//        break;
+//      default:
+//        m_lastError = false;
+//        return false;
+//      }
+//      break;
+//    case 1:
+//      switch (tmp_str[2] - 48)
+//      {
+//      case 1:  //211
+//        m_lastError = E_INEXACT_MATCH_FOUND;
+//        /*
+//        211 Found inexact matches, list follows (until terminating `.')
+//        soundtrack bf0cf90f Modern Talking / Victory - The 11th Album
+//        rock c90cf90f Modern Talking / Album: Victory (The 11th Album)
+//        misc de0d020f Modern Talking / Ready for the victory
+//        rock e00d080f Modern Talking / Album: Victory (The 11th Album)
+//        rock c10d150f Modern Talking / Victory (The 11th Album)
+//        .
+//        */
+//        addInexactList(tmp_str);
+//        m_lastError = E_WAIT_FOR_INPUT;
+//        return false;
+//        break;
+//      default:
+//        m_lastError = -1;
+//        return false;
+//      }
+//      break;
+//    default:
+//      m_lastError = -1;
+//      return false;
+//    }
+//    break;
+//  case 4:
+//    switch (tmp_str[2] - 48)
+//    {
+//    case 3:  //403
+//      m_lastError = 403;
+//      break;
+//    case 9:  //409
+//      m_lastError = 409;
+//      break;
+//    default:
+//      m_lastError = -1;
+//      return false;
+//    }
+//    break;
+//  default:
+//    m_lastError = -1;
+//    return false;
+//  }
+//
+//
+//  //##########################################################
+//  if ( !Send(read_buffer) )
+//  {
+//    //writeLog("Send Failed");
+//    //writeLog(read_buffer);
+//    return false;
+//  }
+//
+//
+//  // cddb read Antwort
+//  recv_buffer = Recv(true);
+//  /*
+//  210 OK, CDDB database entry follows (until terminating marker)
+//  401 Specified CDDB entry not found.
+//  402 Server error.
+//  403 Database entry is corrupt.
+//  409 No handshake.
+//  */
+//  char *tmp_str2;
+//  tmp_str2 = (char *)recv_buffer.c_str();
+//  switch (tmp_str2[0] - 48)
+//  {
+//  case 2:
+//    //   //writeLog("2-- XXXXXXXXXXXXXXXX");
+//    // Cool, I got it ;-)
+//    writeCacheFile( tmp_str2, discid );
+//    parseData(tmp_str2);
+//    break;
+//  case 4:
+//    //   //writeLog("4-- XXXXXXXXXXXXXXXX");
+//    switch (tmp_str2[2] - 48)
+//    {
+//    case 1:  //401
+//      //     //writeLog("401 XXXXXXXXXXXXXXXX");
+//      m_lastError = 401;
+//      break;
+//    case 2:  //402
+//      //     //writeLog("402 XXXXXXXXXXXXXXXX");
+//      m_lastError = 402;
+//      break;
+//    case 3:  //403
+//      //     //writeLog("403 XXXXXXXXXXXXXXXX");
+//      m_lastError = 403;
+//      break;
+//    case 9:  //409
+//      //     //writeLog("409 XXXXXXXXXXXXXXXX");
+//      m_lastError = 409;
+//      break;
+//    default:
+//      m_lastError = -1;
+//      return false;
+//    }
+//    break;
+//  default:
+//    m_lastError = -1;
+//    return false;
+//  }
+//
+//  //##########################################################
+//  // Abmelden 2x Senden kommt sonst zu fehler
+//  if ( ! Send("quit") )
+//  {
+//    //writeLog("Send Failed");
+//    return false;
+//  }
+//
+//  // quit Antwort
+//  Recv(false);
+//
+//  // Socket schliessen
+//  if ( !closeSocket() )
+//  {
+//    //writeLog("closeSocket Failed");
+//    return false;
+//  }
+//  else
+//  {
+//    //  //writeLog("closeSocket OK");
+//  }
+//  m_lastError = QUERRY_OK;
+//  return true;
+//}
+
+
+
 
 //-------------------------------------------------------------------------------------------------------------------
 int Xcddb::getLastError() const
@@ -271,6 +574,10 @@ const char *Xcddb::getLastErrorText() const
 {
   switch (getLastError())
   {
+//Can be removed if/when removing Xcddb::queryCDinfo(int real_track_count, toc cdtoc[])
+//  case IN_PROGRESS:
+//    return "in Progress";
+//    break;
   case E_TOC_INCORRECT:
     return "TOC Incorrect";
     break;
@@ -286,6 +593,22 @@ const char *Xcddb::getLastErrorText() const
   case E_PARAMETER_WRONG:
     return "Error Parameter Wrong";
     break;
+//Can be removed if/when removing Xcddb::queryCDinfo(int real_track_count, toc cdtoc[])
+//  case E_NO_MATCH_FOUND:
+//    return "No Match found";
+//    break;
+//  case E_INEXACT_MATCH_FOUND:
+//    return "Inexact Match found";
+//    break;
+//  case W_CDDB_already_shook_hands:
+//    return "Warning already shook hands";
+//    break;
+//  case E_CDDB_Handshake_not_successful:
+//    return "Error Handshake not successful";
+//    break;
+//  case QUERRY_OK:
+//    return "Query OK";
+//    break;
   case 202: return "No match found";
   case 210: return "Found exact matches, list follows (until terminating marker)";
   case 211: return "Found inexact matches, list follows (until terminating marker)";
@@ -472,108 +795,111 @@ void Xcddb::parseData(const char *buffer)
 {
   //writeLog("parseData Start");
 
-  std::map<CStdString, CStdString> keywords;
-  std::list<CStdString> keywordsOrder; // remember order of keywords as it appears in data received from CDDB
-
-  // Collect all the keywords and put them in map. 
-  // Multiple occurrences of the same keyword indicate that 
-  // the data contained on those lines should be concatenated
   char *line;
   const char trenner[3] = {'\n', '\r', '\0'};
-  line = strtok((char*)buffer, trenner); // skip first line
+  line = strtok((char*)buffer, trenner);
+  int line_cnt = 0;
   while ((line = strtok(0, trenner)))
   {
-    // Lines that begin with # are comments, should be ignored
     if (line[0] != '#')
     {
-      char *s = strstr(line, "=");
-      if (s != NULL)
+      if (0 == strncmp(line, "DTITLE", 6))
       {
-        CStdString strKeyword(line, s - line);
-        strKeyword.TrimRight(" ");
-
-        CStdString strValue(s+1);
-        strValue.Replace("\\n", "\n"); 
-        strValue.Replace("\\t", "\t"); 
-        strValue.Replace("\\\\", "\\"); 
-        g_charsetConverter.unknownToUTF8(strValue);
-
-        std::map<CStdString, CStdString>::const_iterator it = keywords.find(strKeyword);
-        if (it != keywords.end())
-          strValue = it->second + strValue; // keyword occured before, concatenate
-        else
-          keywordsOrder.push_back(strKeyword);
-
-        keywords[strKeyword] = strValue;
-      }
-    }
-  }
-
-  // parse keywords 
-  for (std::list<CStdString>::const_iterator it = keywordsOrder.begin(); it != keywordsOrder.end(); ++it)
-  {
-    CStdString strKeyword = *it;
-    CStdString strValue = keywords[strKeyword];
-
-    if (strKeyword == "DTITLE")
-    {
-      // DTITLE may contain artist and disc title, separated with " / ",
-      // for example: DTITLE=Modern Talking / Album: Victory (The 11th Album)
-      bool found = false;
-      for (int i = 0; i < strValue.GetLength() - 2; i++)
-      {
-        if (strValue[i] == ' ' && strValue[i + 1] == '/' && strValue[i + 2] == ' ')
+        // DTITLE=Modern Talking / Album: Victory (The 11th Album)
+        unsigned int len = (unsigned int)strlen(line) - 6;
+        bool found = false;
+        unsigned int i = 5;
+        for (;i < len;i++)
         {
-          m_strDisk_artist = TrimToUTF8(strValue.Left(i));
-          m_strDisk_title = TrimToUTF8(strValue.Mid(i+3));
-          found = true;
-          break;
+          if ((i + 2) <= len && line[i] == ' ' && line[i + 1] == '/' && line[i + 2] == ' ')
+          {
+            // Jep found
+            found = true;
+            break;
+          }
+        }
+        if (found)
+        {
+          CStdString strLine = (char*)(line + 7);
+          CStdString strDisk_artist = strLine.Left(i - 7);
+          CStdString strDisk_title = (char*)(line + i + 3);
+
+          // You never know if you really get UTF-8 strings from cddb
+          g_charsetConverter.unknownToUTF8(strDisk_artist, m_strDisk_artist);
+
+          // You never know if you really get UTF-8 strings from cddb
+          g_charsetConverter.unknownToUTF8(strDisk_title, m_strDisk_title);
+        }
+        else
+        {
+          CStdString strDisk_title = (char*)(line + 7);
+          // You never know if you really get UTF-8 strings from cddb
+          g_charsetConverter.unknownToUTF8(strDisk_title, m_strDisk_title);
         }
       }
-
-      if (!found)
-        m_strDisk_title = TrimToUTF8(strValue);
-    }
-    else if (strKeyword == "DYEAR")
-      m_strYear = TrimToUTF8(strValue);
-    else if (strKeyword== "DGENRE")
-      m_strGenre = TrimToUTF8(strValue);
-    else if (strKeyword.Left(6) == "TTITLE")
-      addTitle(strKeyword + "=" + strValue);
-    else if (strKeyword == "EXTD")
-    {
-      CStdString strExtd(strValue);
-
-      if (m_strYear.IsEmpty())
+      else if (0 == strncmp(line, "DYEAR", 5))
       {
-        // Extract Year from extended info
-        // as a fallback
-        int iPos = strExtd.Find("YEAR:");
-        if (iPos > -1) // You never know if you really get UTF-8 strings from cddb
-          g_charsetConverter.unknownToUTF8(strExtd.Mid(iPos + 6, 4), m_strYear);
+        CStdString strYear = (char*)(line + 5);
+        strYear.TrimLeft("= ");
+        // You never know if you really get UTF-8 strings from cddb
+        g_charsetConverter.unknownToUTF8(strYear, m_strYear);
       }
-
-      if (m_strGenre.IsEmpty())
+      else if (0 == strncmp(line, "DGENRE", 6))
       {
-        // Extract ID3 Genre
-        // as a fallback
-        int iPos = strExtd.Find("ID3G:");
-        if (iPos > -1)
+        CStdString strGenre = (char*)(line + 6);
+        strGenre.TrimLeft("= ");
+
+        // You never know if you really get UTF-8 strings from cddb
+        g_charsetConverter.unknownToUTF8(strGenre, m_strGenre);
+      }
+      else if (0 == strncmp(line, "TTITLE", 6))
+      {
+        addTitle(line);
+      }
+      else if (0 == strncmp(line, "EXTD", 4))
+      {
+        CStdString strExtd((char*)(line + 4));
+
+        if (m_strYear.IsEmpty())
         {
-          CStdString strGenre = strExtd.Mid(iPos + 5, 4);
-          strGenre.TrimLeft(' ');
-          if (StringUtils::IsNaturalNumber(strGenre))
+          // Extract Year from extended info
+          // as a fallback
+          int iPos = strExtd.Find("YEAR:");
+          if (iPos > -1)
           {
-            CID3Tag tag;
-            m_strGenre=tag.ParseMP3Genre(strGenre);
+            CStdString strYear;
+            strYear = strExtd.Mid(iPos + 6, 4);
+
+            // You never know if you really get UTF-8 strings from cddb
+            g_charsetConverter.unknownToUTF8(strYear, m_strYear);
+          }
+        }
+
+        if (m_strGenre.IsEmpty())
+        {
+          // Extract ID3 Genre
+          // as a fallback
+          int iPos = strExtd.Find("ID3G:");
+          if (iPos > -1)
+          {
+            CStdString strGenre;
+            strGenre = strExtd.Mid(iPos + 5, 4);
+            strGenre.TrimLeft(' ');
+            if (StringUtils::IsNaturalNumber(strGenre))
+            {
+              CID3Tag tag;
+              m_strGenre=tag.ParseMP3Genre(strGenre);
+            }
           }
         }
       }
+      else if (0 == strncmp(line, "EXTT", 4))
+      {
+        addExtended(line);
+      }
     }
-    else if (strKeyword.Left(4) == "EXTT")
-      addExtended(strKeyword + "=" + strValue);
+    line_cnt++;
   }
-
   //writeLog("parseData Ende");
 }
 
@@ -815,9 +1141,9 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
   unsigned long discid = pInfo->GetCddbDiscId();
   unsigned long frames[100];
 
-
+  
   //##########################################################
-  //
+  // 
   if ( queryCache(discid) )
   {
     CLog::Log(LOGDEBUG, "Xcddb::queryCDinfo discid [%08lx] already cached", discid);
@@ -825,7 +1151,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
   }
 
   //##########################################################
-  //
+  // 
   for (int i = 0;i < lead_out;i++)
   {
     frames[i] = pInfo->GetTrackInformation( i + 1 ).nFrames;
@@ -866,10 +1192,9 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
 
   //##########################################################
   // Send the Hello message
-  CStdString strGreeting = "cddb hello xbmc xbmc XBMC/"+g_infoManager.GetLabel(SYSTEM_BUILD_VERSION);
-  if ( ! Send(strGreeting.c_str()) )
+  if ( ! Send("cddb hello xbox xbox XboxMediaCenter pre-2.1"))
   {
-    CLog::Log(LOGERROR, "Xcddb::queryCDinfo Error sending \"%s\"", strGreeting.c_str());
+    CLog::Log(LOGERROR, "Xcddb::queryCDinfo Error sending \"%s\"", "cddb hello xbox xbox XboxMediaCenter pre-2.1");
     m_lastError = E_NETWORK_ERROR_SEND;
     return false;
   }
@@ -880,7 +1205,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
   case 200: //Handshake successful
   case 402: //Already shook hands
     break;
-
+  
   case 431: //Handshake not successful, closing connection
   default:
     CLog::Log(LOGERROR, "Xcddb::queryCDinfo Error: \"%s\"", recv_buffer.c_str());
@@ -901,11 +1226,11 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
   switch(m_lastError)
   {
   case 200: //CDDB protocol level: current cur_level, supported supp_level
-  case 201: //OK, protocol version now: cur_level
+  case 201:	//OK, protocol version now: cur_level
   case 502: //Protocol level already cur_level
     break;
-
-  case 501: //Illegal protocol level.
+  
+  case 501:	//Illegal protocol level.
   default:
     CLog::Log(LOGERROR, "Xcddb::queryCDinfo Error: \"%s\"", recv_buffer.c_str());
     return false;
@@ -971,7 +1296,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo)
     */
     recv_buffer += Recv(true);
     addInexactList(recv_buffer.c_str());
-    m_lastError=E_WAIT_FOR_INPUT;
+    m_lastError=E_WAIT_FOR_INPUT;   
     return false; //This is actually good. The calling method will handle this
 
   case 202: //No match found
@@ -1064,14 +1389,6 @@ CStdString Xcddb::GetCacheFile(unsigned int disc_id) const
   return CUtil::AddFileToFolder(cCacheDir, strFileName);
 }
 
-CStdString Xcddb::TrimToUTF8(const CStdString &untrimmedText)
-{
-  CStdString text(untrimmedText);
-  text.Trim();
-  // You never know if you really get UTF-8 strings from cddb
-  g_charsetConverter.unknownToUTF8(text);
-  return text;
-}
 
-#endif
+
 

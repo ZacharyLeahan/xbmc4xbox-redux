@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "listitem.h"
 #include "pyutil.h"
@@ -711,7 +697,7 @@ namespace PYXBMC
     "  - action          : string or unicode - any built-in function to perform.\n"
     "replaceItems        : [opt] bool - True=only your items will show/False=your items will be added to context menu(Default).\n"
     "\n"
-    "List of functions - http://wiki.xbmc.org/?title=List_of_Built_In_Functions \n"
+    "List of functions - http://xbmc.org/wiki/?title=List_of_Built_In_Functions \n"
     "\n"
     "*Note, You can use the above as keywords for arguments and skip certain optional arguments.\n"
     "       Once you use a keyword, all following arguments require the keyword.\n"

@@ -1,23 +1,3 @@
-/*
- *      Copyright (C) 2004-2009 Team XBMC
- *      http://www.xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
- *
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,9 +6,6 @@
 #include <string.h>
 #include <errno.h>
 #include "xwinapi.h"
-#ifdef __APPLE__
-#include "OSXGNUReplacements.h"
-#endif
 
 // I hope this doesn't need to handle unicode...
 LPTSTR GetCommandLine() {
@@ -41,17 +18,10 @@ LPTSTR GetCommandLine() {
 
   pid = getpid();
   sprintf(procFile, "/proc/%u/cmdline", pid);
-  if((fp = fopen(procFile, "r")) == NULL)
-    return NULL;
-  
+  if((fp = fopen(procFile, "r")) == NULL) return NULL;
   // getline() allocates memory so be sure to free it
   // after calling GetCommandLine()
-  if (getline(&cmdline, &cmdlinelen, fp) == -1)
-  {
-    fclose(fp);
-    return NULL;
-  }
-
+  getline(&cmdline, &cmdlinelen, fp);
   fclose(fp);
   fp = NULL;
 
@@ -72,11 +42,8 @@ DWORD GetCurrentDirectory(DWORD nBufferLength, LPTSTR lpBuffer) {
   if (getcwd(lpBuffer, nBufferLength) == NULL) {
     if (errno == ERANGE) {
       LPTSTR tmp = NULL;
-      if (getcwd(tmp, 0) == NULL )
-        nBufferLength = 0;
-      else
-        nBufferLength = strlen(tmp) + 1;
-
+      getcwd(tmp, 0);
+      nBufferLength = strlen(tmp) + 1;
       free(tmp);
       return nBufferLength;
     }

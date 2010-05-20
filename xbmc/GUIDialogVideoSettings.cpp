@@ -19,22 +19,19 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIDialogVideoSettings.h"
 #include "GUIWindowManager.h"
 #include "GUIPassword.h"
 #include "Util.h"
-#include "MathUtils.h"
-#include "GUISettings.h"
+#include "Application.h"
 #ifdef HAS_VIDEO_PLAYBACK
 #include "cores/VideoRenderers/RenderManager.h"
 #endif
 #include "VideoDatabase.h"
 #include "GUIDialogYesNo.h"
 #include "Settings.h"
-#include "addons/Skin.h"
-
-using namespace std;
+#include "SkinInfo.h"
 
 CGUIDialogVideoSettings::CGUIDialogVideoSettings(void)
     : CGUIDialogSettings(WINDOW_DIALOG_VIDEO_OSD_SETTINGS, "VideoOSDSettings.xml")
@@ -57,141 +54,101 @@ CGUIDialogVideoSettings::~CGUIDialogVideoSettings(void)
 #define VIDEO_SETTINGS_MAKE_DEFAULT       10
 
 #define VIDEO_SETTINGS_CALIBRATION        11
+#define VIDEO_SETTINGS_FLICKER            12
 #define VIDEO_SETTINGS_SOFTEN             13
-#define VIDEO_SETTINGS_SCALINGMETHOD      18
-
-#define VIDEO_SETTING_VDPAU_NOISE         19
-#define VIDEO_SETTING_VDPAU_SHARPNESS     20
-
-#define VIDEO_SETTINGS_NONLIN_STRETCH     21
+#define VIDEO_SETTINGS_FILM_GRAIN         14
+#define VIDEO_SETTINGS_NON_INTERLEAVED    15
+#define VIDEO_SETTINGS_NO_CACHE           16
+#define VIDEO_SETTINGS_FORCE_INDEX        17
 
 void CGUIDialogVideoSettings::CreateSettings()
 {
-  m_usePopupSliders = g_SkinInfo->HasSkinFile("DialogSlider.xml");
+  m_usePopupSliders = g_SkinInfo.HasSkinFile("DialogSlider.xml");
   // clear out any old settings
   m_settings.clear();
   // create our settings
   {
-    vector<pair<int, int> > entries;
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_NONE                 , 16018));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_AUTO                 , 16019));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_RENDER_BLEND         , 20131));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_RENDER_WEAVE_INVERTED, 20130));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_RENDER_WEAVE         , 20129));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_RENDER_BOB_INVERTED  , 16022));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_RENDER_BOB           , 16021));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_DEINTERLACE          , 16020));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_INVERSE_TELECINE     , 16314));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_TEMPORAL_SPATIAL     , 16311));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_TEMPORAL             , 16310));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_BOB                  , 16021));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_TEMPORAL_SPATIAL_HALF, 16318));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_TEMPORAL_HALF        , 16317));
-    entries.push_back(make_pair(VS_INTERLACEMETHOD_VDPAU_INVERSE_TELECINE     , 16314));
-
-    /* remove unsupported methods */
-    for(vector<pair<int, int> >::iterator it = entries.begin(); it != entries.end();)
-    {
-      if(g_renderManager.Supports((EINTERLACEMETHOD)it->first))
-        it++;
-      else
-        it = entries.erase(it);
-    }
-
-    AddSpin(VIDEO_SETTINGS_INTERLACEMETHOD, 16023, (int*)&g_settings.m_currentVideoSettings.m_InterlaceMethod, entries);
+    const int entries[] = { 16018, 16019, 20131, 20130, 20129, 16022, 16021, 16020};
+    AddSpin(VIDEO_SETTINGS_INTERLACEMETHOD, 16023, (int*)&g_stSettings.m_currentVideoSettings.m_InterlaceMethod, 8, entries);
   }
-  {
-    vector<pair<int, int> > entries;
-    entries.push_back(make_pair(VS_SCALINGMETHOD_NEAREST          , 16301));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_LINEAR           , 16302));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_CUBIC            , 16303));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_LANCZOS2         , 16304));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_LANCZOS3_FAST    , 16315));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_LANCZOS3         , 16305));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_SINC8            , 16306));
-//    entries.push_back(make_pair(VS_SCALINGMETHOD_NEDI             , ?????));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_BICUBIC_SOFTWARE , 16307));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_LANCZOS_SOFTWARE , 16308));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_SINC_SOFTWARE    , 16309));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_VDPAU_HARDWARE   , 13120));
-    entries.push_back(make_pair(VS_SCALINGMETHOD_AUTO             , 16316));
-
-    /* remove unsupported methods */
-    for(vector<pair<int, int> >::iterator it = entries.begin(); it != entries.end();)
-    {
-      if(g_renderManager.Supports((ESCALINGMETHOD)it->first))
-        it++;
-      else
-        it = entries.erase(it);
-    }
-
-    AddSpin(VIDEO_SETTINGS_SCALINGMETHOD, 16300, (int*)&g_settings.m_currentVideoSettings.m_ScalingMethod, entries);
-  }
-  AddBool(VIDEO_SETTINGS_CROP, 644, &g_settings.m_currentVideoSettings.m_Crop);
+  AddBool(VIDEO_SETTINGS_CROP, 644, &g_stSettings.m_currentVideoSettings.m_Crop);
   {
     const int entries[] = {630, 631, 632, 633, 634, 635, 636 };
-    AddSpin(VIDEO_SETTINGS_VIEW_MODE, 629, &g_settings.m_currentVideoSettings.m_ViewMode, 7, entries);
+    AddSpin(VIDEO_SETTINGS_VIEW_MODE, 629, &g_stSettings.m_currentVideoSettings.m_ViewMode, 7, entries);
   }
-  AddSlider(VIDEO_SETTINGS_ZOOM, 216, &g_settings.m_currentVideoSettings.m_CustomZoomAmount, 0.5f, 0.01f, 2.0f, FormatFloat);
-  AddSlider(VIDEO_SETTINGS_PIXEL_RATIO, 217, &g_settings.m_currentVideoSettings.m_CustomPixelRatio, 0.5f, 0.01f, 2.0f, FormatFloat);
+  AddSlider(VIDEO_SETTINGS_ZOOM, 216, &g_stSettings.m_currentVideoSettings.m_CustomZoomAmount, 0.5f, 0.01f, 2.0f, FormatFloat);
+  AddSlider(VIDEO_SETTINGS_PIXEL_RATIO, 217, &g_stSettings.m_currentVideoSettings.m_CustomPixelRatio, 0.5f, 0.01f, 2.0f, FormatFloat);
 
-#ifdef HAS_VIDEO_PLAYBACK
-  if (g_renderManager.Supports(RENDERFEATURE_BRIGHTNESS))
-    AddSlider(VIDEO_SETTINGS_BRIGHTNESS, 464, &g_settings.m_currentVideoSettings.m_Brightness, 0, 1, 100, FormatInteger);
-  if (g_renderManager.Supports(RENDERFEATURE_CONTRAST))
-    AddSlider(VIDEO_SETTINGS_CONTRAST, 465, &g_settings.m_currentVideoSettings.m_Contrast, 0, 1, 100, FormatInteger);
-  if (g_renderManager.Supports(RENDERFEATURE_GAMMA))
-    AddSlider(VIDEO_SETTINGS_GAMMA, 466, &g_settings.m_currentVideoSettings.m_Gamma, 0, 1, 100, FormatInteger);
-  if (g_renderManager.Supports(RENDERFEATURE_NOISE))
-    AddSlider(VIDEO_SETTING_VDPAU_NOISE, 16312, &g_settings.m_currentVideoSettings.m_NoiseReduction, 0.0f, 0.01f, 1.0f, FormatFloat);
-  if (g_renderManager.Supports(RENDERFEATURE_SHARPNESS))
-    AddSlider(VIDEO_SETTING_VDPAU_SHARPNESS, 16313, &g_settings.m_currentVideoSettings.m_Sharpness, -1.0f, 0.02f, 1.0f, FormatFloat);
-  if (g_renderManager.Supports(RENDERFEATURE_NONLINSTRETCH))
-    AddBool(VIDEO_SETTINGS_NONLIN_STRETCH, 659, &g_settings.m_currentVideoSettings.m_CustomNonLinStretch);
-#endif
+  AddSlider(VIDEO_SETTINGS_BRIGHTNESS, 464, &g_stSettings.m_currentVideoSettings.m_Brightness, 0, 1, 100, FormatInteger);
+  AddSlider(VIDEO_SETTINGS_CONTRAST, 465, &g_stSettings.m_currentVideoSettings.m_Contrast, 0, 1, 100, FormatInteger);
+  AddSlider(VIDEO_SETTINGS_GAMMA, 466, &g_stSettings.m_currentVideoSettings.m_Gamma, 0, 1, 100, FormatInteger);
+
   AddSeparator(8);
   AddButton(VIDEO_SETTINGS_MAKE_DEFAULT, 12376);
+  m_flickerFilter = g_guiSettings.GetInt("videoplayer.flicker");
+  AddSpin(VIDEO_SETTINGS_FLICKER, 13100, &m_flickerFilter, 0, 5, g_localizeStrings.Get(351).c_str());
+  m_soften = g_guiSettings.GetBool("videoplayer.soften");
+  AddBool(VIDEO_SETTINGS_SOFTEN, 215, &m_soften);
   AddButton(VIDEO_SETTINGS_CALIBRATION, 214);
+  if (g_application.GetCurrentPlayer() == EPC_MPLAYER)
+  {
+    AddSlider(VIDEO_SETTINGS_FILM_GRAIN, 14058, &g_stSettings.m_currentVideoSettings.m_FilmGrain, 0, 1, 10, FormatInteger);
+    AddBool(VIDEO_SETTINGS_NON_INTERLEAVED, 306, &g_stSettings.m_currentVideoSettings.m_NonInterleaved);
+    AddBool(VIDEO_SETTINGS_NO_CACHE, 431, &g_stSettings.m_currentVideoSettings.m_NoCache);
+    AddButton(VIDEO_SETTINGS_FORCE_INDEX, 12009);
+  }
 }
 
 void CGUIDialogVideoSettings::OnSettingChanged(SettingInfo &setting)
 {
   // check and update anything that needs it
+  if (setting.id == VIDEO_SETTINGS_NON_INTERLEAVED ||  setting.id == VIDEO_SETTINGS_NO_CACHE)
+    g_application.Restart(true);
+  else if (setting.id == VIDEO_SETTINGS_FILM_GRAIN)
+    g_application.DelayedPlayerRestart();
 #ifdef HAS_VIDEO_PLAYBACK
-  if (setting.id == VIDEO_SETTINGS_CROP)
-  {
-    // AutoCrop changes will get picked up automatically by dvdplayer
-  }
+  else if (setting.id == VIDEO_SETTINGS_CROP)
+    g_renderManager.AutoCrop(g_stSettings.m_currentVideoSettings.m_Crop);
   else if (setting.id == VIDEO_SETTINGS_VIEW_MODE)
   {
-    g_renderManager.SetViewMode(g_settings.m_currentVideoSettings.m_ViewMode);
-    g_settings.m_currentVideoSettings.m_CustomZoomAmount = g_settings.m_fZoomAmount;
-    g_settings.m_currentVideoSettings.m_CustomPixelRatio = g_settings.m_fPixelRatio;
-    g_settings.m_currentVideoSettings.m_CustomNonLinStretch = g_settings.m_bNonLinStretch;
+    g_renderManager.SetViewMode(g_stSettings.m_currentVideoSettings.m_ViewMode);
+    g_stSettings.m_currentVideoSettings.m_CustomZoomAmount = g_stSettings.m_fZoomAmount;
+    g_stSettings.m_currentVideoSettings.m_CustomPixelRatio = g_stSettings.m_fPixelRatio;
     UpdateSetting(VIDEO_SETTINGS_ZOOM);
     UpdateSetting(VIDEO_SETTINGS_PIXEL_RATIO);
-    UpdateSetting(VIDEO_SETTINGS_NONLIN_STRETCH);
   }
-  else if (setting.id == VIDEO_SETTINGS_ZOOM || setting.id == VIDEO_SETTINGS_PIXEL_RATIO
-        || setting.id == VIDEO_SETTINGS_NONLIN_STRETCH)
+  else if (setting.id == VIDEO_SETTINGS_ZOOM || setting.id == VIDEO_SETTINGS_PIXEL_RATIO)
   {
-    g_settings.m_currentVideoSettings.m_ViewMode = VIEW_MODE_CUSTOM;
+    g_stSettings.m_currentVideoSettings.m_ViewMode = VIEW_MODE_CUSTOM;
     g_renderManager.SetViewMode(VIEW_MODE_CUSTOM);
     UpdateSetting(VIDEO_SETTINGS_VIEW_MODE);
   }
-  else
 #endif
-  if (setting.id == VIDEO_SETTINGS_CALIBRATION)
+  else if (setting.id == VIDEO_SETTINGS_BRIGHTNESS || setting.id == VIDEO_SETTINGS_CONTRAST || setting.id == VIDEO_SETTINGS_GAMMA)
+    CUtil::SetBrightnessContrastGammaPercent(g_stSettings.m_currentVideoSettings.m_Brightness, g_stSettings.m_currentVideoSettings.m_Contrast, g_stSettings.m_currentVideoSettings.m_Gamma, true);
+  else if (setting.id == VIDEO_SETTINGS_FLICKER || setting.id == VIDEO_SETTINGS_SOFTEN)
+  {
+    RESOLUTION res = g_graphicsContext.GetVideoResolution();
+    g_guiSettings.SetInt("videoplayer.flicker", m_flickerFilter);
+    g_guiSettings.SetBool("videoplayer.soften", m_soften);
+    g_graphicsContext.SetVideoResolution(res);
+  }
+  else if (setting.id == VIDEO_SETTINGS_CALIBRATION)
   {
     // launch calibration window
-    if (g_settings.GetCurrentProfile().settingsLocked() && g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+    if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].settingsLocked() && g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return;
     g_windowManager.ActivateWindow(WINDOW_SCREEN_CALIBRATION);
   }
+  else if (setting.id == VIDEO_SETTINGS_FORCE_INDEX)
+  {
+    g_stSettings.m_currentVideoSettings.m_bForceIndex = true;
+    g_application.Restart(true);
+  }
   else if (setting.id == VIDEO_SETTINGS_MAKE_DEFAULT)
   {
-    if (g_settings.GetCurrentProfile().settingsLocked() && g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+    if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].settingsLocked() && g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return;
 
@@ -202,7 +159,7 @@ void CGUIDialogVideoSettings::OnSettingChanged(SettingInfo &setting)
       db.Open();
       db.EraseVideoSettings();
       db.Close();
-      g_settings.m_defaultVideoSettings = g_settings.m_currentVideoSettings;
+      g_stSettings.m_defaultVideoSettings = g_stSettings.m_currentVideoSettings;
       g_settings.Save();
     }
   }

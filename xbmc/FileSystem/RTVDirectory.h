@@ -26,7 +26,7 @@
 #pragma once
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CRTVDirectory :
       public IDirectory

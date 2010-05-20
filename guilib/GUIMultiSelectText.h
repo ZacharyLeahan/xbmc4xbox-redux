@@ -25,7 +25,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIMultiSelectTextControl : public CGUIControl
 {
@@ -37,7 +37,7 @@ public:
   virtual ~CGUIMultiSelectTextControl(void);
   virtual CGUIMultiSelectTextControl *Clone() const { return new CGUIMultiSelectTextControl(*this); };
 
-  virtual void DoRender(unsigned int currentTime);
+  virtual void DoRender(DWORD currentTime);
   virtual void Render();
 
   virtual bool OnAction(const CAction &action);
@@ -45,6 +45,7 @@ public:
   virtual void OnRight();
   virtual bool HitTest(const CPoint &point) const;
   virtual bool OnMouseOver(const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
   virtual void UpdateInfo(const CGUIListItem *item = NULL);
 
   virtual CStdString GetDescription() const;
@@ -61,7 +62,6 @@ public:
   virtual void SetAnimations(const std::vector<CAnimation> &animations);
   virtual void SetFocus(bool focus);
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   void AddString(const CStdString &text, bool selectable, const CStdString &clickAction = "");
   void PositionButtons();
@@ -84,14 +84,14 @@ protected:
   CLabelInfo m_label;
   CGUIInfoLabel  m_info;
   CStdString m_oldText;
-  unsigned int m_renderTime;
+  DWORD      m_renderTime;
 
   // scrolling
-  float        m_totalWidth;
-  float        m_offset;
-  float        m_scrollOffset;
-  float        m_scrollSpeed;
-  unsigned int m_scrollLastTime;
+  float      m_totalWidth;
+  float      m_offset;
+  float      m_scrollOffset;
+  float      m_scrollSpeed;
+  DWORD      m_scrollLastTime;
 
   // buttons
   CGUIButtonControl m_button;

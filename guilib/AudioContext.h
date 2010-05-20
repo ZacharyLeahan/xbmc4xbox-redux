@@ -1,6 +1,6 @@
 /*!
 \file AudioContext.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -26,7 +26,8 @@
  *
  */
 
-#include "StdString.h"
+// forward definitions
+class IAudioDeviceChangedCallback;
 
 #define DSMIXBINTYPE_STANDARD 1
 #define DSMIXBINTYPE_DMO 2
@@ -57,7 +58,11 @@ public:
   bool                        IsAC3EncoderActive() const;
   bool                        IsPassthroughActive() const;
 
-  enum AUDIO_DEVICE {NONE=0, DEFAULT_DEVICE, DIRECTSOUND_DEVICE, AC97_DEVICE, DIRECTSOUND_DEVICE_DIGITAL };
+#ifdef HAS_XBOX_AUDIO
+  bool                        GetMixBin(DSMIXBINVOLUMEPAIR* dsmbvp, int* MixBinCount, DWORD* dwChannelMask, int Type, int Channels);
+#endif
+
+  enum AUDIO_DEVICE {NONE=0, DEFAULT_DEVICE, DIRECTSOUND_DEVICE, AC97_DEVICE };
 protected:
   void                         RemoveActiveDevice();
 
@@ -69,7 +74,6 @@ protected:
 #endif
 
   int                          m_iDevice;
-  CStdString                   m_strDevice;
   bool                         m_bAC3EncoderActive;
 };
 

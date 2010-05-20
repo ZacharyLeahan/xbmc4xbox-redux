@@ -1,116 +1,72 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
-	Name="ImageLib_jpeg"
-	ProjectGUID="{145287C8-24EA-42FE-8D7D-C13D5E4B054C}"
-	Keyword="MFCProj"
-	TargetFrameworkVersion="131072"
-	>
+	Version="7.10"
+	Name="jpeg"
+	SccProjectName=""
+	SccLocalPath=""
+	Keyword="MFCProj">
 	<Platforms>
 		<Platform
-			Name="Win32"
-		/>
+			Name="Win32"/>
 	</Platforms>
-	<ToolFiles>
-	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Unicode Release|Win32"
-			OutputDirectory="$(SolutionDir)libs\$(ProjectName)\$(ConfigurationName)\"
-			IntermediateDirectory="$(SolutionDir)objs\$(ProjectName)\$(ConfigurationName)\"
+			OutputDirectory=".\Unicode_Release"
+			IntermediateDirectory=".\Unicode_Release"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="2"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;UNICODE;_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
+				StringPooling="TRUE"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="TRUE"
 				PrecompiledHeaderFile=".\Unicode_Release/jpeg.pch"
 				AssemblerListingLocation=".\Unicode_Release/"
 				ObjectFile=".\Unicode_Release/"
 				ProgramDataBaseFileName=".\Unicode_Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
-			/>
+				SuppressStartupBanner="TRUE"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="2057"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\jpeg.lib"
-				SuppressStartupBanner="true"
-			/>
+				OutputFile=".\Unicode_Release\jpeg.lib"
+				SuppressStartupBanner="TRUE"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCBscMakeTool"
-			/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
-				Name="VCFxCopTool"
-			/>
+				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCResourceCompilerTool"
+				Culture="2057"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Unicode Debug|Win32"
-			OutputDirectory="$(SolutionDir)libs\$(ProjectName)\$(ConfigurationName)\"
-			IntermediateDirectory="$(SolutionDir)objs\$(ProjectName)\$(ConfigurationName)\"
+			OutputDirectory=".\Unicode_Debug"
+			IntermediateDirectory=".\Unicode_Debug"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="2"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -121,64 +77,41 @@
 				ObjectFile=".\Unicode_Debug/"
 				ProgramDataBaseFileName=".\Unicode_Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="4"
-			/>
+				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="4"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="2057"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\jpeg.lib"
-				SuppressStartupBanner="true"
-			/>
+				OutputFile=".\Unicode_Debug\jpeg.lib"
+				SuppressStartupBanner="TRUE"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCBscMakeTool"
-			/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
-				Name="VCFxCopTool"
-			/>
+				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCResourceCompilerTool"
+				Culture="2057"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)libs\$(ProjectName)\$(ConfigurationName)\"
-			IntermediateDirectory="$(SolutionDir)objs\$(ProjectName)\$(ConfigurationName)\"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="2"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -189,1998 +122,1544 @@
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="4"
-			/>
+				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="4"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile=".\Debug\jpeg.lib"
+				SuppressStartupBanner="TRUE"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="2057"
-			/>
+				Culture="2057"/>
 			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\jpeg.lib"
-				SuppressStartupBanner="true"
-			/>
+				Name="VCXMLDataGeneratorTool"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCManagedWrapperGeneratorTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)libs\$(ProjectName)\$(ConfigurationName)\"
-			IntermediateDirectory="$(SolutionDir)objs\$(ProjectName)\$(ConfigurationName)\"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="2"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
+			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
+				StringPooling="TRUE"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="TRUE"
 				PrecompiledHeaderFile=".\Release/jpeg.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
-			/>
+				SuppressStartupBanner="TRUE"/>
 			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="2057"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\jpeg.lib"
-				SuppressStartupBanner="true"
-			/>
+				OutputFile=".\Release\jpeg.lib"
+				SuppressStartupBanner="TRUE"/>
 			<Tool
-				Name="VCALinkTool"
-			/>
+				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCXDCMakeTool"
-			/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCBscMakeTool"
-			/>
+				Name="VCPreBuildEventTool"/>
 			<Tool
-				Name="VCFxCopTool"
-			/>
+				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
+				Name="VCResourceCompilerTool"
+				Culture="2057"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
 		<File
-			RelativePath="Jcapimin.c"
-			>
+			RelativePath="Jcapimin.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcapistd.c"
-			>
+			RelativePath="Jcapistd.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jccoefct.c"
-			>
+			RelativePath="Jccoefct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jccolor.c"
-			>
+			RelativePath="Jccolor.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcdctmgr.c"
-			>
+			RelativePath="Jcdctmgr.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jchuff.c"
-			>
+			RelativePath="Jchuff.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jchuff.h"
-			>
+			RelativePath="Jchuff.h">
 		</File>
 		<File
-			RelativePath="Jcinit.c"
-			>
+			RelativePath="Jcinit.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcmainct.c"
-			>
+			RelativePath="Jcmainct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcmarker.c"
-			>
+			RelativePath="Jcmarker.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcmaster.c"
-			>
+			RelativePath="Jcmaster.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcomapi.c"
-			>
+			RelativePath="Jcomapi.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jconfig.h"
-			>
+			RelativePath="Jconfig.h">
 		</File>
 		<File
-			RelativePath="Jcparam.c"
-			>
+			RelativePath="Jcparam.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcphuff.c"
-			>
+			RelativePath="Jcphuff.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcprepct.c"
-			>
+			RelativePath="Jcprepct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jcsample.c"
-			>
+			RelativePath="Jcsample.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jctrans.c"
-			>
+			RelativePath="Jctrans.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdapimin.c"
-			>
+			RelativePath="Jdapimin.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdapistd.c"
-			>
+			RelativePath="Jdapistd.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdatadst.c"
-			>
+			RelativePath="Jdatadst.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdatasrc.c"
-			>
+			RelativePath="Jdatasrc.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdcoefct.c"
-			>
+			RelativePath="Jdcoefct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdcolor.c"
-			>
+			RelativePath="Jdcolor.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdct.h"
-			>
+			RelativePath="Jdct.h">
 		</File>
 		<File
-			RelativePath="Jddctmgr.c"
-			>
+			RelativePath="Jddctmgr.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdhuff.c"
-			>
+			RelativePath="Jdhuff.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdhuff.h"
-			>
+			RelativePath="Jdhuff.h">
 		</File>
 		<File
-			RelativePath="Jdinput.c"
-			>
+			RelativePath="Jdinput.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdmainct.c"
-			>
+			RelativePath="Jdmainct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdmarker.c"
-			>
+			RelativePath="Jdmarker.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdmaster.c"
-			>
+			RelativePath="Jdmaster.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdmerge.c"
-			>
+			RelativePath="Jdmerge.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdphuff.c"
-			>
+			RelativePath="Jdphuff.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdpostct.c"
-			>
+			RelativePath="Jdpostct.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdsample.c"
-			>
+			RelativePath="Jdsample.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jdtrans.c"
-			>
+			RelativePath="Jdtrans.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jerror.c"
-			>
+			RelativePath="Jerror.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jerror.h"
-			>
+			RelativePath="Jerror.h">
 		</File>
 		<File
-			RelativePath="Jfdctflt.c"
-			>
+			RelativePath="Jfdctflt.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jfdctfst.c"
-			>
+			RelativePath="Jfdctfst.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jfdctint.c"
-			>
+			RelativePath="Jfdctint.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jidctflt.c"
-			>
+			RelativePath="Jidctflt.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jidctfst.c"
-			>
+			RelativePath="Jidctfst.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jidctint.c"
-			>
+			RelativePath="Jidctint.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jidctred.c"
-			>
+			RelativePath="Jidctred.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jinclude.h"
-			>
+			RelativePath="Jinclude.h">
 		</File>
 		<File
-			RelativePath="Jmemmgr.c"
-			>
+			RelativePath="Jmemmgr.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jmemnobs.c"
-			>
+			RelativePath="Jmemnobs.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jmemsys.h"
-			>
+			RelativePath="Jmemsys.h">
 		</File>
 		<File
-			RelativePath="Jmorecfg.h"
-			>
+			RelativePath="Jmorecfg.h">
 		</File>
 		<File
-			RelativePath="Jpegint.h"
-			>
+			RelativePath="Jpegint.h">
 		</File>
 		<File
-			RelativePath="Jpeglib.h"
-			>
+			RelativePath="Jpeglib.h">
 		</File>
 		<File
-			RelativePath="Jquant1.c"
-			>
+			RelativePath="Jquant1.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jquant2.c"
-			>
+			RelativePath="Jquant2.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jutils.c"
-			>
+			RelativePath="Jutils.c">
 			<FileConfiguration
-				Name="Unicode Release|Win32"
-				>
+				Name="Unicode Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;NDEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Unicode Debug|Win32"
-				>
+				Name="Unicode Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;_UNICODE;UNICODE;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32"
-				>
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32"
-				>
+				Name="Release|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="2"
-					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"
-				/>
+					PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;$(NoInherit)"/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="Jversion.h"
-			>
+			RelativePath="Jversion.h">
 		</File>
 	</Files>
 	<Globals>

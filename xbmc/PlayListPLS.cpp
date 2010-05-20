@@ -19,16 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlayListPLS.h"
 #include "PlayListFactory.h"
 #include "Util.h"
-#include "StringUtils.h"
 #include "FileSystem/File.h"
 #include "AdvancedSettings.h"
 #include "MusicInfoTag.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
-#include "tinyXML/tinyxml.h"
 
 using namespace std;
 using namespace XFILE;
@@ -93,7 +90,7 @@ bool CPlayListPLS::Load(const CStdString &strFile)
   // run through looking for the [playlist] marker.
   // if we find another http stream, then load it.
   while (1)
-  {
+  {    
     if ( !file.ReadString(szLine, sizeof(szLine) ) )
     {
       file.Close();
@@ -393,11 +390,11 @@ bool CPlayListASX::LoadData(istream& stream)
 bool CPlayListRAM::LoadData(istream& stream)
 {
   CLog::Log(LOGINFO, "Parsing RAM");
-
+  
   CStdString strMMS;
   while( stream.peek() != '\n' && stream.peek() != '\r' )
     strMMS += stream.get();
-
+  
   CLog::Log(LOGINFO, "Adding element %s", strMMS.c_str());
   CFileItemPtr newItem(new CFileItem(strMMS));
   newItem->m_strPath = strMMS;

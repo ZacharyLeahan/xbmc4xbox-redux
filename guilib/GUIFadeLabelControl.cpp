@@ -19,13 +19,14 @@
  *
  */
 
+#include "include.h"
 #include "GUIFadeLabelControl.h"
 #include "utils/CharsetConverter.h"
 
 using namespace std;
 
-CGUIFadeLabelControl::CGUIFadeLabelControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, bool scrollOut, unsigned int timeToDelayAtEnd, bool resetOnLabelChange)
-    : CGUIControl(parentID, controlID, posX, posY, width, height), m_scrollInfo(50, labelInfo.offsetX, labelInfo.scrollSpeed)
+CGUIFadeLabelControl::CGUIFadeLabelControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, bool scrollOut, int scrollSpeed, DWORD timeToDelayAtEnd, bool resetOnLabelChange)
+    : CGUIControl(parentID, controlID, posX, posY, width, height), m_scrollInfo(50, labelInfo.offsetX, scrollSpeed)
     , m_textLayout(labelInfo.font, false)
 {
   m_label = labelInfo;
@@ -37,7 +38,7 @@ CGUIFadeLabelControl::CGUIFadeLabelControl(int parentID, int controlID, float po
     m_fadeAnim->ApplyAnimation();
   m_renderTime = 0;
   m_lastLabel = -1;
-  m_scrollSpeed = labelInfo.scrollSpeed;  // save it for later
+  m_scrollSpeed = scrollSpeed;  // save it for later
   m_resetOnLabelChange = resetOnLabelChange;
   m_shortText = false;
 }
@@ -62,7 +63,8 @@ CGUIFadeLabelControl::CGUIFadeLabelControl(const CGUIFadeLabelControl &from)
 
 CGUIFadeLabelControl::~CGUIFadeLabelControl(void)
 {
-  delete m_fadeAnim;
+  if (m_fadeAnim)
+    delete m_fadeAnim;
 }
 
 void CGUIFadeLabelControl::SetInfo(const vector<CGUIInfoLabel> &infoLabels)
@@ -76,7 +78,7 @@ void CGUIFadeLabelControl::AddLabel(const string &label)
   m_infoLabels.push_back(CGUIInfoLabel(label));
 }
 
-void CGUIFadeLabelControl::DoRender(unsigned int currentTime)
+void CGUIFadeLabelControl::DoRender(DWORD currentTime)
 {
   m_renderTime = currentTime;
   CGUIControl::DoRender(currentTime);
@@ -90,14 +92,14 @@ void CGUIFadeLabelControl::UpdateColors()
 
 void CGUIFadeLabelControl::Render()
 {
-  if (m_infoLabels.size() == 0)
+	if (m_infoLabels.size() == 0)
   { // nothing to render
     CGUIControl::Render();
     return ;
   }
 
-  if (m_currentLabel >= m_infoLabels.size() )
-    m_currentLabel = 0;
+	if (m_currentLabel >= m_infoLabels.size() )
+		m_currentLabel = 0;
 
   if (m_textLayout.Update(GetLabel()))
   { // changed label - update our suffix based on length of available text
@@ -108,7 +110,7 @@ void CGUIFadeLabelControl::Render()
     if (width < m_width) // append spaces for scrolling
       numSpaces += (unsigned int)((m_width - width) / spaceWidth) + 1;
     m_shortText = (width + m_label.offsetX) < m_width;
-    m_scrollInfo.suffix.assign(numSpaces, ' ');
+    m_scrollInfo.suffix.assign(numSpaces, L' ');
     if (m_resetOnLabelChange)
     {
       m_scrollInfo.Reset();
@@ -125,14 +127,9 @@ void CGUIFadeLabelControl::Render()
   float posY = m_posY;
   if (m_label.align & XBFONT_CENTER_Y)
     posY += m_height * 0.5f;
-  if (m_infoLabels.size() == 1 && m_shortText)
+  if (m_infoLabels.size() == 1 && m_shortText) 
   { // single label set and no scrolling required - just display
-    float posX = m_posX + m_label.offsetX;
-    if (m_label.align & XBFONT_CENTER_X)
-      posX = m_posX + m_width * 0.5f;
-    else if (m_label.align & XBFONT_RIGHT)
-      posX = m_posX + m_width;
-    m_textLayout.Render(posX, posY, 0, m_label.textColor, m_label.shadowColor, m_label.align, m_width - m_label.offsetX);
+    m_textLayout.Render(m_posX + m_label.offsetX, posY, 0, m_label.textColor, m_label.shadowColor, (m_label.align & ~3), m_width - m_label.offsetX);
     CGUIControl::Render();
     return;
   }
@@ -142,8 +139,8 @@ void CGUIFadeLabelControl::Render()
   {
     vecText text;
     m_textLayout.GetFirstText(text);
-    if (m_scrollInfo.characterPos && m_scrollInfo.characterPos < text.size())
-      text.erase(text.begin(), text.begin() + min((int)m_scrollInfo.characterPos - 1, (int)text.size()));
+    if (m_scrollInfo.characterPos)
+      text.erase(text.begin(), text.begin() + min(m_scrollInfo.characterPos - 1, text.size()));
     if (m_label.font->GetTextWidth(text) < m_width)
     {
       if (m_fadeAnim->GetProcess() != ANIM_PROCESS_NORMAL)

@@ -21,9 +21,8 @@
  *
  */
 
-#include <queue>
 #include "Thread.h"
-#include "StdString.h"
+#include <queue>
 
 struct TICKET
 {
@@ -41,7 +40,6 @@ class IDownloadQueueObserver
 {
 public:
   enum Result {Succeeded, Failed};
-  virtual ~IDownloadQueueObserver() {};
   virtual void OnContentComplete(TICKET aTicket, CStdString& aContentString, Result aResult){};
   virtual void OnFileComplete(TICKET aTicket, CStdString& aFilePath, INT aByteRxCount, Result aResult){};
 };
@@ -53,9 +51,9 @@ public:
   CDownloadQueue();
   virtual ~CDownloadQueue(void);
 
-  TICKET RequestContent(const CStdString& aUrl, IDownloadQueueObserver* aObserver);
-  TICKET RequestFile(const CStdString& aUrl, IDownloadQueueObserver* aObserver);
-  TICKET RequestFile(const CStdString& aUrl, const CStdString& aFilePath, IDownloadQueueObserver* aObserver);
+  TICKET RequestContent(CStdString& aUrl, IDownloadQueueObserver* aObserver);
+  TICKET RequestFile(CStdString& aUrl, IDownloadQueueObserver* aObserver);
+  TICKET RequestFile(CStdString& aUrl, CStdString& aFilePath, IDownloadQueueObserver* aObserver);
   void CancelRequests(IDownloadQueueObserver* aObserver);
 
   VOID Flush();

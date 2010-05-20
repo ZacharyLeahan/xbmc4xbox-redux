@@ -19,20 +19,19 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowSettingsScreenCalibration.h"
 #include "GUIMoverControl.h"
 #include "GUIResizeControl.h"
+#include "GUILabelControl.h"
 #ifdef HAS_VIDEO_PLAYBACK
 #include "cores/VideoRenderers/RenderManager.h"
 #endif
 #include "Application.h"
 #include "Settings.h"
-#include "GUISettings.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogYesNo.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
+#include "GUIFontManager.h"
 
 using namespace std;
 
@@ -57,7 +56,7 @@ CGUIWindowSettingsScreenCalibration::~CGUIWindowSettingsScreenCalibration(void)
 
 bool CGUIWindowSettingsScreenCalibration::OnAction(const CAction &action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_PREVIOUS_MENU:
     {
@@ -78,7 +77,7 @@ bool CGUIWindowSettingsScreenCalibration::OnAction(const CAction &action)
       CGUIDialogYesNo* pDialog = (CGUIDialogYesNo*)g_windowManager.GetWindow(WINDOW_DIALOG_YES_NO);
       pDialog->SetHeading(20325);
       CStdString strText;
-      strText.Format(g_localizeStrings.Get(20326).c_str(), g_settings.m_ResInfo[m_Res[m_iCurRes]].strMode.c_str());
+      strText.Format(g_localizeStrings.Get(20326).c_str(), g_settings.m_ResInfo[m_Res[m_iCurRes]].strMode);
       pDialog->SetLine(0, strText);
       pDialog->SetLine(1, 20327);
       pDialog->SetChoice(0, 222);
@@ -97,7 +96,7 @@ bool CGUIWindowSettingsScreenCalibration::OnAction(const CAction &action)
     // choose the next resolution in our list
     {
       m_iCurRes = (m_iCurRes+1) % m_Res.size();
-      g_graphicsContext.SetVideoResolution(m_Res[m_iCurRes]);
+      g_graphicsContext.SetVideoResolution(m_Res[m_iCurRes], TRUE);
       ResetControls();
       return true;
     }
@@ -127,12 +126,13 @@ bool CGUIWindowSettingsScreenCalibration::OnMessage(CGUIMessage& message)
       g_graphicsContext.SetCalibrating(false);
       g_windowManager.ShowOverlay(OVERLAY_STATE_SHOWN);
       // reset our screen resolution to what it was initially
-      g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution);
+      g_graphicsContext.SetVideoResolution(g_guiSettings.m_LookAndFeelResolution, TRUE);
       // Inform the player so we can update the resolution
 #ifdef HAS_VIDEO_PLAYBACK
       g_renderManager.Update(false);
 #endif
-      g_windowManager.SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
+      // and reload our fonts
+      g_fontManager.ReloadTTFFonts();
     }
     break;
 
@@ -161,38 +161,14 @@ bool CGUIWindowSettingsScreenCalibration::OnMessage(CGUIMessage& message)
       else
       {
         SET_CONTROL_HIDDEN(CONTROL_VIDEO);
-        m_iCurRes = (unsigned int)-1;
-        g_graphicsContext.GetAllowedResolutions(m_Res);
+        g_graphicsContext.GetAllowedResolutions(m_Res, true);
         // find our starting resolution
-        RESOLUTION curRes = g_graphicsContext.GetVideoResolution();
         for (UINT i = 0; i < m_Res.size(); i++)
         {
-          // If it's a CUSTOM (monitor) resolution, then g_graphicsContext.GetAllowedResolutions()
-          // returns just one entry with CUSTOM in it. Update that entry to point to the current
-          // CUSTOM resolution.
-          if (curRes>=RES_CUSTOM)
-          {
-            if (m_Res[i]==RES_CUSTOM)
-            {
-              m_iCurRes = i;
-              m_Res[i] = curRes;
-              break;
-            }
-          }
-          else if (m_Res[i] == g_graphicsContext.GetVideoResolution())
-          {
+          if (m_Res[i] == g_graphicsContext.GetVideoResolution())
             m_iCurRes = i;
-            break;
-          }
         }
       }
-      if (m_iCurRes==(unsigned int)-1)
-      {
-        CLog::Log(LOGERROR, "CALIBRATION: Reported current resolution: %d", (int)g_graphicsContext.GetVideoResolution());
-        CLog::Log(LOGERROR, "CALIBRATION: Could not determine current resolution, falling back to default");
-        m_iCurRes = 0;
-      }
-
       // Setup the first control
       m_iControl = CONTROL_TOP_LEFT;
       ResetControls();
@@ -347,13 +323,13 @@ void CGUIWindowSettingsScreenCalibration::UpdateFromControl(int iControl)
   }
   // set the label control correctly
   CStdString strText;
-  strText.Format("%s | %s", g_settings.m_ResInfo[m_Res[m_iCurRes]].strMode.c_str(), strStatus.c_str());
+  strText.Format("%s | %s", g_settings.m_ResInfo[m_Res[m_iCurRes]].strMode, strStatus.c_str());
   SET_CONTROL_LABEL(CONTROL_LABEL_ROW1, strText);
 }
 
-void CGUIWindowSettingsScreenCalibration::FrameMove()
+void CGUIWindowSettingsScreenCalibration::Render()
 {
-  //  g_Windowing.Get3DDevice()->Clear(0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
+  //  g_graphicsContext.Get3DDevice()->Clear(0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
   m_iControl = GetFocusedControlID();
   if (m_iControl >= 0)
   {
@@ -364,21 +340,15 @@ void CGUIWindowSettingsScreenCalibration::FrameMove()
     SET_CONTROL_LABEL(CONTROL_LABEL_ROW1, "");
     SET_CONTROL_LABEL(CONTROL_LABEL_ROW2, "");
   }
-  CGUIWindow::FrameMove();
-}
 
-void CGUIWindowSettingsScreenCalibration::Render()
-{
   SET_CONTROL_HIDDEN(CONTROL_TOP_LEFT);
   SET_CONTROL_HIDDEN(CONTROL_BOTTOM_RIGHT);
   SET_CONTROL_HIDDEN(CONTROL_SUBTITLES);
   SET_CONTROL_HIDDEN(CONTROL_PIXEL_RATIO);
 
-  // we set that we need scaling here to render so that anything else on screen scales correctly
   m_needsScaling = true;
   CGUIWindow::Render();
-  m_needsScaling = false;
-  g_graphicsContext.SetRenderingResolution(m_coordsRes, false);
+  g_graphicsContext.SetRenderingResolution(m_coordsRes, 0, 0, false);
 
   SET_CONTROL_VISIBLE(CONTROL_TOP_LEFT);
   SET_CONTROL_VISIBLE(CONTROL_BOTTOM_RIGHT);
@@ -393,4 +363,14 @@ void CGUIWindowSettingsScreenCalibration::Render()
       control->Render();
   }
 
+}
+
+bool CGUIWindowSettingsScreenCalibration::OnMouseAction()
+{
+  // we don't want mouse scaling on this window
+  bool saveScaling = m_needsScaling;
+  m_needsScaling = false;
+  bool ret = CGUIWindow::OnMouseAction();
+  m_needsScaling = saveScaling;
+  return ret;
 }

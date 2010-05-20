@@ -20,15 +20,12 @@
  *
  */
 
-
-#include <vector>
+#include "utils/Archive.h"
 #include "utils/ScraperUrl.h"
 #include "utils/Fanart.h"
 #include "utils/StreamDetails.h"
 
-class CArchive;
-class TiXmlNode;
-class TiXmlElement;
+#include <vector>
 
 struct SActorInfo
 {
@@ -52,7 +49,6 @@ public:
   CStdString m_strDirector;
   CStdString m_strWritingCredits;
   CStdString m_strGenre;
-  CStdString m_strCountry;
   CStdString m_strTagLine;
   CStdString m_strPlotOutline;
   CStdString m_strTrailer;
@@ -87,8 +83,8 @@ public:
   int m_iYear;
   int m_iSeason;
   int m_iEpisode;
-  int m_iDbId;
-  int m_iFileId;
+  int m_iDbId; 
+  int m_iFileId; 
   int m_iSpecialSortSeason;
   int m_iSpecialSortEpisode;
   int m_iTrack;

@@ -1,7 +1,7 @@
 /*
 * XBMC
-* Copyright (C) 2003 by The Joker / Avalaunch team
-*
+* 2003 by The Joker / Avalaunch team
+* 
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -21,18 +21,14 @@
 #ifndef ISO9660_H
 #define ISO9660_H
 #pragma once
-#include <vector>
-#include <string>
-#include "utils/IoSupport.h"
-#include "system.h" // for win32 types
-
+#include "xbox/IoSupport.h"
 #ifdef _WIN32
 // Ideally we should just be including iso9660.h, but it's not win32-ified at this point,
 // and these are all we need
 typedef uint32_t iso723_t;
 typedef uint64_t iso733_t;
 #else
-#include <cdio/iso9660.h>
+#include "lib/libcdio/iso9660.h"
 #endif
 
 #pragma pack(1)
@@ -51,7 +47,8 @@ struct iso9660_VolumeDescriptor
   WORD wVolumeSetSizeBE;       //122-123
   WORD wVolumeSequenceNumberLE;   //124-125
   WORD wVolumeSequenceNumberBE;   //126-127
-  iso723_t logical_block_size;    // sector size, e.g. 2048 (128-129 LE - 130-131 BE)
+  WORD wSectorSizeLE;        //128-129
+  WORD wSectorSizeBE;        //130-131
   DWORD dwPathTableLengthLE;     //132-135
   DWORD dwPathTableLengthBE;     //136-139
   DWORD wFirstPathTableStartSectorLE; //140-143
@@ -77,7 +74,7 @@ struct iso9660_VolumeDescriptor
 } ;
 
 
-struct  iso9660_Datetime {
+struct	iso9660_Datetime {
   BYTE year;   /* Number of years since 1900 */
   BYTE month;  /* Has value in range 1..12. Note starts
                               at 1, not 0 like a tm struct. */
@@ -99,8 +96,10 @@ struct iso9660_Directory
 
   BYTE ucRecordLength;      //0      the number of bytes in the record (which must be even)
   BYTE ucExtendAttributeSectors; //1      [number of sectors in extended attribute record]
-  iso733_t extent;        // LBA of first local block allocated to the extent (2..5 LE - 6..9 BE)
-  iso733_t size;          // data length of File Section.  This does not include the length of any XA Records. (10..13 LE - 14..17 BE)
+  DWORD dwFileLocationLE;     //2..5   number of the first sector of file data or directory
+  DWORD dwFileLocationBE;     //6..9
+  DWORD dwFileLengthLE;      //10..13 number of bytes of file data or length of directory
+  DWORD dwFileLengthBE;           //14..17
   iso9660_Datetime DateTime;      //18..24 date
   BYTE byFlags;         //25     flags
   BYTE UnitSize;         //26     file unit size for an interleaved file
@@ -171,9 +170,9 @@ public:
 
     DWORD m_dwStartBlock;
     DWORD m_dwCurrentBlock;    // Current being read Block
-    int64_t m_dwFilePos;
+    __int64 m_dwFilePos;
     BYTE* m_pBuffer;
-    int64_t m_dwFileSize;
+    __int64 m_dwFileSize;
   };
   iso9660( );
   virtual ~iso9660( );
@@ -182,9 +181,9 @@ public:
   int FindNextFile( HANDLE szLocalFolder, WIN32_FIND_DATA *wfdFile );
   bool FindClose( HANDLE szLocalFolder );
   DWORD SetFilePointer(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod );
-  int64_t GetFileSize(HANDLE hFile);
-  int64_t GetFilePosition(HANDLE hFile);
-  int64_t Seek(HANDLE hFile, int64_t lOffset, int whence);
+  __int64 GetFileSize(HANDLE hFile);
+  __int64 GetFilePosition(HANDLE hFile);
+  __int64 Seek(HANDLE hFile, __int64 lOffset, int whence);
   HANDLE OpenFile( const char* filename );
   long ReadFile(HANDLE fd, byte *pBuffer, long lSize);
   void CloseFile(HANDLE hFile);
@@ -196,7 +195,7 @@ protected:
   void IsoDateTimeToFileTime(iso9660_Datetime* isoDateTime, FILETIME* filetime);
   struct iso_dirtree* ReadRecursiveDirFromSector( DWORD sector, const char * );
   struct iso_dirtree* FindFolder( char *Folder );
-  std::string GetThinText(BYTE* strTxt, int iLen );
+  std::string GetThinText(WCHAR* strTxt, int iLen );
   bool ReadSectorFromCache(iso9660::isofile* pContext, DWORD sector, byte** ppBuffer);
   void ReleaseSectorFromCache(iso9660::isofile* pContext, DWORD sector);
   const std::string ParseName(struct iso9660_Directory& isodir);
@@ -204,6 +203,7 @@ protected:
   void FreeFileContext(HANDLE hFile);
   isofile* GetFileContext(HANDLE hFile);
   bool IsRockRidge(struct iso9660_Directory& isodir);
+  struct iso_dirtree* m_dirtree;
   struct iso9660info m_info;
   std::string m_strReturn;
 
@@ -216,18 +216,18 @@ protected:
 
   HANDLE m_hCDROM;
   isofile* m_isoFiles[MAX_ISO_FILES];
-#define CIRC_BUFFER_SIZE 10
+#define CIRC_BUFFER_SIZE 10 
   /*
    bool            m_bUseMode2;
    DWORD    m_dwCircBuffBegin;
    DWORD    m_dwCircBuffEnd;
    DWORD    m_dwCircBuffSectorStart;
-
+   
    DWORD    m_dwStartBlock;
    DWORD    m_dwCurrentBlock;    // Current being read Block
-   int64_t   m_dwFilePos;
+   __int64   m_dwFilePos;
    BYTE*       m_pBuffer;
-   int64_t   m_dwFileSize;
+   __int64   m_dwFileSize;
   */
 
 };

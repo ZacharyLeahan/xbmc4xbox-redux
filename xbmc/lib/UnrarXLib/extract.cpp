@@ -1,9 +1,5 @@
 #include "rar.hpp"
 #include "Util.h"
-#ifdef _LINUX
-#include "XSyncUtils.h"
-#include "XEventUtils.h"
-#endif
 
 CmdExtract::CmdExtract()
 {
@@ -246,13 +242,15 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
      (!Cmd->Recurse && MatchedArgs>=(int)Cmd->FileArgs->ItemsCount() && AllMatchesExact))
     return(false);
 
-  char ArcFileName[NM];
+  // char ArcFileName[NM];
+  CSmartStr ArcFileName(NM);
 
   IntToExt(Arc.NewLhd.FileName,Arc.NewLhd.FileName);
   strcpy(ArcFileName,Arc.NewLhd.FileName);
 
-  wchar ArcFileNameW[NM];
-  *ArcFileNameW=0;
+  // wchar ArcFileNameW[NM];
+  CSmartStrW ArcFileNameW(NM);
+  *((wchar *)ArcFileNameW)=0;
 
   int MatchType=MATCH_WILDSUBPATH;
   
@@ -283,7 +281,7 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 #ifdef _APPLE
   if (WideName)
   {
-    WideToUtf(Arc.NewLhd.FileNameW,ArcFileName,sizeof(ArcFileName));
+    WideToUtf(Arc.NewLhd.FileNameW,ArcFileName,ArcFileName.BufferSize());
     WideName=false;
   }
 #endif
@@ -294,7 +292,8 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
   if (WideName)
   {
     ConvertPath(Arc.NewLhd.FileNameW,ArcFileNameW);
-    char Name[NM];
+    // char Name[NM];
+    CSmartStr Name(NM);
     WideToChar(ArcFileNameW,Name);
     if (IsNameUsable(Name))
     strcpy(ArcFileName,Name);
@@ -328,7 +327,8 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 #ifndef SFX_MODULE
   if ((Arc.NewLhd.Flags & (LHD_SPLIT_BEFORE/*|LHD_SOLID*/)) && FirstFile)
   {
-    char CurVolName[NM];
+    // char CurVolName[NM];
+    CSmartStr CurVolName(NM);
     strcpy(CurVolName,ArcName);
 
     VolNameToFirstName(ArcName,ArcName,(Arc.NewMhd.Flags & MHD_NEWNUMBERING) != 0);
@@ -497,7 +497,8 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 #ifndef SFX_MODULE
       if (Cmd->AppendArcNameToPath)
       {
-        wchar FileNameW[NM];
+        // wchar FileNameW[NM];
+        CSmartStrW FileNameW(NM);
         if (*Arc.FileNameW!=0)
           strcpyw(FileNameW,Arc.FileNameW);
         else
@@ -511,7 +512,8 @@ bool CmdExtract::ExtractCurrentFile(CommandData *Cmd,Archive &Arc,int HeaderSize
 #ifndef SFX_MODULE
       if (Length>0)
       {
-        wchar ArcPathW[NM];
+        // wchar ArcPathW[NM];
+        CSmartStrW ArcPathW(NM);
         CharToWide(Cmd->ArcPath,ArcPathW);
         Length=strlenw(ArcPathW);
       }

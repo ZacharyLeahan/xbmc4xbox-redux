@@ -27,11 +27,11 @@
  *
  */
 
+#include "StringUtils.h"
 #include "Temperature.h"
 #include "CriticalSection.h"
 #include "IMsgTargetCallback.h"
 #include "inttypes.h"
-#include "DateTime.h"
 
 #include <list>
 #include <map>
@@ -57,7 +57,7 @@ class CDateTime;
 #define PLAYER_HAS_AUDIO              2
 #define PLAYER_HAS_VIDEO              3
 #define PLAYER_PLAYING                4
-#define PLAYER_PAUSED                 5
+#define PLAYER_PAUSED                 5 
 #define PLAYER_REWINDING              6
 #define PLAYER_REWINDING_2x           7
 #define PLAYER_REWINDING_4x           8
@@ -72,14 +72,14 @@ class CDateTime;
 #define PLAYER_FORWARDING_32x        17
 #define PLAYER_CAN_RECORD            18
 #define PLAYER_RECORDING             19
-#define PLAYER_CACHING               20
+#define PLAYER_CACHING               20 
 #define PLAYER_DISPLAY_AFTER_SEEK    21
 #define PLAYER_PROGRESS              22
 #define PLAYER_SEEKBAR               23
 #define PLAYER_SEEKTIME              24
 #define PLAYER_SEEKING               25
 #define PLAYER_SHOWTIME              26
-#define PLAYER_TIME                  27
+#define PLAYER_TIME                  27  
 #define PLAYER_TIME_REMAINING        28
 #define PLAYER_DURATION              29
 #define PLAYER_SHOWCODEC             30
@@ -96,7 +96,6 @@ class CDateTime;
 #define PLAYER_CHAPTERNAME           41
 #define PLAYER_SUBTITLE_DELAY        42
 #define PLAYER_AUDIO_DELAY           43
-#define PLAYER_PASSTHROUGH           44
 #define PLAYER_PATH                  45
 #define PLAYER_FILEPATH              46
 
@@ -110,6 +109,7 @@ class CDateTime;
 #define SYSTEM_TEMPERATURE_UNITS    106
 #define SYSTEM_PROGRESS_BAR         107
 #define SYSTEM_LANGUAGE             108
+#define SYSTEM_LAUNCHING_XBE        109
 #define SYSTEM_TIME                 110
 #define SYSTEM_DATE                 111
 #define SYSTEM_CPU_TEMPERATURE      112
@@ -134,6 +134,7 @@ class CDateTime;
 #define SYSTEM_SCREEN_HEIGHT        134
 #define SYSTEM_CURRENT_WINDOW       135
 #define SYSTEM_CURRENT_CONTROL      136
+#define SYSTEM_XBOX_NICKNAME        137
 #define SYSTEM_DVD_LABEL            138
 #define SYSTEM_HAS_DRIVE_F          139
 #define SYSTEM_HASLOCKS             140
@@ -248,8 +249,6 @@ class CDateTime;
 #define VIDEOPLAYER_AUDIO_CODEC       288
 #define VIDEOPLAYER_AUDIO_CHANNELS    289
 #define VIDEOPLAYER_VIDEO_ASPECT      290
-#define VIDEOPLAYER_HASTELETEXT       291
-#define VIDEOPLAYER_COUNTRY           292
 
 #define AUDIOSCROBBLER_ENABLED      300
 #define AUDIOSCROBBLER_CONN_STATE   301
@@ -259,12 +258,6 @@ class CDateTime;
 #define LASTFM_RADIOPLAYING         305
 #define LASTFM_CANLOVE              306
 #define LASTFM_CANBAN               307
-
-#define CONTAINER_SCROLL_PREVIOUS   345 // NOTE: These 5 must be kept in this consecutive order
-#define CONTAINER_MOVE_PREVIOUS     346
-#define CONTAINER_STATIC            347
-#define CONTAINER_MOVE_NEXT         348
-#define CONTAINER_SCROLL_NEXT       349
 
 #define CONTAINER_HASFILES          351
 #define CONTAINER_HASFOLDERS        352
@@ -280,7 +273,8 @@ class CDateTime;
 #define CONTAINER_CONTENT           362
 #define CONTAINER_HAS_THUMB         363
 #define CONTAINER_SORT_METHOD       364
-
+#define CONTAINER_ON_NEXT           365
+#define CONTAINER_ON_PREVIOUS       366
 #define CONTAINER_HAS_FOCUS         367
 #define CONTAINER_ROW               368
 #define CONTAINER_COLUMN            369
@@ -336,12 +330,29 @@ class CDateTime;
 #define SYSTEM_USED_MEMORY          647
 #define SYSTEM_FREE_MEMORY          648
 #define SYSTEM_FREE_MEMORY_PERCENT  649
+#define SYSTEM_DVD_MODEL            650
+#define SYSTEM_DVD_FIRMWARE         651
+#define SYSTEM_HDD_BOOTDATE         652
+#define SYSTEM_HDD_CYCLECOUNT       653
 #define SYSTEM_UPTIME               654
 #define SYSTEM_TOTALUPTIME          655
 #define SYSTEM_CPUFREQUENCY         656
+#define SYSTEM_XBOX_VERSION         657
+#define SYSTEM_AV_PACK_INFO         658
 #define SYSTEM_SCREEN_RESOLUTION    659
 #define SYSTEM_VIDEO_ENCODER_INFO   660
+#define SYSTEM_XBOX_SERIAL          661
+#define SYSTEM_CONTROLLER_PORT_1    662
+#define SYSTEM_CONTROLLER_PORT_2    663
+#define SYSTEM_CONTROLLER_PORT_3    664
+#define SYSTEM_CONTROLLER_PORT_4    665
+#define SYSTEM_MPLAYER_VERSION      666
 #define SYSTEM_KERNEL_VERSION       667
+#define SYSTEM_XBE_REGION           668
+#define SYSTEM_DVD_ZONE             669
+#define SYSTEM_XBOX_PRODUCE_INFO    670
+#define SYSTEM_XBOX_BIOS            671
+#define SYSTEM_XBOX_MODCHIP         672
 #define SYSTEM_USED_SPACE_X         673
 #define SYSTEM_FREE_SPACE_X         674
 #define SYSTEM_USED_SPACE_Y         675
@@ -374,11 +385,9 @@ class CDateTime;
 #define SYSTEM_TOTAL_SPACE_Y        702
 #define SYSTEM_TOTAL_SPACE_Z        703
 #define SYSTEM_GET_BOOL             704
-#define SYSTEM_GET_CORE_USAGE       705
-#define SYSTEM_HAS_CORE_ID          706
-#define SYSTEM_RENDER_VENDOR        707
-#define SYSTEM_RENDER_RENDERER      708
-#define SYSTEM_RENDER_VERSION       709
+#define SYSTEM_OPENGL_VENDOR        707
+#define SYSTEM_OPENGL_RENDERER      708
+#define SYSTEM_OPENGL_VERSION       709
 #define SYSTEM_SETTING              710
 
 #define LIBRARY_HAS_MUSIC           720
@@ -392,11 +401,6 @@ class CDateTime;
 #define SYSTEM_PLATFORM_LINUX       741
 #define SYSTEM_PLATFORM_WINDOWS     742
 #define SYSTEM_PLATFORM_OSX         743
-
-#define SYSTEM_CAN_POWERDOWN        750
-#define SYSTEM_CAN_SUSPEND          751
-#define SYSTEM_CAN_HIBERNATE        752
-#define SYSTEM_CAN_REBOOT           753
 
 #define SKIN_THEME                  800
 #define SKIN_COLOUR_THEME           801
@@ -429,7 +433,11 @@ class CDateTime;
 
 // Version string MUST NOT contain spaces.  It is used
 // in the HTTP request user agent.
-#define VERSION_STRING "PRE-10.5"
+#ifdef SVN_REV
+#define VERSION_STRING "r"SVN_REV
+#else
+#define VERSION_STRING ""
+#endif
 
 #define LISTITEM_START              35000
 #define LISTITEM_THUMB              (LISTITEM_START)
@@ -487,7 +495,6 @@ class CDateTime;
 #define LISTITEM_SUBTITLE_LANGUAGE  (LISTITEM_START + 52)
 #define LISTITEM_IS_FOLDER          (LISTITEM_START + 53)
 #define LISTITEM_ORIGINALTITLE      (LISTITEM_START + 54)
-#define LISTITEM_COUNTRY            (LISTITEM_START + 55)
 
 #define LISTITEM_PROPERTY_START     (LISTITEM_START + 200)
 #define LISTITEM_PROPERTY_END       (LISTITEM_PROPERTY_START + 1000)
@@ -497,7 +504,7 @@ class CDateTime;
 
 // the multiple information vector
 #define MULTI_INFO_START              40000
-#define MULTI_INFO_END                99999
+#define MULTI_INFO_END                41000 // 1000 references is all we have for now
 #define COMBINED_VALUES_START        100000
 
 // forward
@@ -595,7 +602,7 @@ public:
   CStdString GetBuild();
 
   bool GetDisplayAfterSeek() const;
-  void SetDisplayAfterSeek(unsigned int timeOut = 2500);
+  void SetDisplayAfterSeek(DWORD TimeOut = 2500);
   void SetSeeking(bool seeking) { m_playerSeeking = seeking; };
   void SetShowTime(bool showtime) { m_playerShowTime = showtime; };
   void SetShowCodec(bool showcodec) { m_playerShowCodec = showcodec; };
@@ -605,7 +612,6 @@ public:
   bool m_performingSeek;
 
   std::string GetSystemHeatInfo(int info);
-  CTemperature GetGPUTemperature();
 
   void UpdateFPS();
   inline float GetFPS() const { return m_fps; };
@@ -622,16 +628,8 @@ public:
   // Called from tuxbox service thread to update current status
   void UpdateFromTuxBox();
 
-  /*! \brief containers call here to specify that the focus is changing
-   \param id control id
-   \param next true if we're moving to the next item, false if previous
-   \param scrolling true if the container is scrolling, false if the movement requires no scroll
-   */
-  void SetContainerMoving(int id, bool next, bool scrolling)
-  {
-    // magnitude 2 indicates a scroll, sign indicates direction
-    m_containerMoves[id] = (next ? 1 : -1) * (scrolling ? 2 : 1);
-  }
+  void SetLaunchingXBEName(const CStdString &name) { m_launchingXBE = name; };
+  void SetContainerMoving(int id, int direction) { m_containerMoves[id] = direction; };
 
   void SetLibraryBool(int condition, bool value);
   bool GetLibraryBool(int condition);
@@ -650,6 +648,8 @@ protected:
   TIME_FORMAT TranslateTimeFormat(const CStdString &format);
   CStdString LocalizeTime(const CDateTime &time, TIME_FORMAT format) const;
   bool GetItemBool(const CGUIListItem *item, int condition) const;
+  CStdString VideoWidthToResolutionDescription(int iWidth) const;
+  CStdString VideoAspectToAspectDescription(float fAspect) const;
 
   // Conditional string parameters for testing are stored in a vector for later retrieval.
   // The offset into the string parameters array is returned.
@@ -674,15 +674,16 @@ protected:
   unsigned int m_lastMusicBitrateTime;
   unsigned int m_MusicBitrate;
   CFileItem* m_currentSlide;
-
+  int i_SmartRequest;
+ 
   // fan stuff
-  unsigned int m_lastSysHeatInfoTime;
+  DWORD m_lastSysHeatInfoTime;
   int m_fanSpeed;
   CTemperature m_gpuTemp;
   CTemperature m_cpuTemp;
 
   //Fullscreen OSD Stuff
-  unsigned int m_AfterSeekTimeout;
+  DWORD m_AfterSeekTimeout;
   bool m_playerSeeking;
   bool m_playerShowTime;
   bool m_playerShowCodec;
@@ -692,6 +693,8 @@ protected:
   float m_fps;
   unsigned int m_frameCounter;
   unsigned int m_lastFPSTime;
+
+  CStdString m_launchingXBE;
 
   std::map<int, int> m_containerMoves;  // direction of list moving
   int m_nextWindowID;
@@ -733,7 +736,6 @@ protected:
  */
 extern CGUIInfoManager g_infoManager;
 #endif
-
 
 
 

@@ -18,7 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDPlayerSubtitle.h"
 #include "DVDCodecs/Overlay/DVDOverlay.h"
 #include "DVDCodecs/Overlay/DVDOverlaySpu.h"
@@ -33,17 +34,13 @@
 #include "DVDCodecs/DVDCodecs.h"
 #include "DVDCodecs/DVDFactoryCodec.h"
 #include "DVDDemuxers/DVDDemuxUtils.h"
-#include "utils/log.h"
-#ifdef _LINUX
-#include "config.h"
-#endif
 
 using namespace std;
 
 CDVDPlayerSubtitle::CDVDPlayerSubtitle(CDVDOverlayContainer* pOverlayContainer)
 {
   m_pOverlayContainer = pOverlayContainer;
-
+  
   m_pSubtitleFileParser = NULL;
   m_pSubtitleStream = NULL;
   m_pOverlayCodec = NULL;
@@ -55,7 +52,7 @@ CDVDPlayerSubtitle::~CDVDPlayerSubtitle()
   CloseStream(false);
 }
 
-
+  
 void CDVDPlayerSubtitle::Flush()
 {
   SendMessage(new CDVDMsg(CDVDMsg::GENERAL_FLUSH));
@@ -81,9 +78,9 @@ void CDVDPlayerSubtitle::SendMessage(CDVDMsg* pMsg)
         {
           overlay->iGroupId = pPacket->iGroupId;
 
-          // we assume pts is better than what
-          // decoder gives us, only take duration
-          // from decoder if available
+            // we assume pts is better than what
+            // decoder gives us, only take duration
+            // from decoder if available
           if(overlay->iPTSStopTime > overlay->iPTSStartTime)
             duration = overlay->iPTSStopTime - overlay->iPTSStartTime;
           else if(pPacket->duration != DVD_NOPTS_VALUE)
@@ -98,7 +95,7 @@ void CDVDPlayerSubtitle::SendMessage(CDVDMsg* pMsg)
           else
             pts = overlay->iPTSStartTime;
 
-          overlay->iPTSStartTime = pts;
+            overlay->iPTSStartTime = pts;
           if(duration)
             overlay->iPTSStopTime = pts + duration;
           else
@@ -111,7 +108,7 @@ void CDVDPlayerSubtitle::SendMessage(CDVDMsg* pMsg)
           overlay->Release();
         }
       }
-    }
+    } 
     else if (m_streaminfo.codec == CODEC_ID_DVD_SUBTITLE)
     {
       CDVDOverlaySpu* pSPUInfo = m_dvdspus.AddData(pPacket->pData, pPacket->iSize, pPacket->pts);
@@ -133,17 +130,9 @@ void CDVDPlayerSubtitle::SendMessage(CDVDMsg* pMsg)
       BYTE* color = m_dvdspus.m_clut[i];
       BYTE* t = (BYTE*)pData->m_data[i];
 
-// pData->m_data[i] points to an uint32_t
-// Byte swapping is needed between big and little endian systems
-#ifdef WORDS_BIGENDIAN
-      color[0] = t[1]; // Y
-      color[1] = t[2]; // Cr
-      color[2] = t[3]; // Cb
-#else
       color[0] = t[2]; // Y
       color[1] = t[1]; // Cr
       color[2] = t[0]; // Cb
-#endif
     }
     m_dvdspus.m_bHasClut = true;
   }
@@ -151,7 +140,7 @@ void CDVDPlayerSubtitle::SendMessage(CDVDMsg* pMsg)
         || pMsg->IsType(CDVDMsg::GENERAL_RESET) )
   {
     m_dvdspus.Reset();
-    if (m_pSubtitleFileParser)
+    if (m_pSubtitleFileParser) 
       m_pSubtitleFileParser->Reset();
 
     if (m_pOverlayCodec)
@@ -245,7 +234,7 @@ bool CDVDPlayerSubtitle::AcceptsData()
 bool CDVDPlayerSubtitle::GetCurrentSubtitle(CStdString& strSubtitle, double pts)
 {
   strSubtitle = "";
-
+  
   Process(pts); // TODO: move to separate thread?
 
   m_pOverlayContainer->Lock();
@@ -256,7 +245,7 @@ bool CDVDPlayerSubtitle::GetCurrentSubtitle(CStdString& strSubtitle, double pts)
     {
       CDVDOverlay* pOverlay = *it;
 
-      if (pOverlay->IsOverlayType(DVDOVERLAY_TYPE_TEXT)
+      if (pOverlay->IsOverlayType(DVDOVERLAY_TYPE_TEXT) 
       && (pOverlay->iPTSStartTime <= pts)
       && (pOverlay->iPTSStopTime >= pts || pOverlay->iPTSStopTime == 0LL))
       {

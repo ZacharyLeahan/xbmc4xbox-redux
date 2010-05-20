@@ -20,15 +20,9 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "utils/CriticalSection.h"
-#include "StdString.h"
-#include "Key.h"
-
 #include <queue>
 
 class CFileItem;
-class CFileItemList;
 class CGUIDialog;
 
 // defines here
@@ -36,7 +30,6 @@ class CGUIDialog;
 #define TMSG_WRITE_SCRIPT_OUTPUT  101
 #define TMSG_EXECUTE_SCRIPT       102
 #define TMSG_EXECUTE_BUILT_IN     103
-#define TMSG_EXECUTE_OS           104
 
 #define TMSG_MEDIA_PLAY           200
 #define TMSG_MEDIA_STOP           201
@@ -46,10 +39,6 @@ class CGUIDialog;
 #define TMSG_PLAYLISTPLAYER_PLAY  210
 #define TMSG_PLAYLISTPLAYER_NEXT  211
 #define TMSG_PLAYLISTPLAYER_PREV  212
-#define TMSG_PLAYLISTPLAYER_ADD   213
-#define TMSG_PLAYLISTPLAYER_CLEAR 214
-#define TMSG_PLAYLISTPLAYER_SHUFFLE   215
-#define TMSG_PLAYLISTPLAYER_GET_ITEMS 216
 
 #define TMSG_PICTURE_SHOW         220
 #define TMSG_PICTURE_SLIDESHOW    221
@@ -65,24 +54,10 @@ class CGUIDialog;
 #define TMSG_RESET                306
 #define TMSG_RESTARTAPP           307
 #define TMSG_SWITCHTOFULLSCREEN   308
-#define TMSG_MINIMIZE             309
-#define TMSG_TOGGLEFULLSCREEN     310
 
 #define TMSG_HTTPAPI              400
 
 #define TMSG_NETWORKMESSAGE         500
-
-#define TMSG_GUI_DO_MODAL             600
-#define TMSG_GUI_SHOW                 601
-#define TMSG_GUI_ACTIVATE_WINDOW      604
-#define TMSG_GUI_PYTHON_DIALOG        605
-#define TMSG_GUI_DIALOG_CLOSE         606
-#define TMSG_GUI_ACTION               607
-#define TMSG_GUI_INFOLABEL            608
-#define TMSG_GUI_INFOBOOL             609
-
-#define TMSG_OPTICAL_MOUNT        700
-#define TMSG_OPTICAL_UNMOUNT      701
 
 typedef struct
 {
@@ -111,7 +86,6 @@ public:
 
   void MediaPlay(std::string filename);
   void MediaPlay(const CFileItem &item);
-  void MediaPlay(const CFileItemList &item, int song = 0);
   void MediaStop();
   void MediaPause();
   void MediaRestart(bool bWait);
@@ -120,12 +94,6 @@ public:
   void PlayListPlayerPlay(int iSong);
   void PlayListPlayerNext();
   void PlayListPlayerPrevious();
-  void PlayListPlayerAdd(int playlist, const CFileItem &item);
-  void PlayListPlayerAdd(int playlist, const CFileItemList &list);
-  void PlayListPlayerClear(int playlist);
-  void PlayListPlayerShuffle(int playlist, bool shuffle);
-  void PlayListPlayerGetItems(int playlist, CFileItemList &list);
-
   void PlayFile(const CFileItem &item, bool bRestart = false); // thread safe version of g_application.PlayFile()
   void PictureShow(std::string filename);
   void PictureSlideShow(std::string pathname, bool bScreensaver = false);
@@ -139,9 +107,6 @@ public:
   void RestartApp();
   void Reset();
   void SwitchToFullscreen(); //
-  void Minimize(bool wait = false);
-  void ExecOS(const CStdString command, bool waitExit = false);
-  void UserEvent(int code);
 
   CStdString GetResponse();
   int SetResponse(CStdString response);
@@ -149,18 +114,6 @@ public:
   void ExecBuiltIn(const CStdString &command);
 
   void NetworkMessage(DWORD dwMessage, DWORD dwParam = 0);
-
-  void DoModal(CGUIDialog *pDialog, int iWindowID, const CStdString &param = "");
-  void Show(CGUIDialog *pDialog);
-  void Close(CGUIDialog *pDialog, bool forceClose, bool waitResult=true);
-  void ActivateWindow(int windowID, const std::vector<CStdString> &params, bool swappingWindows);
-  void SendAction(const CAction &action, int windowID = WINDOW_INVALID);
-  std::vector<CStdString> GetInfoLabels(const std::vector<CStdString> &properties);
-  std::vector<bool> GetInfoBooleans(const std::vector<CStdString> &properties);
-
-  void OpticalMount(CStdString device, bool bautorun=false);
-  void OpticalUnMount(CStdString device);
-
 private:
   void ProcessMessage(ThreadMessage *pMsg);
 
@@ -172,3 +125,5 @@ private:
   CStdString bufferResponse;
 
 };
+
+extern CApplicationMessenger g_applicationMessenger;

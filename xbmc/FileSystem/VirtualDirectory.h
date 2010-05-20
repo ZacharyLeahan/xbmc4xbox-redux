@@ -21,13 +21,13 @@
  */
 
 #include "IDirectory.h"
-#include "MediaSource.h"
+#include "Settings.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 
   /*!
-  \ingroup windows
+  \ingroup windows 
   \brief Get access to shares and it's directories.
   */
   class CVirtualDirectory : public IDirectory
@@ -36,7 +36,7 @@ namespace XFILE
     CVirtualDirectory(void);
     virtual ~CVirtualDirectory(void);
     virtual bool GetDirectory(const CStdString& strPath, CFileItemList &items);
-    virtual bool GetDirectory(const CStdString& strPath, CFileItemList &items, bool bUseFileDirectories);
+    virtual bool GetDirectory(const CStdString& strPath, CFileItemList &items, bool bUseFileDirectories); 
     void SetSources(const VECSOURCES& vecSources);
     inline unsigned int GetNumberOfSources() 
     {

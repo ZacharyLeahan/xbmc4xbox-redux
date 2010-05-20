@@ -19,14 +19,16 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "ISO9660Directory.h"
-#include "utils/IoSupport.h"
+#include "xbox/IoSupport.h"
 #include "iso9660.h"
 #include "Util.h"
 #include "URL.h"
 #include "FileItem.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CISO9660Directory::CISO9660Directory(void)
 {}

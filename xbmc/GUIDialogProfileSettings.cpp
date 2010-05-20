@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogProfileSettings.h"
 #include "GUIDialogFileBrowser.h"
 #include "GUIDialogContextMenu.h"
@@ -36,12 +37,9 @@
 #include "FileSystem/Directory.h"
 #include "FileSystem/File.h"
 #include "FileItem.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "TextureCache.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 #define CONTROL_PROFILE_IMAGE       2
 #define CONTROL_START              30
@@ -58,8 +56,15 @@ CGUIDialogProfileSettings::~CGUIDialogProfileSettings(void)
 
 bool CGUIDialogProfileSettings::OnMessage(CGUIMessage &message)
 {
-  if (message.GetMessage() == GUI_MSG_CLICKED)
+  switch (message.GetMessage())
   {
+  case GUI_MSG_WINDOW_DEINIT:
+    {
+      CGUIDialogSettings::OnMessage(message);
+    }
+    break;
+
+  case GUI_MSG_CLICKED:
     int iControl = message.GetSenderId();
     if (iControl == 500)
       Close();
@@ -68,6 +73,7 @@ bool CGUIDialogProfileSettings::OnMessage(CGUIMessage &message)
       m_bNeedSave = false;
       Close();
     }
+    break;
   }
   return CGUIDialogSettings::OnMessage(message);
 }
@@ -76,7 +82,7 @@ void CGUIDialogProfileSettings::OnWindowLoaded()
 {
   CGUIDialogSettings::OnWindowLoaded();
   CGUIImage *pImage = (CGUIImage*)GetControl(2);
-  m_strDefaultImage = pImage ? pImage->GetFileName() : "";
+  m_strDefaultImage = pImage->GetFileName();
 }
 
 void CGUIDialogProfileSettings::SetupPage()
@@ -85,8 +91,10 @@ void CGUIDialogProfileSettings::SetupPage()
   SET_CONTROL_LABEL(1000,m_strName);
   SET_CONTROL_LABEL(1001,m_strDirectory);
   CGUIImage *pImage = (CGUIImage*)GetControl(2);
-  if (pImage)
-    pImage->SetFileName(!m_strThumb.IsEmpty() ? m_strThumb : m_strDefaultImage);
+  if (!m_strThumb.IsEmpty())
+    pImage->SetFileName(m_strThumb);
+  else
+    pImage->SetFileName(m_strDefaultImage);
 }
 
 void CGUIDialogProfileSettings::CreateSettings()
@@ -101,7 +109,7 @@ void CGUIDialogProfileSettings::CreateSettings()
 
   if (m_bShowDetails)
     AddButton(4,20066);
-  if (!m_bShowDetails && m_locks.mode == LOCK_MODE_EVERYONE && g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+  if (!m_bShowDetails && m_iLockMode == LOCK_MODE_EVERYONE && g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
     AddButton(4,20066);
 
   if (!m_bIsDefault && m_bShowDetails)
@@ -114,7 +122,7 @@ void CGUIDialogProfileSettings::CreateSettings()
     setting.entry.push_back(make_pair(setting.entry.size(), g_localizeStrings.Get(20062)));
     setting.entry.push_back(make_pair(setting.entry.size(), g_localizeStrings.Get(20063)));
     setting.entry.push_back(make_pair(setting.entry.size(), g_localizeStrings.Get(20061)));
-    if (g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+    if (g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
       setting.entry.push_back(make_pair(setting.entry.size(), g_localizeStrings.Get(20107)));
 
     m_settings.push_back(setting);
@@ -127,7 +135,7 @@ void CGUIDialogProfileSettings::CreateSettings()
     setting2.entry.push_back(make_pair(setting2.entry.size(), g_localizeStrings.Get(20062)));
     setting2.entry.push_back(make_pair(setting2.entry.size(), g_localizeStrings.Get(20063)));
     setting2.entry.push_back(make_pair(setting2.entry.size(), g_localizeStrings.Get(20061)));
-    if (g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+    if (g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
       setting2.entry.push_back(make_pair(setting2.entry.size(), g_localizeStrings.Get(20107)));
 
     m_settings.push_back(setting2);
@@ -144,7 +152,8 @@ void CGUIDialogProfileSettings::CreateSettings()
     }
     if (!m_strName.IsEmpty())
     {
-      m_strDirectory = CUtil::AddFileToFolder("profiles",CUtil::MakeLegalFileName(m_strName));
+      m_strDirectory = CUtil::AddFileToFolder("profiles", m_strName);
+      CUtil::GetFatXQualifiedPath(m_strDirectory);
       CStdString strPath;
       CUtil::AddFileToFolder("special://masterprofile/",m_strDirectory,strPath);
       CDirectory::Create(strPath);
@@ -190,23 +199,35 @@ void CGUIDialogProfileSettings::OnSettingChanged(SettingInfo &setting)
       item->SetThumbnailImage(m_strThumb);
       item->SetLabel(g_localizeStrings.Get(20016));
       items.Add(item);
-    }
+    } 
     CFileItemPtr item(new CFileItem("thumb://None", false));
     item->SetThumbnailImage(m_strDefaultImage);
     item->SetLabel(g_localizeStrings.Get(20018));
     items.Add(item);
-    if (CGUIDialogFileBrowser::ShowAndGetImage(items,shares,g_localizeStrings.Get(1030),strThumb) &&
+    if (CGUIDialogFileBrowser::ShowAndGetImage(items,shares,g_localizeStrings.Get(1030),strThumb) && 
         !strThumb.Equals("thumb://Current"))
     {
       m_bNeedSave = true;
-      m_strThumb = strThumb.Equals("thumb://None") ? "" : strThumb;
-
       CGUIImage *pImage = (CGUIImage*)GetControl(2);
-      if (pImage)
+      CFileItem item(strThumb);
+      item.m_strPath = strThumb;
+      m_strThumb = item.GetCachedProfileThumb();
+      if (CFile::Exists(m_strThumb))
+        CFile::Delete(m_strThumb);
+
+      pImage->SetFileName("");
+      pImage->SetInvalid();
+
+      if (!strThumb.Equals("thumb://None"))
       {
-        pImage->SetFileName("");
-        pImage->SetInvalid();
-        pImage->SetFileName(!m_strThumb.IsEmpty() ? m_strThumb : m_strDefaultImage);
+        CPicture pic;
+        pic.CreateThumbnail(strThumb, m_strThumb);
+        pImage->SetFileName(m_strThumb);
+      }
+      else
+      {
+        m_strThumb.clear();
+        pImage->SetFileName(m_strDefaultImage);
       }
     }
   }
@@ -236,19 +257,19 @@ void CGUIDialogProfileSettings::OnSettingChanged(SettingInfo &setting)
   {
     if (m_bShowDetails)
     {
-      if (g_settings.GetMasterProfile().getLockMode() == LOCK_MODE_EVERYONE && !m_bIsDefault)
+      if (g_settings.m_vecProfiles[0].getLockMode() == LOCK_MODE_EVERYONE && !m_bIsDefault)
       {
         if (CGUIDialogYesNo::ShowAndGetInput(20066,20118,20119,20022))
           g_passwordManager.SetMasterLockMode(false);
-        if (g_settings.GetMasterProfile().getLockMode() == LOCK_MODE_EVERYONE)
+        if (g_settings.m_vecProfiles[0].getLockMode() == LOCK_MODE_EVERYONE)
           return;
       }
-      if (CGUIDialogLockSettings::ShowAndGetLock(m_locks, m_bIsDefault ? 12360 : 20068, g_settings.GetMasterProfile().getLockMode() == LOCK_MODE_EVERYONE || m_bIsDefault))
+      if (CGUIDialogLockSettings::ShowAndGetLock(m_iLockMode,m_strLockCode,m_bLockMusic,m_bLockVideo,m_bLockPictures,m_bLockPrograms,m_bLockFiles,m_bLockSettings,m_bIsDefault?12360:20068,g_settings.m_vecProfiles[0].getLockMode() == LOCK_MODE_EVERYONE || m_bIsDefault))
         m_bNeedSave = true;
     }
     else
     {
-      if (CGUIDialogLockSettings::ShowAndGetLock(m_locks, m_bIsDefault ? 12360 : 20068, false, false))
+      if (CGUIDialogLockSettings::ShowAndGetLock(m_iLockMode,m_strLockCode,m_bIsDefault?12360:20068))
         m_bNeedSave = true;
     }
   }
@@ -261,7 +282,7 @@ void CGUIDialogProfileSettings::OnCancel()
   m_bNeedSave = false;
 }
 
-bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool firstLogin)
+bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool bDetails)
 {
   CGUIDialogProfileSettings *dialog = (CGUIDialogProfileSettings *)g_windowManager.GetWindow(WINDOW_DIALOG_PROFILE_SETTINGS);
   if (!dialog) return false;
@@ -269,23 +290,24 @@ bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool first
     dialog->m_bIsDefault = true;
   else
     dialog->m_bIsDefault = false;
-  if (firstLogin && iProfile > g_settings.GetNumProfiles())
+  if (!bDetails && iProfile > g_settings.m_vecProfiles.size())
     return false;
 
-  dialog->m_bShowDetails = !firstLogin;
-  dialog->SetProperty("heading", g_localizeStrings.Get(firstLogin ? 20255 : 20067));
+  dialog->m_bShowDetails = bDetails;
 
-  const CProfile *profile = g_settings.GetProfile(iProfile);
-
-  if (!profile)
-  { // defaults
+  if (iProfile >= g_settings.m_vecProfiles.size())
+  {
     dialog->m_strName.Empty();
     dialog->m_iDbMode = 2;
+    dialog->m_iLockMode = LOCK_MODE_EVERYONE;
     dialog->m_iSourcesMode = 2;
-    dialog->m_locks = CProfile::CLock();
-    dialog->m_locks.addonManager = true;
-    dialog->m_locks.settings = true;
-    dialog->m_locks.files = true;
+    dialog->m_bLockSettings = true;
+    dialog->m_bLockMusic = false;
+    dialog->m_bLockVideo = false;
+    dialog->m_bLockFiles = true;
+    dialog->m_bLockPictures = false;
+    dialog->m_bLockPrograms = false;
+
     dialog->m_strDirectory.Empty();
     dialog->m_strThumb.Empty();
     dialog->m_strName = "";
@@ -293,24 +315,30 @@ bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool first
   }
   else
   {
-    dialog->m_strName = profile->getName();
-    dialog->m_strThumb = profile->getThumb();
-    dialog->m_strDirectory = profile->getDirectory();
-    dialog->m_iDbMode = profile->canWriteDatabases()?0:1;
-    dialog->m_iSourcesMode = profile->canWriteSources()?0:1;
-    if (profile->hasDatabases())
+    dialog->m_strName = g_settings.m_vecProfiles[iProfile].getName();
+    dialog->m_strThumb = g_settings.m_vecProfiles[iProfile].getThumb();
+    dialog->m_strDirectory = g_settings.m_vecProfiles[iProfile].getDirectory();
+    dialog->m_iDbMode = g_settings.m_vecProfiles[iProfile].canWriteDatabases()?0:1;
+    dialog->m_iSourcesMode = g_settings.m_vecProfiles[iProfile].canWriteSources()?0:1;
+    if (g_settings.m_vecProfiles[iProfile].hasDatabases())
       dialog->m_iDbMode += 2;
-    if (profile->hasSources())
+    if (g_settings.m_vecProfiles[iProfile].hasSources())
       dialog->m_iSourcesMode += 2;
 
-    dialog->m_locks = profile->GetLocks();
-    
+    dialog->m_iLockMode = g_settings.m_vecProfiles[iProfile].getLockMode();
+    dialog->m_strLockCode = g_settings.m_vecProfiles[iProfile].getLockCode();
+    dialog->m_bLockFiles = g_settings.m_vecProfiles[iProfile].filesLocked();
+    dialog->m_bLockMusic = g_settings.m_vecProfiles[iProfile].musicLocked();
+    dialog->m_bLockVideo = g_settings.m_vecProfiles[iProfile].videoLocked();
+    dialog->m_bLockPrograms = g_settings.m_vecProfiles[iProfile].programsLocked();
+    dialog->m_bLockPictures = g_settings.m_vecProfiles[iProfile].picturesLocked();
+    dialog->m_bLockSettings = g_settings.m_vecProfiles[iProfile].settingsLocked();
     dialog->m_bIsNewUser = false;
   }
   dialog->DoModal();
   if (dialog->m_bNeedSave)
   {
-    if (iProfile >= g_settings.GetNumProfiles())
+    if (iProfile >= g_settings.m_vecProfiles.size())
     {
       if (dialog->m_strName.IsEmpty() || dialog->m_strDirectory.IsEmpty())
         return false;
@@ -324,7 +352,7 @@ bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool first
 
       // check for old profile settings
       CProfile profile;
-      g_settings.AddProfile(profile);
+      g_settings.m_vecProfiles.push_back(profile);
       bool bExists = CFile::Exists(CUtil::AddFileToFolder("special:://masterprofile/",
                                                           dialog->m_strDirectory+"/guisettings.xml"));
 
@@ -376,18 +404,29 @@ bool CGUIDialogProfileSettings::ShowForProfile(unsigned int iProfile, bool first
       if (!CGUIDialogYesNo::ShowAndGetInput(20067,20103,20022,20022))
         return false;*/
 
-    CProfile *profile = g_settings.GetProfile(iProfile);
-    assert(profile);
-    profile->setName(dialog->m_strName);
-    profile->setDirectory(dialog->m_strDirectory);
-    profile->setThumb(dialog->m_strThumb);
-    profile->setWriteDatabases(!((dialog->m_iDbMode & 1) == 1));
-    profile->setWriteSources(!((dialog->m_iSourcesMode & 1) == 1));
-    profile->setDatabases((dialog->m_iDbMode & 2) == 2);
-    profile->setSources((dialog->m_iSourcesMode & 2) == 2);
-    profile->SetLocks(dialog->m_locks);
-    
-    g_settings.SaveProfiles(PROFILES_FILE);
+    g_settings.m_vecProfiles[iProfile].setName(dialog->m_strName);
+    g_settings.m_vecProfiles[iProfile].setDirectory(dialog->m_strDirectory);
+    g_settings.m_vecProfiles[iProfile].setThumb(dialog->m_strThumb);
+    g_settings.m_vecProfiles[iProfile].setWriteDatabases(!((dialog->m_iDbMode & 1) == 1));
+    g_settings.m_vecProfiles[iProfile].setWriteSources(!((dialog->m_iSourcesMode & 1) == 1));
+    g_settings.m_vecProfiles[iProfile].setDatabases((dialog->m_iDbMode & 2) == 2);
+    g_settings.m_vecProfiles[iProfile].setSources((dialog->m_iSourcesMode & 2) == 2);
+    if (dialog->m_strLockCode == "-")
+      g_settings.m_vecProfiles[iProfile].setLockMode(LOCK_MODE_EVERYONE);
+    else
+      g_settings.m_vecProfiles[iProfile].setLockMode(dialog->m_iLockMode);
+    if (dialog->m_iLockMode == LOCK_MODE_EVERYONE)
+      g_settings.m_vecProfiles[iProfile].setLockCode("-");
+    else
+      g_settings.m_vecProfiles[iProfile].setLockCode(dialog->m_strLockCode);
+    g_settings.m_vecProfiles[iProfile].setMusicLocked(dialog->m_bLockMusic);
+    g_settings.m_vecProfiles[iProfile].setVideoLocked(dialog->m_bLockVideo);
+    g_settings.m_vecProfiles[iProfile].setSettingsLocked(dialog->m_bLockSettings);
+    g_settings.m_vecProfiles[iProfile].setFilesLocked(dialog->m_bLockFiles);
+    g_settings.m_vecProfiles[iProfile].setPicturesLocked(dialog->m_bLockPictures);
+    g_settings.m_vecProfiles[iProfile].setProgramsLocked(dialog->m_bLockPrograms);
+
+    g_settings.SaveProfiles("q:\\system\\profiles.xml");
     return true;
   }
 

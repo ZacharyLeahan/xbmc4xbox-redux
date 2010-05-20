@@ -37,7 +37,7 @@ public:
   virtual ~CGUIDialogFileBrowser(void);
   virtual bool OnMessage(CGUIMessage& message);
   virtual bool OnAction(const CAction &action);
-  virtual void FrameMove();
+  virtual void Render();
   virtual void OnWindowLoaded();
   virtual void OnWindowUnload();
   bool IsConfirmed() { return m_bConfirmed; };
@@ -45,7 +45,7 @@ public:
 
   static bool ShowAndGetDirectory(const VECSOURCES &shares, const CStdString &heading, CStdString &path, bool bWriteOnly=false);
   static bool ShowAndGetFile(const VECSOURCES &shares, const CStdString &mask, const CStdString &heading, CStdString &path, bool useThumbs = false, bool useFileDirectories = false);
-  static bool ShowAndGetFile(const CStdString &directory, const CStdString &mask, const CStdString &heading, CStdString &path, bool useThumbs = false, bool useFileDirectories = false, bool singleList = false);
+  static bool ShowAndGetFile(const CStdString &directory, const CStdString &mask, const CStdString &heading, CStdString &path, bool useThumbs = false, bool useFileDirectories = false);
   static bool ShowAndGetSource(CStdString &path, bool allowNetworkShares, VECSOURCES* additionalShare = NULL, const CStdString& strType="");
   static bool ShowAndGetImage(const VECSOURCES &shares, const CStdString &heading, CStdString &path);
   static bool ShowAndGetImage(const CFileItemList &items, const VECSOURCES &shares, const CStdString &heading, CStdString &path, bool* flip=NULL, int label=21371);
@@ -72,7 +72,7 @@ protected:
   CGUIControl *GetFirstFocusableControl(int id);
 
   VECSOURCES m_shares;
-  XFILE::CVirtualDirectory m_rootDir;
+  DIRECTORY::CVirtualDirectory m_rootDir;
   CFileItemList* m_vecItems;
   CFileItem* m_Directory;
   CStdString m_strParentPath;

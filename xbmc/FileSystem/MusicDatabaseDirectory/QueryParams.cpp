@@ -19,9 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "QueryParams.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CQueryParams::CQueryParams()
 {

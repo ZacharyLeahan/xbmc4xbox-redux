@@ -18,16 +18,15 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "system.h"
+#include "stdafx.h"
 
 #ifdef HAS_EVENT_SERVER
 
 #include "Socket.h"
-#include "log.h"
 #include <vector>
 
 using namespace SOCKETS;
-//using namespace std; On VS2010, bind conflicts with std::bind
+using namespace std;
 
 #ifdef WINSOCK_VERSION
 #define close closesocket
@@ -47,19 +46,7 @@ bool CPosixUDPSocket::Bind(CAddress& addr, int port, int range)
 
   if (m_iSock == INVALID_SOCKET)
   {
-#ifdef _WIN32
-    int ierr = WSAGetLastError();
-    CLog::Log(LOGERROR, "UDP: Could not create socket %d", ierr);
-    // hack for broken third party libs
-    if(ierr == WSANOTINITIALISED)
-    {
-      WSADATA wd;
-      if (WSAStartup(MAKEWORD(2,2), &wd) != 0)
-        CLog::Log(LOGERROR, "UDP: WSAStartup failed");
-    }
-#else
     CLog::Log(LOGERROR, "UDP: Could not create socket");
-#endif    
     CLog::Log(LOGERROR, "UDP: %s", strerror(errno));
     return false;
   }
@@ -172,10 +159,7 @@ void CSocketListener::AddSocket(CBaseSocket *sock)
 bool CSocketListener::Listen(int timeout)
 {
   if (m_sockets.size()==0)
-  {
-    CLog::Log(LOGERROR, "SOCK: No sockets to listen for");
-    throw LISTENEMPTY;
-  }
+    return false;
 
   m_iReadyCount = 0;
   m_iCurrentSocket = 0;
@@ -205,7 +189,7 @@ bool CSocketListener::Listen(int timeout)
   {
     CLog::Log(LOGERROR, "SOCK: Error selecting socket(s)");
     Clear();
-    throw LISTENERROR;
+    return false;
   }
   else
   {

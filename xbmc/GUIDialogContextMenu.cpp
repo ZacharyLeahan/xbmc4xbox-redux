@@ -19,37 +19,29 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIDialogContextMenu.h"
 #include "GUIButtonControl.h"
 #include "GUIDialogNumeric.h"
 #include "GUIDialogGamepad.h"
 #include "GUIDialogFileBrowser.h"
-#include "GUIUserMessages.h"
+#include "GUIDialogContentSettings.h"
+#include "GUIDialogVideoScan.h"
 #include "GUIWindowVideoFiles.h"
-#include "Autorun.h"
+#include "Application.h"
 #include "GUIPassword.h"
 #include "Util.h"
-#include "GUISettings.h"
 #include "GUIDialogMediaSource.h"
 #include "GUIDialogLockSettings.h"
 #include "MediaManager.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogYesNo.h"
-#include "addons/AddonManager.h"
 #include "FileItem.h"
 #include "FileSystem/File.h"
 #include "Picture.h"
-#include "Settings.h"
-#include "LocalizeStrings.h"
-#include "StringUtils.h"
-#include "TextureCache.h"
-
-#ifdef _WIN32
-#include "WIN32Util.h"
-#endif
 
 using namespace std;
+using namespace MEDIA_DETECT;
 
 #define BACKGROUND_IMAGE       999
 #define BACKGROUND_BOTTOM      998
@@ -269,46 +261,26 @@ bool CGUIDialogContextMenu::SourcesMenu(const CStdString &strType, const CFileIt
 void CGUIDialogContextMenu::GetContextButtons(const CStdString &type, const CFileItemPtr item, CContextButtons &buttons)
 {
   // Add buttons to the ContextMenu that should be visible for both sources and autosourced items
-  if (item && item->IsRemovable())
+  if (item && (item->IsDVD() || item->IsCDDA()))
   {
-    if (item->IsDVD() || item->IsCDDA())
-    {
-      // We need to check if there is a detected is inserted!
-      if ( g_mediaManager.IsDiscInDrive() )
-        buttons.Add(CONTEXT_BUTTON_PLAY_DISC, 341); // Play CD/DVD!
-      buttons.Add(CONTEXT_BUTTON_EJECT_DISC, 13391);  // Eject/Load CD/DVD!
-    }
-    else // Must be HDD
-    {
-      buttons.Add(CONTEXT_BUTTON_EJECT_DRIVE, 13420);  // Eject Removable HDD!
-    }
+    // We need to check if there is a detected is inserted!
+    if ( CDetectDVDMedia::IsDiscInDrive() )
+      buttons.Add(CONTEXT_BUTTON_PLAY_DISC, 341); // Play CD/DVD!
+    buttons.Add(CONTEXT_BUTTON_EJECT_DISC, 13391);  // Eject/Load CD/DVD!
   }
 
 
   // Next, Add buttons to the ContextMenu that should ONLY be visible for sources and not autosourced items
   CMediaSource *share = GetShare(type, item.get());
 
-  if (g_settings.GetCurrentProfile().canWriteSources() || g_passwordManager.bMasterUser)
+  if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() || g_passwordManager.bMasterUser)
   {
     if (share)
     {
-      // Note. from now on, remove source & disable plugin should mean the same thing
-      //TODO might be smart to also combine editing source & plugin settings into one concept/dialog
-      // Note. Temporarily disabled ability to remove plugin sources until installer is operational
-
-      CURL url(share->strPath);
-      bool isAddon = ADDON::TranslateContent(url.GetProtocol()) != CONTENT_NONE;
-      if (!share->m_ignore && !isAddon)
+      if (!share->m_ignore)
         buttons.Add(CONTEXT_BUTTON_EDIT_SOURCE, 1027); // Edit Source
-      else
-      {
-        ADDON::AddonPtr plugin;
-        if (ADDON::CAddonMgr::Get().GetAddon(url.GetHostName(), plugin, ADDON::ADDON_PLUGIN))
-        if (plugin->HasSettings())
-          buttons.Add(CONTEXT_BUTTON_PLUGIN_SETTINGS, 1045); // Plugin Settings
-      }
       buttons.Add(CONTEXT_BUTTON_SET_DEFAULT, 13335); // Set as Default
-      if (!share->m_ignore && !isAddon)
+      if (!share->m_ignore)
         buttons.Add(CONTEXT_BUTTON_REMOVE_SOURCE, 522); // Remove Source
 
       buttons.Add(CONTEXT_BUTTON_SET_THUMB, 20019);
@@ -318,9 +290,9 @@ void CGUIDialogContextMenu::GetContextButtons(const CStdString &type, const CFil
 
     buttons.Add(CONTEXT_BUTTON_ADD_SOURCE, 1026); // Add Source
   }
-  if (share && LOCK_MODE_EVERYONE != g_settings.GetMasterProfile().getLockMode())
+  if (share && LOCK_MODE_EVERYONE != g_settings.m_vecProfiles[0].getLockMode())
   {
-    if (share->m_iHasLock == 0 && (g_settings.GetCurrentProfile().canWriteSources() || g_passwordManager.bMasterUser))
+    if (share->m_iHasLock == 0 && (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() || g_passwordManager.bMasterUser))
       buttons.Add(CONTEXT_BUTTON_ADD_LOCK, 12332);
     else if (share->m_iHasLock == 1)
       buttons.Add(CONTEXT_BUTTON_REMOVE_LOCK, 12335);
@@ -331,7 +303,7 @@ void CGUIDialogContextMenu::GetContextButtons(const CStdString &type, const CFil
       bool maxRetryExceeded = false;
       if (g_guiSettings.GetInt("masterlock.maxretries") != 0)
         maxRetryExceeded = (share->m_iBadPwdCount >= g_guiSettings.GetInt("masterlock.maxretries"));
-
+  
       if (maxRetryExceeded)
         buttons.Add(CONTEXT_BUTTON_RESET_LOCK, 12334);
       else
@@ -347,12 +319,12 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
   // Add Source doesn't require a valid share
   if (button == CONTEXT_BUTTON_ADD_SOURCE)
   {
-    if (g_settings.IsMasterUser())
+    if (g_settings.m_iLastLoadedProfileIndex == 0)
     {
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return false;
     }
-    else if (!g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
+    else if (!g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
       return false;
 
     return CGUIDialogMediaSource::ShowAndAddMediaSource(type);
@@ -360,22 +332,16 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
 
   // buttons that are available on both sources and autosourced items
   if (!item) return false;
-
   switch (button)
   {
-  case CONTEXT_BUTTON_EJECT_DRIVE:
-    return g_mediaManager.Eject(item->m_strPath);
-
-#ifdef HAS_DVD_DRIVE
   case CONTEXT_BUTTON_PLAY_DISC:
-    return MEDIA_DETECT::CAutorun::PlayDisc();
+    return CAutorun::PlayDisc();
 
   case CONTEXT_BUTTON_EJECT_DISC:
-#ifdef _WIN32
-    CWIN32Util::ToggleTray(g_mediaManager.TranslateDevicePath(item->m_strPath)[0]);
+#ifdef _WIN32PC
+    if( item->m_strPath[0] ) CIoSupport::EjectTray( true, item->m_strPath[0] ); // TODO: detect tray state
 #else
     CIoSupport::ToggleTray();
-#endif
 #endif
     return true;
   default:
@@ -388,7 +354,7 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
   switch (button)
   {
   case CONTEXT_BUTTON_EDIT_SOURCE:
-    if (g_settings.IsMasterUser())
+    if (g_settings.m_iLastLoadedProfileIndex == 0)
     {
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return false;
@@ -397,19 +363,18 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
       return false;
 
     return CGUIDialogMediaSource::ShowAndEditMediaSource(type, *share);
-
+    
   case CONTEXT_BUTTON_REMOVE_SOURCE:
-  {
-    if (g_settings.IsMasterUser())
+    if (g_settings.m_iLastLoadedProfileIndex == 0)
     {
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return false;
     }
-    else
+    else 
     {
-      if (!g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsMasterLockUnlocked(false))
+      if (!g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsMasterLockUnlocked(false))
         return false;
-      if (g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
+      if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
         return false;
     }
     // prompt user if they want to really delete the source
@@ -421,12 +386,15 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
         if (share->strName.Equals(defaultSource))
           ClearDefault(type);
       }
+
+      // delete this share
       g_settings.DeleteSource(type, share->strName, share->strPath);
+      return true;
     }
-    return true;
-  }
+    break;
+
   case CONTEXT_BUTTON_SET_DEFAULT:
-    if (g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
+    if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
       return false;
     else if (!g_passwordManager.IsMasterLockUnlocked(true))
       return false;
@@ -436,7 +404,7 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
     return true;
 
   case CONTEXT_BUTTON_CLEAR_DEFAULT:
-    if (g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
+    if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
       return false;
     else if (!g_passwordManager.IsMasterLockUnlocked(true))
       return false;
@@ -446,7 +414,7 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
 
   case CONTEXT_BUTTON_SET_THUMB:
     {
-      if (g_settings.GetCurrentProfile().canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
+      if (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteSources() && !g_passwordManager.IsProfileLockUnlocked())
         return false;
       else if (!g_passwordManager.IsMasterLockUnlocked(true))
         return false;
@@ -472,11 +440,15 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
       // see if there's a local thumb for this item
       CStdString folderThumb = item->GetFolderThumb();
       if (XFILE::CFile::Exists(folderThumb))
-      {
-        CFileItemPtr local(new CFileItem("thumb://Local", false));
-        local->SetThumbnailImage(folderThumb);
-        local->SetLabel(g_localizeStrings.Get(20017));
-        items.Add(local);
+      { // cache it
+        CPicture pic;
+        if (pic.CreateThumbnail(folderThumb, item->GetCachedProgramThumb()))
+        {
+          CFileItemPtr local(new CFileItem("thumb://Local", false));
+          local->SetThumbnailImage(item->GetCachedProgramThumb());
+          local->SetLabel(g_localizeStrings.Get(20017));
+          items.Add(local);
+        }
       }
       // and add a "no thumb" entry as well
       CFileItemPtr nothumb(new CFileItem("thumb://None", false));
@@ -493,9 +465,6 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
       if (strThumb == "thumb://Current")
         return true;
 
-      if (strThumb == "thumb://Local")
-        strThumb = folderThumb;
-
       if (strThumb == "thumb://None")
         strThumb = "";
 
@@ -505,7 +474,7 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
         g_settings.SaveSources();
       }
       else if (!strThumb.IsEmpty())
-      { // this is some sort of an auto-share, so we have to cache it based on the criteria we use to retrieve them
+      { // this is icky as we have to cache using a bunch of different criteria
         CStdString cachedThumb;
         if (type == "music")
         {
@@ -515,15 +484,10 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
         }
         else if (type == "video")
           cachedThumb = item->GetCachedVideoThumb();
+        else if (type == "pictures")
+          cachedThumb = item->GetCachedPictureThumb();
         else  // assume "programs"
-        { // store the thumb for this share
-          CTextureDatabase db;
-          if (db.Open())
-          {
-            cachedThumb = CTextureCache::GetUniqueImage(item->m_strPath, CUtil::GetExtension(strThumb));
-            db.SetTextureForPath(item->m_strPath, cachedThumb);
-          }
-        }
+          cachedThumb = item->GetCachedProgramThumb();
         XFILE::CFile::Cache(strThumb, cachedThumb);
       }
 
@@ -531,6 +495,16 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
       g_windowManager.SendThreadMessage(msg);
       return true;
     }
+
+  case CONTEXT_BUTTON_PLAY_DISC:
+    return CAutorun::PlayDisc();
+
+  case CONTEXT_BUTTON_EJECT_DISC:
+    if (CIoSupport::GetTrayState() == TRAY_OPEN)
+      CIoSupport::CloseTray();
+    else
+      CIoSupport::EjectTray();
+    return true;
 
   case CONTEXT_BUTTON_ADD_LOCK:
     {
@@ -699,13 +673,13 @@ void CGUIDialogContextMenu::SwitchMedia(const CStdString& strType, const CStdStr
   // what should we display?
   vector <CStdString> vecTypes;
   if (!strType.Equals("music"))
-    vecTypes.push_back(g_localizeStrings.Get(2)); // My Music
+    vecTypes.push_back(g_localizeStrings.Get(2));	// My Music
   if (!strType.Equals("video"))
-    vecTypes.push_back(g_localizeStrings.Get(3)); // My Videos
+    vecTypes.push_back(g_localizeStrings.Get(3));	// My Videos
   if (!strType.Equals("pictures"))
-    vecTypes.push_back(g_localizeStrings.Get(1)); // My Pictures
+    vecTypes.push_back(g_localizeStrings.Get(1));	// My Pictures
   if (!strType.Equals("files"))
-    vecTypes.push_back(g_localizeStrings.Get(7)); // My Files
+    vecTypes.push_back(g_localizeStrings.Get(7));	// My Files
 
   // something went wrong
   if (vecTypes.size() != 3)

@@ -19,9 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeRoot.h"
 
-using namespace XFILE::VIDEODATABASEDIRECTORY;
+using namespace DIRECTORY::VIDEODATABASEDIRECTORY;
 
 CDirectoryNodeRoot::CDirectoryNodeRoot(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_ROOT, strName, pParent)

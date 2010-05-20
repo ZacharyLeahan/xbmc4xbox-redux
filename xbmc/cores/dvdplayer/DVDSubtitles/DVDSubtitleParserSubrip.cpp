@@ -18,12 +18,11 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDSubtitleParserSubrip.h"
 #include "DVDCodecs/Overlay/DVDOverlayText.h"
 #include "DVDClock.h"
-#include "StdString.h"
-#include "SamiTagConvertor.h"
 
 using namespace std;
 
@@ -42,17 +41,11 @@ bool CDVDSubtitleParserSubrip::Open(CDVDStreamInfo &hints)
   if (!CDVDSubtitleParserText::Open())
     return false;
 
-  SamiTagConvertor TagConv;
-  if (!TagConv.Init())
-    return false;
-
   char line[1024];
   char* pLineStart;
 
-  while (m_pStream->ReadLine(line, sizeof(line)))
+  while (m_stringstream.getline(line, sizeof(line)))
   {
-    if ((strlen(line) > 0) && (line[strlen(line) - 1] == '\r'))
-      line[strlen(line) - 1] = 0;
     pLineStart = line;
 
     // trim
@@ -66,7 +59,7 @@ bool CDVDSubtitleParserSubrip::Open(CDVDStreamInfo &hints)
                      &hh1, &sep, &mm1, &sep, &ss1, &sep, &ms1,
                      &hh2, &sep, &mm2, &sep, &ss2, &sep, &ms2);
 
-      if (c == 1)
+      if (c == 1) 
       {
         // numbering, skip it
       }
@@ -78,7 +71,7 @@ bool CDVDSubtitleParserSubrip::Open(CDVDStreamInfo &hints)
         pOverlay->iPTSStartTime = ((double)(((hh1 * 60 + mm1) * 60) + ss1) * 1000 + ms1) * (DVD_TIME_BASE / 1000);
         pOverlay->iPTSStopTime  = ((double)(((hh2 * 60 + mm2) * 60) + ss2) * 1000 + ms2) * (DVD_TIME_BASE / 1000);
 
-        while (m_pStream->ReadLine(line, sizeof(line)))
+        while (m_stringstream.getline(line, sizeof(line)))
         {
 
           if ((strlen(line) > 0) && (line[strlen(line) - 1] == '\r'))
@@ -91,9 +84,10 @@ bool CDVDSubtitleParserSubrip::Open(CDVDStreamInfo &hints)
           // empty line, next subtitle is about to start
           if (strlen(pLineStart) <= 0) break;
 
-          TagConv.ConvertLine(pOverlay, line, strlen(line));
+          // add a new text element to our container
+          pOverlay->AddElement(new CDVDOverlayText::CElementText(line));
         }
-        TagConv.CloseTag(pOverlay);
+
         m_collection.Add(pOverlay);
       }
     }

@@ -1,12 +1,10 @@
 /*!
 \file GUIMessage.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_MESSAGE_H
 #define GUILIB_MESSAGE_H
-
-#include "GUIActionDescriptor.h"
 
 #pragma once
 
@@ -87,41 +85,13 @@
 
 #define GUI_MSG_SET_TYPE     33 ///< Instruct a control to set it's type appropriately
 
-/*!
- \brief Message indicating the window has been resized
- Any controls that keep stored sizing information based on aspect ratio or window size should
- recalculate sizing information
- */
-#define GUI_MSG_WINDOW_RESIZE  34
-
-/*!
- \brief Message indicating loss of renderer, prior to reset
- Any controls that keep shared resources should free them on receipt of this message, as the renderer
- is about to be reset.
- */
-#define GUI_MSG_RENDERER_LOST  35
-
-/*!
- \brief Message indicating regain of renderer, after reset
- Any controls that keep shared resources may reallocate them now that the renderer is back
- */
-#define GUI_MSG_RENDERER_RESET 36
-
-/*!
- \brief A control wishes to have (or release) exclusive access to mouse actions
- */
-#define GUI_MSG_EXCLUSIVE_MOUSE 37
-
-/*!
- \brief A request for supported gestures is made
- */
-#define GUI_MSG_GESTURE_NOTIFY  38
+#define GUI_MSG_INVALIDATE   34 ///< Instruct all controls to refresh - usually due to sizing changes
 
 #define GUI_MSG_USER         1000
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_SELECT(controlID) \
 do { \
@@ -131,7 +101,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_DESELECT(controlID) \
 do { \
@@ -142,7 +112,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_ENABLE(controlID) \
 do { \
@@ -152,7 +122,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_DISABLE(controlID) \
 do { \
@@ -163,7 +133,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_ENABLE_ON_CONDITION(controlID, bCondition) \
 do { \
@@ -174,7 +144,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define CONTROL_SELECT_ITEM(controlID,iItem) \
 do { \
@@ -206,7 +176,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define SET_CONTROL_HIDDEN(controlID) \
 do { \
@@ -216,7 +186,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define SET_CONTROL_FOCUS(controlID, dwParam) \
 do { \
@@ -226,7 +196,7 @@ do { \
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 #define SET_CONTROL_VISIBLE(controlID) \
 do { \
@@ -262,10 +232,11 @@ do { \
 // forwards
 class CGUIListItem; typedef boost::shared_ptr<CGUIListItem> CGUIListItemPtr;
 class CFileItemList;
+class CVisualisation;
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 class CGUIMessage
 {
@@ -273,6 +244,7 @@ public:
   CGUIMessage(int dwMsg, int senderID, int controlID, int param1 = 0, int param2 = 0);
   CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, CFileItemList* item);
   CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, const CGUIListItemPtr &item);
+  CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, CVisualisation* vis);
   CGUIMessage(const CGUIMessage& msg);
   virtual ~CGUIMessage(void);
   const CGUIMessage& operator = (const CGUIMessage& msg);
@@ -294,13 +266,10 @@ public:
   void SetStringParams(const std::vector<CStdString> &params);
   const CStdString& GetStringParam(size_t param = 0) const;
   size_t GetNumStringParams() const;
-  void SetAction(const CGUIActionDescriptor& action);
-  const CGUIActionDescriptor& GetAction() const;
 
 private:
   std::string m_strLabel;
   std::vector<CStdString> m_params;
-  CGUIActionDescriptor m_action;
   int m_senderID;
   int m_controlID;
   int m_message;
@@ -308,7 +277,7 @@ private:
   int m_param1;
   int m_param2;
   CGUIListItemPtr m_item;
-
+  
   static CStdString empty_string;
 };
 #endif

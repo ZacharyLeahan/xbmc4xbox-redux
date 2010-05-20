@@ -22,9 +22,7 @@
 
 #include "IFileDirectory.h"
 
-class CFileItem;
-
-namespace XFILE
+namespace DIRECTORY
 {
 class CFactoryFileDirectory
 {

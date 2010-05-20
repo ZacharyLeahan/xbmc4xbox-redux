@@ -21,7 +21,6 @@
  */
 
 #include "FileItem.h"
-#include <boost/shared_ptr.hpp>
 
 namespace PLAYLIST
 {
@@ -37,7 +36,7 @@ public:
 
   void Add(CPlayList& playlist);
   void Add(const CFileItemPtr &pItem);
-  void Add(CFileItemList& items);
+	void Add(CFileItemList& items);
 
   // for Party Mode
   void Insert(CPlayList& playlist, int iPosition = -1);
@@ -84,6 +83,4 @@ private:
   void DecrementOrder(int iOrder);
   void IncrementOrder(int iPosition, int iOrder);
 };
-
-typedef boost::shared_ptr<CPlayList> CPlayListPtr;
 }

@@ -1,6 +1,6 @@
 /*!
 \file GUISelectButtonControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIWINDOWSELECTCONTROL_H
@@ -34,13 +34,13 @@
 /*!
  \ingroup controls
  \brief Button with multi selection choice.
-
+ 
  Behaves like a normal button control, but when pressing,
  it can show multiple strings. The user can choose one by
  moving left or right. \n
  \n
  Messages the button reactes on: \n
-
+ 
  - GUI_MSG_LABEL_ADD \n
  Add a label to the control. Use CGUIMessage::SetLabel
  to set the label text.
@@ -49,7 +49,7 @@
  - GUI_MSG_ITEM_SELECTED \n
  After sending this message the CGUIMessage::GetParam1
  contains the selected label as an integer.
- \note The order of the items depends on the order they have been added to
+ \note The order of the items depends on the order they have been added to 
  the control using GUI_MSG_LABEL_ADD.
  - GUI_MSG_ITEM_SELECT \n
  Send this message with CGUIMessage::SetParam1() set to the label
@@ -82,7 +82,7 @@
       <ondown>7</ondown>
     </control>
   \endverbatim
-
+ 
  \sa CGUIMessage
  */
 class CGUISelectButtonControl : public CGUIButtonControl
@@ -105,15 +105,16 @@ public:
   virtual void OnRight();
   virtual bool OnMessage(CGUIMessage& message);
   virtual bool OnMouseOver(const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual bool OnMouseWheel(char wheel, const CPoint &point);
 
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   bool m_bShowSelect;
   CGUITexture m_imgBackground;
@@ -129,6 +130,6 @@ protected:
   bool m_bRightSelected;
   bool m_bMovedLeft;
   bool m_bMovedRight;
-  unsigned int m_ticks;
+  DWORD m_dwTicks;
 };
 #endif

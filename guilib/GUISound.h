@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,14 +21,6 @@
  *
  */
 
-#pragma once
-
-#include "StdString.h"
-
-#ifdef HAS_SDL_AUDIO
-#include <SDL/SDL_mixer.h>
-#endif
-
 class CGUISound
 {
 public:
@@ -40,16 +34,10 @@ public:
   void        SetVolume(int level);
 
 private:
-#ifdef _WIN32
   bool        LoadWav(const CStdString& strFile, WAVEFORMATEX* wfx, LPBYTE* ppWavData, int* pDataSize);
   bool        CreateBuffer(LPWAVEFORMATEX wfx, int iLength);
   bool        FillBuffer(LPBYTE pbData, int iLength);
   void        FreeBuffer();
 
   LPDIRECTSOUNDBUFFER m_soundBuffer;
-#elif defined(HAS_SDL_AUDIO)
-  Mix_Chunk* m_soundBuffer;
-#else
-  void *m_soundBuffer;
-#endif
 };

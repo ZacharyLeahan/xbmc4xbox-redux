@@ -29,11 +29,12 @@
 #ifndef _PORTABILITY_H
 #define _PORTABILITY_H
 
-#if !defined(WIN32)  /* POSIX */
+#if !( defined(WIN32) || defined(_XBOX) )  /* POSIX */
 
 #define SYSTEM_POSIX
 
 #include <sys/types.h>
+#include "config.h"
 
 #if !defined(HAVE_U_INT64_T) && defined(HAVE_UINT64_T)
  typedef uint64_t u_int64_t;
@@ -48,12 +49,14 @@
  typedef uint8_t u_int8_t;
 #endif
 
-#elif defined(WIN32)
+#elif defined(_XBOX)
 
 #define SYSTEM_WIN32
 
-#include <windows.h>
+#include <xtl.h>
 #include <time.h>
+
+#define vsnprintf _vsnprintf
 
 typedef signed __int64 int64_t;
 typedef unsigned __int64 u_int64_t;

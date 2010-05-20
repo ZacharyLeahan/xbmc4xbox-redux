@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "HTMLTable.h"
 #include "HTMLUtil.h"
 

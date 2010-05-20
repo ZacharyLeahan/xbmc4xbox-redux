@@ -19,9 +19,9 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogVolumeBar.h"
 #include "GUISliderControl.h"
-#include "utils/TimeUtils.h"
 
 #define VOLUME_BAR_DISPLAY_TIME 1000L
 
@@ -36,7 +36,7 @@ CGUIDialogVolumeBar::~CGUIDialogVolumeBar(void)
 
 bool CGUIDialogVolumeBar::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_VOLUME_UP || action.GetID() == ACTION_VOLUME_DOWN)
+  if (action.id == ACTION_VOLUME_UP || action.id == ACTION_VOLUME_DOWN)
   { // reset the timer, as we've changed the volume level
     ResetTimer();
     return true;
@@ -69,7 +69,7 @@ bool CGUIDialogVolumeBar::OnMessage(CGUIMessage& message)
 
 void CGUIDialogVolumeBar::ResetTimer()
 {
-  m_timer = CTimeUtils::GetFrameTime();
+  m_dwTimer = timeGetTime();
 }
 
 void CGUIDialogVolumeBar::Render()
@@ -77,7 +77,7 @@ void CGUIDialogVolumeBar::Render()
   // and render the controls
   CGUIDialog::Render();
   // now check if we should exit
-  if (CTimeUtils::GetFrameTime() - m_timer > VOLUME_BAR_DISPLAY_TIME)
+  if (timeGetTime() - m_dwTimer > VOLUME_BAR_DISPLAY_TIME)
   {
     Close();
   }

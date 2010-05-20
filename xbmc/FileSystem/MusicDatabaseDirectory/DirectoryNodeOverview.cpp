@@ -19,13 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeOverview.h"
 #include "FileItem.h"
 #include "MusicDatabase.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeOverview::CDirectoryNodeOverview(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_OVERVIEW, strName, pParent)

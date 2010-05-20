@@ -1,6 +1,6 @@
 /*!
  \file Key.h
- \brief
+ \brief 
  */
 
 #ifndef GUILIB_KEY
@@ -30,7 +30,6 @@
  */
 
 #include "XBIRRemote.h"
-#include <StdString.h>
 
 // Analogue - don't change order
 #define KEY_BUTTON_A                        256
@@ -173,22 +172,28 @@
 #define ACTION_SHOW_MPLAYER_OSD     83  // toggles mplayers OSD. Can be used in videofullscreen.xml window id=2005
 #define ACTION_OSD_HIDESUBMENU      84  // removes an OSD sub menu. Can be used in videoOSD.xml window id=2901
 #define ACTION_TAKE_SCREENSHOT      85  // take a screenshot
+#define ACTION_POWERDOWN            86  // restart
 #define ACTION_RENAME_ITEM          87  // rename item
 
 #define ACTION_VOLUME_UP            88
 #define ACTION_VOLUME_DOWN          89
 #define ACTION_MUTE                 91
 
-#define ACTION_MOUSE_START            100
+#define ACTION_MOUSE                90
+
+#define ACTION_MOUSE_CLICK            100
 #define ACTION_MOUSE_LEFT_CLICK       100
 #define ACTION_MOUSE_RIGHT_CLICK      101
 #define ACTION_MOUSE_MIDDLE_CLICK     102
-#define ACTION_MOUSE_DOUBLE_CLICK     103
-#define ACTION_MOUSE_WHEEL_UP         104
-#define ACTION_MOUSE_WHEEL_DOWN       105
-#define ACTION_MOUSE_DRAG             106
-#define ACTION_MOUSE_MOVE             107
-#define ACTION_MOUSE_END              109
+#define ACTION_MOUSE_XBUTTON1_CLICK   103
+#define ACTION_MOUSE_XBUTTON2_CLICK   104
+
+#define ACTION_MOUSE_DOUBLE_CLICK           105
+#define ACTION_MOUSE_LEFT_DOUBLE_CLICK      105
+#define ACTION_MOUSE_RIGHT_DOUBLE_CLICK     106
+#define ACTION_MOUSE_MIDDLE_DOUBLE_CLICK    107
+#define ACTION_MOUSE_XBUTTON1_DOUBLE_CLICK  108
+#define ACTION_MOUSE_XBUTTON2_DOUBLE_CLICK  109
 
 #define ACTION_BACKSPACE          110
 #define ACTION_SCROLL_UP          111
@@ -269,22 +274,6 @@
 #define ACTION_SCAN_ITEM              201 // scan item
 #define ACTION_TOGGLE_DIGITAL_ANALOG  202 // switch digital <-> analog
 #define ACTION_RELOAD_KEYMAPS         203 // reloads CButtonTranslator's keymaps
-#define ACTION_GUIPROFILE_BEGIN       204 // start the GUIControlProfiler running
-
-#define ACTION_TELETEXT_RED           215 // Teletext Color buttons to control TopText
-#define ACTION_TELETEXT_GREEN         216 //    "       "      "    "     "       "
-#define ACTION_TELETEXT_YELLOW        217 //    "       "      "    "     "       "
-#define ACTION_TELETEXT_BLUE          218 //    "       "      "    "     "       "
-
-#define ACTION_INCREASE_PAR           219
-#define ACTION_DECREASE_PAR           220
-
-#define ACTION_GESTURE_NOTIFY         221
-#define ACTION_GESTURE_BEGIN          222
-#define ACTION_GESTURE_ZOOM           223
-#define ACTION_GESTURE_ROTATE         224
-#define ACTION_GESTURE_PAN            225
-#define ACTION_GESTURE_END            226
 
 // Window ID defines to make the code a bit more readable
 #define WINDOW_INVALID                     9999
@@ -296,8 +285,7 @@
 #define WINDOW_MUSIC                      10005 // virtual window to return the music start window.
 #define WINDOW_VIDEOS                     10006
 #define WINDOW_SYSTEM_INFORMATION         10007
-#define WINDOW_TEST_PATTERN               10008
-#define WINDOW_SCREEN_CALIBRATION         10011
+#define WINDOW_SCREEN_CALIBRATION          10011
 
 #define WINDOW_SETTINGS_MYPICTURES        10012
 #define WINDOW_SETTINGS_MYPROGRAMS        10013
@@ -309,15 +297,16 @@
 #define WINDOW_SETTINGS_APPEARANCE        10019
 
 #define WINDOW_SCRIPTS                    10020
-
+#define WINDOW_VIDEO_GENRE                10021
+#define WINDOW_VIDEO_ACTOR                10022
+#define WINDOW_VIDEO_YEAR                 10023
 #define WINDOW_VIDEO_FILES                10024
 #define WINDOW_VIDEO_NAV                  10025
 #define WINDOW_VIDEO_PLAYLIST             10028
 
 #define WINDOW_LOGIN_SCREEN               10029
 #define WINDOW_SETTINGS_PROFILES          10034
-
-#define WINDOW_ADDON_BROWSER              10040
+#define WINDOW_GAMESAVES                  10035
 
 #define WINDOW_DIALOG_YES_NO              10100
 #define WINDOW_DIALOG_PROGRESS            10101
@@ -340,6 +329,7 @@
 #define WINDOW_DIALOG_AUDIO_OSD_SETTINGS  10124
 #define WINDOW_DIALOG_VIDEO_BOOKMARKS     10125
 #define WINDOW_DIALOG_FILE_BROWSER        10126
+#define WINDOW_DIALOG_TRAINER_SETTINGS    10127
 #define WINDOW_DIALOG_NETWORK_SETUP       10128
 #define WINDOW_DIALOG_MEDIA_SOURCE        10129
 #define WINDOW_DIALOG_PROFILE_SETTINGS    10130
@@ -352,32 +342,25 @@
 #define WINDOW_DIALOG_SMART_PLAYLIST_RULE   10137
 #define WINDOW_DIALOG_BUSY                10138
 #define WINDOW_DIALOG_PICTURE_INFO        10139
-#define WINDOW_DIALOG_ADDON_SETTINGS      10140
-#define WINDOW_DIALOG_ACCESS_POINTS       10141
+#define WINDOW_DIALOG_PLUGIN_SETTINGS     10140
 #define WINDOW_DIALOG_FULLSCREEN_INFO     10142
-#define WINDOW_DIALOG_KARAOKE_SONGSELECT  10143
-#define WINDOW_DIALOG_KARAOKE_SELECTOR    10144
 #define WINDOW_DIALOG_SLIDER              10145
-#define WINDOW_DIALOG_ADDON_INFO          10146
-#define WINDOW_DIALOG_TEXT_VIEWER         10147
 
 #define WINDOW_MUSIC_PLAYLIST             10500
 #define WINDOW_MUSIC_FILES                10501
 #define WINDOW_MUSIC_NAV                  10502
 #define WINDOW_MUSIC_PLAYLIST_EDITOR      10503
 
-#define WINDOW_DIALOG_OSD_TELETEXT        10600
-
 //#define WINDOW_VIRTUAL_KEYBOARD           11000
 #define WINDOW_DIALOG_SELECT              12000
 #define WINDOW_MUSIC_INFO                 12001
 #define WINDOW_DIALOG_OK                  12002
 #define WINDOW_VIDEO_INFO                 12003
+#define WINDOW_SCRIPTS_INFO               12004
 #define WINDOW_FULLSCREEN_VIDEO           12005
 #define WINDOW_VISUALISATION              12006
 #define WINDOW_SLIDESHOW                  12007
 #define WINDOW_DIALOG_FILESTACKING        12008
-#define WINDOW_KARAOKELYRICS              12009
 #define WINDOW_WEATHER                    12600
 #define WINDOW_SCREENSAVER                12900
 #define WINDOW_OSD                        12901
@@ -386,8 +369,7 @@
 #define WINDOW_MUSIC_OVERLAY              12903
 #define WINDOW_VIDEO_OVERLAY              12904
 
-#define WINDOW_START                      12998 // first window to load
-#define WINDOW_STARTUP_ANIM               12999 // for startup animations
+#define WINDOW_STARTUP                    12999 // for startup animations
 
 // WINDOW_ID's from 13000 to 13099 reserved for Python
 
@@ -403,100 +385,34 @@
 #define ICON_TYPE_WEATHER       107
 #define ICON_TYPE_SETTINGS      109
 
-class CKey;
-
 /*!
   \ingroup actionkeys
-  \brief class encapsulating information regarding a particular user action to be sent to windows and controls
+  \brief 
   */
 class CAction
 {
 public:
-  CAction(int actionID, float amount1 = 1.0f, float amount2 = 0.0f, const CStdString &name = "");
-  CAction(int actionID, wchar_t unicode);
-  CAction(int actionID, unsigned int state, float posX, float posY, float offsetX, float offsetY);
-  CAction(int actionID, const CStdString &name, const CKey &key);
-
-  /*! \brief Identifier of the action
-   \return id of the action
-   */
-  int GetID() const { return m_id; };
-
-  /*! \brief Is this an action from the mouse
-   \return true if this is a mouse action, false otherwise
-   */
-  bool IsMouse() const { return (m_id >= ACTION_MOUSE_START && m_id <= ACTION_MOUSE_END); };
-
-  bool IsGesture() const { return (m_id >= ACTION_GESTURE_NOTIFY && m_id <= ACTION_GESTURE_END); };
-
-  /*! \brief Human-readable name of the action
-   \return name of the action
-   */
-  const CStdString &GetName() const { return m_name; };
-
-  /*! \brief Get an amount associated with this action
-   \param zero-based index of amount to retrieve, defaults to 0
-   \return an amount associated with this action
-   */
-  float GetAmount(unsigned int index = 0) const { return (index < max_amounts) ? m_amount[index] : 0; };
-
-  /*! \brief Unicode value associated with this action
-   \return unicode value associated with this action, for keyboard input.
-   */
-  wchar_t GetUnicode() const { return m_unicode; };
-
-  /*! \brief Time in ms that the key has been held
-   \return time that the key has been held down in ms.
-   */
-  unsigned int GetHoldTime() const { return m_holdTime; };
-
-  /*! \brief Time since last repeat in ms
-   \return time since last repeat in ms. Returns 0 if unknown.
-   */
-  float GetRepeat() const { return m_repeat; };
-
-  /*! \brief Button code that triggered this action
-   \return button code
-   */
-  unsigned int GetButtonCode() const { return m_buttonCode; };
-
-private:
-  int          m_id;
-  CStdString   m_name;
-
-  static const unsigned int max_amounts = 4; // Must be at least 4.
-  float        m_amount[max_amounts];
-
-  float        m_repeat;
-  unsigned int m_holdTime;
-  unsigned int m_buttonCode;
-  wchar_t      m_unicode;
-};
-
-/*!
-  \ingroup actionkeys, mouse
-  \brief Simple class for mouse events
-  */
-class CMouseEvent
-{
-public:
-  CMouseEvent(int actionID, int state = 0, float offsetX = 0, float offsetY = 0)
+  CAction()
   {
-    m_id = actionID;
-    m_state = state;
-    m_offsetX = offsetX;
-    m_offsetY = offsetY;
+    id = 0;
+    amount1 = amount2 = repeat = 0;
+    buttonCode = 0;
+    unicode = 0;
+    holdTime = 0;
   };
-
-  int    m_id;
-  int    m_state;
-  float  m_offsetX;
-  float  m_offsetY;
+  int          id;
+  float        amount1;
+  float        amount2;
+  float        repeat;
+  unsigned int buttonCode;
+  CStdString strAction;
+  wchar_t      unicode; // new feature, does not fit into id like ASCII, wouldn't be good design either!? Will be set whenever ASCII is set into id (for backwards compatibility)
+  unsigned int holdTime; ///< Time the key has been held down (in ms)
 };
 
 /*!
   \ingroup actionkeys
-  \brief
+  \brief 
   */
 class CKey
 {
@@ -508,7 +424,7 @@ public:
   virtual ~CKey(void);
   const CKey& operator=(const CKey& key);
   uint32_t GetButtonCode() const; // for backwards compatibility only
-  wchar_t GetUnicode() const; // http api does not really support unicode till now. It only simulates unicode when ascii codes are available:
+  uint32_t GetUnicode() const; // http api does not really support unicode till now. It only simulates unicode when ascii codes are available:
   uint8_t GetLeftTrigger() const;
   uint8_t GetRightTrigger() const;
   float GetLeftThumbX() const;
@@ -524,14 +440,6 @@ public:
 
   void SetHeld(unsigned int held);
   unsigned int GetHeld() const;
-
-  enum Modifier {
-    MODIFIER_CTRL = 0x00010000,
-    MODIFIER_SHIFT = 0x00020000,
-    MODIFIER_ALT = 0x00040000,
-    MODIFIER_SUPER = 0x00080000
-  };
-
 private:
   uint32_t m_buttonCode;
   uint8_t m_leftTrigger;

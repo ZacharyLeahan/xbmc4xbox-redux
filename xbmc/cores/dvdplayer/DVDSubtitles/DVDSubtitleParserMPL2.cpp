@@ -18,13 +18,13 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include "DVDSubtitleParserMPL2.h"
 #include "DVDCodecs/Overlay/DVDOverlayText.h"
 #include "DVDClock.h"
 #include "utils/RegExp.h"
 #include "DVDStreamInfo.h"
-#include "StdString.h"
 
 using namespace std;
 
@@ -53,7 +53,7 @@ bool CDVDSubtitleParserMPL2::Open(CDVDStreamInfo &hints)
   if (!reg.RegComp("\\[([0-9]+)\\]\\[([0-9]+)\\](\\{C:\\$[0-9a-f]+\\})?/?([^|]*?)(\\|/?([^|]*?))?$"))
     return false;
 
-  while (m_pStream->ReadLine(line, sizeof(line)))
+  while (m_stringstream.getline(line, sizeof(line)))
   {
     if (reg.RegFind(line) > -1)
     {

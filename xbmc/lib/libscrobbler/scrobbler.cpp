@@ -19,19 +19,21 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlatformDefs.h"
 #include "scrobbler.h"
+#include "tinyXML/tinyxml.h"
 #include "utils/md5.h"
 #include "utils/log.h"
 #include "Util.h"
 #include "MusicInfoTag.h"
 #include "errors.h"
-#include "utils/Atomics.h"
-#include "GUISettings.h"
+#include "Settings.h"
 #include "XMLUtils.h"
 #include "Application.h"
-#include "SingleLock.h"
-#include "LocalizeStrings.h"
+#ifdef _XBOX
+#include "strptime.h"
+#endif
 
 #define SCROBBLER_CLIENT              "xbm"
 //#define SCROBBLER_CLIENT              "tst"     // For testing ONLY!
@@ -188,7 +190,9 @@ void CScrobbler::SetPassword(const CStdString& strPass)
 {
   if (strPass.IsEmpty())
     return;
-  m_strPasswordHash = strPass;
+  XBMC::MD5 md5state;
+  md5state.append(strPass);
+  md5state.getDigest(m_strPasswordHash);
   m_strPasswordHash.ToLower();
   m_bBadAuth = false;
 }
@@ -350,7 +354,7 @@ bool CScrobbler::LoadJournal()
     m_vecSubmissionQueue.push_back(entry);
   }
 
-  CLog::Log(LOGDEBUG, "%s: Journal loaded with %"PRIuS" entries.", m_strLogPrefix.c_str(),
+  CLog::Log(LOGDEBUG, "%s: Journal loaded with %d entries.", m_strLogPrefix.c_str(),
       m_vecSubmissionQueue.size());
   return !m_vecSubmissionQueue.empty();
 }
@@ -397,7 +401,7 @@ bool CScrobbler::SaveJournal()
 
 bool CScrobbler::DoHandshake(time_t now)
 {
-  XBMC::XBMC_MD5    authToken;
+  XBMC::MD5         authToken;
   CStdString        strAuthToken;
   CStdString        strTimeStamp;
   CStdString        strResponse;

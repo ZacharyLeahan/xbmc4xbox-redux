@@ -33,11 +33,6 @@
 #include "IFile.h"
 #include "StdString.h"
 
-// prevent inclusion of config.h from libshout
-#define __SRCONFIG_H__
-#include "lib/libshout/rip_manager.h"
-#undef __SRCONFIG_H__
-
 namespace MUSIC_INFO
 {
   class CMusicInfoTag;
@@ -59,13 +54,13 @@ class CFileShoutcast : public IFile
 public:
   CFileShoutcast();
   virtual ~CFileShoutcast();
-  virtual int64_t GetPosition();
-  virtual int64_t GetLength();
+  virtual __int64 GetPosition();
+  virtual __int64 GetLength();
   virtual bool Open(const CURL& url);
   virtual bool Exists(const CURL& url) { return true;};
   virtual int Stat(const CURL& url, struct __stat64* buffer) { errno = ENOENT; return -1; };
-  virtual unsigned int Read(void* lpBuf, int64_t uiBufSize);
-  virtual int64_t Seek(int64_t iFilePosition, int iWhence = SEEK_SET);
+  virtual unsigned int Read(void* lpBuf, __int64 uiBufSize);
+  virtual __int64 Seek(__int64 iFilePosition, int iWhence = SEEK_SET);
   virtual void Close();
   virtual bool CanRecord();
   virtual bool Record();
@@ -75,9 +70,8 @@ public:
   virtual CStdString GetContent();
 protected:
   void outputTimeoutMessage(const char* message);
-  unsigned int m_lastTime;
-  int m_contenttype;
-  RIP_MANAGER_OPTIONS m_opt;
+  DWORD m_dwLastTime;
+  CStdString m_contenttype;
 };
 }
 #endif // !defined(AFX_FILESHOUTCAST_H__6B6082E6_547E_44C4_8801_9890781659C0__INCLUDED_)

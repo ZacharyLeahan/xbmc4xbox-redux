@@ -19,16 +19,15 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogMusicScan.h"
 #include "GUIProgressControl.h"
 #include "Application.h"
 #include "Util.h"
 #include "URL.h"
 #include "GUIWindowManager.h"
-#include "GUISettings.h"
-#include "GUIUserMessages.h"
+#include "Settings.h"
 #include "utils/SingleLock.h"
-#include "utils/log.h"
 
 using namespace MUSIC_INFO;
 
@@ -67,12 +66,12 @@ bool CGUIDialogMusicScan::OnMessage(CGUIMessage& message)
   return CGUIDialog::OnMessage(message);
 }
 
-void CGUIDialogMusicScan::FrameMove()
+void CGUIDialogMusicScan::Render()
 {
   if (m_bRunning)
     UpdateState();
 
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
 void CGUIDialogMusicScan::OnDirectoryChanged(const CStdString& strDirectory)
@@ -175,7 +174,7 @@ void CGUIDialogMusicScan::OnFinished()
 
   if (!g_guiSettings.GetBool("musiclibrary.backgroundupdate"))
   {
-    g_application.getApplicationMessenger().Close(this, false, false);
+    Close();
   }
 }
 

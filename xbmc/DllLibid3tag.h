@@ -22,7 +22,7 @@
  */
 
 #include "DynamicDll.h"
-#include "lib/libid3tag/libid3tag/metadata.h"
+#include "lib/libid3tag/metadata.h"
 
 class DllLibID3TagInterface
 {
@@ -121,7 +121,7 @@ public:
 
 class DllLibID3Tag : public DllDynamic, DllLibID3TagInterface
 {
-  DECLARE_DLL_WRAPPER(DllLibID3Tag, DLL_PATH_LIBID3TAG)
+  DECLARE_DLL_WRAPPER(DllLibID3Tag, Q:\\system\\libid3tag.dll)
   DEFINE_METHOD2(struct id3_file*, id3_file_open, (char const* p1, enum id3_file_mode p2))
   DEFINE_METHOD2(struct id3_file*, id3_file_fdopen, (int p1, enum id3_file_mode p2))
   DEFINE_METHOD1(int, id3_file_close, (struct id3_file* p1))

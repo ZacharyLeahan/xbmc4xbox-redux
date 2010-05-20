@@ -19,12 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "LangInfo.h"
 #include "AdvancedSettings.h"
 #include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
-#include "tinyXML/tinyxml.h"
 
 using namespace std;
 
@@ -267,8 +265,8 @@ void CLangInfo::LoadTokens(const TiXmlNode* pTokens, vector<CStdString>& vecToke
         if (strSep.IsEmpty())
           vecTokens.push_back(pToken->FirstChild()->Value());
         else
-          for (unsigned int i=0;i<strSep.size();++i)
-            vecTokens.push_back(CStdString(pToken->FirstChild()->Value())+strSep[i]);
+        for (unsigned int i=0;i<strSep.size();++i)
+          vecTokens.push_back(CStdString(pToken->FirstChild()->Value())+strSep[i]);
       }
       pToken = pToken->NextSiblingElement();
     }

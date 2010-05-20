@@ -19,10 +19,10 @@
  *
  */
 
+#include "include.h"
 #include "GUIPanelContainer.h"
 #include "GUIListItem.h"
 #include "utils/GUIInfoManager.h"
-#include "Key.h"
 
 using namespace std;
 
@@ -58,8 +58,9 @@ void CGUIPanelContainer::Render()
   FreeMemory(CorrectOffset(offset - cacheBefore, 0), CorrectOffset(offset + cacheAfter + m_itemsPerPage + 1, 0));
 
   g_graphicsContext.SetClipRegion(m_posX, m_posY, m_width, m_height);
-  CPoint origin = CPoint(m_posX, m_posY) + m_renderOffset;
-  float pos = (m_orientation == VERTICAL) ? origin.y : origin.x;
+  float posX = m_posX + m_renderOffset.x;
+  float posY = m_posY + m_renderOffset.y;
+  float pos = (m_orientation == VERTICAL) ? posY : posX;
   float end = (m_orientation == VERTICAL) ? m_posY + m_height : m_posX + m_width;
   pos += (offset - cacheBefore) * m_layout->Size(m_orientation) - m_scrollOffset;
   end += cacheAfter * m_layout->Size(m_orientation);
@@ -87,9 +88,9 @@ void CGUIPanelContainer::Render()
       else
       {
         if (m_orientation == VERTICAL)
-          RenderItem(origin.x + col * m_layout->Size(HORIZONTAL), pos, item.get(), false);
+          RenderItem(posX + col * m_layout->Size(HORIZONTAL), pos, item.get(), false);
         else
-          RenderItem(pos, origin.y + col * m_layout->Size(VERTICAL), item.get(), false);
+          RenderItem(pos, posY + col * m_layout->Size(VERTICAL), item.get(), false);
       }
     }
     // increment our position
@@ -106,9 +107,9 @@ void CGUIPanelContainer::Render()
   if (focusedItem)
   {
     if (m_orientation == VERTICAL)
-      RenderItem(origin.x + focusedCol * m_layout->Size(HORIZONTAL), focusedPos, focusedItem.get(), true);
+      RenderItem(posX + focusedCol * m_layout->Size(HORIZONTAL), focusedPos, focusedItem.get(), true);
     else
-      RenderItem(focusedPos, origin.y + focusedCol * m_layout->Size(VERTICAL), focusedItem.get(), true);
+      RenderItem(focusedPos, posY + focusedCol * m_layout->Size(VERTICAL), focusedItem.get(), true);
   }
 
   g_graphicsContext.RestoreClipRegion();
@@ -120,7 +121,7 @@ void CGUIPanelContainer::Render()
 
 bool CGUIPanelContainer::OnAction(const CAction &action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_PAGE_UP:
     {
@@ -151,7 +152,7 @@ bool CGUIPanelContainer::OnAction(const CAction &action)
     // smooth scrolling (for analog controls)
   case ACTION_SCROLL_UP:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > AnalogScrollSpeed())
       {
@@ -171,7 +172,7 @@ bool CGUIPanelContainer::OnAction(const CAction &action)
     break;
   case ACTION_SCROLL_DOWN:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > AnalogScrollSpeed())
       {
@@ -270,7 +271,7 @@ bool CGUIPanelContainer::MoveDown(bool wrapAround)
   { // move first item in list
     SetCursor(m_cursor % m_itemsPerRow);
     ScrollToOffset(0);
-    SetContainerMoving(1);
+    g_infoManager.SetContainerMoving(GetID(), 1);
   }
   else
     return false;
@@ -291,7 +292,7 @@ bool CGUIPanelContainer::MoveUp(bool wrapAround)
     if (offset * m_itemsPerRow + m_cursor >= (int)m_items.size())
       SetCursor((int)m_items.size() - offset * m_itemsPerRow - 1);
     ScrollToOffset(offset);
-    SetContainerMoving(-1);
+    g_infoManager.SetContainerMoving(GetID(), -1);
   }
   else
     return false;
@@ -359,8 +360,7 @@ void CGUIPanelContainer::SetCursor(int cursor)
   // +1 to ensure we're OK if we have a half item
   if (cursor > (m_itemsPerPage + 1)*m_itemsPerRow - 1) cursor = (m_itemsPerPage + 1)*m_itemsPerRow - 1;
   if (cursor < 0) cursor = 0;
-  if (!m_wasReset)
-    SetContainerMoving(cursor - m_cursor);
+  g_infoManager.SetContainerMoving(GetID(), cursor - m_cursor);
   m_cursor = cursor;
 }
 
@@ -403,10 +403,10 @@ int CGUIPanelContainer::CorrectOffset(int offset, int cursor) const
   return offset * m_itemsPerRow + cursor;
 }
 
-int CGUIPanelContainer::GetCursorFromPoint(const CPoint &point, CPoint *itemPoint) const
+bool CGUIPanelContainer::SelectItemFromPoint(const CPoint &point)
 {
   if (!m_layout)
-    return -1;
+    return false;
 
   float sizeX = m_orientation == VERTICAL ? m_layout->Size(HORIZONTAL) : m_layout->Size(VERTICAL);
   float sizeY = m_orientation == VERTICAL ? m_layout->Size(VERTICAL) : m_layout->Size(HORIZONTAL);
@@ -420,22 +420,14 @@ int CGUIPanelContainer::GetCursorFromPoint(const CPoint &point, CPoint *itemPoin
       int item = x + y * m_itemsPerRow;
       if (posX < sizeX && posY < sizeY && item + m_offset < (int)m_items.size())
       { // found
-        return item;
+        SetCursor(item);
+        return true;
       }
       posX -= sizeX;
     }
     posY -= sizeY;
   }
   return false;
-}
-
-bool CGUIPanelContainer::SelectItemFromPoint(const CPoint &point)
-{
-  int cursor = GetCursorFromPoint(point);
-  if (cursor < 0)
-    return false;
-  SetCursor(cursor);
-  return true;
 }
 
 bool CGUIPanelContainer::GetCondition(int condition, int data) const

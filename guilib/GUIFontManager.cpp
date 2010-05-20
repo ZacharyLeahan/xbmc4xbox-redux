@@ -19,19 +19,18 @@
  *
  */
 
+#include "include.h"
 #include "GUIFontManager.h"
 #include "GraphicContext.h"
 #include "GUIWindowManager.h"
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "GUIFontTTF.h"
 #include "GUIFont.h"
 #include "XMLUtils.h"
-#include "GUIControlFactory.h"
+#include "GuiControlFactory.h"
 #include "../xbmc/Util.h"
 #include "../xbmc/FileSystem/File.h"
 #include "../xbmc/FileSystem/SpecialProtocol.h"
-#include "utils/log.h"
-#include "WindowingFactory.h"
 
 using namespace std;
 
@@ -39,9 +38,8 @@ GUIFontManager g_fontManager;
 
 GUIFontManager::GUIFontManager(void)
 {
-  m_skinResolution=RES_INVALID;
+  m_skinResolution=INVALID;
   m_fontsetUnicode=false;
-  m_canReload = true;
 }
 
 GUIFontManager::~GUIFontManager(void)
@@ -52,29 +50,27 @@ GUIFontManager::~GUIFontManager(void)
 CGUIFont* GUIFontManager::LoadTTF(const CStdString& strFontName, const CStdString& strFilename, color_t textColor, color_t shadowColor, const int iSize, const int iStyle, float lineSpacing, float aspect, RESOLUTION sourceRes)
 {
   float originalAspect = aspect;
-
+  
   //check if font already exists
   CGUIFont* pFont = GetFont(strFontName, false);
   if (pFont)
     return pFont;
 
-  if (sourceRes == RES_INVALID) // no source res specified, so assume the skin res
+  if (sourceRes == INVALID) // no source res specified, so assume the skin res
     sourceRes = m_skinResolution;
 
 
   // set scaling resolution so that we can scale our font sizes correctly
   // as fonts aren't scaled at render time (due to aliasing) we must scale
   // the size of the fonts before they are drawn to bitmaps
-  g_graphicsContext.SetScalingResolution(sourceRes, true);
+  g_graphicsContext.SetScalingResolution(sourceRes, 0, 0, true);
 
   // adjust aspect ratio
-  if (sourceRes == RES_PAL_16x9 || sourceRes == RES_PAL60_16x9 || sourceRes == RES_NTSC_16x9 || sourceRes == RES_HDTV_480p_16x9)
+  if (sourceRes == PAL_16x9 || sourceRes == PAL60_16x9 || sourceRes == NTSC_16x9 || sourceRes == HDTV_480p_16x9)
     aspect *= 0.75f;
 
   aspect *= g_graphicsContext.GetGUIScaleY() / g_graphicsContext.GetGUIScaleX();
   float newSize = (float) iSize / g_graphicsContext.GetGUIScaleY();
-
-  // First try to load the font from the skin
   CStdString strPath;
   if (!CURL::IsFullPath(strFilename))
   {
@@ -84,93 +80,57 @@ CGUIFont* GUIFontManager::LoadTTF(const CStdString& strFontName, const CStdStrin
   else
     strPath = strFilename;
 
-#ifdef _LINUX
-  strPath = PTH_IC(strPath);
-#endif
-
   // Check if the file exists, otherwise try loading it from the global media dir
   if (!XFILE::CFile::Exists(strPath))
   {
     strPath = CUtil::AddFileToFolder("special://xbmc/media/Fonts", CUtil::GetFileName(strFilename));
-#ifdef _LINUX
-    strPath = PTH_IC(strPath);
-#endif
   }
-
+  
   // check if we already have this font file loaded (font object could differ only by color or style)
   CStdString TTFfontName;
   TTFfontName.Format("%s_%f_%f", strFilename, newSize, aspect);
-
-  CGUIFontTTFBase* pFontFile = GetFontFile(TTFfontName);
+  CGUIFontTTF* pFontFile = GetFontFile(TTFfontName);
   if (!pFontFile)
   {
     pFontFile = new CGUIFontTTF(TTFfontName);
     bool bFontLoaded = pFontFile->Load(strPath, newSize, aspect);
+    if (!bFontLoaded)
+    {
+      // Now try to load it from media\fonts
+      if (strFilename[1] != ':')
+      {
+        strPath = "Q:\\media\\Fonts\\";
+        strPath += strFilename;
+      }
+
+      bFontLoaded = pFontFile->Load(strPath, newSize, aspect);
+    }
 
     if (!bFontLoaded)
     {
       delete pFontFile;
 
-      // font could not be loaded - try Arial.ttf, which we distribute
-      if (strFilename != "arial.ttf")
-      {
-        CLog::Log(LOGERROR, "Couldn't load font name: %s(%s), trying to substitute arial.ttf", strFontName.c_str(), strFilename.c_str());
-        return LoadTTF(strFontName, "arial.ttf", textColor, shadowColor, iSize, iStyle, lineSpacing, originalAspect);
-      }
+      // font could not b loaded
       CLog::Log(LOGERROR, "Couldn't load font name:%s file:%s", strFontName.c_str(), strPath.c_str());
 
       return NULL;
     }
-
     m_vecFontFiles.push_back(pFontFile);
   }
 
   // font file is loaded, create our CGUIFont
   CGUIFont *pNewFont = new CGUIFont(strFontName, iStyle, textColor, shadowColor, lineSpacing, pFontFile);
   m_vecFonts.push_back(pNewFont);
-
+  
   // Store the original TTF font info in case we need to reload it in a different resolution
   OrigFontInfo fontInfo;
   fontInfo.size = iSize;
   fontInfo.aspect = originalAspect;
   fontInfo.fontFilePath = strPath;
   fontInfo.fileName = strFilename;
-  fontInfo.sourceRes = sourceRes;
-  m_vecFontInfo.push_back(fontInfo);
-
+  m_vecFontInfo.push_back(fontInfo);      
+  
   return pNewFont;
-}
-
-bool GUIFontManager::OnMessage(CGUIMessage &message)
-{
-  if (message.GetMessage() != GUI_MSG_NOTIFY_ALL)
-    return false;
-
-  if (message.GetParam1() == GUI_MSG_RENDERER_LOST)
-  {
-    m_canReload = false;
-    return true;
-  }
-
-  if (message.GetParam1() == GUI_MSG_RENDERER_RESET)
-  { // our device has been reset - we have to reload our ttf fonts, and send
-    // a message to controls that we have done so
-    ReloadTTFFonts();
-    g_windowManager.SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
-    m_canReload = true;
-    return true;
-  }
-
-  if (message.GetParam1() == GUI_MSG_WINDOW_RESIZE)
-  { // we need to reload our fonts
-    if (m_canReload)
-    {
-      ReloadTTFFonts();
-      // no need to send a resize message, as this message will do the rounds
-      return true;
-    }
-  }
-  return false;
 }
 
 void GUIFontManager::ReloadTTFFonts(void)
@@ -178,41 +138,47 @@ void GUIFontManager::ReloadTTFFonts(void)
   if (!m_vecFonts.size())
     return;   // we haven't even loaded fonts in yet
 
+  g_graphicsContext.SetScalingResolution(m_skinResolution, 0, 0, true);
+  
   for (unsigned int i = 0; i < m_vecFonts.size(); i++)
   {
     CGUIFont* font = m_vecFonts[i];
-    OrigFontInfo fontInfo = m_vecFontInfo[i];
-
+    OrigFontInfo fontInfo = m_vecFontInfo[i];      
+    CGUIFontTTF* currentFontTTF = font->GetFont();
+    
     float aspect = fontInfo.aspect;
     int iSize = fontInfo.size;
     CStdString& strPath = fontInfo.fontFilePath;
     CStdString& strFilename = fontInfo.fileName;
 
-    g_graphicsContext.SetScalingResolution(fontInfo.sourceRes, true);
-
-    if (fontInfo.sourceRes == RES_PAL_16x9 || fontInfo.sourceRes == RES_PAL60_16x9 || fontInfo.sourceRes == RES_NTSC_16x9 || fontInfo.sourceRes == RES_HDTV_480p_16x9)
+    if (m_skinResolution == PAL_16x9 || m_skinResolution == PAL60_16x9 || m_skinResolution == NTSC_16x9 || m_skinResolution == HDTV_480p_16x9)
       aspect *= 0.75f;
-
+  
     aspect *= g_graphicsContext.GetGUIScaleY() / g_graphicsContext.GetGUIScaleX();
     float newSize = (float) iSize / g_graphicsContext.GetGUIScaleY();
 
+    // check if we already have this font file loaded (font object could differ only by color or style)
     CStdString TTFfontName;
     TTFfontName.Format("%s_%f_%f", strFilename, newSize, aspect);
-    CGUIFontTTFBase* pFontFile = GetFontFile(TTFfontName);
+
+    CGUIFontTTF* pFontFile = GetFontFile(TTFfontName); 
     if (!pFontFile)
     {
       pFontFile = new CGUIFontTTF(TTFfontName);
-      if (!pFontFile || !pFontFile->Load(strPath, newSize, aspect))
+      bool bFontLoaded = pFontFile->Load(strPath, newSize, aspect);
+      pFontFile->CopyReferenceCountFrom(*currentFontTTF);
+
+      if (!bFontLoaded)
       {
-        delete pFontFile;
-        // font could not be loaded
+        delete pFontFile;   
+        // font could not b loaded
         CLog::Log(LOGERROR, "Couldn't re-load font file:%s", strPath.c_str());
         return;
       }
-
+  
       m_vecFontFiles.push_back(pFontFile);
     }
-
+          
     font->SetFont(pFontFile);
   }
 }
@@ -230,9 +196,9 @@ void GUIFontManager::Unload(const CStdString& strFontName)
   }
 }
 
-void GUIFontManager::FreeFontFile(CGUIFontTTFBase *pFont)
+void GUIFontManager::FreeFontFile(CGUIFontTTF *pFont)
 {
-  for (vector<CGUIFontTTFBase*>::iterator it = m_vecFontFiles.begin(); it != m_vecFontFiles.end(); ++it)
+  for (vector<CGUIFontTTF*>::iterator it = m_vecFontFiles.begin(); it != m_vecFontFiles.end(); ++it)
   {
     if (pFont == *it)
     {
@@ -243,11 +209,11 @@ void GUIFontManager::FreeFontFile(CGUIFontTTFBase *pFont)
   }
 }
 
-CGUIFontTTFBase* GUIFontManager::GetFontFile(const CStdString& strFileName)
+CGUIFontTTF* GUIFontManager::GetFontFile(const CStdString& strFileName)
 {
   for (int i = 0; i < (int)m_vecFontFiles.size(); ++i)
   {
-    CGUIFontTTFBase* pFont = (CGUIFontTTFBase *)m_vecFontFiles[i];
+    CGUIFontTTF* pFont = m_vecFontFiles[i];
     if (pFont->GetFileName() == strFileName)
       return pFont;
   }
@@ -402,7 +368,7 @@ void GUIFontManager::LoadFonts(const TiXmlNode* fontNode)
 bool GUIFontManager::OpenFontFile(TiXmlDocument& xmlDoc)
 {
   // Get the file to load fonts from:
-  CStdString strPath = g_SkinInfo->GetSkinPath("Font.xml", &m_skinResolution);
+  CStdString strPath = g_SkinInfo.GetSkinPath("Font.xml", &m_skinResolution);
   CLog::Log(LOGINFO, "Loading fonts from %s", strPath.c_str());
 
   // first try our preferred file

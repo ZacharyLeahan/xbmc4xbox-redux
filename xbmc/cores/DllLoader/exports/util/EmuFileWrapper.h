@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,36 +21,16 @@
  *
  */
 
-
-#ifndef __EMU_FILE_WRAPPER_H__
-#define __EMU_FILE_WRAPPER_H__
-
-#include <stdio.h>
-
-#include "system.h"
-
-class CMutex;
-
-#if defined(_LINUX) && !defined(__APPLE__)
-#define _file _fileno
-#endif
-
 #define MAX_EMULATED_FILES    50
 #define FILE_WRAPPER_OFFSET   0x00000100
-
-namespace XFILE
-{
-  class CFile;
-}
 
 typedef struct stEmuFileObject
 {
   bool    used;
   FILE    file_emu;
   XFILE::CFile*  file_xbmc;
-  CMutex *file_lock;
 } EmuFileObject;
-
+  
 class CEmuFileWrapper
 {
 public:
@@ -63,9 +45,6 @@ public:
   EmuFileObject* RegisterFileObject(XFILE::CFile* pFile);
   void UnRegisterFileObjectByDescriptor(int fd);
   void UnRegisterFileObjectByStream(FILE* stream);
-  void LockFileObjectByDescriptor(int fd);
-  bool TryLockFileObjectByDescriptor(int fd);
-  void UnlockFileObjectByDescriptor(int fd);
   EmuFileObject* GetFileObjectByDescriptor(int fd);  
   EmuFileObject* GetFileObjectByStream(FILE* stream);  
   XFILE::CFile* GetFileXbmcByDescriptor(int fd);
@@ -81,6 +60,4 @@ private:
 };
 
 extern CEmuFileWrapper g_emuFileWrapper;
-
-#endif
 

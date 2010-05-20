@@ -23,7 +23,7 @@
 
 #include "IFileDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY 
 {
   class CSmartPlaylistDirectory : public IFileDirectory
   {

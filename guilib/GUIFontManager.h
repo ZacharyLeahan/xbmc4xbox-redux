@@ -1,6 +1,6 @@
 /*!
 \file GUIFontManager.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_FONTMANAGER_H
@@ -30,11 +30,10 @@
  */
 
 #include "GraphicContext.h"
-#include "IMsgTargetCallback.h"
 
 // Forward
 class CGUIFont;
-class CGUIFontTTFBase;
+class CGUIFontTTF;
 class TiXmlDocument;
 class TiXmlNode;
 
@@ -44,49 +43,45 @@ struct OrigFontInfo
    float aspect;
    CStdString fontFilePath;
    CStdString fileName;
-   RESOLUTION sourceRes;
 };
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
-class GUIFontManager : public IMsgTargetCallback
+class GUIFontManager
 {
 public:
   GUIFontManager(void);
   virtual ~GUIFontManager(void);
-
-  virtual bool OnMessage(CGUIMessage &message);
-
   void Unload(const CStdString& strFontName);
   void LoadFonts(const CStdString& strFontSet);
-  CGUIFont* LoadTTF(const CStdString& strFontName, const CStdString& strFilename, color_t textColor, color_t shadowColor, const int iSize, const int iStyle, float lineSpacing = 1.0f, float aspect = 1.0f, RESOLUTION res = RES_INVALID);
+  CGUIFont* LoadTTF(const CStdString& strFontName, const CStdString& strFilename, color_t textColor, color_t shadowColor, const int iSize, const int iStyle, float lineSpacing = 1.0f, float aspect = 1.0f, RESOLUTION res = INVALID);
   CGUIFont* GetFont(const CStdString& strFontName, bool fallback = true);
   void Clear();
-  void FreeFontFile(CGUIFontTTFBase *pFont);
+  void FreeFontFile(CGUIFontTTF *pFont);
 
   bool IsFontSetUnicode() { return m_fontsetUnicode; }
   bool IsFontSetUnicode(const CStdString& strFontSet);
   bool GetFirstFontSetUnicode(CStdString& strFontSet);
+  
+  void ReloadTTFFonts(void);
 
 protected:
-  void ReloadTTFFonts();
   void LoadFonts(const TiXmlNode* fontNode);
-  CGUIFontTTFBase* GetFontFile(const CStdString& strFontFile);
+  CGUIFontTTF* GetFontFile(const CStdString& strFontFile);
   bool OpenFontFile(TiXmlDocument& xmlDoc);
 
   std::vector<CGUIFont*> m_vecFonts;
-  std::vector<CGUIFontTTFBase*> m_vecFontFiles;
+  std::vector<CGUIFontTTF*> m_vecFontFiles;
   std::vector<OrigFontInfo> m_vecFontInfo;
   bool m_fontsetUnicode;
   RESOLUTION m_skinResolution;
-  bool m_canReload;
 };
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
 extern GUIFontManager g_fontManager;
 #endif

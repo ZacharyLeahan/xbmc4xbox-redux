@@ -18,57 +18,24 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "stdafx.h"
 #include "Event.h"
-#include "log.h"
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CEvent::CEvent(bool manual)
+CEvent::CEvent()
 {
-  if(manual)
-    m_hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-  else
-    m_hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+  m_hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
-CEvent::CEvent(const CEvent& src)
-{
-  if(DuplicateHandle( GetCurrentProcess()
-                    , src.m_hEvent
-                    , GetCurrentProcess()
-                    , &m_hEvent
-                    , 0
-                    , TRUE
-                    , DUPLICATE_SAME_ACCESS ))
-  {
-    CLog::Log(LOGERROR, "CEvent - failed to duplicate handle");
-    m_hEvent = INVALID_HANDLE_VALUE;
-  }
-}
+
 
 CEvent::~CEvent()
 {
   CloseHandle(m_hEvent);
-}
-
-CEvent& CEvent::operator=(const CEvent& src)
-{
-  CloseHandle(m_hEvent);
-
-  if(DuplicateHandle( GetCurrentProcess()
-                    , src.m_hEvent
-                    , GetCurrentProcess()
-                    , &m_hEvent
-                    , 0
-                    , TRUE
-                    , DUPLICATE_SAME_ACCESS ))
-  {
-    CLog::Log(LOGERROR, "CEvent - failed to duplicate handle");
-    m_hEvent = INVALID_HANDLE_VALUE;
-  }
-  return *this;
 }
 
 
@@ -96,12 +63,12 @@ HANDLE CEvent::GetHandle()
   return m_hEvent;
 }
 
-bool CEvent::WaitMSec(unsigned int milliSeconds)
+bool CEvent::WaitMSec(DWORD dwMillSeconds)
 {
 
   if (m_hEvent)
   {
-    DWORD dwResult = WaitForSingleObject(m_hEvent, milliSeconds);
+    DWORD dwResult = WaitForSingleObject(m_hEvent, dwMillSeconds);
     if (dwResult == WAIT_OBJECT_0) return true;
   }
   return false;

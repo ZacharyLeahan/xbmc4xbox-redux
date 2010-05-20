@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlaylistFileDirectory.h"
 #include "utils/log.h"
 #include "PlayListFactory.h"
@@ -29,7 +30,7 @@
 using namespace std;
 using namespace PLAYLIST;
 
-namespace XFILE
+namespace DIRECTORY
 {
   CPlaylistFileDirectory::CPlaylistFileDirectory()
   {
@@ -74,9 +75,9 @@ namespace XFILE
     return false;
   }
 
-  bool CPlaylistFileDirectory::Remove(const char *strPath)
-  {
-    return XFILE::CFile::Delete(strPath);
+  bool CPlaylistFileDirectory::Remove(const char *strPath) 
+  { 
+    return XFILE::CFile::Delete(strPath); 
   }
 }
 

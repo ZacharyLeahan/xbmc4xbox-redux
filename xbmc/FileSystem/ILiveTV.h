@@ -20,8 +20,6 @@
  *
  */
 
-class CFileItem;
-
 namespace XFILE
 {
 class ILiveTVInterface
@@ -49,4 +47,3 @@ public:
 };
 
 }
-

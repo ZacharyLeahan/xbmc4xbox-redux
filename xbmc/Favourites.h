@@ -22,7 +22,6 @@
  */
 
 class CFileItemList;
-class CFileItem;
 
 class CFavourites
 {

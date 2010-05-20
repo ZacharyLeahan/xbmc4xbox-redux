@@ -20,6 +20,7 @@
  */
 
 
+#include "stdafx.h"
 #include "DirectoryTuxBox.h"
 #include "DirectoryCache.h"
 #include "Util.h"
@@ -32,9 +33,9 @@
 #include "tinyXML/tinyxml.h"
 #include "AdvancedSettings.h"
 #include "FileItem.h"
-#include "utils/log.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CDirectoryTuxBox::CDirectoryTuxBox(void)
 {
@@ -182,7 +183,7 @@ bool CDirectoryTuxBox::GetDirectory(const CStdString& strPath, CFileItemList &it
       }
       else
         iWaitTimer = iWaitTimer+10;
-
+       
       result = false;
       http.Close(); // Close old connections
     }

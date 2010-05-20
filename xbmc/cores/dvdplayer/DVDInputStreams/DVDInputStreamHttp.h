@@ -22,8 +22,8 @@
  */
 
 #include "DVDInputStream.h"
-#include "../../../FileSystem/FileCurl.h"
-#include "../../../utils/HttpHeader.h"
+#include "FileSystem/FileCurl.h"
+#include "utils/HttpHeader.h"
 
 class CDVDInputStreamHttp : public CDVDInputStream
 {
@@ -36,9 +36,9 @@ public:
   virtual __int64 Seek(__int64 offset, int whence);
   virtual bool IsEOF();
   virtual __int64 GetLength();
-
+  
   CHttpHeader* GetHttpHeader();
-
+  
 protected:
   XFILE::CFileCurl* m_pFile;
   CHttpHeader m_httpHeader;

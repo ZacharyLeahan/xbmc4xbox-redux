@@ -1,6 +1,6 @@
 /*!
 \file GUIFadeLabelControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIFADELABELCONTROL_H
@@ -30,21 +30,21 @@
  */
 
 #include "GUIControl.h"
-#include "GUILabel.h"
+#include "GUITextLayout.h"
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIFadeLabelControl : public CGUIControl
 {
 public:
-  CGUIFadeLabelControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, bool scrollOut, unsigned int timeToDelayAtEnd, bool resetOnLabelChange);
+  CGUIFadeLabelControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, bool scrollOut, int scrollSpeed, DWORD timeToDelayAtEnd, bool resetOnLabelChange);
   CGUIFadeLabelControl(const CGUIFadeLabelControl &from);
   virtual ~CGUIFadeLabelControl(void);
   virtual CGUIFadeLabelControl *Clone() const { return new CGUIFadeLabelControl(*this); };
 
-  virtual void DoRender(unsigned int currentTime);
+  virtual void DoRender(DWORD currentTime);
   virtual void Render();
   virtual bool CanFocus() const;
   virtual bool OnMessage(CGUIMessage& message);
@@ -78,7 +78,7 @@ protected:
   CScrollInfo m_scrollInfo;
   CGUITextLayout m_textLayout;
   CAnimation *m_fadeAnim;
-  unsigned int m_renderTime;
+  DWORD m_renderTime;
   unsigned int m_scrollSpeed;
   bool m_resetOnLabelChange;
 };

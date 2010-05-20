@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "include.h"
 #include "GUIVideoControl.h"
 #include "GUIWindowManager.h"
 #include "Application.h"
@@ -55,6 +55,7 @@ void CGUIVideoControl::Render()
       g_application.ResetScreenSaver();
 
     g_graphicsContext.SetViewWindow(m_posX, m_posY, m_posX + m_width, m_posY + m_height);
+    g_graphicsContext.SetViewPort(m_posX, m_posY, m_width, m_height);
 
 #ifdef HAS_VIDEO_PLAYBACK
     color_t alpha = g_graphicsContext.MergeAlpha(0xFF000000) >> 24;
@@ -62,28 +63,39 @@ void CGUIVideoControl::Render()
 #else
     ((CDummyVideoPlayer *)g_application.m_pPlayer)->Render();
 #endif
+    g_graphicsContext.RestoreViewPort();
   }
   CGUIControl::Render();
 }
 
-EVENT_RESULT CGUIVideoControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
-{
-  if (!g_application.IsPlayingVideo()) return EVENT_RESULT_UNHANDLED;
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  { // switch to fullscreen
+bool CGUIVideoControl::OnMouseClick(int button, const CPoint &point)
+{ // mouse has clicked in the video control
+  // switch to fullscreen video
+  if (!g_application.IsPlayingVideo()) return false;
+  if (button == MOUSE_LEFT_BUTTON)
+  {
     CGUIMessage message(GUI_MSG_FULLSCREEN, GetID(), GetParentID());
     g_windowManager.SendMessage(message);
-    return EVENT_RESULT_HANDLED;
+    return true;
   }
-  else if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
+  if (button == MOUSE_RIGHT_BUTTON)
   { // toggle the playlist window
     if (g_windowManager.GetActiveWindow() == WINDOW_VIDEO_PLAYLIST)
       g_windowManager.PreviousWindow();
     else
       g_windowManager.ActivateWindow(WINDOW_VIDEO_PLAYLIST);
-    return EVENT_RESULT_HANDLED;
+    // reset the mouse button.
+    g_Mouse.bClick[MOUSE_RIGHT_BUTTON] = false;
+    return true;
   }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+bool CGUIVideoControl::OnMouseOver(const CPoint &point)
+{
+  // unfocusable, so return true
+  CGUIControl::OnMouseOver(point);
+  return false;
 }
 
 bool CGUIVideoControl::CanFocus() const
@@ -91,7 +103,15 @@ bool CGUIVideoControl::CanFocus() const
   return false;
 }
 
-bool CGUIVideoControl::CanFocusFromPoint(const CPoint &point) const
+bool CGUIVideoControl::CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const
 { // mouse is allowed to focus this control, but it doesn't actually receive focus
-  return IsVisible() && HitTest(point);
+  controlPoint = point;
+  m_transform.InverseTransformPosition(controlPoint.x, controlPoint.y);
+  if (HitTest(controlPoint))
+  {
+    *control = (CGUIControl *)this;
+    return true;
+  }
+  *control = NULL;
+  return false;
 }

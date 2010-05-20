@@ -19,10 +19,9 @@
  *
  */
 
+#include "stdafx.h"
 #include "DownloadQueue.h"
 #include "Util.h"
-#include "log.h"
-
 #include "FileSystem/File.h"
 #include "FileSystem/FileCurl.h"
 
@@ -42,7 +41,7 @@ CDownloadQueue::CDownloadQueue(void) : CThread()
 
 void CDownloadQueue::OnStartup()
 {
-  SetPriority( GetMinPriority() );
+  SetPriority( THREAD_PRIORITY_LOWEST );
 }
 
 CDownloadQueue::~CDownloadQueue(void)
@@ -51,7 +50,7 @@ CDownloadQueue::~CDownloadQueue(void)
 }
 
 
-TICKET CDownloadQueue::RequestContent(const CStdString& aUrl, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueue::RequestContent(CStdString& aUrl, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
 
@@ -64,7 +63,7 @@ TICKET CDownloadQueue::RequestContent(const CStdString& aUrl, IDownloadQueueObse
   return request.ticket;
 }
 
-TICKET CDownloadQueue::RequestFile(const CStdString& aUrl, const CStdString& aFilePath, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueue::RequestFile(CStdString& aUrl, CStdString& aFilePath, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
 
@@ -97,7 +96,7 @@ void CDownloadQueue::CancelRequests(IDownloadQueueObserver *aObserver)
   LeaveCriticalSection(&m_critical);
 }
 
-TICKET CDownloadQueue::RequestFile(const CStdString& aUrl, IDownloadQueueObserver* aObserver)
+TICKET CDownloadQueue::RequestFile(CStdString& aUrl, IDownloadQueueObserver* aObserver)
 {
   EnterCriticalSection(&m_critical);
 
@@ -109,7 +108,7 @@ TICKET CDownloadQueue::RequestFile(const CStdString& aUrl, IDownloadQueueObserve
   TICKET ticket(m_wQueueId, m_dwNextItemId++);
 
   CStdString strFilePath;
-  strFilePath.Format("special://temp/q%d-item%u%s", ticket.wQueueId, ticket.dwItemId, strExtension.c_str());
+  strFilePath.Format("Z:\\q%d-item%u%s", ticket.wQueueId, ticket.dwItemId, strExtension.c_str());
 
   Command request = {ticket, aUrl, strFilePath, aObserver};
   m_queue.push(request);

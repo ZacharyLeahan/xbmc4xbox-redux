@@ -22,7 +22,7 @@
 
 #include "MusicFileDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CNSFFileDirectory : public CMusicFileDirectory
   {
@@ -30,7 +30,7 @@ namespace XFILE
       CNSFFileDirectory(void);
       virtual ~CNSFFileDirectory(void);
     protected:
-      virtual int GetTrackCount(const CStdString& strPath);
+      virtual int GetTrackCount(const CStdString& strPath); 
   };
 }
 

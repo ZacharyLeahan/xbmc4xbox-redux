@@ -1,3 +1,5 @@
+
+#include "stdafx.h"
 /*
  * XBMC Media Center
  * Copyright (c) 2002 Frodo
@@ -63,13 +65,13 @@ bool CFileFileReader::OpenForWrite(const CURL& url, bool bOverWrite)
 }
 
 //*********************************************************************************************
-unsigned int CFileFileReader::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileFileReader::Read(void *lpBuf, __int64 uiBufSize)
 {
   return m_reader.Read(lpBuf,uiBufSize);
 }
 
 //*********************************************************************************************
-int CFileFileReader::Write(const void *lpBuf, int64_t uiBufSize)
+int CFileFileReader::Write(const void *lpBuf, __int64 uiBufSize)
 {
   return 0;
 }
@@ -81,19 +83,19 @@ void CFileFileReader::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileFileReader::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileFileReader::Seek(__int64 iFilePosition, int iWhence)
 {
   return m_reader.Seek(iFilePosition,iWhence);
 }
 
 //*********************************************************************************************
-int64_t CFileFileReader::GetLength()
+__int64 CFileFileReader::GetLength()
 {
   return m_reader.GetLength();
 }
 
 //*********************************************************************************************
-int64_t CFileFileReader::GetPosition()
+__int64 CFileFileReader::GetPosition()
 {
   return m_reader.GetPosition();
 }

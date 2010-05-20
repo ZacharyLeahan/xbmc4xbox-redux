@@ -1,6 +1,6 @@
 /*!
 \file GUIRSSControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIRSSControl_H
@@ -30,7 +30,6 @@
  */
 
 #include "GUIControl.h"
-#include "GUILabel.h"
 
 typedef uint32_t character_t;
 typedef uint32_t color_t;
@@ -49,12 +48,12 @@ public:
 
 /*!
 \ingroup controls
-\brief
+\brief 
 */
 class CGUIRSSControl : public CGUIControl, public IRssObserver
 {
 public:
-  CGUIRSSControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoColor &channelColor, const CGUIInfoColor &headlineColor, CStdString& strRSSTags);
+  CGUIRSSControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoColor &channelColor, const CGUIInfoColor &headlineColor, CStdString& strRSSTags, int scrollSpeed);
   CGUIRSSControl(const CGUIRSSControl &from);
   virtual ~CGUIRSSControl(void);
   virtual CGUIRSSControl *Clone() const { return new CGUIRSSControl(*this); };

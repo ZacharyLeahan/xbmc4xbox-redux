@@ -21,8 +21,6 @@
  *
  */
 
-#include "system.h" // for HANDLE, CRITICALSECTION
-
 class CSharedSection
 {
 
@@ -32,16 +30,15 @@ public:
   CSharedSection& operator=(const CSharedSection& src);
   virtual ~CSharedSection();
 
-  void EnterExclusive();
-  void LeaveExclusive();
+  inline void EnterExclusive();
+  inline void LeaveExclusive();
 
-  void EnterShared();
-  void LeaveShared();
-
+  inline void EnterShared();
+  inline void LeaveShared();
+  
 private:
 
   CRITICAL_SECTION m_critSection;
-
   HANDLE m_eventFree;
   bool m_exclusive;
   long m_sharedLock;
@@ -55,8 +52,8 @@ public:
   virtual ~CSharedLock();
 
   bool IsOwner() const;
-  bool Enter();
-  void Leave();
+  inline bool Enter();
+  inline void Leave();
 
 protected:
   CSharedLock(const CSharedLock& src);
@@ -76,8 +73,8 @@ public:
   virtual ~CExclusiveLock();
 
   bool IsOwner() const;
-  bool Enter();
-  void Leave();
+  inline bool Enter();
+  inline void Leave();
 
 protected:
   CExclusiveLock(const CExclusiveLock& src);

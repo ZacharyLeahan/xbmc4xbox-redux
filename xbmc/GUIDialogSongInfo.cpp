@@ -19,12 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSongInfo.h"
 #include "Util.h"
 #include "Picture.h"
 #include "GUIDialogFileBrowser.h"
 #include "GUIPassword.h"
-#include "GUIUserMessages.h"
 #include "MusicDatabase.h"
 #include "GUIWindowMusicBase.h"
 #include "MusicInfoTag.h"
@@ -32,11 +32,7 @@
 #include "FileSystem/File.h"
 #include "FileSystem/FileCurl.h"
 #include "FileItem.h"
-#include "Settings.h"
 #include "AdvancedSettings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "TextureCache.h"
 
 using namespace XFILE;
 
@@ -127,26 +123,26 @@ bool CGUIDialogSongInfo::OnMessage(CGUIMessage& message)
 bool CGUIDialogSongInfo::OnAction(const CAction &action)
 {
   char rating = m_song->GetMusicInfoTag()->GetRating();
-  if (action.GetID() == ACTION_INCREASE_RATING)
+  if (action.id == ACTION_INCREASE_RATING)
   {
     if (rating < '5')
       SetRating(rating + 1);
     return true;
   }
-  else if (action.GetID() == ACTION_DECREASE_RATING)
+  else if (action.id == ACTION_DECREASE_RATING)
   {
     if (rating > '0')
       SetRating(rating - 1);
     return true;
   }
-  else if (action.GetID() == ACTION_PREVIOUS_MENU)
+  else if (action.id == ACTION_PREVIOUS_MENU)
     m_cancelled = true;
   return CGUIDialog::OnAction(action);
 }
 
 void CGUIDialogSongInfo::OnInitWindow()
 {
-  if (m_song->GetMusicInfoTag()->GetDatabaseId() == -1)
+  if (!g_guiSettings.GetBool("musiclibrary.enabled") || m_song->GetMusicInfoTag()->GetDatabaseId() == -1)
     CONTROL_DISABLE(CONTROL_ALBUMINFO);
   else
     CONTROL_ENABLE(CONTROL_ALBUMINFO);
@@ -241,7 +237,8 @@ void CGUIDialogSongInfo::OnGetThumb()
   if (CFile::Exists(localThumb))
   {
     CUtil::AddFileToFolder(g_advancedSettings.m_cachePath, "localthumb.jpg", cachedLocalThumb);
-    if (CPicture::CreateThumbnail(localThumb, cachedLocalThumb))
+    CPicture pic;
+    if (pic.CreateThumbnail(localThumb, cachedLocalThumb))
     {
       CFileItemPtr item(new CFileItem("thumb://Local", false));
       item->SetThumbnailImage(cachedLocalThumb);
@@ -271,18 +268,20 @@ void CGUIDialogSongInfo::OnGetThumb()
 
   CStdString cachedThumb(CUtil::GetCachedAlbumThumb(m_song->GetMusicInfoTag()->GetAlbum(), m_song->GetMusicInfoTag()->GetArtist()));
 
-  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
   if (result == "thumb://None")
-  {
-    CFile::Delete(cachedThumb);
-    cachedThumb = "";
+  { // cache the default thumb
+    CPicture pic;
+    pic.CacheSkinImage("DefaultAlbumCover.png", cachedThumb);
   }
   else if (result == "thumb://allmusic.com")
     CFile::Cache(thumbFromWeb, cachedThumb);
   else if (result == "thumb://Local")
     CFile::Cache(cachedLocalThumb, cachedThumb);
   else if (CFile::Exists(result))
-    CPicture::CreateThumbnail(result, cachedThumb);
+  {
+    CPicture pic;
+    pic.CreateThumbnail(result, cachedThumb);
+  }
 
   m_song->SetThumbnailImage(cachedThumb);
 

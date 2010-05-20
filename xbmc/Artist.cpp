@@ -20,7 +20,6 @@
  */
 
 #include "Artist.h"
-#include "StringUtils.h"
 #include "XMLUtils.h"
 #include "AdvancedSettings.h"
 
@@ -66,7 +65,7 @@ bool CArtist::Load(const TiXmlElement *artist, bool chained)
     }
     node = node->NextSiblingElement("album");
   }
-
+  
   // fanart
   const TiXmlElement *fanart2 = artist->FirstChildElement("fanart");
   if (fanart2)
@@ -87,7 +86,7 @@ bool CArtist::Save(TiXmlNode *node, const CStdString &tag, const CStdString& str
   TiXmlNode *artist = node->InsertEndChild(artistElement);
 
   if (!artist) return false;
-
+  
   XMLUtils::SetString(artist,       "name", strArtist);
   XMLUtils::SetAdditiveString(artist,       "genre",
                             g_advancedSettings.m_musicItemSeparator, strGenre);
@@ -106,7 +105,7 @@ bool CArtist::Save(TiXmlNode *node, const CStdString &tag, const CStdString& str
   if (!thumbURL.m_xml.empty())
   {
     TiXmlDocument doc;
-    doc.Parse(thumbURL.m_xml);
+    doc.Parse(thumbURL.m_xml); 
     const TiXmlNode* thumb = doc.FirstChild("thumb");
     while (thumb)
     {
@@ -140,4 +139,3 @@ bool CArtist::Save(TiXmlNode *node, const CStdString &tag, const CStdString& str
 
   return true;
 }
-

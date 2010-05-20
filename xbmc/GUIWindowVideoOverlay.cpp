@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowVideoOverlay.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIWindowManager.h"
@@ -42,19 +43,19 @@ CGUIWindowVideoOverlay::CGUIWindowVideoOverlay()
 CGUIWindowVideoOverlay::~CGUIWindowVideoOverlay()
 {}
 
-void CGUIWindowVideoOverlay::FrameMove()
+void CGUIWindowVideoOverlay::Render()
 {
   if (g_windowManager.GetActiveWindow() == WINDOW_FULLSCREEN_VIDEO)
   { // close immediately
     Close(true);
     return;
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
-EVENT_RESULT CGUIWindowVideoOverlay::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIWindowVideoOverlay::OnMouse(const CPoint &point)
 {
-  return EVENT_RESULT_UNHANDLED;
+  return false;
 }
 
 void CGUIWindowVideoOverlay::SetDefaults()

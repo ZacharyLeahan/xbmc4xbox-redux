@@ -1,6 +1,6 @@
 /*!
 \file GUIMoverControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIMoverCONTROL_H
@@ -48,7 +48,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIMoverControl : public CGUIControl
 {
@@ -66,10 +66,12 @@ public:
   virtual void OnDown();
   virtual void OnLeft();
   virtual void OnRight();
+  virtual bool OnMouseDrag(const CPoint &offset, const CPoint &point);
+  virtual bool OnMouseClick(int button, const CPoint &point);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   void SetLimits(int iX1, int iY1, int iX2, int iY2);
   void SetLocation(int iLocX, int iLocY, bool bSetPosition = true);
@@ -77,15 +79,14 @@ public:
   int GetYLocation() const { return m_iLocationY;};
 
 protected:
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
   virtual void UpdateColors();
   void SetAlpha(unsigned char alpha);
   void UpdateSpeed(int nDirection);
   void Move(int iX, int iY);
   CGUITexture m_imgFocus;
   CGUITexture m_imgNoFocus;
-  unsigned int m_frameCounter;
-  unsigned int m_lastMoveTime;
+  DWORD m_dwFrameCounter;
+  DWORD m_dwLastMoveTime;
   int m_nDirection;
   float m_fSpeed;
   float m_fAnalogSpeed;

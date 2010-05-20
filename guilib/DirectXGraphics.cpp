@@ -19,10 +19,9 @@
  *
  */
 
+#include "include.h"
 #include "DirectXGraphics.h"
-#include "Texture.h"
 #include "FileSystem/File.h"
-#include "XBTF.h"
 
 LPVOID XPhysicalAlloc(SIZE_T s, DWORD ulPhysicalAddress, DWORD ulAlignment, DWORD flProtect)
 {
@@ -108,6 +107,63 @@ bool IsSwizzledFormat(XB_D3DFORMAT format)
   }
 }
 
+HRESULT XGWriteSurfaceToFile(LPDIRECT3DSURFACE8 pSurface, const char *fileName)
+{
+  D3DLOCKED_RECT lr;
+  D3DSURFACE_DESC desc;
+  pSurface->GetDesc(&desc);
+  if (S_OK == pSurface->LockRect(&lr, NULL, 0))
+  {
+    XFILE::CFile file;
+    if (file.OpenForWrite(fileName, true))
+    {
+      // create a 24bit BMP header
+      BMPHEAD bh;
+      memset((char *)&bh,0,sizeof(BMPHEAD));
+      memcpy(bh.id,"BM",2);
+      bh.headersize = 54L;
+      bh.infoSize = 0x28L;
+      bh.width = desc.Width;
+      bh.height = desc.Height;
+      bh.biPlanes = 1;
+      bh.bits = 24;
+      bh.biCompression = 0L;
+
+      //number of bytes per line in a BMP is divisible by 4
+      long bytesPerLine = bh.width * 3;
+      if (bytesPerLine & 0x0003)
+      {
+        bytesPerLine |= 0x0003;
+        ++bytesPerLine;
+      }
+      // filesize = headersize + bytesPerLine * number of lines
+      bh.filesize = bh.headersize + bytesPerLine * bh.height;
+        
+      file.Write(&bh.id, sizeof(bh) - 2*sizeof(char));
+
+      BYTE *lineBuf = new BYTE[bytesPerLine];
+      memset(lineBuf, 0, bytesPerLine);
+      // lines are stored in BMPs upside down
+      for (UINT y = desc.Height; y; --y)
+      {
+        BYTE *s = (BYTE *)lr.pBits + (y - 1) * lr.Pitch;
+        BYTE *d = lineBuf;
+        for (UINT x = 0; x < desc.Width; x++)
+        {
+          *d++ = *(s + x * 4);
+          *d++ = *(s + x * 4 + 1);
+          *d++ = *(s + x * 4 + 2);
+        }
+        file.Write(lineBuf, bytesPerLine);
+      }
+      delete[] lineBuf;
+      file.Close();
+    }
+    pSurface->UnlockRect();
+  }
+  return S_OK;
+}
+
 // Unswizzle.
 // Format is:
 
@@ -159,177 +215,18 @@ void Unswizzle(const void *src, unsigned int depth, unsigned int width, unsigned
   }
 }
 
-void DXT1toARGB(const void *src, void *dest, unsigned int destWidth)
-{
-  const BYTE *b = (const BYTE *)src;
-  // colour is in R5G6B5 format, convert to R8G8B8
-  DWORD colour[4];
-  BYTE red[4];
-  BYTE green[4];
-  BYTE blue[4];
-  for (int i = 0; i < 2; i++)
-  {
-    red[i] = b[2*i+1] & 0xf8;
-    green[i] = ((b[2*i+1] & 0x7) << 5) | ((b[2*i] & 0xe0) >> 3);
-    blue[i] = (b[2*i] & 0x1f) << 3;
-    colour[i] = (red[i] << 16) | (green[i] << 8) | blue[i];
-  }
-  if (colour[0] > colour[1])
-  {
-    red[2] = (2 * red[0] + red[1] + 1) / 3;
-    green[2] = (2 * green[0] + green[1] + 1) / 3;
-    blue[2] = (2 * blue[0] + blue[1] + 1) / 3;
-    red[3] = (red[0] + 2 * red[1] + 1) / 3;
-    green[3] = (green[0] + 2 * green[1] + 1) / 3;
-    blue[3] = (blue[0] + 2 * blue[1] + 1) / 3;
-    for (int i = 0; i < 4; i++)
-      colour[i] = (red[i] << 16) | (green[i] << 8) | blue[i] | 0xFF000000;
-  }
-  else
-  {
-    red[2] = (red[0] + red[1]) / 2;
-    green[2] = (green[0] + green[1]) / 2;
-    blue[2] = (blue[0] + blue[1]) / 2;
-    for (int i = 0; i < 3; i++)
-      colour[i] = (red[i] << 16) | (green[i] << 8) | blue[i] | 0xFF000000;
-    colour[3] = 0;  // transparent
-  }
-  // ok, now grab the bits
-  for (int y = 0; y < 4; y++)
-  {
-    DWORD *d = (DWORD *)dest + destWidth * y;
-    *d++ = colour[(b[4 + y] & 0x03)];
-    *d++ = colour[(b[4 + y] & 0x0c) >> 2];
-    *d++ = colour[(b[4 + y] & 0x30) >> 4];
-    *d++ = colour[(b[4 + y] & 0xc0) >> 6];
-  }
-}
-
-void DXT4toARGB(const void *src, void *dest, unsigned int destWidth)
-{
-  const BYTE *b = (const BYTE *)src;
-  BYTE alpha[8];
-  alpha[0] = b[0];
-  alpha[1] = b[1];
-  if (alpha[0] > alpha[1])
-  {
-    alpha[2] = (6 * alpha[0] + 1 * alpha[1]+ 3) / 7;
-    alpha[3] = (5 * alpha[0] + 2 * alpha[1] + 3) / 7;    // bit code 011
-    alpha[4] = (4 * alpha[0] + 3 * alpha[1] + 3) / 7;    // bit code 100
-    alpha[5] = (3 * alpha[0] + 4 * alpha[1] + 3) / 7;    // bit code 101
-    alpha[6] = (2 * alpha[0] + 5 * alpha[1] + 3) / 7;    // bit code 110
-    alpha[7] = (1 * alpha[0] + 6 * alpha[1] + 3) / 7;    // bit code 111
-  }
-  else
-  {
-    alpha[2] = (4 * alpha[0] + 1 * alpha[1] + 2) / 5;    // Bit code 010
-    alpha[3] = (3 * alpha[0] + 2 * alpha[1] + 2) / 5;    // Bit code 011
-    alpha[4] = (2 * alpha[0] + 3 * alpha[1] + 2) / 5;    // Bit code 100
-    alpha[5] = (1 * alpha[0] + 4 * alpha[1] + 2) / 5;    // Bit code 101
-    alpha[6] = 0;                                      // Bit code 110
-    alpha[7] = 255;                                    // Bit code 111
-  }
-  // ok, now grab the bits
-  BYTE a[4][4];
-  a[0][0] = alpha[(b[2] & 0xe0) >> 5];
-  a[0][1] = alpha[(b[2] & 0x1c) >> 2];
-  a[0][2] = alpha[((b[2] & 0x03) << 1) | ((b[3] & 0x80) >> 7)];
-  a[0][3] = alpha[(b[3] & 0x70) >> 4];
-  a[1][0] = alpha[(b[3] & 0x0e) >> 1];
-  a[1][1] = alpha[((b[3] & 0x01) << 2) | ((b[4] & 0xc0) >> 6)];
-  a[1][2] = alpha[(b[4] & 0x38) >> 3];
-  a[1][3] = alpha[(b[4] & 0x07)];
-  a[2][0] = alpha[(b[5] & 0xe0) >> 5];
-  a[2][1] = alpha[(b[5] & 0x1c) >> 2];
-  a[2][2] = alpha[((b[5] & 0x03) << 1) | ((b[6] & 0x80) >> 7)];
-  a[2][3] = alpha[(b[6] & 0x70) >> 4];
-  a[3][0] = alpha[(b[6] & 0x0e) >> 1];
-  a[3][1] = alpha[((b[6] & 0x01) << 2) | ((b[7] & 0xc0) >> 6)];
-  a[3][2] = alpha[(b[7] & 0x38) >> 3];
-  a[3][3] = alpha[(b[7] & 0x07)];
-
-  b = (BYTE *)src + 8;
-  // colour is in R5G6B5 format, convert to R8G8B8
-  DWORD colour[4];
-  BYTE red[4];
-  BYTE green[4];
-  BYTE blue[4];
-  for (int i = 0; i < 2; i++)
-  {
-    red[i] = b[2*i+1] & 0xf8;
-    green[i] = ((b[2*i+1] & 0x7) << 5) | ((b[2*i] & 0xe0) >> 3);
-    blue[i] = (b[2*i] & 0x1f) << 3;
-  }
-  red[2] = (2 * red[0] + red[1] + 1) / 3;
-  green[2] = (2 * green[0] + green[1] + 1) / 3;
-  blue[2] = (2 * blue[0] + blue[1] + 1) / 3;
-  red[3] = (red[0] + 2 * red[1] + 1) / 3;
-  green[3] = (green[0] + 2 * green[1] + 1) / 3;
-  blue[3] = (blue[0] + 2 * blue[1] + 1) / 3;
-  for (int i = 0; i < 4; i++)
-    colour[i] = (red[i] << 16) | (green[i] << 8) | blue[i];
-  // and assign them to our texture
-  for (int y = 0; y < 4; y++)
-  {
-    DWORD *d = (DWORD *)dest + destWidth * y;
-    *d++ = colour[(b[4 + y] & 0x03)] | (a[y][0] << 24);
-    *d++ = colour[(b[4 + y] & 0x0e) >> 2] | (a[y][1] << 24);
-    *d++ = colour[(b[4 + y] & 0x30) >> 4] | (a[y][2] << 24);
-    *d++ = colour[(b[4 + y] & 0xe0) >> 6] | (a[y][3] << 24);
-  }
-
-}
-
-void ConvertDXT1(const void *src, unsigned int width, unsigned int height, void *dest)
-{
-  for (unsigned int y = 0; y < height; y += 4)
-  {
-    for (unsigned int x = 0; x < width; x += 4)
-    {
-      const BYTE *s = (const BYTE *)src + y * width / 2 + x * 2;
-      DWORD *d = (DWORD *)dest + y * width + x;
-      DXT1toARGB(s, d, width);
-    }
-  }
-}
-
-void ConvertDXT4(const void *src, unsigned int width, unsigned int height, void *dest)
-{
-  // [4 4 4 4][4 4 4 4]
-  //
-  //
-  //
-  for (unsigned int y = 0; y < height; y += 4)
-  {
-    for (unsigned int x = 0; x < width; x += 4)
-    {
-      const BYTE *s = (const BYTE *)src + y * width + x * 4;
-      DWORD *d = (DWORD *)dest + y * width + x;
-      DXT4toARGB(s, d, width);
-    }
-  }
-}
-
-void GetTextureFromData(D3DTexture *pTex, void *texData, CBaseTexture **ppTexture)
+void GetTextureFromData(D3DTexture *pTex, void *texData, LPDIRECT3DTEXTURE8 *ppTexture)
 {
   XB_D3DFORMAT fmt;
   DWORD width, height, pitch, offset;
   ParseTextureHeader(pTex, fmt, width, height, pitch, offset);
-
-  *ppTexture = new CTexture(width, height, XB_FMT_A8R8G8B8);
-
-  if (*ppTexture)
+  D3DXCreateTexture(g_graphicsContext.Get3DDevice(), width, height, 1, 0, GetD3DFormat(fmt), D3DPOOL_MANAGED, ppTexture);
+  D3DLOCKED_RECT lr;
+  if (D3D_OK == (*ppTexture)->LockRect(0, &lr, NULL, 0))
   {
     BYTE *texDataStart = (BYTE *)texData;
-    COLOR *color = (COLOR *)texData;
+    DWORD *color = (DWORD *)texData;
     texDataStart += offset;
-/* DXMERGE - We should really support DXT1,DXT2 and DXT4 in both renderers
-             Perhaps we should extend CTexture::Update() to support a bunch of different texture types
-             Rather than assuming linear 32bits
-             We could just override, as at least then all the loading code from various texture formats
-             will be in one place
-
-    BYTE *dstPixels = (BYTE *)lr.pBits;
     DWORD destPitch = lr.Pitch;
     if (fmt == XB_D3DFMT_DXT1)  // Not sure if these are 100% correct, but they seem to work :P
     {
@@ -345,36 +242,79 @@ void GetTextureFromData(D3DTexture *pTex, void *texData, CBaseTexture **ppTextur
       pitch /= 4;
       destPitch /= 4;
     }
-*/
-    if (fmt == XB_D3DFMT_DXT1)
-    {
-      pitch = width * 4;
-      BYTE *decoded = new BYTE[pitch * height];
-      ConvertDXT1(texDataStart, width, height, decoded);
-      texDataStart = decoded;
-    }
-    else if (fmt == XB_D3DFMT_DXT2 || fmt == XB_D3DFMT_DXT4)
-    {
-      pitch = width * 4;
-      BYTE *decoded = new BYTE[pitch * height];
-      ConvertDXT4(texDataStart, width, height, decoded);
-      texDataStart = decoded;
-    }
     if (IsSwizzledFormat(fmt))
     { // first we unswizzle
       BYTE *unswizzled = new BYTE[pitch * height];
       Unswizzle(texDataStart, BytesPerPixelFromFormat(fmt), width, height, unswizzled);
       texDataStart = unswizzled;
     }
-
     if (IsPalettedFormat(fmt))
-      (*ppTexture)->LoadPaletted(width, height, pitch, XB_FMT_A8R8G8B8, texDataStart, color);
+    {
+      for (unsigned int y = 0; y < height; y++)
+      {
+        BYTE *src = texDataStart + y * pitch;
+        DWORD *dest = (DWORD *)((BYTE *)lr.pBits + y * destPitch);
+        for (unsigned int x = 0; x < width; x++)
+          *dest++ = color[*src++];
+      }
+    }
     else
-      (*ppTexture)->LoadFromMemory(width, height, pitch, XB_FMT_A8R8G8B8, texDataStart);
-
-    if (IsSwizzledFormat(fmt) || fmt == XB_D3DFMT_DXT1 || fmt == XB_D3DFMT_DXT2 || fmt == XB_D3DFMT_DXT4)
+    {
+      for (unsigned int y = 0; y < height; y++)
+      {
+        BYTE *src = texDataStart + y * pitch;
+        BYTE *dest = (BYTE *)lr.pBits + y * destPitch;
+        memcpy(dest, src, min(pitch, destPitch));
+      }
+    }
+    if (IsSwizzledFormat(fmt))
     {
       delete[] texDataStart;
     }
+    (*ppTexture)->UnlockRect(0);
   }
+}
+
+CXBPackedResource::CXBPackedResource()
+{
+  m_buffer = NULL;
+}
+
+CXBPackedResource::~CXBPackedResource()
+{
+  if (m_buffer)
+    delete[] m_buffer;
+  m_buffer = NULL;
+}
+
+HRESULT CXBPackedResource::Create(const char *fileName, int unused, void *unusedVoid)
+{
+  // load the file
+  FILE *file = fopen(fileName, "rb");
+  if (!file)
+    return -1;
+
+  fseek(file, 0, SEEK_END);
+  long size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  m_buffer = new BYTE[size];
+  fread(m_buffer, 1, size, file);
+
+  // check our header - we should really use this for the info instead of filesize
+  fclose(file);
+  return S_OK;
+}
+
+LPDIRECT3DTEXTURE8 CXBPackedResource::GetTexture(UINT unused)
+{
+  // now here's where the fun starts...
+  LPDIRECT3DTEXTURE8 pTexture = NULL;
+
+  D3DTexture *pTex = (D3DTexture *)(m_buffer + sizeof(XPR_HEADER));
+
+  XPR_HEADER *hdr = (XPR_HEADER *)m_buffer;
+  GetTextureFromData(pTex, m_buffer + hdr->dwHeaderSize, &pTexture);
+
+  return pTexture;
 }

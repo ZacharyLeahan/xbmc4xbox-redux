@@ -1,3 +1,5 @@
+
+#include "stdafx.h"
 /*
  * XBMC Media Center
  * Copyright (c) 2002 Frodo
@@ -17,26 +19,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-
-#include "system.h"
 #include "FileHD.h"
 #include "Util.h"
 #include "URL.h"
 #include "GUISettings.h"
-#include "utils/AliasShortcutUtils.h"
-#ifdef _LINUX
-#include "XHandle.h"
-#endif
 
 #include <sys/stat.h>
-#ifdef _LINUX
-#include <sys/ioctl.h>
-#else
-#include <io.h>
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
-#endif
-
 
 using namespace XFILE;
 
@@ -74,13 +62,8 @@ CStdString CFileHD::GetLocal(const CURL &url)
     }
   }
 
-#ifndef _LINUX
   path.Replace('/', '\\');
-#endif
-
-  if (IsAliasShortcut(path))
-    TranslateAliasShortcut(path);
-
+  g_charsetConverter.utf8ToStringCharset(path);
   return path;
 }
 
@@ -89,16 +72,13 @@ bool CFileHD::Open(const CURL& url)
 {
   CStdString strFile = GetLocal(url);
 
-#ifdef _WIN32
-  CStdStringW strWFile;
-  g_charsetConverter.utf8ToW(strFile, strWFile, false);
-  m_hFile.attach(CreateFileW(strWFile.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL));
-#else
   m_hFile.attach(CreateFile(strFile.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL));
-#endif
   if (!m_hFile.isValid()) return false;
 
   m_i64FilePos = 0;
+  LARGE_INTEGER i64Size;
+  GetFileSizeEx((HANDLE)m_hFile, &i64Size);
+  m_i64FileLength = i64Size.QuadPart;
   Seek(0, SEEK_SET);
 
   return true;
@@ -106,61 +86,20 @@ bool CFileHD::Open(const CURL& url)
 
 bool CFileHD::Exists(const CURL& url)
 {
-  struct __stat64 buffer;
   CStdString strFile = GetLocal(url);
 
-#ifdef _WIN32
-  CStdStringW strWFile;
-  g_charsetConverter.utf8ToW(strFile, strWFile, false);
-  return (_wstat64(strWFile.c_str(), &buffer)==0);
-#else
+  struct __stat64 buffer;
   return (_stat64(strFile.c_str(), &buffer)==0);
-#endif
 }
 
-int CFileHD::Stat(struct __stat64* buffer)
-{
-  int fd;
-#ifdef _LINUX
-  fd = (*m_hFile).fd;
-#else
-  fd = _open_osfhandle((intptr_t)((HANDLE)m_hFile), 0);
-  if (fd == -1)
-  {
-    CLog::Log(LOGERROR, "Stat: fd == -1");
-    return -1;
-  }
-#endif
-  return _fstat64(fd, buffer);
-}
 
 int CFileHD::Stat(const CURL& url, struct __stat64* buffer)
 {
   CStdString strFile = GetLocal(url);
 
-#ifdef _WIN32
-  CStdStringW strWFile;
-  // win32 can only stat root drives with a slash at the end
-  if(strFile.length() == 2 && strFile[1] ==':')
-    CUtil::AddSlashAtEnd(strFile);
-  g_charsetConverter.utf8ToW(strFile, strWFile, false);
-  return _wstat64(strWFile.c_str(), buffer);
-#else
   return _stat64(strFile.c_str(), buffer);
-#endif
 }
 
-bool CFileHD::SetHidden(const CURL &url, bool hidden)
-{
-#ifdef _WIN32
-  CStdStringW path;
-  g_charsetConverter.utf8ToW(GetLocal(url), path, false);
-  DWORD attributes = hidden ? FILE_ATTRIBUTE_HIDDEN : FILE_ATTRIBUTE_NORMAL;
-  if (SetFileAttributesW(path.c_str(), attributes))
-    return true;
-#endif
-  return false;
-}
 
 //*********************************************************************************************
 bool CFileHD::OpenForWrite(const CURL& url, bool bOverWrite)
@@ -168,24 +107,29 @@ bool CFileHD::OpenForWrite(const CURL& url, bool bOverWrite)
   // make sure it's a legal FATX filename (we are writing to the harddisk)
   CStdString strPath = GetLocal(url);
 
-#ifdef _WIN32
-  CStdStringW strWPath;
-  g_charsetConverter.utf8ToW(strPath, strWPath, false);
-  m_hFile.attach(CreateFileW(strWPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, bOverWrite ? CREATE_ALWAYS : OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
-#else
+  if (g_guiSettings.GetBool("services.ftpautofatx")) // allow overriding
+  {
+    CStdString strPathOriginal = strPath;
+    CUtil::GetFatXQualifiedPath(strPath);
+    if (strPathOriginal != strPath)
+      CLog::Log(LOGINFO,"CFileHD::OpenForWrite: WARNING: Truncated filename %s %s", strPathOriginal.c_str(), strPath.c_str());
+  }
+  
   m_hFile.attach(CreateFile(strPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, bOverWrite ? CREATE_ALWAYS : OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
-#endif
-  if (!m_hFile.isValid())
+  if (!m_hFile.isValid()) 
     return false;
 
   m_i64FilePos = 0;
+  LARGE_INTEGER i64Size;
+  GetFileSizeEx((HANDLE)m_hFile, &i64Size);
+  m_i64FileLength = i64Size.QuadPart;
   Seek(0, SEEK_SET);
 
   return true;
 }
 
 //*********************************************************************************************
-unsigned int CFileHD::Read(void *lpBuf, int64_t uiBufSize)
+unsigned int CFileHD::Read(void *lpBuf, __int64 uiBufSize)
 {
   if (!m_hFile.isValid()) return 0;
   DWORD nBytesRead;
@@ -198,7 +142,7 @@ unsigned int CFileHD::Read(void *lpBuf, int64_t uiBufSize)
 }
 
 //*********************************************************************************************
-int CFileHD::Write(const void *lpBuf, int64_t uiBufSize)
+int CFileHD::Write(const void *lpBuf, __int64 uiBufSize)
 {
   if (!m_hFile.isValid())
     return 0;
@@ -217,13 +161,13 @@ void CFileHD::Close()
 }
 
 //*********************************************************************************************
-int64_t CFileHD::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileHD::Seek(__int64 iFilePosition, int iWhence)
 {
   LARGE_INTEGER lPos, lNewPos;
   lPos.QuadPart = iFilePosition;
   int bSuccess;
 
-  int64_t length = GetLength();
+  __int64 length = GetLength();
 
   switch (iWhence)
   {
@@ -258,7 +202,7 @@ int64_t CFileHD::Seek(int64_t iFilePosition, int iWhence)
 }
 
 //*********************************************************************************************
-int64_t CFileHD::GetLength()
+__int64 CFileHD::GetLength()
 {
   LARGE_INTEGER i64Size;
   GetFileSizeEx((HANDLE)m_hFile, &i64Size);
@@ -266,7 +210,7 @@ int64_t CFileHD::GetLength()
 }
 
 //*********************************************************************************************
-int64_t CFileHD::GetPosition()
+__int64 CFileHD::GetPosition()
 {
   return m_i64FilePos;
 }
@@ -275,13 +219,7 @@ bool CFileHD::Delete(const CURL& url)
 {
   CStdString strFile=GetLocal(url);
 
-#ifdef _WIN32
-  CStdStringW strWFile;
-  g_charsetConverter.utf8ToW(strFile, strWFile, false);
-  return ::DeleteFileW(strWFile.c_str()) ? true : false;
-#else
   return ::DeleteFile(strFile.c_str()) ? true : false;
-#endif
 }
 
 bool CFileHD::Rename(const CURL& url, const CURL& urlnew)
@@ -289,26 +227,10 @@ bool CFileHD::Rename(const CURL& url, const CURL& urlnew)
   CStdString strFile=GetLocal(url);
   CStdString strNewFile=GetLocal(urlnew);
 
-#ifdef _WIN32
-  CStdStringW strWFile;
-  CStdStringW strWNewFile;
-  g_charsetConverter.utf8ToW(strFile, strWFile, false);
-  g_charsetConverter.utf8ToW(strNewFile, strWNewFile, false);
-  return ::MoveFileW(strWFile.c_str(), strWNewFile.c_str()) ? true : false;
-#else
   return ::MoveFile(strFile.c_str(), strNewFile.c_str()) ? true : false;
-#endif
 }
 
 void CFileHD::Flush()
 {
   ::FlushFileBuffers(m_hFile);
-}
-
-int CFileHD::IoControl(int request, void* param)
-{
-#ifdef _LINUX
-  return ioctl((*m_hFile).fd, request, param);
-#endif
-  return -1;
 }

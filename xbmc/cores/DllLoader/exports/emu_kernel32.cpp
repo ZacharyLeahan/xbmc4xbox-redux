@@ -19,23 +19,16 @@
  *
  */
 
+#include "stdafx.h"
 #include "emu_kernel32.h"
 #include "emu_dummy.h"
-#include "utils/log.h"
 
-#include "utils/IoSupport.h"
+#include "xbox/IoSupport.h"
 
-#ifndef _LINUX
 #include <process.h>
-#endif
 
 #include "../dll_tracker.h"
 #include "FileSystem/SpecialProtocol.h"
-
-#ifdef _LINUX
-#include "../../../linux/PlatformInclude.h"
-#define __except catch
-#endif
 
 using namespace std;
 
@@ -82,45 +75,11 @@ extern "C" BOOL WINAPI dllFindClose(HANDLE hFile)
   return FindClose(hFile);
 }
 
-#ifdef _WIN32
-#define CORRECT_SEP_STR(str) \
-  if (strstr(str, "://") == NULL) \
-  { \
-    int iSize_##str = strlen(str); \
-    for (int pos = 0; pos < iSize_##str; pos++) \
-      if (str[pos] == '/') str[pos] = '\\'; \
-  } \
-  else \
-  { \
-    int iSize_##str = strlen(str); \
-    for (int pos = 0; pos < iSize_##str; pos++) \
-      if (str[pos] == '\\') str[pos] = '/'; \
-  }
-#else
-#define CORRECT_SEP_STR(str)
-#endif
-
-extern "C" HANDLE WINAPI dllFindFirstFileA(LPCTSTR lpFileName, LPWIN32_FIND_DATA lpFindFileData)
-{
-  char* p = strdup(lpFileName);
-  CORRECT_SEP_STR(p);
-
-  // change default \\*.* into \\* which the xbox is using
-  char* e = strrchr(p, '.');
-  if (e != NULL && strlen(e) > 1 && e[1] == '*')
-  {
-    e[0] = '\0';
-  }
-
-  HANDLE res = FindFirstFile(_P(p).c_str(), lpFindFileData);
-  free(p);
-  return res;
-}
-
 // should be moved to CFile! or use CFile::stat
 extern "C" DWORD WINAPI dllGetFileAttributesA(LPCSTR lpFileName)
 {
-  char str[1024];
+  char str[XBMC_MAX_PATH];
+  char* p;
 
   if (!strcmp(lpFileName, "\\Device\\Cdrom0")) return (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_DIRECTORY);
 
@@ -133,14 +92,10 @@ extern "C" DWORD WINAPI dllGetFileAttributesA(LPCSTR lpFileName)
   }
   else strcpy(str, lpFileName);
 
-#ifndef _LINUX
   // convert '/' to '\\'
-  char *p = str;
+  p = str;
   while (p = strchr(p, '/')) * p = '\\';
   return GetFileAttributesA(str);
-#else
-  return GetFileAttributes(str);
-#endif
 }
 
 struct SThreadWrapper
@@ -152,37 +107,33 @@ struct SThreadWrapper
 
 #ifdef _DEBUG
 #define MS_VC_EXCEPTION 0x406d1388
-typedef struct tagTHREADNAME_INFO
-{
-  DWORD dwType; // must be 0x1000
-  LPCSTR szName; // pointer to name (in same addr space)
-  DWORD dwThreadID; // thread ID (-1 caller thread)
-  DWORD dwFlags; // reserved for future use, most be zero
+typedef struct tagTHREADNAME_INFO 
+{ 
+  DWORD dwType; // must be 0x1000 
+  LPCSTR szName; // pointer to name (in same addr space) 
+  DWORD dwThreadID; // thread ID (-1 caller thread) 
+  DWORD dwFlags; // reserved for future use, most be zero 
 } THREADNAME_INFO;
 #endif
 
-#ifdef _LINUX
-int dllThreadWrapper(LPVOID lpThreadParameter)
-#else
 unsigned int __stdcall dllThreadWrapper(LPVOID lpThreadParameter)
-#endif
 {
   SThreadWrapper *param = (SThreadWrapper*)lpThreadParameter;
   DWORD result;
 
-#if defined(_DEBUG) && !defined(_LINUX)
-  THREADNAME_INFO info;
-  info.dwType = 0x1000;
-  info.szName = "DLL";
-  info.dwThreadID = ::GetCurrentThreadId();
-  info.dwFlags = 0;
-  __try
-  {
-    RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(DWORD), (DWORD *)&info);
-  }
-  __except (EXCEPTION_CONTINUE_EXECUTION)
-  {
-  }
+#ifdef _DEBUG  
+  THREADNAME_INFO info; 
+  info.dwType = 0x1000; 
+  info.szName = "DLL"; 
+  info.dwThreadID = ::GetCurrentThreadId(); 
+  info.dwFlags = 0; 
+  __try 
+  { 
+    RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(DWORD), (DWORD *)&info); 
+  } 
+  __except (EXCEPTION_CONTINUE_EXECUTION) 
+  { 
+  }  
 #endif
 
   __try
@@ -190,7 +141,7 @@ unsigned int __stdcall dllThreadWrapper(LPVOID lpThreadParameter)
     result = param->lpStartAddress(param->lpParameter);
   }
   __except (EXCEPTION_EXECUTE_HANDLER)
-  {
+  {    
     CLog::Log(LOGERROR, "DLL:%s - Unhandled exception in thread created by dll", param->lpDLL );
     result = 0;
   }
@@ -210,7 +161,7 @@ extern "C" HANDLE WINAPI dllCreateThread(
 )
 {
   uintptr_t loc = (uintptr_t)_ReturnAddress();
-
+  
   SThreadWrapper *param = new SThreadWrapper;
   param->lpStartAddress = lpStartAddress;
   param->lpParameter = lpParameter;
@@ -240,11 +191,7 @@ extern "C" HANDLE WINAPI dllGetCurrentThread(void)
 extern "C" DWORD WINAPI dllGetCurrentProcessId(void)
 {
 #ifndef _XBOX
-#ifdef _LINUX
-  return (DWORD)getppid();
-#else
   return GetCurrentProcessId();
-#endif
 #else
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "GetCurrentProcessId(void) => 31337");
@@ -258,7 +205,7 @@ extern "C" BOOL WINAPI dllGetProcessTimes(HANDLE hProcess, LPFILETIME lpCreation
   // since the xbox has only one process, we just take the current thread
   HANDLE h = GetCurrentThread();
   BOOL res = GetThreadTimes(h, lpCreationTime, lpExitTime, lpKernelTime, lpUserTime);
-
+  
   return res;
 }
 
@@ -276,7 +223,7 @@ extern "C" int WINAPI dllDuplicateHandle(HANDLE hSourceProcessHandle,   // handl
             hSourceProcessHandle, hSourceHandle, hTargetProcessHandle,
             lpTargetHandle, dwDesiredAccess, bInheritHandle, dwOptions);
 #endif
-#if defined (_XBOX) || defined (_LINUX)
+#ifdef _XBOX
   *lpTargetHandle = hSourceHandle;
   return 1;
 #else
@@ -284,16 +231,12 @@ extern "C" int WINAPI dllDuplicateHandle(HANDLE hSourceProcessHandle,   // handl
 #endif
 }
 
-extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HMODULE h)
+extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HANDLE h)
 {
-#ifdef _WIN32
-  return DisableThreadLibraryCalls(h);
-#endif
   not_implement("kernel32.dll fake function DisableThreadLibraryCalls called\n"); //warning
   return TRUE;
 }
 
-#ifndef _LINUX
 static void DumpSystemInfo(const SYSTEM_INFO* si)
 {
   CLog::Log(LOGDEBUG, "  Processor architecture %d\n", si->wProcessorArchitecture);
@@ -307,19 +250,13 @@ static void DumpSystemInfo(const SYSTEM_INFO* si)
   CLog::Log(LOGDEBUG, "  Processor level: 0x%x\n", si->wProcessorLevel);
   CLog::Log(LOGDEBUG, "  Processor revision: 0x%x\n", si->wProcessorRevision);
 }
-#endif
 
 extern "C" void WINAPI dllGetSystemInfo(LPSYSTEM_INFO lpSystemInfo)
 {
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "GetSystemInfo(0x%x) =>", lpSystemInfo);
 #endif
-#ifdef _WIN32
-  // VS 2003 complains about x even so it's defined
   lpSystemInfo->wProcessorArchitecture = 0; //#define PROCESSOR_ARCHITECTURE_INTEL 0
-#else
-  lpSystemInfo->x.wProcessorArchitecture = 0; //#define PROCESSOR_ARCHITECTURE_INTEL 0
-#endif
   lpSystemInfo->dwPageSize = 4096;   //Xbox page size
   lpSystemInfo->lpMinimumApplicationAddress = (void *)0x00000000;
   lpSystemInfo->lpMaximumApplicationAddress = (void *)0x7fffffff;
@@ -372,8 +309,8 @@ extern "C" void WINAPI dllInitializeCriticalSection(LPCRITICAL_SECTION cs)
   LPCRITICAL_SECTION cs_new = new CRITICAL_SECTION;
   memset(cs_new, 0, sizeof(CRITICAL_SECTION));
   InitializeCriticalSection(cs_new);
-
-  // just take the first member of the CRITICAL_SECTION to save ourdata in, this will be used to
+  
+  // just take the first member of the CRITICAL_SECTION to save ourdata in, this will be used to 
   // get fast access to the new critial section in dllLeaveCriticalSection and dllEnterCriticalSection
   ((LPCRITICAL_SECTION*)cs)[0] = cs_new;
   g_mapCriticalSection[cs] = cs_new;
@@ -392,7 +329,6 @@ extern "C" void WINAPI dllEnterCriticalSection(LPCRITICAL_SECTION cs)
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "EnterCriticalSection(0x%x) %p\n", cs, ((LPCRITICAL_SECTION*)cs)[0]);
 #endif
-#ifndef _LINUX
   if (!(LPCRITICAL_SECTION)cs->OwningThread)
   {
 #ifdef API_DEBUG
@@ -400,7 +336,6 @@ extern "C" void WINAPI dllEnterCriticalSection(LPCRITICAL_SECTION cs)
 #endif
     dllInitializeCriticalSection(cs);
   }
-#endif
   EnterCriticalSection(((LPCRITICAL_SECTION*)cs)[0]);
 }
 
@@ -427,8 +362,8 @@ extern "C" BOOL WINAPI dllGetVersionExA(LPOSVERSIONINFO lpVersionInfo)
   lpVersionInfo->szCSDVersion[0] = 0;
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "  Major version: %d\n  Minor version: %d\n  Build number: %x\n"
-            "  Platform Id: %d\n Version string: '%s'\n",
-            lpVersionInfo->dwMajorVersion, lpVersionInfo->dwMinorVersion,
+            "  Platform Id: %d\n Version string: '%s'\n", 
+            lpVersionInfo->dwMajorVersion, lpVersionInfo->dwMinorVersion, 
             lpVersionInfo->dwBuildNumber, lpVersionInfo->dwPlatformId, lpVersionInfo->szCSDVersion);
 #endif
   return TRUE;
@@ -441,7 +376,7 @@ extern "C" BOOL WINAPI dllGetVersionExW(LPOSVERSIONINFOW lpVersionInfo)
 #endif
   if(!dllGetVersionExA((LPOSVERSIONINFO)lpVersionInfo))
     return FALSE;
-
+  
   lpVersionInfo->szCSDVersion[0] = 0;
   lpVersionInfo->szCSDVersion[1] = 0;
   return TRUE;
@@ -494,12 +429,9 @@ extern "C" HMODULE WINAPI dllTerminateProcess(HANDLE hProcess, UINT uExitCode)
 }
 extern "C" HANDLE WINAPI dllGetCurrentProcess()
 {
-#if !defined (_XBOX) && !defined(_LINUX)
+#ifndef _XBOX
   return GetCurrentProcess();
 #else
-#ifdef _WIN32
-  return GetCurrentProcess();
-#endif
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "GetCurrentProcess(void) => 9375");
 #endif
@@ -589,9 +521,6 @@ static const char ch_envs[] =
 
 extern "C" LPVOID WINAPI dllGetEnvironmentStrings()
 {
-#ifdef _WIN32
-  return GetEnvironmentStrings();
-#endif
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "GetEnvironmentStrings() => 0x%x = %p", ch_envs, ch_envs);
 #endif
@@ -600,17 +529,11 @@ extern "C" LPVOID WINAPI dllGetEnvironmentStrings()
 
 extern "C" LPVOID WINAPI dllGetEnvironmentStringsW()
 {
-#ifdef _WIN32
-  return GetEnvironmentStringsW();
-#endif
   return 0;
 }
 
 extern "C" int WINAPI dllGetEnvironmentVariableA(LPCSTR lpName, LPSTR lpBuffer, DWORD nSize)
 {
-#ifdef _WIN32
-  return GetEnvironmentVariableA(lpName, lpBuffer, nSize);
-#endif
   if (lpBuffer) lpBuffer[0] = 0;
 
   if (strcmp(lpName, "__MSVCRT_HEAP_SELECT") == 0)
@@ -671,12 +594,8 @@ extern "C" BOOL WINAPI dllSetPriorityClass(HANDLE hProcess, DWORD dwPriorityClas
 
 extern "C" DWORD WINAPI dllFormatMessageA(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId, LPTSTR lpBuffer, DWORD nSize, va_list* Arguments)
 {
-#ifdef _WIN32
-  return FormatMessageA(dwFlags, lpSource, dwMessageId, dwLanguageId, lpBuffer, nSize, Arguments);
-#else
   not_implement("kernel32.dll fake function FormatMessage called\n"); //warning
   return 0;
-#endif
 }
 
 extern "C" DWORD WINAPI dllGetFullPathNameA(LPCTSTR lpFileName, DWORD nBufferLength, LPTSTR lpBuffer, LPTSTR* lpFilePart)
@@ -702,11 +621,7 @@ extern "C" DWORD WINAPI dllGetFullPathNameA(LPCTSTR lpFileName, DWORD nBufferLen
 
 extern "C" DWORD WINAPI dllExpandEnvironmentStringsA(LPCTSTR lpSrc, LPTSTR lpDst, DWORD nSize)
 {
-#ifdef _WIN32
-  return ExpandEnvironmentStringsA(lpSrc, lpDst, nSize);
-#else
-  not_implement("kernel32.dll fake function ExpandEnvironmentStringsA called\n"); //warning
-#endif
+//  not_implement("kernel32.dll fake function GetFullPathNameA called\n"); //warning
   return 0;
 }
 
@@ -749,17 +664,12 @@ extern "C" UINT WINAPI dllGetShortPathName(LPTSTR lpszLongPath, LPTSTR lpszShort
 
 extern "C" HANDLE WINAPI dllGetProcessHeap()
 {
-#ifdef  _LINUX
-  CLog::Log(LOGWARNING, "KERNEL32!GetProcessHeap() linux cant provide this service!");
-  return 0;
-#else
   HANDLE hHeap;
   hHeap = GetProcessHeap();
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "KERNEL32!GetProcessHeap() => 0x%x", hHeap);
 #endif
   return hHeap;
-#endif
 }
 
 extern "C" UINT WINAPI dllSetErrorMode(UINT i)
@@ -830,7 +740,7 @@ extern "C" BOOL WINAPI dllTlsFree(DWORD dwTlsIndex)
 
 extern "C" BOOL WINAPI dllTlsSetValue(int dwTlsIndex, LPVOID lpTlsValue)
 {
-  if (dwTlsIndex == -1)
+  if (dwTlsIndex == -1) 
     return FALSE;
   BOOL retval = TlsSetValue(dwTlsIndex, lpTlsValue);
 
@@ -842,7 +752,7 @@ extern "C" BOOL WINAPI dllTlsSetValue(int dwTlsIndex, LPVOID lpTlsValue)
 
 extern "C" LPVOID WINAPI dllTlsGetValue(DWORD dwTlsIndex)
 {
-  if(dwTlsIndex == (DWORD)(-1))
+  if(dwTlsIndex == (DWORD)(-1)) 
     return NULL;
   LPVOID retval = TlsGetValue(dwTlsIndex);
 
@@ -904,11 +814,7 @@ extern "C" DWORD WINAPI dllWaitForSingleObject(HANDLE hHandle, DWORD dwMilisecon
   return WaitForSingleObject(hHandle, dwMiliseconds);
 }
 
-#ifdef _LINUX
-extern "C" DWORD WINAPI dllWaitForMultipleObjects(DWORD nCount, HANDLE *lpHandles, BOOL fWaitAll, DWORD dwMilliseconds)
-#else
 extern "C" DWORD WINAPI dllWaitForMultipleObjects(DWORD nCount, CONST HANDLE *lpHandles, BOOL fWaitAll, DWORD dwMilliseconds)
-#endif
 {
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "WaitForMultipleObjects(..)");
@@ -955,7 +861,7 @@ extern "C" int WINAPI dllGetLocaleInfoA(LCID Locale, LCTYPE LCType, LPTSTR lpLCD
       }
     }
   }
-
+  
   not_implement("kernel32.dll incomplete function GetLocaleInfoA called\n");  //warning
   SetLastError(ERROR_INVALID_FUNCTION);
   return 0;
@@ -963,12 +869,12 @@ extern "C" int WINAPI dllGetLocaleInfoA(LCID Locale, LCTYPE LCType, LPTSTR lpLCD
 
 extern "C" UINT WINAPI dllGetConsoleCP()
 {
-  return 437; // OEM - United States
+  return 437; // OEM - United States 
 }
 
 extern "C" UINT WINAPI dllGetConsoleOutputCP()
 {
-  return 437; // OEM - United States
+  return 437; // OEM - United States 
 }
 
 // emulated because windows expects different behaviour
@@ -986,7 +892,7 @@ extern "C" int WINAPI dllMultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCST
     destinationBufferSize++;
     destinationBuffer = (LPWSTR)malloc(destinationBufferSize * sizeof(WCHAR));
   }
-
+  
   int ret = MultiByteToWideChar(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, destinationBuffer, destinationBufferSize);
 
   if (ret > 0)
@@ -996,18 +902,18 @@ extern "C" int WINAPI dllMultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCST
     if (cchWideChar == 0) {
       ret--;
     }
-
+    
     // revert the first fix again
     if (cbMultiByte > 0 && cbMultiByte == cchWideChar) {
       // the 0 termination character could never have been written on a windows machine
       // because of cchWideChar == cbMultiByte, again xbox added one for it.
       ret--;
-
+      
       memcpy(lpWideCharStr, destinationBuffer, ret * sizeof(WCHAR));
       free(destinationBuffer);
     }
   }
-
+  
   return ret;
 }
 
@@ -1024,7 +930,7 @@ extern "C" int WINAPI dllWideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWS
     destinationBufferSize++;
     destinationBuffer = (LPSTR)malloc(destinationBufferSize * sizeof(char));
   }
-
+  
   int ret = WideCharToMultiByte(CodePage, dwFlags, lpWideCharStr, cchWideChar, destinationBuffer, destinationBufferSize, lpDefaultChar, lpUsedDefaultChar);
 
   if (ret > 0)
@@ -1034,43 +940,39 @@ extern "C" int WINAPI dllWideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWS
     if (cbMultiByte == 0) {
       ret--;
     }
-
+    
     // revert the first fix again
     if (cchWideChar > 0 && cchWideChar == cbMultiByte) {
       // the 0 termination character could never have been written on a windows machine
       // because of cchWideChar == cbMultiByte, again xbox added one for it.
       ret--;
-
+      
       memcpy(lpMultiByteStr, destinationBuffer, ret);
       free(destinationBuffer);
     }
   }
-
+  
   return ret;
 }
 
 extern "C" UINT WINAPI dllSetConsoleCtrlHandler(PHANDLER_ROUTINE HandlerRoutine, BOOL Add)
 {
-#ifdef _WIN32
-  return SetConsoleCtrlHandler(HandlerRoutine, Add);
-#else
   // no consoles exists on the xbox, do nothing
   not_implement("kernel32.dll fake function SetConsoleCtrlHandler called\n");  //warning
   SetLastError(ERROR_INVALID_FUNCTION);
   return 0;
-#endif
 }
 
 typedef struct _SFlsSlot
 {
-  LONG lInUse;
+  LONG lInUse; 
   PVOID	pData;
   PFLS_CALLBACK_FUNCTION pCallback;
 }
 SFlsSlot, *LPSFlsSlot;
 
 #define FLS_NUM_SLOTS 5
-#if defined (_XBOX) || defined (_LINUX)
+#ifdef _XBOX
 #define FLS_OUT_OF_INDEXES (DWORD)0xFFFFFFFF
 #endif
 SFlsSlot flsSlots[FLS_NUM_SLOTS] = { { false, NULL, NULL } };
@@ -1081,8 +983,8 @@ extern "C" DWORD WINAPI dllFlsAlloc(PFLS_CALLBACK_FUNCTION lpCallback)
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "FlsAlloc(0x%x)\n", lpCallback);
 #endif
-  for (i = 0; i < FLS_NUM_SLOTS; i++) {
-    if( InterlockedCompareExchange(&flsSlots[i].lInUse, 1, 0) == 0 ) {
+  for (i = 0; i < FLS_NUM_SLOTS; i++) {    
+    if( InterlockedCompareExchange(&flsSlots[i].lInUse, 1, 0) == 0 ) {      
       flsSlots[i].pData = NULL;
       flsSlots[i].pCallback = lpCallback;
       return i;
@@ -1138,8 +1040,8 @@ extern "C" BOOL WINAPI dllFlsFree(DWORD dwFlsIndex)
 
   if( slot->pCallback )
     slot->pCallback(slot->pData);
-
-  slot->pData = NULL;
+  
+  slot->pData = NULL;  
   slot->lInUse = 0;
 
   return true;
@@ -1193,9 +1095,9 @@ extern "C" DWORD WINAPI dllGetTempPathA(DWORD nBufferLength, LPTSTR lpBuffer)
   // If the function succeeds, the return value is the length, in TCHARs, of the string copied to lpBuffer,
   // not including the terminating null character. If the return value is greater than nBufferLength,
   // the return value is the size of the buffer required to hold the path.
-  const char* tempPath = "special://temp/temp/";
+  const char* tempPath = "Z:\\temp\\";
   unsigned int len = strlen(tempPath);
-
+  
   if (nBufferLength > len)
   {
     strcpy(lpBuffer, tempPath);
@@ -1248,18 +1150,10 @@ extern "C" BOOL WINAPI dllDVDReadFileLayerChangeHack(HANDLE hFile, LPVOID lpBuff
       p++;
     if (p == (BYTE *)lpBuffer + numChecked)
     { // fully NULL block - reread
-#ifdef _WIN32
       LONG low = 0;
       LONG high = 0;
-#else
-      int32_t low = 0;
-      int32_t high = 0;
-#endif
       low = SetFilePointer(hFile, low, &high, FILE_CURRENT);
-      CLog::Log(LOGWARNING,
-                "DVDReadFile() warning - "
-                "invalid data read from block at %i (%i) - rereading",
-                low, high);
+      CLog::Log(LOGWARNING, "DVDReadFile() warning - invalid data read from block at %li (%li) - rereading", low, high);
       SetFilePointer(hFile, (int)numChecked - (int)*lpNumberOfBytesRead - DVD_CHUNK_SIZE, NULL, FILE_CURRENT);
       DWORD numRead;
       ret = ReadFile(hFile, (BYTE *)lpBuffer + numChecked - DVD_CHUNK_SIZE, DVD_CHUNK_SIZE, &numRead, lpOverlapped);
@@ -1269,34 +1163,4 @@ extern "C" BOOL WINAPI dllDVDReadFileLayerChangeHack(HANDLE hFile, LPVOID lpBuff
     numChecked -= DVD_CHUNK_SIZE;
   }
   return ret;
-}
-
-extern "C" LPVOID WINAPI dllLockResource(HGLOBAL hResData)
-{
-#ifdef _WIN32
-  return LockResource(hResData);
-#else
-  not_implement("kernel32.dll fake function LockResource called\n"); //warning
-  return 0;
-#endif
-}
-
-extern "C" SIZE_T WINAPI dllGlobalSize(HGLOBAL hMem)
-{
-#ifdef _WIN32
-  return GlobalSize(hMem);
-#else
-  not_implement("kernel32.dll fake function GlobalSize called\n"); //warning
-  return 0;
-#endif
-}
-
-extern "C" DWORD WINAPI dllSizeofResource(HMODULE hModule, HRSRC hResInfo)
-{
-#ifdef _WIN32
-  return SizeofResource(hModule, hResInfo);
-#else
-  not_implement("kernel32.dll fake function SizeofResource called\n"); //warning
-  return 0;
-#endif
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -18,16 +20,6 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#pragma once
-
-#ifdef __GNUC__
-// under gcc, inline will only take place if optimizations are applied (-O). this will force inline even whith optimizations.
-#define XBMC_FORCE_INLINE __attribute__((always_inline))
-#else
-#define XBMC_FORCE_INLINE
-#endif
-
 
 class CPoint
 {
@@ -91,7 +83,7 @@ public:
     return false;
   };
 
-  inline const CRect &operator -=(const CPoint &point) XBMC_FORCE_INLINE
+  const CRect &operator -=(const CPoint &point)
   {
     x1 -= point.x;
     y1 -= point.y;
@@ -100,7 +92,7 @@ public:
     return *this;
   };
 
-  inline const CRect &operator +=(const CPoint &point) XBMC_FORCE_INLINE
+  const CRect &operator +=(const CPoint &point)
   {
     x1 += point.x;
     y1 += point.y;
@@ -110,7 +102,7 @@ public:
   };
 
   const CRect &Intersect(const CRect &rect)
-  {
+  { 
     if (rect.x2 < x2) x2 = rect.x2;
     if (rect.y2 < y2) y2 = rect.y2;
     if (rect.x1 > x1) x1 = rect.x1;
@@ -120,17 +112,17 @@ public:
     return *this;
   };
 
-  inline bool IsEmpty() const XBMC_FORCE_INLINE
+  bool IsEmpty() const
   {
     return (x2 - x1) * (y2 - y1) == 0;
   };
 
-  inline float Width() const XBMC_FORCE_INLINE
+  inline float Width() const
   {
     return x2 - x1;
   };
 
-  inline float Height() const XBMC_FORCE_INLINE
+  inline float Height() const
   {
     return y2 - y1;
   };

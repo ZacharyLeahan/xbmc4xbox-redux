@@ -25,6 +25,8 @@
 
 #include <queue>
 
+class CGUIImage;
+
 #define TOAST_DISPLAY_TIME   5000L  // default 5 seconds
 #define TOAST_MESSAGE_TIME   1000L  // minimal message time 1 second
 
@@ -40,26 +42,22 @@ public:
     CStdString description;
     CStdString imagefile;
     unsigned int displayTime;
-    bool withSound;
   };
 
-  enum eMessageType { Info = 0, Warning, Error };
-
-  void QueueNotification(eMessageType eType, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime = TOAST_DISPLAY_TIME, bool withSound = true);
   void QueueNotification(const CStdString& aCaption, const CStdString& aDescription);
-  void QueueNotification(const CStdString& aImageFile, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime = TOAST_DISPLAY_TIME, bool withSound = true);
+  void QueueNotification(const CStdString& aImageFile, const CStdString& aCaption, const CStdString& aDescription, unsigned int displayTime = TOAST_DISPLAY_TIME);
   bool DoWork();
 
   virtual bool OnMessage(CGUIMessage& message);
   virtual void OnWindowLoaded();
-  virtual void FrameMove();
+  virtual void Render();
   void ResetTimer();
 
 protected:
 
-  unsigned int m_timer;
+  DWORD m_dwTimer;
 
-  unsigned int m_toastDisplayTime;
+  DWORD m_toastDisplayTime;
 
   CStdString m_defaultIcon;
 

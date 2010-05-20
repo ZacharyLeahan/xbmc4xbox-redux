@@ -19,6 +19,8 @@
  *
  */
 
+#include "stdafx.h"
+#include "inttypes.h"
 #include "MythFile.h"
 #include "DateTime.h"
 #include "FileItem.h"
@@ -26,13 +28,11 @@
 #include "DllLibCMyth.h"
 #include "URL.h"
 #include "DirectoryCache.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 #include "utils/TimeUtils.h"
 
 extern "C" {
-#include "cmyth/include/cmyth/cmyth.h"
-#include "cmyth/include/refmem/refmem.h"
+#include "lib/libcmyth/cmyth.h"
+#include "lib/libcmyth/mvp_refmem.h"
 }
 
 using namespace XFILE;
@@ -42,6 +42,7 @@ static void prog_update_callback(cmyth_proginfo_t prog)
 {
   CLog::Log(LOGDEBUG, "%s - prog_update_callback", __FUNCTION__);
 }
+
 
 void CMythFile::OnEvent(int event, const string& data)
 {

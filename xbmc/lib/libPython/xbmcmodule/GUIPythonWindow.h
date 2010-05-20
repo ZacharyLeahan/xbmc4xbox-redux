@@ -22,22 +22,7 @@
  */
 
 #include "GUIWindow.h"
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "lib/libPython/python/Python.h"
 
 class PyXBMCAction
 {
@@ -46,12 +31,8 @@ public:
   PyObject* pCallbackWindow;
   PyObject* pObject;
   int controlId; // for XML window
-#if defined(_LINUX) || defined(_WIN32)
-  int type; // 0=Action, 1=Control;
-#endif
-
-  PyXBMCAction(): param(0), pCallbackWindow(NULL), pObject(NULL), controlId(0), type(0) { }
-  virtual ~PyXBMCAction() ;
+  PyXBMCAction() { }
+  //virtual ~PyXBMCAction();
 };
 
 int Py_XBMC_Event_OnAction(void* arg);

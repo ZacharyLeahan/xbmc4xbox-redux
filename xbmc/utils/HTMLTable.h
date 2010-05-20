@@ -21,8 +21,6 @@
  *
  */
 
-#include "StdString.h"
-
 namespace HTML
 {
 class CHTMLRow

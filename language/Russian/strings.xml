@@ -86,6 +86,8 @@
   <string id="149">MAC-адрес</string>
   <string id="150">IP-адрес</string>
   <string id="151">Соединение: </string>
+  <string id="152">Half duplex</string>
+  <string id="153">Full duplex</string>
   <string id="154">Накопители</string>
   <string id="155">лоток DVD привода</string>
   <string id="156">Свободно</string>
@@ -114,6 +116,7 @@
   <string id="183">Обзор</string>
   <string id="184">Обновить</string>
   <string id="185">Поиск альбома</string>
+  <string id="186">Ok</string>
   <string id="187">Альбомы не найдены!</string>
   <string id="188">Выбрать все</string>
   <string id="189">Сканирование медиаданных</string>
@@ -179,6 +182,7 @@
   <string id="257">Ошибка</string>
   <string id="258">Читать информацию из тэгов</string>
   <string id="259">Открытие</string>
+  <string id="260">Shoutcast</string>
   <string id="261">Ожидание запуска....</string>
   <string id="262">Лог работы скриптов</string>
   <string id="263">Включить Web-сервер</string>
@@ -189,6 +193,7 @@
   <string id="268">Сорт. по: Названию</string>
   <string id="269">Сорт. по: Исполнителю</string>
   <string id="270">Сорт. по: Альбому</string>
+  <string id="271">Top 100</string>
   <string id="272">Настройка размеров экрана (левый верхний угол)</string>
   <string id="273">Настройка размеров экрана (правый нижний угол)</string>
   <string id="274">Позиция субтитров</string>
@@ -221,6 +226,7 @@
   <string id="303">Задержка</string>
   <string id="304">Язык</string>
   <string id="305">Включено</string>
+  <string id="306">Non-interleaved</string>
   <string id="307">- автоматическая постобработка</string>
   <string id="308">- вертикальный Deblocking-фильтр</string>
   <string id="309">- горизонтальный Deblocking-фильтр</string>
@@ -279,6 +285,7 @@
   <string id="365">Сорт. по: Имени</string>
   <string id="366">Сорт. по: Году</string>
   <string id="367">Сорт. по: Рейтингу</string>
+  <string id="368">IMDB</string>
   <string id="369">Название</string>
   <string id="370">грозы</string>
   <string id="371">местами</string>
@@ -345,9 +352,12 @@
   <string id="438">Открытие файла</string>
   <string id="439">Буферизация</string>
   <string id="440">Жесткий диск</string>
+  <string id="441">UDF</string>
   <string id="442">Локальная сеть</string>
+  <string id="443">Internet</string>
   <string id="444">Видео</string>
   <string id="445">Аудио</string>
+  <string id="446">DVD</string>
   <string id="447">Автозапуск</string>
   <string id="448">LCD-экран</string>
   <string id="449">Включено</string>
@@ -435,6 +445,7 @@
   <string id="540">Широкий крупн.</string>
   <string id="541">Значки альбомов</string>
   <string id="542">Значки DVD</string>
+  <string id="543">DVD</string>
   <string id="544">Сведения</string>
   <string id="545">Устройство вывода звука</string>
   <string id="546">Устройство передачи звука</string>
@@ -450,6 +461,7 @@
   <string id="557">Исполнитель</string>
   <string id="558">Альбом</string>
   <string id="559">Плейлист</string>
+  <string id="560">ID</string>
   <string id="561">Имени файла</string>
   <string id="562">Год</string>
   <string id="563">Рейтинг</string>
@@ -541,7 +553,9 @@
   <string id="708">Использовать HTTP-proxy сервер</string>
   <string id="709">Имя пользователя для HTTP-proxy сервера</string>
   <string id="710">Пароль пользователя для HTTP-proxy сервера</string>
+  <string id="711">Internet Protocol (IP)</string>
   <string id="712">Неправильный порт. Должно быть от 1 до 65535.</string>
+  <string id="713">HTTP-proxy </string>
   <string id="715">- Назначение</string>
   <string id="716">Автоматически (DHCP)</string>
   <string id="717">Вручную (Static)</string>
@@ -565,6 +579,10 @@
   <string id="735">- набор символов</string>
   <string id="736">- стиль</string>
   <string id="737">- цвет</string>
+  <string id="738">Normal</string>
+  <string id="739">Bold</string>
+  <string id="740">Italic</string>
+  <string id="741">Bold Italic</string>
   <string id="742">белый</string>
   <string id="743">желтый</string>
   <string id="744">Файлы</string>
@@ -601,6 +619,9 @@
   <string id="778">- Безопасность беспроводной сети</string>
   <string id="779">Сохранить и применить настройки сетевого интерфейса</string>
   <string id="780">Без шифрования</string>
+  <string id="781">WEP</string>
+  <string id="782">WPA</string>
+  <string id="783">WPA2</string>
   <string id="784">Применение настроек сетевого интерфейса, подождите...</string>
   <string id="785">Сетевой интерфейс перезапущен успешно</string>
   <string id="786">Неудачный запуск сетевого интерфейса</string>
@@ -803,6 +824,19 @@
   <string id="12022">Продолжить с %s</string>
   <string id="12023">Проверка существующих трейнеров...</string>
   <string id="12024">Автоматически создавать эскизы для видео без обложки</string>
+  <string id="12310">0</string>
+  <string id="12311">1</string>
+  <string id="12312">2</string>
+  <string id="12313">3</string>
+  <string id="12314">4</string>
+  <string id="12315">5</string>
+  <string id="12316">6</string>
+  <string id="12317">7</string>
+  <string id="12318">8</string>
+  <string id="12319">9</string>
+  <string id="12320">c</string>
+  <string id="12321">Ok</string>
+  <string id="12322">*</string>
   <string id="12325">Заблокировано! Введите код...</string>
   <string id="12326">Введите пароль</string>
   <string id="12327">Введите код защиты</string>
@@ -864,6 +898,8 @@
   <string id="13007">Особый путь к Dashboard</string>
   <string id="13008">Режим выключения</string>
   <string id="13009">Выход</string>
+  <string id="13010">Hibernate</string>
+  <string id="13011">Suspend</string>
   <string id="13012">Выход из</string>
   <string id="13013">Перезагрузка</string>
   <string id="13014">Свернуть</string>
@@ -889,6 +925,7 @@
   <string id="13116">Метод масштабирования</string>
   <string id="13117">Бикубический</string>
   <string id="13120">Strict Pixmap-Texture Binding (перезагрузить)</string>
+  <string id="13119">Sinc</string>
   <string id="13130">Гашение экрана</string>
   <string id="13131">Отключено</string>
   <string id="13132">Погасить экраны</string>
@@ -1198,6 +1235,7 @@
   <string id="15109">Стандартное оформление</string>
   <string id="15111">- тема офориления</string>
   <string id="15112">Стандартная тема</string>
+  <string id="15200">Last.fm</string>
   <string id="15201">Отправлять статистику на Last.fm</string>
   <string id="15202">Имя пользователя для Last.fm</string>
   <string id="15203">Пароль для Last.fm</string>
@@ -1290,6 +1328,9 @@
   <string id="16017">Строка поиска</string>
   <string id="16018">Ничего</string>
   <string id="16019">Автовыбор</string>
+  <string id="16020">De-interlace</string>
+  <string id="16021">Bob</string>
+  <string id="16022">Bob (inverted)</string>
   <string id="16023">Черезстрочная обработка</string>
   <string id="16024">Отменяется...</string>
   <string id="16025">Введите название исполнителя</string>
@@ -1324,6 +1365,9 @@
   <string id="16301">Ближайший соседний</string>
   <string id="16302">Билинейный</string>
   <string id="16303">Бикубический</string>
+  <string id="16304">Lanczos2</string>
+  <string id="16305">Lanczos3</string>
+  <string id="16306">Sinc8</string>
   <string id="16307">Bicubic (программный)</string>
   <string id="16308">Lanczos (программный)</string>
   <string id="16309">Sinc (программный)</string>
@@ -1352,6 +1396,8 @@
   <string id="20017">Локальный эскиз</string>
   <string id="20018">Без эскиза</string>
   <string id="20019">Выбрать эскиз</string>
+  <string id="20022">
+  </string>
   <string id="20023">Конфликт</string>
   <string id="20024">Сканировать новое</string>
   <string id="20025">Сканировать все</string>
@@ -1445,6 +1491,9 @@
   <string id="20125">Вход произведен от имени</string>
   <string id="20126">Выход</string>
   <string id="20128">Перейти к корню</string>
+  <string id="20129">Weave</string>
+  <string id="20130">Weave (inverted)</string>
+  <string id="20131">Blend</string>
   <string id="20132">Перезапустить видео</string>
   <string id="20133">Изменить сетевое расположение</string>
   <string id="20134">Удалить сетевое расположение</string>
@@ -1491,6 +1540,8 @@
   <string id="20175">Сервер UPnP</string>
   <string id="20176">Показывать информацию о видео</string>
   <string id="20177">Enter</string>
+  <string id="20178">Shift</string>
+  <string id="20179">Caps Lock</string>
   <string id="20180">Символы</string>
   <string id="20181">&lt;--- Backspace</string>
   <string id="20182">Пробел</string>
@@ -1761,6 +1812,7 @@
   <string id="21834">Баланс белого</string>
   <string id="21835">Источник света</string>
   <string id="21836">Режим измерения</string>
+  <string id="21837">Значение ISO</string>
   <string id="21838">Цифровой zoom</string>
   <string id="21839">Ширина CCD</string>
   <string id="21840">GPS широта</string>

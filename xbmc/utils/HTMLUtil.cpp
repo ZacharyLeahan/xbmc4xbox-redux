@@ -19,7 +19,7 @@
  *
  */
 
-#include "CharsetConverter.h"
+#include "stdafx.h"
 #include "HTMLUtil.h"
 
 using namespace std;

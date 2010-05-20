@@ -21,8 +21,6 @@
  *
  */
 
-#ifndef _LINUX
-
 #include "WinRenderer.h"
 #include "utils/SharedSection.h"
 
@@ -35,10 +33,11 @@ public:
   // Functions called from the GUI
   void GetVideoRect(RECT &rs, RECT &rd) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->GetVideoRect(rs, rd); };
   float GetAspectRatio() { CSharedLock lock(m_sharedSection); if (m_pRenderer) return m_pRenderer->GetAspectRatio(); else return 1.0f; };
+  void AutoCrop(bool bCrop = true) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->AutoCrop(bCrop); };
   void Update(bool bPauseDrawing);
   void RenderUpdate(bool clear, DWORD flags = 0, DWORD alpha = 255);
   void SetupScreenshot();
-  void CreateThumbnail(XBMC::SurfacePtr surface, unsigned int width, unsigned int height);
+  void CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height);
   void SetViewMode(int iViewMode) { CSharedLock lock(m_sharedSection); if (m_pRenderer) m_pRenderer->SetViewMode(iViewMode); };
 
   // Functions called from mplayer
@@ -105,6 +104,3 @@ protected:
 
 extern CWinRenderManager g_renderManager;
 
-#else
-#include "RenderManager.h"
-#endif

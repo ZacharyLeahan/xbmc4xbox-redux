@@ -24,9 +24,10 @@
 #include "Util.h"
 #include "URL.h"
 #include "FileSystem/MultiPathDirectory.h"
+#include "Utils/MemoryUnitManager.h"
 
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 bool CMediaSource::IsWritable() const
 {
@@ -65,6 +66,8 @@ void CMediaSource::FromNameAndPaths(const CStdString &category, const CStdString
     m_iDriveType = SOURCE_TYPE_VIRTUAL_DVD;
     strPath = "D:\\";
   }
+  else if (strPath.Left(11).Equals("soundtrack:"))
+    m_iDriveType = SOURCE_TYPE_LOCAL;
   else if (CUtil::IsISO9660(strPath))
     m_iDriveType = SOURCE_TYPE_VIRTUAL_DVD;
   else if (CUtil::IsDVD(strPath))
@@ -91,31 +94,12 @@ bool CMediaSource::operator==(const CMediaSource &share) const
   return true;
 }
 
-void AddOrReplace(VECSOURCES& sources, const VECSOURCES& extras)
-{
-  unsigned int i;
-  for( i=0;i<extras.size();++i )
-  {
-    unsigned int j;
-    for ( j=0;j<sources.size();++j)
-    {
-      if (sources[j].strPath.Equals(extras[i].strPath))
-      {
-        sources[j] = extras[i];
-        break;
-      }
-    }
-    if (j == sources.size())
-      sources.push_back(extras[i]);
-  }
-}
-
 void AddOrReplace(VECSOURCES& sources, const CMediaSource& source)
 {
   unsigned int i;
   for( i=0;i<sources.size();++i )
   {
-    if (sources[i].strPath.Equals(source.strPath))
+    if (sources[i].strPath.Equals(source.strPath)) 
     {
       sources[i] = source;
       break;

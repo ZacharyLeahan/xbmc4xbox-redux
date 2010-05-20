@@ -1,6 +1,6 @@
 /*!
 \file GUIProgressControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIPROGRESSCONTROL_H
@@ -34,26 +34,26 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIProgressControl :
       public CGUIControl
 {
 public:
-  CGUIProgressControl(int parentID, int controlID, float posX, float posY,
-                      float width, float height, const CTextureInfo& backGroundTexture,
-                      const CTextureInfo& leftTexture, const CTextureInfo& midTexture,
-                      const CTextureInfo& rightTexture, const CTextureInfo& overlayTexture,
+  CGUIProgressControl(int parentID, int controlID, float posX, float posY, 
+                      float width, float height, const CTextureInfo& backGroundTexture, 
+                      const CTextureInfo& leftTexture, const CTextureInfo& midTexture, 
+                      const CTextureInfo& rightTexture, const CTextureInfo& overlayTexture, 
                       float min, float max, bool reveal=false);
   virtual ~CGUIProgressControl(void);
   virtual CGUIProgressControl *Clone() const { return new CGUIProgressControl(*this); };
 
   virtual void Render();
   virtual bool CanFocus() const;
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual bool OnMessage(CGUIMessage& message);
   virtual void SetPosition(float posX, float posY);
   void SetPercentage(float fPercent);

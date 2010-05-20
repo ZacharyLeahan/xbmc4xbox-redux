@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowMusicPlaylist.h"
 #include "GUIDialogSmartPlaylistEditor.h"
 #include "Util.h"
@@ -31,19 +32,15 @@
 #include "MusicInfoTag.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogKeyboard.h"
-#include "GUIUserMessages.h"
 #include "Favourites.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "StringUtils.h"
-#include "utils/log.h"
 
 using namespace PLAYLIST;
 
 #define CONTROL_BTNVIEWASICONS     2
 #define CONTROL_BTNSORTBY          3
 #define CONTROL_BTNSORTASC         4
+#define CONTROL_LIST              50
+#define CONTROL_THUMBS            51
 #define CONTROL_LABELFILES        12
 
 #define CONTROL_BTNSHUFFLE        20
@@ -104,7 +101,7 @@ bool CGUIWindowMusicPlayList::OnMessage(CGUIMessage& message)
   case GUI_MSG_WINDOW_INIT:
     {
       // Setup item cache for tagloader
-      m_musicInfoLoader.UseCacheOnHD("special://temp/MusicPlaylist.fi");
+      m_musicInfoLoader.UseCacheOnHD("Z:\\MusicPlaylist.fi");
 
       m_vecItems->m_strPath="playlistmusic://";
 
@@ -137,7 +134,7 @@ bool CGUIWindowMusicPlayList::OnMessage(CGUIMessage& message)
         if (!g_partyModeManager.IsEnabled())
         {
           g_playlistPlayer.SetShuffle(PLAYLIST_MUSIC, !(g_playlistPlayer.IsShuffled(PLAYLIST_MUSIC)));
-          g_settings.m_bMyMusicPlaylistShuffle = g_playlistPlayer.IsShuffled(PLAYLIST_MUSIC);
+          g_stSettings.m_bMyMusicPlaylistShuffle = g_playlistPlayer.IsShuffled(PLAYLIST_MUSIC);
           g_settings.Save();
           UpdateButtons();
           Update(m_vecItems->m_strPath);
@@ -187,7 +184,7 @@ bool CGUIWindowMusicPlayList::OnMessage(CGUIMessage& message)
           g_playlistPlayer.SetRepeat(PLAYLIST_MUSIC, PLAYLIST::REPEAT_NONE);
 
         // save settings
-        g_settings.m_bMyMusicPlaylistRepeat = g_playlistPlayer.GetRepeat(PLAYLIST_MUSIC) == PLAYLIST::REPEAT_ALL;
+        g_stSettings.m_bMyMusicPlaylistRepeat = g_playlistPlayer.GetRepeat(PLAYLIST_MUSIC) == PLAYLIST::REPEAT_ALL;
         g_settings.Save();
 
         UpdateButtons();
@@ -211,23 +208,23 @@ bool CGUIWindowMusicPlayList::OnMessage(CGUIMessage& message)
 
 bool CGUIWindowMusicPlayList::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PARENT_DIR)
+  if (action.id == ACTION_PARENT_DIR)
   {
     // Playlist has no parent dirs
     return true;
   }
-  if (action.GetID() == ACTION_SHOW_PLAYLIST)
+  if (action.id == ACTION_SHOW_PLAYLIST)
   {
     g_windowManager.ChangeActiveWindow(WINDOW_MUSIC);
     return true;
   }
-  if ((action.GetID() == ACTION_MOVE_ITEM_UP) || (action.GetID() == ACTION_MOVE_ITEM_DOWN))
+  if ((action.id == ACTION_MOVE_ITEM_UP) || (action.id == ACTION_MOVE_ITEM_DOWN))
   {
     int iItem = -1;
     int iFocusedControl = GetFocusedControlID();
     if (m_viewControl.HasControl(iFocusedControl))
       iItem = m_viewControl.GetSelectedItem();
-    OnMove(iItem, action.GetID());
+    OnMove(iItem, action.id);
     return true;
   }
   return CGUIWindowMusicBase::OnAction(action);
@@ -278,7 +275,7 @@ void CGUIWindowMusicPlayList::SavePlayList()
     // need 2 rename it
     CStdString strFolder, strPath;
     CUtil::AddFileToFolder(g_guiSettings.GetString("system.playlistspath"), "music", strFolder);
-    strNewFileName= CUtil::MakeLegalFileName( strNewFileName );
+    CUtil::RemoveIllegalChars( strNewFileName );
     strNewFileName += ".m3u";
     CUtil::AddFileToFolder(strFolder, strNewFileName, strPath);
 
@@ -387,7 +384,7 @@ void CGUIWindowMusicPlayList::UpdateButtons()
       CONTROL_DISABLE(CONTROL_BTNNEXT);
       CONTROL_DISABLE(CONTROL_BTNPREVIOUS);
     }
-  }
+    }
   else
   {
     // disable buttons if party mode is enabled too
@@ -502,7 +499,7 @@ bool CGUIWindowMusicPlayList::Update(const CStdString& strDirectory)
 
   if (!CGUIWindowMusicBase::Update(strDirectory))
     return false;
-
+  
   if (m_vecItems->GetContent().IsEmpty())
     m_vecItems->SetContent("songs");
 
@@ -582,7 +579,7 @@ bool CGUIWindowMusicPlayList::OnContextButton(int itemNumber, CONTEXT_BUTTON but
   case CONTEXT_BUTTON_DELETE:
     RemovePlayListItem(itemNumber);
     return true;
-
+  
   case CONTEXT_BUTTON_ADD_FAVOURITE:
     {
       CFileItemPtr item = m_vecItems->Get(itemNumber);

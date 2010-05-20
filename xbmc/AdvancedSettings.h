@@ -21,19 +21,10 @@
  */
 
 #include <vector>
+
+#include "tinyXML/tinyxml.h"
 #include "StdString.h"
-
-class TiXmlElement;
-
-struct DatabaseSettings
-{
-  CStdString type;
-  CStdString host;
-  CStdString port;
-  CStdString user;
-  CStdString pass;
-  CStdString name;
-};
+#include "StringUtils.h"
 
 struct TVShowRegexp
 {
@@ -53,8 +44,6 @@ class CAdvancedSettings
   public:
     CAdvancedSettings();
 
-    void Initialize();
-
     bool Load();
     void Clear();
 
@@ -64,9 +53,12 @@ class CAdvancedSettings
     static void GetCustomExtensions(TiXmlElement *pRootElement, CStdString& extensions);
 
     // multipath testing
+   // multipath testing
     bool m_useMultipaths;
+    bool m_DisableModChipDetection;
 
     int m_audioHeadRoom;
+    float m_karaokeSyncDelay;
     float m_ac3Gain;
     CStdString m_audioDefaultPlayer;
     float m_audioPlayCountMinimumPercent;
@@ -86,6 +78,7 @@ class CAdvancedSettings
     int m_videoPercentSeekForwardBig;
     int m_videoPercentSeekBackwardBig;
     CStdString m_videoPPFFmpegType;
+
     bool m_musicUseTimeSeeking;
     int m_musicTimeSeekForward;
     int m_musicTimeSeekBackward;
@@ -99,17 +92,13 @@ class CAdvancedSettings
     int m_videoBlackBarColour;
     int m_videoIgnoreAtStart;
     int m_videoIgnoreAtEnd;
-    CStdString m_audioHost;
     bool m_audioApplyDrc;
 
-    int   m_videoHighQualityScaling;
-    int   m_videoHighQualityScalingMethod;
-    bool  m_videoVDPAUScaling;
-    float m_videoNonLinStretchRatio;
-
     CStdString m_videoDefaultPlayer;
-    CStdString m_videoDefaultDVDPlayer;
+
     float m_videoPlayCountMinimumPercent;
+
+    int m_cacheMemBufferSize;
 
     float m_slideshowBlackBarCompensation;
     float m_slideshowZoomAmount;
@@ -121,22 +110,14 @@ class CAdvancedSettings
     int m_lcdAddress2;
     int m_lcdAddress3;
     int m_lcdAddress4;
-    bool m_lcdHeartbeat;
-    bool m_lcdDimOnScreenSave;
-    int m_lcdScrolldelay;
-    CStdString m_lcdHostName;
 
     int m_autoDetectPingTime;
 
     int m_songInfoDuration;
     int m_busyDialogDelay;
     int m_logLevel;
-    int m_logLevelHint;
     CStdString m_cddbAddress;
-
-    bool m_handleMounting;
-
-    bool m_fullScreenOnMovieStart;
+    bool m_usePCDVDROM;
     bool m_noDVDROM;
     CStdString m_cachePath;
     bool m_displayRemoteCodes;
@@ -155,18 +136,18 @@ class CAdvancedSettings
     CStdStringArray m_pathSubstitutions;
     int m_remoteRepeat;
     float m_controllerDeadzone;
+    bool m_FTPShowCache;
 
     bool m_playlistAsFolders;
     bool m_detectAsUdf;
 
     int m_thumbSize;
     int m_fanartHeight;
-    bool m_useDDSFanart;
 
     int m_sambaclienttimeout;
     CStdString m_sambadoscodepage;
     bool m_sambastatfiles;
-
+   
     bool m_bHTTPDirectoryStatFilesize;
 
     bool m_bFTPThumbs;
@@ -223,37 +204,14 @@ class CAdvancedSettings
     int m_curllowspeedtime;
     int m_curlretries;
 
-    bool m_fullScreen;
-    bool m_startFullScreen;
-    bool m_alwaysOnTop;  /* makes xbmc to run always on top .. osx/win32 only .. */
     int m_playlistRetries;
     int m_playlistTimeout;
-    bool m_GLRectangleHack;
     int m_iSkipLoopFilter;
-    float m_ForcedSwapTime; /* if nonzero, set's the explicit time in ms to allocate for buffer swap */
-
-    float m_sleepBeforeFlip; ///< if greather than zero, XBMC waits for raster to be this amount through the frame prior to calling the flip
-    bool m_bVirtualShares;
-
-    float m_karaokeSyncDelayCDG; // seems like different delay is needed for CDG and MP3s
-    float m_karaokeSyncDelayLRC;
-    bool m_karaokeChangeGenreForKaraokeSongs;
-    bool m_karaokeKeepDelay; // store user-changed song delay in the database
-    int m_karaokeStartIndex; // auto-assign numbering start from this value
-    bool m_karaokeAlwaysEmptyOnCdgs; // always have empty background on CDG files
-    bool m_karaokeUseSongSpecificBackground; // use song-specific video or image if available instead of default
-    CStdString m_karaokeDefaultBackgroundType; // empty string or "vis", "image" or "video"
-    CStdString m_karaokeDefaultBackgroundFilePath; // only for "image" or "video" types above
-
-    CStdString m_cpuTempCmd;
-    CStdString m_gpuTempCmd;
+    bool m_bVirtualShares; 
+    bool m_bNavVKeyboard; // if true we navigate the virtual keyboard using cursor keys
+    
+    bool m_bPythonVerbose;
     int m_bgInfoLoaderMaxThreads;
-
-    bool m_measureRefreshrate; //when true the videoreferenceclock will measure the refreshrate when direct3d is used
-                               //otherwise it will use the windows refreshrate
-
-    DatabaseSettings m_databaseMusic; // advanced music database setup
-    DatabaseSettings m_databaseVideo; // advanced video database setup
 };
 
 extern CAdvancedSettings g_advancedSettings;

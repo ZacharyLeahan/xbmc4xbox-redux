@@ -19,6 +19,7 @@
  *
  */
 
+#include "include.h"
 #include "GUIToggleButtonControl.h"
 #include "GUIWindowManager.h"
 #include "GUIDialog.h"
@@ -63,11 +64,17 @@ void CGUIToggleButtonControl::Render()
 
 bool CGUIToggleButtonControl::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_SELECT_ITEM)
+  if (action.id == ACTION_SELECT_ITEM)
   {
     m_bSelected = !m_bSelected;
   }
   return CGUIButtonControl::OnAction(action);
+}
+
+void CGUIToggleButtonControl::PreAllocResources()
+{
+  CGUIButtonControl::PreAllocResources();
+  m_selectButton.PreAllocResources();
 }
 
 void CGUIToggleButtonControl::AllocResources()
@@ -76,10 +83,10 @@ void CGUIToggleButtonControl::AllocResources()
   m_selectButton.AllocResources();
 }
 
-void CGUIToggleButtonControl::FreeResources(bool immediately)
+void CGUIToggleButtonControl::FreeResources()
 {
-  CGUIButtonControl::FreeResources(immediately);
-  m_selectButton.FreeResources(immediately);
+  CGUIButtonControl::FreeResources();
+  m_selectButton.FreeResources();
 }
 
 void CGUIToggleButtonControl::DynamicResourceAlloc(bool bOnOff)
@@ -137,7 +144,7 @@ CStdString CGUIToggleButtonControl::GetLabel() const
   return CGUIButtonControl::GetLabel();
 }
 
-void CGUIToggleButtonControl::SetAltClickActions(const vector<CGUIActionDescriptor> &clickActions)
+void CGUIToggleButtonControl::SetAltClickActions(const vector<CStdString> &clickActions)
 {
   m_selectButton.SetClickActions(clickActions);
 }

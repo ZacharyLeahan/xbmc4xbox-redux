@@ -19,26 +19,23 @@
  *
  */
 
+#include "stdafx.h"
 #include "XMLUtils.h"
 #include "MusicInfoScraper.h"
 #include "HTMLUtil.h"
 #include "HTMLTable.h"
 #include "Util.h"
 #include "ScraperParser.h"
-#include "CharsetConverter.h"
-#include "log.h"
 
 using namespace MUSIC_GRABBER;
 using namespace HTML;
-using namespace ADDON;
-
-CMusicInfoScraper::CMusicInfoScraper(const ADDON::ScraperPtr &scraper)
+CMusicInfoScraper::CMusicInfoScraper(const SScraperInfo& info)
 {
   m_bSuccessfull=false;
   m_bCanceled=false;
   m_iAlbum=-1;
   m_iArtist=-1;
-  m_scraper = scraper;
+  m_info = info;
 }
 
 CMusicInfoScraper::~CMusicInfoScraper(void)
@@ -92,19 +89,27 @@ void CMusicInfoScraper::FindAlbuminfo()
 
   CScraperParser parser;
   parser.ClearCache();
-  if (!parser.Load(m_scraper) || !parser.HasFunction("CreateAlbumSearchUrl"))
+
+  if (!parser.Load("special://xbmc/system/scrapers/music/" + m_info.strPath) || !parser.HasFunction("CreateAlbumSearchUrl"))
     return;
+
+  if (!m_info.settings.GetPluginRoot() && m_info.settings.GetSettings().IsEmpty() && parser.HasFunction("GetSettings"))
+  {
+    m_info.settings.LoadSettingsXML("special://xbmc/system/scrapers/music/" + m_info.strPath);
+    m_info.settings.SaveFromDefault();
+  }
 
   parser.m_param[0] = strAlbum;
   parser.m_param[1] = m_strArtist;
   CUtil::URLEncode(parser.m_param[0]);
   CUtil::URLEncode(parser.m_param[1]);
 
-  CLog::Log(LOGDEBUG, "%s: Searching for '%s - %s' using %s scraper (file: '%s', content: '%s')",
-    __FUNCTION__, m_strArtist.c_str(), strAlbum.c_str(), m_scraper->Name().c_str(), m_scraper->Path().c_str(), ADDON::TranslateContent(m_scraper->Content()).c_str());
+  CLog::Log(LOGDEBUG, "%s: Searching for '%s - %s' using %s scraper (file: '%s', content: '%s', language: '%s', date: '%s', framework: '%s')",
+    __FUNCTION__, m_strArtist.c_str(), strAlbum.c_str(), m_info.strTitle.c_str(), m_info.strPath.c_str(), m_info.strContent.c_str(), m_info.strLanguage.c_str(), m_info.strDate.c_str(), m_info.strFramework.c_str());
+
 
   CScraperUrl scrURL;
-  scrURL.ParseString(parser.Parse("CreateAlbumSearchUrl"));
+  scrURL.ParseString(parser.Parse("CreateAlbumSearchUrl",&m_info.settings));
   if (!CScraperUrl::Get(scrURL.m_url[0], strHTML, m_http, parser.GetFilename()) || strHTML.size() == 0)
   {
     CLog::Log(LOGERROR, "%s: Unable to retrieve web site",__FUNCTION__);
@@ -112,7 +117,7 @@ void CMusicInfoScraper::FindAlbuminfo()
   }
 
   parser.m_param[0] = strHTML;
-  CStdString strXML = parser.Parse("GetAlbumSearchResults");
+  CStdString strXML = parser.Parse("GetAlbumSearchResults",&m_info.settings);
   CLog::Log(LOGDEBUG,"scraper: GetAlbumSearchResults returns %s",strXML.c_str());
   if (strXML.IsEmpty())
   {
@@ -182,7 +187,7 @@ void CMusicInfoScraper::FindAlbuminfo()
     }
     album = album->NextSiblingElement();
   }
-
+  
   if (m_vecAlbums.size()>0)
     m_bSuccessfull=true;
 
@@ -197,23 +202,24 @@ void CMusicInfoScraper::FindArtistinfo()
 
   CScraperParser parser;
   parser.ClearCache();
-  if (!parser.Load(m_scraper) || !parser.HasFunction("CreateAlbumSearchUrl"))
+
+  if (!parser.Load("special://xbmc/system/scrapers/music/" + m_info.strPath) || !parser.HasFunction("CreateArtistSearchUrl"))
     return;
 
-  if (!m_scraper->GetSettingsXML() && parser.HasFunction("GetSettings"))
+  if (!m_info.settings.GetPluginRoot() && m_info.settings.GetSettings().IsEmpty() && parser.HasFunction("GetSettings"))
   {
-    m_scraper->LoadSettings();
-    m_scraper->SaveFromDefault();
+    m_info.settings.LoadSettingsXML("special://xbmc/system/scrapers/music/" + m_info.strPath);
+    m_info.settings.SaveFromDefault();
   }
 
   parser.m_param[0] = m_strArtist;
   CUtil::URLEncode(parser.m_param[0]);
 
-  CLog::Log(LOGDEBUG, "%s: Searching for '%s' using %s scraper (file: '%s', content: '%s')",
-    __FUNCTION__, m_strArtist.c_str(), m_scraper->Name().c_str(), m_scraper->Path().c_str(), ADDON::TranslateContent(m_scraper->Content()).c_str());
+  CLog::Log(LOGDEBUG, "%s: Searching for '%s' using %s scraper (file: '%s', content: '%s', language: '%s', date: '%s', framework: '%s')",
+    __FUNCTION__, m_strArtist.c_str(), m_info.strTitle.c_str(), m_info.strPath.c_str(), m_info.strContent.c_str(), m_info.strLanguage.c_str(), m_info.strDate.c_str(), m_info.strFramework.c_str());
 
   CScraperUrl scrURL;
-  scrURL.ParseString(parser.Parse("CreateArtistSearchUrl"));
+  scrURL.ParseString(parser.Parse("CreateArtistSearchUrl",&m_info.settings));
   if (!CScraperUrl::Get(scrURL.m_url[0], strHTML, m_http, parser.GetFilename()) || strHTML.size() == 0)
   {
     CLog::Log(LOGERROR, "%s: Unable to retrieve web site",__FUNCTION__);
@@ -221,7 +227,7 @@ void CMusicInfoScraper::FindArtistinfo()
   }
 
   parser.m_param[0] = strHTML;
-  CStdString strXML = parser.Parse("GetArtistSearchResults");
+  CStdString strXML = parser.Parse("GetArtistSearchResults",&m_info.settings);
   CLog::Log(LOGDEBUG,"scraper: GetArtistSearchResults returns %s",strXML.c_str());
   if (strXML.IsEmpty())
   {
@@ -272,7 +278,7 @@ void CMusicInfoScraper::FindArtistinfo()
     }
     artist = artist->NextSiblingElement();
   }
-
+  
   if (m_vecArtists.size()>0)
     m_bSuccessfull=true;
 
@@ -302,7 +308,7 @@ void CMusicInfoScraper::LoadAlbuminfo()
 
   CMusicAlbumInfo& album=m_vecAlbums[m_iAlbum];
   album.GetAlbum().strArtist.Empty();
-  if (album.Load(m_http,m_scraper))
+  if (album.Load(m_http,m_info))
     m_bSuccessfull=true;
 }
 
@@ -313,7 +319,7 @@ void CMusicInfoScraper::LoadArtistinfo()
 
   CMusicArtistInfo& artist=m_vecArtists[m_iArtist];
   artist.GetArtist().strArtist.Empty();
-  if (artist.Load(m_http,m_scraper))
+  if (artist.Load(m_http,m_info))
     m_bSuccessfull=true;
 }
 
@@ -380,13 +386,9 @@ void CMusicInfoScraper::Process()
 bool CMusicInfoScraper::CheckValidOrFallback(const CStdString &fallbackScraper)
 {
   CScraperParser parser;
-  if (parser.Load(m_scraper))
+  if (parser.Load("special://xbmc/system/scrapers/music/" + m_info.strPath))
     return true;
-  else
-    return false;
-/*
- * TODO handle fallback mechanism
-  if (m_scraper->Path() != fallbackScraper &&
+  if (m_info.strPath != fallbackScraper &&
       parser.Load("special://xbmc/system/scrapers/music/" + fallbackScraper))
   {
     CLog::Log(LOGWARNING, "%s - scraper %s fails to load, falling back to %s", __FUNCTION__, m_info.strPath.c_str(), fallbackScraper.c_str());
@@ -399,5 +401,5 @@ bool CMusicInfoScraper::CheckValidOrFallback(const CStdString &fallbackScraper)
     m_info.settings.LoadSettingsXML("special://xbmc/system/scrapers/music/" + m_info.strPath);
     return true;
   }
-  return false; */
+  return false;
 }

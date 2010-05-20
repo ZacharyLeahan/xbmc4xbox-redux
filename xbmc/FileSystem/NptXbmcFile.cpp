@@ -2,36 +2,15 @@
 |
 |   Neptune - Files :: XBMC Implementation
 |
-| Copyright (c) 2002-2008, Axiomatic Systems, LLC.
-| All rights reserved.
-|
-| Redistribution and use in source and binary forms, with or without
-| modification, are permitted provided that the following conditions are met:
-|     * Redistributions of source code must retain the above copyright
-|       notice, this list of conditions and the following disclaimer.
-|     * Redistributions in binary form must reproduce the above copyright
-|       notice, this list of conditions and the following disclaimer in the
-|       documentation and/or other materials provided with the distribution.
-|     * Neither the name of Axiomatic Systems nor the
-|       names of its contributors may be used to endorse or promote products
-|       derived from this software without specific prior written permission.
-|
-| THIS SOFTWARE IS PROVIDED BY AXIOMATIC SYSTEMS ''AS IS'' AND ANY
-| EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-| WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-| DISCLAIMED. IN NO EVENT SHALL AXIOMATIC SYSTEMS BE LIABLE FOR ANY
-| DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-| (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-| LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-| ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-| (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-| SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+|   (c) 2001-2006 Gilles Boccon-Gibod
+|   Author: Gilles Boccon-Gibod (bok@bok.net)
 |
  ****************************************************************/
 
 /*----------------------------------------------------------------------
 |   includes
 +---------------------------------------------------------------------*/
+#include "stdafx.h"
 #include "IFile.h"
 #include "FileFactory.h"
 #include "utils/log.h"
@@ -89,7 +68,7 @@ protected:
 NPT_Result
 NPT_XbmcFileStream::Seek(NPT_Position offset)
 {
-    int64_t result;
+    __int64 result;
 
     result = m_FileReference->Seek(offset, SEEK_SET)    ;
     if (result >= 0) {
@@ -105,7 +84,7 @@ NPT_XbmcFileStream::Seek(NPT_Position offset)
 NPT_Result
 NPT_XbmcFileStream::Tell(NPT_Position& offset)
 {
-    int64_t result = m_FileReference->GetPosition();
+    __int64 result = m_FileReference->GetPosition();
     if (result >= 0) {
         offset = (NPT_Position)result;
         return NPT_SUCCESS;
@@ -195,7 +174,7 @@ NPT_XbmcFileInputStream::GetSize(NPT_LargeSize& size)
 NPT_Result
 NPT_XbmcFileInputStream::GetAvailable(NPT_LargeSize& available)
 {
-    int64_t offset = m_FileReference->GetPosition();
+    __int64 offset = m_FileReference->GetPosition();
     NPT_LargeSize size = 0;
 
     if (NPT_SUCCEEDED(GetSize(size)) && offset >= 0 && (NPT_LargeSize)offset <= size) {
@@ -433,4 +412,5 @@ NPT_File::operator=(const NPT_File& file)
     }
     return *this;
 }
+
 

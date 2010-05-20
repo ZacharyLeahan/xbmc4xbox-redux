@@ -1,6 +1,6 @@
 /*!
 \file GUIControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUICONTROL_H
@@ -29,16 +29,48 @@
  */
 
 #include "GraphicContext.h" // needed by any rendering operation (all controls)
+#include "Key.h"            // needed by practically all controls (CAction + defines)
 #include "GUIMessage.h"     // needed by practically all controls
+#include "GUIFont.h"        // needed for the CAngle member (CLabelInfo) among other stuff
 #include "VisibleEffect.h"  // needed for the CAnimation members
-#include "GUIInfoTypes.h"   // needed for CGUIInfoColor to handle infolabel'ed colors
-#include "GUIActionDescriptor.h"
+#include "GUIInfoTypes.h"   // needed for CGuiInfoColor to handle infolabel'ed colors
 
 class CGUIListItem; // forward
-class CAction;
-class CMouseEvent;
 
 enum ORIENTATION { HORIZONTAL = 0, VERTICAL };
+
+class CLabelInfo
+{
+public:
+  CLabelInfo()
+  {
+    font = NULL;
+    align = XBFONT_LEFT;
+    offsetX = offsetY = 0;
+    width = 0;
+    angle = 0;
+  };
+  void UpdateColors()
+  {
+    textColor.Update();
+    shadowColor.Update();
+    selectedColor.Update();
+    disabledColor.Update();
+    focusedColor.Update();
+  };
+
+  CGUIInfoColor textColor;
+  CGUIInfoColor shadowColor;
+  CGUIInfoColor selectedColor;
+  CGUIInfoColor disabledColor;
+  CGUIInfoColor focusedColor;
+  uint32_t align;
+  float offsetX;
+  float offsetY;
+  float width;
+  float angle;
+  CGUIFont *font;
+};
 
 class CControlState
 {
@@ -53,17 +85,6 @@ public:
 };
 
 /*!
- \brief Results of OnMouseEvent()
- Any value not equal to EVENT_RESULT_UNHANDLED indicates that the event was handled.
- */
-enum EVENT_RESULT { EVENT_RESULT_UNHANDLED = 0,
-                    EVENT_RESULT_HANDLED,
-                    EVENT_RESULT_PAN_HORIZONTAL,
-                    EVENT_RESULT_PAN_VERTICAL,
-                    EVENT_RESULT_ROTATE,
-                    EVENT_RESULT_ZOOM };
-
-/*!
  \ingroup controls
  \brief Base class for controls
  */
@@ -75,7 +96,7 @@ public:
   virtual ~CGUIControl(void);
   virtual CGUIControl *Clone() const=0;
 
-  virtual void DoRender(unsigned int currentTime);
+  virtual void DoRender(DWORD currentTime);
   virtual void Render();
   bool HasRendered() const { return m_hasRendered; };
 
@@ -93,47 +114,25 @@ public:
   virtual void OnDown();
   virtual void OnLeft();
   virtual void OnRight();
-  virtual void OnNextControl();
-  virtual void OnPrevControl();
   virtual void OnFocus() {};
   virtual void OnUnFocus() {};
 
-  /*! \brief React to a mouse event
-
-   Mouse events are sent from the window to all controls, and each control can react based on the event
-   and location of the event.
-
-   \param point the location in transformed skin coordinates from the upper left corner of the parent control.
-   \param event the mouse event to perform
-   \return EVENT_RESULT corresponding to whether the control handles this event
-   \sa HitTest, CanFocusFromPoint, CMouseEvent, EVENT_RESULT
-   */
-  virtual EVENT_RESULT SendMouseEvent(const CPoint &point, const CMouseEvent &event);
-
-  /*! \brief Perform a mouse action
-
-   Mouse actions are sent from the window to all controls, and each control can react based on the event
-   and location of the actions.
-
-   \param point the location in transformed skin coordinates from the upper left corner of the parent control.
-   \param event the mouse event to perform
-   \return EVENT_RESULT corresponding to whether the control handles this event
-   \sa SendMouseEvent, HitTest, CanFocusFromPoint, CMouseEvent
-   */
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event) { return EVENT_RESULT_UNHANDLED; };
-
-  /*! \brief Unfocus the control if the given point on screen is not within it's boundary
-   \param point the location in transformed skin coordinates from the upper left corner of the parent control.
-   \sa CanFocusFromPoint
-   */
-  virtual void UnfocusFromPoint(const CPoint &point);
-
-  /*! \brief Used to test whether the point is inside a control.
-   \param point location to test
-   \return true if the point is inside the bounds of this control.
-   \sa SetHitRect
-   */
+  /// \brief Called when the mouse is over the control.  Default implementation selects the control.
+  virtual bool OnMouseOver(const CPoint &point);
+  /// \brief Called when the mouse is dragging over the control.  Default implementation does nothing.
+  virtual bool OnMouseDrag(const CPoint &offset, const CPoint &point) { return false; };
+  /// \brief Called when the left mouse button is pressed on the control.  Default implementation does nothing.
+  virtual bool OnMouseClick(int button, const CPoint &point) { return false; };
+  /// \brief Called when the left mouse button is pressed on the control.  Default implementation does nothing.
+  virtual bool OnMouseDoubleClick(int button, const CPoint &point) { return false; };
+  /// \brief Called when the mouse wheel has moved whilst over the control.  Default implementation does nothing
+  virtual bool OnMouseWheel(char wheel, const CPoint &point) { return false; };
+  /// \brief Used to test whether the pointer location (fPosX, fPosY) is inside the control.  For mouse events.
   virtual bool HitTest(const CPoint &point) const;
+  /// \brief Focus a control from a screen location.  Returns the coordinates of the screen location relative to the control and a pointer to the control.
+  virtual bool CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const;
+  /// \brief Unfocus a control if it's not in a screen location.
+  virtual void UnfocusFromPoint(const CPoint &point);
 
   virtual bool OnMessage(CGUIMessage& message);
   virtual int GetID(void) const;
@@ -142,8 +141,9 @@ public:
   virtual bool HasVisibleID(int id) const;
   int GetParentID() const;
   virtual bool HasFocus() const;
+  virtual void PreAllocResources() {}
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
   virtual bool IsDynamicallyAllocated() { return false; };
   virtual bool CanFocus() const;
@@ -160,20 +160,9 @@ public:
   virtual float GetWidth() const;
   virtual float GetHeight() const;
   virtual void SetNavigation(int up, int down, int left, int right);
-  virtual void SetTabNavigation(int next, int prev);
-
-  /*! \brief Set actions to perform on navigation
-   Navigations are set if replace is true or if there is no previously set action
-   \param up vector of CGUIActionDescriptors to execute on up
-   \param down vector of CGUIActionDescriptors to execute on down
-   \param left vector of CGUIActionDescriptors to execute on left
-   \param right vector of CGUIActionDescriptors to execute on right
-   \param replace Actions are set only if replace is true or there is no previously set action.  Defaults to true
-   \sa SetNavigation, ExecuteActions
-   */
-  virtual void SetNavigationActions(const std::vector<CGUIActionDescriptor> &up, const std::vector<CGUIActionDescriptor> &down,
-                                    const std::vector<CGUIActionDescriptor> &left, const std::vector<CGUIActionDescriptor> &right, bool replace = true);
-  void ExecuteActions(const std::vector<CGUIActionDescriptor> &actions);
+  virtual void SetNavigationActions(const std::vector<CStdString> &up, const std::vector<CStdString> &down,
+                                    const std::vector<CStdString> &left, const std::vector<CStdString> &right);
+  void ExecuteActions(const std::vector<CStdString> &actions);
   int GetControlIdUp() const { return m_controlUp;};
   int GetControlIdDown() const { return m_controlDown;};
   int GetControlIdLeft() const { return m_controlLeft;};
@@ -212,7 +201,6 @@ public:
   virtual bool GetCondition(int condition, int data) const { return false; };
 
   void SetParentControl(CGUIControl *control) { m_parentControl = control; };
-  CGUIControl *GetParentControl(void) const { return m_parentControl; };
   virtual void SaveStates(std::vector<CControlState> &states);
 
   enum GUICONTROLTYPES {
@@ -224,24 +212,28 @@ public:
     GUICONTROL_BORDEREDIMAGE,
     GUICONTROL_LARGE_IMAGE,
     GUICONTROL_LABEL,
+    GUICONTROL_LIST,
     GUICONTROL_LISTGROUP,
+    GUICONTROL_LISTEX,
     GUICONTROL_PROGRESS,
     GUICONTROL_RADIO,
     GUICONTROL_RSS,
     GUICONTROL_SELECTBUTTON,
     GUICONTROL_SLIDER,
     GUICONTROL_SETTINGS_SLIDER,
+    GUICONTROL_SPINBUTTON,
     GUICONTROL_SPIN,
     GUICONTROL_SPINEX,
     GUICONTROL_TEXTBOX,
+    GUICONTROL_THUMBNAIL,
     GUICONTROL_TOGGLEBUTTON,
     GUICONTROL_VIDEO,
     GUICONTROL_MOVER,
     GUICONTROL_RESIZE,
     GUICONTROL_BUTTONBAR,
+    GUICONTROL_CONSOLE,
     GUICONTROL_EDIT,
     GUICONTROL_VISUALISATION,
-    GUICONTROL_RENDERADDON,
     GUICONTROL_MULTI_IMAGE,
     GUICONTROL_GROUP,
     GUICONTROL_GROUPLIST,
@@ -261,22 +253,8 @@ public:
   virtual void DumpTextureUse() {};
 #endif
 protected:
-  /*! \brief Called when the mouse is over the control.
-   Default implementation selects the control.
-   \param point location of the mouse in transformed skin coordinates
-   \return true if handled, false otherwise.
-   */
-  virtual bool OnMouseOver(const CPoint &point);
-
-  /*! \brief Test whether we can focus a control from a point on screen
-   \param point the location in vanilla skin coordinates from the upper left corner of the parent control.
-   \return true if the control can be focused from this location
-   \sa UnfocusFromPoint, HitRect
-   */
-  virtual bool CanFocusFromPoint(const CPoint &point) const;
-
   virtual void UpdateColors();
-  virtual void Animate(unsigned int currentTime);
+  virtual void Animate(DWORD currentTime);
   virtual bool CheckAnimation(ANIMATION_TYPE animType);
   void UpdateStates(ANIMATION_TYPE type, ANIMATION_PROCESS currentProcess, ANIMATION_STATE currentState);
   bool SendWindowMessage(CGUIMessage &message);
@@ -286,15 +264,10 @@ protected:
   int m_controlRight;
   int m_controlUp;
   int m_controlDown;
-  int m_controlNext;
-  int m_controlPrev;
-
-  std::vector<CGUIActionDescriptor> m_leftActions;
-  std::vector<CGUIActionDescriptor> m_rightActions;
-  std::vector<CGUIActionDescriptor> m_upActions;
-  std::vector<CGUIActionDescriptor> m_downActions;
-  std::vector<CGUIActionDescriptor> m_nextActions;
-  std::vector<CGUIActionDescriptor> m_prevActions;
+  std::vector<CStdString> m_leftActions;
+  std::vector<CStdString> m_rightActions;
+  std::vector<CStdString> m_upActions;
+  std::vector<CStdString> m_downActions;
 
   float m_posX;
   float m_posY;

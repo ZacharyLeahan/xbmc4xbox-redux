@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "MultiPathFile.h"
 #include "MultiPathDirectory.h"
 #include "Util.h"
@@ -26,7 +27,7 @@
 
 using namespace XFILE;
 using namespace std;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CMultiPathFile::CMultiPathFile(void)
 {
@@ -95,12 +96,12 @@ int CMultiPathFile::Stat(const CURL& url, struct __stat64* buffer)
   return -1;
 }
 
-unsigned int CMultiPathFile::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CMultiPathFile::Read(void* lpBuf, __int64 uiBufSize)
 {
   return m_file.Read(lpBuf, uiBufSize);
 }
 
-int64_t CMultiPathFile::Seek(int64_t iFilePosition, int iWhence /*=SEEK_SET*/)
+__int64 CMultiPathFile::Seek(__int64 iFilePosition, int iWhence /*=SEEK_SET*/)
 {
   return m_file.Seek(iFilePosition, iWhence);
 }
@@ -110,12 +111,12 @@ void CMultiPathFile::Close()
   m_file.Close();
 }
 
-int64_t CMultiPathFile::GetPosition()
+__int64 CMultiPathFile::GetPosition()
 {
   return m_file.GetPosition();
 }
 
-int64_t CMultiPathFile::GetLength()
+__int64 CMultiPathFile::GetLength()
 {
   return m_file.GetLength();
 }

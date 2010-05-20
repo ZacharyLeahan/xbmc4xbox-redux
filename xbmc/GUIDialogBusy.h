@@ -31,6 +31,8 @@ public:
   virtual ~CGUIDialogBusy(void);
 
   virtual bool OnMessage(CGUIMessage& message);
+  virtual void OnWindowLoaded();
+  virtual void Render();
 
 protected:
 };

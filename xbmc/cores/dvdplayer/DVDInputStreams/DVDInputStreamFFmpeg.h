@@ -21,6 +21,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "DVDInputStream.h"
 
 class CDVDInputStreamFFmpeg : public CDVDInputStream
@@ -35,6 +36,6 @@ public:
   virtual bool Pause(double dTime) { return false; };
   virtual bool IsEOF();
   virtual __int64 GetLength();
-
+  
 protected:
 };

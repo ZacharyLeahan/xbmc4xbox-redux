@@ -1,3 +1,6 @@
+#ifndef XBPYTHREAD_H_
+#define XBPYTHREAD_H_
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,33 +22,13 @@
  *
  */
 
-#ifndef XBPYTHREAD_H_
-#define XBPYTHREAD_H_
-
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "Python/Include/Python.h"
-#endif
+#include "python/Python.h"
 #include "utils/Thread.h"
-
-class XBPython;
 
 class XBPyThread : public CThread
 {
 public:
-  XBPyThread(XBPython *pExecuter, int id);
+  XBPyThread(LPVOID pExecuter, PyThreadState* mainThreadState, int id);
   virtual ~XBPyThread();
   int evalFile(const char*);
   int evalString(const char*);
@@ -55,21 +38,20 @@ public:
   void stop();
 
 protected:
-  XBPython      *m_pExecuter;
-  PyThreadState *m_threadState;
+  PyThreadState*	threadState;
+  LPVOID					pExecuter;
 
-  char m_type;
-  char *m_source;
-  char **m_argv;
-  unsigned int  m_argc;
-  bool m_done;
-  bool m_stopping;
-  int  m_id;
+  char type;
+  char *source;
+  char **argv;
+  unsigned int  argc;
+  bool done;
+  bool stopping;
+  int id;
 
   virtual void OnStartup();
   virtual void Process();
   virtual void OnExit();
-  virtual void OnException();
 };
 
 #endif // XBPYTHREAD_H_

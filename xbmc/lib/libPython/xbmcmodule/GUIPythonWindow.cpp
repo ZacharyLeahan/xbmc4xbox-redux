@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIPythonWindow.h"
 #include "pyutil.h"
 #include "window.h"
@@ -26,17 +27,8 @@
 #include "action.h"
 #include "GUIWindowManager.h"
 #include "../XBPython.h"
-#include "utils/log.h"
 
 using namespace PYXBMC;
-
-PyXBMCAction::~PyXBMCAction() {
-     if (pObject) {
-       Py_DECREF(pObject);
-     }
-
-     pObject = NULL;
-}
 
 CGUIPythonWindow::CGUIPythonWindow(int id)
 : CGUIWindow(id, "")
@@ -59,7 +51,7 @@ bool CGUIPythonWindow::OnAction(const CAction &action)
   // workaround - for scripts which try to access the active control (focused) when there is none.
   // for example - the case when the mouse enters the screen.
   CGUIControl *pControl = GetFocusedControl();
-  if (action.IsMouse() && !pControl)
+  if (action.id == ACTION_MOUSE && !pControl)
      return ret;
 
   if(pCallbackWindow)
@@ -69,7 +61,7 @@ bool CGUIPythonWindow::OnAction(const CAction &action)
     inf->pCallbackWindow = pCallbackWindow;
 
     // aquire lock?
-    PyXBMC_AddPendingCall(Py_XBMC_Event_OnAction, inf);
+    Py_AddPendingCall(Py_XBMC_Event_OnAction, inf);
     PulseActionEvent();
   }
   return ret;
@@ -125,7 +117,7 @@ bool CGUIPythonWindow::OnMessage(CGUIMessage& message)
             inf->pCallbackWindow = pCallbackWindow;
 
             // aquire lock?
-            PyXBMC_AddPendingCall(Py_XBMC_Event_OnControl, inf);
+            Py_AddPendingCall(Py_XBMC_Event_OnControl, inf);
             PulseActionEvent();
 
             // return true here as we are handling the event
@@ -155,58 +147,6 @@ void CGUIPythonWindow::PulseActionEvent()
 {
   SetEvent(m_actionEvent);
 }
-
-
-#ifdef _LINUX
-
-/*
-vector<PyXBMCAction*> g_actionQueue;
-CRITICAL_SECTION g_critSection;
-
-void Py_InitCriticalSection()
-{
-  static bool first_call = true;
-  if (first_call)
-  {
-    InitializeCriticalSection(&g_critSection);
-    first_call = false;
-  }
-}
-
-void Py_AddPendingActionCall(PyXBMCAction* inf)
-{
-  EnterCriticalSection(&g_critSection);
-  g_actionQueue.push_back(inf);
-  LeaveCriticalSection(&g_critSection);
-}
-
-void Py_MakePendingActionCalls()
-{
-  vector<PyXBMCAction*>::iterator iter;
-  iter = g_actionQueue.begin();
-  while (iter!=g_actionQueue.end())
-  {
-    PyXBMCAction* arg = (*iter);
-    EnterCriticalSection(&g_critSection);
-    g_actionQueue.erase(iter);
-    LeaveCriticalSection(&g_critSection);
-
-    if (arg->type==0)
-    {
-      Py_XBMC_Event_OnAction(arg);
-    } else if (arg->type==1) {
-      Py_XBMC_Event_OnControl(arg);
-    }
-
-    EnterCriticalSection(&g_critSection);
-    iter=g_actionQueue.begin();
-    LeaveCriticalSection(&g_critSection);
-  }
-}
-
-*/
-
-#endif
 
 /*
  * called from python library!
@@ -241,7 +181,7 @@ int Py_XBMC_Event_OnAction(void* arg)
     }
     else {
       CLog::Log(LOGERROR,"Exception in python script's onAction");
-      PyErr_Print();
+    	PyErr_Print();
     }
     delete action;
   }

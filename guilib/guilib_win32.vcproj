@@ -4,7 +4,6 @@
 	Version="7.10"
 	Name="guilib"
 	ProjectGUID="{510441AC-B9E1-4B31-9C0C-EB3AD39D90C4}"
-	RootNamespace="guilib"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -22,7 +21,7 @@
 				AdditionalOptions="/EHa"
 				Optimization="0"
 				AdditionalIncludeDirectories="../xbmc/;freetype2/include;../xbmc/lib/boost"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_MSVC;NOMINMAX;_WIN32_WINNT=0x0501;WINVER=0x0500"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				StringPooling="FALSE"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -66,7 +65,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="../xbmc/;freetype2/include;../xbmc/lib/boost"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_MSVC;NOMINMAX;_WIN32_WINNT=0x0501;WINVER=0x0500"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="include.h"
@@ -98,100 +97,6 @@
 			<Tool
 				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
-		<Configuration
-			Name="Debug (SDL)|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/EHa"
-				Optimization="0"
-				AdditionalIncludeDirectories="../guilib;../xbmc/Win32;../xbmc/;freetype2/include;../xbmc/lib/boost;../xbmc/utils;&quot;../xbmc/lib/libSDL-WIN32/include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;HAS_SDL;_MSVC;NOMINMAX;_WIN32_WINNT=0x0501;WINVER=0x0500"
-				StringPooling="FALSE"
-				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				EnableEnhancedInstructionSet="0"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="include.h"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="4"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/guilib.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Release (SDL)|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="../guilib;../xbmc/win32;../xbmc;freetype2\include;../xbmc/lib/boost;../xbmc/utils;&quot;../xbmc/lib/libSDL-WIN32/include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;HAS_SDL;_MSVC;NOMINMAX;_WIN32_WINNT=0x0501;WINVER=0x0500"
-				MinimalRebuild="FALSE"
-				RuntimeLibrary="0"
-				EnableEnhancedInstructionSet="2"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="include.h"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/guilib.lib"
-				AdditionalLibraryDirectories=""
-				IgnoreAllDefaultLibraries="FALSE"
-				IgnoreDefaultLibraryNames=""/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -201,6 +106,9 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\ActionManager.cpp">
+			</File>
+			<File
 				RelativePath=".\AnimatedGif.cpp">
 			</File>
 			<File
@@ -208,9 +116,6 @@
 			</File>
 			<File
 				RelativePath=".\DirectXGraphics.cpp">
-			</File>
-			<File
-				RelativePath=".\FrameBufferObject.cpp">
 			</File>
 			<File
 				RelativePath=".\GraphicContext.cpp">
@@ -360,12 +265,6 @@
 				RelativePath=".\GUITextureD3D.cpp">
 			</File>
 			<File
-				RelativePath=".\GUITextureGL.cpp">
-			</File>
-			<File
-				RelativePath=".\GUITextureSDL.cpp">
-			</File>
-			<File
 				RelativePath=".\GUIToggleButtonControl.cpp">
 			</File>
 			<File
@@ -396,13 +295,10 @@
 				RelativePath=".\LocalizeStrings.cpp">
 			</File>
 			<File
-				RelativePath=".\Shader.cpp">
+				RelativePath=".\PackedTexture.cpp">
 			</File>
 			<File
 				RelativePath=".\SkinInfo.cpp">
-			</File>
-			<File
-				RelativePath=".\Surface.cpp">
 			</File>
 			<File
 				RelativePath=".\TextureBundle.cpp">
@@ -422,6 +318,9 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
+				RelativePath=".\ActionManager.h">
+			</File>
+			<File
 				RelativePath=".\AnimatedGif.h">
 			</File>
 			<File
@@ -429,9 +328,6 @@
 			</File>
 			<File
 				RelativePath=".\DirectXGraphics.h">
-			</File>
-			<File
-				RelativePath=".\FrameBufferObject.h">
 			</File>
 			<File
 				RelativePath=".\Geometry.h">
@@ -581,19 +477,13 @@
 				RelativePath=".\GUITextBox.h">
 			</File>
 			<File
-				RelativePath=".\GUITextLayout.h">
-			</File>
-			<File
 				RelativePath=".\GUITexture.h">
 			</File>
 			<File
 				RelativePath=".\GUITextureD3D.h">
 			</File>
 			<File
-				RelativePath=".\GUITextureGL.h">
-			</File>
-			<File
-				RelativePath=".\GUITextureSDL.h">
+				RelativePath=".\GUITextLayout.h">
 			</File>
 			<File
 				RelativePath=".\GUIToggleButtonControl.h">
@@ -635,16 +525,13 @@
 				RelativePath=".\LocalizeStrings.h">
 			</File>
 			<File
-				RelativePath=".\Shader.h">
+				RelativePath=".\PackedTexture.h">
 			</File>
 			<File
 				RelativePath=".\SkinInfo.h">
 			</File>
 			<File
 				RelativePath=".\StdString.h">
-			</File>
-			<File
-				RelativePath=".\Surface.h">
 			</File>
 			<File
 				RelativePath=".\system.h">
@@ -728,40 +615,6 @@
 			<File
 				RelativePath=".\common\Mouse.h">
 			</File>
-			<File
-				RelativePath=".\common\SDLJoystick.cpp">
-			</File>
-			<File
-				RelativePath=".\common\SDLJoystick.h">
-			</File>
-			<File
-				RelativePath=".\common\SDLKeyboard.cpp">
-			</File>
-			<File
-				RelativePath=".\common\SDLKeyboard.h">
-			</File>
-			<File
-				RelativePath=".\common\SDLMouse.cpp">
-			</File>
-			<File
-				RelativePath=".\common\SDLMouse.h">
-			</File>
-			<Filter
-				Name="IRServerSuite"
-				Filter="">
-				<File
-					RelativePath=".\common\IRServerSuite\IRServerSuite.cpp">
-				</File>
-				<File
-					RelativePath=".\common\IRServerSuite\IRServerSuite.h">
-				</File>
-				<File
-					RelativePath=".\common\IRServerSuite\IrssMessage.cpp">
-				</File>
-				<File
-					RelativePath=".\common\IRServerSuite\IrssMessage.h">
-				</File>
-			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt">

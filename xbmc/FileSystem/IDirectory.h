@@ -24,7 +24,7 @@
 
 class CFileItemList;
 
-namespace XFILE
+namespace DIRECTORY
 {
   enum DIR_CACHE_TYPE
   {
@@ -34,10 +34,10 @@ namespace XFILE
   };
 
 /*!
- \ingroup filesystem
+ \ingroup filesystem 
  \brief Interface to the directory on a file system.
 
- This Interface is retrieved from CFactoryDirectory and can be used to
+ This Interface is retrieved from CFactoryDirectory and can be used to 
  access the directories on a filesystem.
  \sa CFactoryDirectory
  */
@@ -69,7 +69,7 @@ public:
   */
   virtual bool Exists(const char* strPath) { return false; }
   /*!
-  \brief Removes the directory
+  \brief Removes the directory 
   \param strPath Directory to remove.
   \return Returns \e false if not succesfull
   */
@@ -97,7 +97,7 @@ public:
 protected:
   CStdString m_strFileMask;  ///< Holds the file mask specified by SetMask()
   bool m_allowPrompting;    ///< If true, the directory handlers may prompt the user
-  DIR_CACHE_TYPE m_cacheDirectory;    ///< If !DIR_CACHE_NEVER the directory is cached by g_directoryCache (defaults to DIR_CACHE_ONCE)
+  DIR_CACHE_TYPE m_cacheDirectory;    ///< If !DIR_CACHE_NONE the directory is cached by g_directoryCache (defaults to DIR_CACHE_NONE)
   bool m_useFileDirectories; ///< If true the directory may allow file directories (defaults to false)
   bool m_extFileInfo;       ///< If true the GetDirectory call can retrieve extra file information (defaults to true)
 };

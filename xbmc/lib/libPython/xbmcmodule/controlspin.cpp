@@ -19,22 +19,8 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "stdafx.h"
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
 #include "GUISpinControl.h"
 #include "control.h"
@@ -67,10 +53,10 @@ namespace PYXBMC
 
     self = (ControlSpin*)type->tp_alloc(type, 0);
     if (!self) return NULL;
-    new(&self->strTextureUp) string();
-    new(&self->strTextureDown) string();
-    new(&self->strTextureUpFocus) string();
-    new(&self->strTextureDownFocus) string();
+    new(&self->strTextureUp) string();    
+    new(&self->strTextureDown) string();    
+    new(&self->strTextureUpFocus) string();    
+    new(&self->strTextureDownFocus) string();      
 
     if (!PyArg_ParseTuple(args, "llll|Oss", &self->dwPosX, &self->dwPosY, &self->dwWidth, &self->dwHeight,
       &pObjectText, &cTextureFocus, &cTextureNoFocus)) return NULL;
@@ -95,10 +81,10 @@ namespace PYXBMC
     //ControlSpin* self = (ControlSpin*)_PyObject_New(&ControlSpin_Type);
     ControlSpin*self = (ControlSpin*)ControlSpin_Type.tp_alloc(&ControlSpin_Type, 0);
     if (!self) return NULL;
-    new(&self->strTextureUp) string();
-    new(&self->strTextureDown) string();
-    new(&self->strTextureUpFocus) string();
-    new(&self->strTextureDownFocus) string();
+    new(&self->strTextureUp) string();    
+    new(&self->strTextureDown) string();    
+    new(&self->strTextureUpFocus) string();    
+    new(&self->strTextureDownFocus) string();      
 
     // default values for spin control
     self->color = 0xffffffff;
@@ -121,7 +107,7 @@ namespace PYXBMC
     self->strTextureUp.~string();
     self->strTextureDown.~string();
     self->strTextureUpFocus.~string();
-    self->strTextureDownFocus.~string();
+    self->strTextureDownFocus.~string();  
     self->ob_type->tp_free((PyObject*)self);
   }
 
@@ -129,7 +115,7 @@ namespace PYXBMC
   {
     char *cColor = NULL;
 
-    if (!PyArg_ParseTuple(args, (char*)"s", &cColor)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"s", &cColor))	return NULL;
 
     if (cColor) sscanf(cColor, "%x", &self->color);
 
@@ -155,7 +141,7 @@ namespace PYXBMC
   {
     char *cLine[4];
 
-    if (!PyArg_ParseTuple(args, (char*)"ssss", &cLine[0], &cLine[1], &cLine[2], &cLine[3])) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"ssss", &cLine[0], &cLine[1], &cLine[2], &cLine[3]))	return NULL;
 
     self->strTextureUp = cLine[0];
     self->strTextureDown = cLine[1];

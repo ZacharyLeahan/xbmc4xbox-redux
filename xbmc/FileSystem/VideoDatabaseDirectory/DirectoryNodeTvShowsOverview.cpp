@@ -19,11 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "DirectoryNodeTvShowsOverview.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
 
-using namespace XFILE::VIDEODATABASEDIRECTORY;
+using namespace DIRECTORY::VIDEODATABASEDIRECTORY;
 
 CDirectoryNodeTvShowsOverview::CDirectoryNodeTvShowsOverview(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_TVSHOWS_OVERVIEW, strName, pParent)

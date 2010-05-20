@@ -1,8 +1,7 @@
-ARCH=@ARCH@
 
-INCLUDES = -I../../xbmc/linux -I../../guilib -I../../xbmc/ -I../../xbmc/utils
-DEFINES = -DHAS_SDL
-LIBS = @LIBS@ -lSDL_image
+INCLUDES = -I../../xbmc/linux -I../../guilib -I../../xbmc/
+DEFINES = -DUSE_SDL
+LIBS = @LIBS@
 OBJS = \
 	AnimatedGif.o \
 	Bundler.o \
@@ -23,9 +22,5 @@ all: $(TARGET)
 include ../../Makefile.include
 
 $(TARGET): $(OBJS)
-ifeq ($(findstring osx,$(ARCH)), osx)
-	$(MAKE) -f Makefile.osx
-else
 	g++ $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
-endif
 

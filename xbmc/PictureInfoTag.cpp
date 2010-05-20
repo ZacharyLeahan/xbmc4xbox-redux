@@ -18,7 +18,7 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+#include "stdafx.h"
 #include "PictureInfoTag.h"
 #include "DateTime.h"
 #include "Util.h"
@@ -227,7 +227,7 @@ const CStdString CPictureInfoTag::GetInfo(int info) const
       case M_SOF13:   value = "Differential sequential, arithmetic coding";     break;
       case M_SOF14:   value = "Differential progressive, arithmetic coding";     break;
       case M_SOF15:   value = "Differential lossless, arithmetic coding";     break;
-      default:        value = "Unknown";   break;
+      default:        value = "Unknown";   break;    
     }
     break;
   case SLIDE_COMMENT:
@@ -517,4 +517,3 @@ void CPictureInfoTag::SetLoaded(bool loaded)
 {
   m_isLoaded = loaded;
 }
-

@@ -19,10 +19,10 @@
  *
  */
 
+#include "include.h"
 #include "GUISliderControl.h"
 #include "utils/GUIInfoManager.h"
-#include "Key.h"
-#include "MathUtils.h"
+#include "Util.h"
 
 CGUISliderControl::CGUISliderControl(int parentID, int controlID, float posX, float posY, float width, float height, const CTextureInfo& backGroundTexture, const CTextureInfo& nibTexture, const CTextureInfo& nibTextureFocus, int iType)
     : CGUIControl(parentID, controlID, posX, posY, width, height)
@@ -112,7 +112,7 @@ bool CGUISliderControl::OnMessage(CGUIMessage& message)
 
 bool CGUISliderControl::OnAction(const CAction &action)
 {
-  switch ( action.GetID() )
+  switch ( action.id )
   {
   case ACTION_MOVE_LEFT:
     //case ACTION_OSD_SHOW_VALUE_MIN:
@@ -234,12 +234,12 @@ void CGUISliderControl::SetFloatRange(float fStart, float fEnd)
   }
 }
 
-void CGUISliderControl::FreeResources(bool immediately)
+void CGUISliderControl::FreeResources()
 {
-  CGUIControl::FreeResources(immediately);
-  m_guiBackground.FreeResources(immediately);
-  m_guiMid.FreeResources(immediately);
-  m_guiMidFocus.FreeResources(immediately);
+  CGUIControl::FreeResources();
+  m_guiBackground.FreeResources();
+  m_guiMid.FreeResources();
+  m_guiMidFocus.FreeResources();
 }
 
 void CGUISliderControl::DynamicResourceAlloc(bool bOnOff)
@@ -250,20 +250,20 @@ void CGUISliderControl::DynamicResourceAlloc(bool bOnOff)
   m_guiMidFocus.DynamicResourceAlloc(bOnOff);
 }
 
+void CGUISliderControl::PreAllocResources()
+{
+  CGUIControl::PreAllocResources();
+  m_guiBackground.PreAllocResources();
+  m_guiMid.PreAllocResources();
+  m_guiMidFocus.PreAllocResources();
+}
+
 void CGUISliderControl::AllocResources()
 {
   CGUIControl::AllocResources();
   m_guiBackground.AllocResources();
   m_guiMid.AllocResources();
   m_guiMidFocus.AllocResources();
-}
-
-void CGUISliderControl::SetInvalid()
-{
-  CGUIControl::SetInvalid();
-  m_guiBackground.SetInvalid();
-  m_guiMid.SetInvalid();
-  m_guiMidFocus.SetInvalid();
 }
 
 bool CGUISliderControl::HitTest(const CPoint &point) const
@@ -295,39 +295,33 @@ void CGUISliderControl::SetFromPosition(const CPoint &point)
   SEND_CLICK_MESSAGE(GetID(), GetParentID(), MathUtils::round_int(fPercent));
 }
 
-EVENT_RESULT CGUISliderControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUISliderControl::OnMouseClick(int button, const CPoint &point)
 {
-  if (event.m_id == ACTION_MOUSE_DRAG)
-  {
-    if (event.m_state == 1)
-    { // grab exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-      SendWindowMessage(msg);
-    }
-    else if (event.m_state == 3)
-    { // release exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-      SendWindowMessage(msg);
-    }
+  g_Mouse.SetState(MOUSE_STATE_CLICK);
+  // turn off any exclusive access, if it's on...
+  g_Mouse.EndExclusiveAccess(GetID(), GetParentID());
+  if (m_guiBackground.HitTest(point))
+  { // set the position
     SetFromPosition(point);
-    return EVENT_RESULT_HANDLED;
+    return true;
   }
-  else if (event.m_id == ACTION_MOUSE_LEFT_CLICK && m_guiBackground.HitTest(point))
-  {
-    SetFromPosition(point);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    Move(10);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    Move(-10);
-    return EVENT_RESULT_HANDLED;
-  }
-  return EVENT_RESULT_UNHANDLED;
+  return false;
+}
+
+bool CGUISliderControl::OnMouseDrag(const CPoint &offset, const CPoint &point)
+{
+  g_Mouse.SetState(MOUSE_STATE_DRAG);
+  // get exclusive access to the mouse
+  g_Mouse.SetExclusiveAccess(GetID(), GetParentID(), point);
+  // get the position of the mouse
+  SetFromPosition(point);
+  return true;
+}
+
+bool CGUISliderControl::OnMouseWheel(char wheel, const CPoint &point)
+{ // move the slider 10 steps in the appropriate direction
+  Move(wheel*10);
+  return true;
 }
 
 void CGUISliderControl::SetInfo(int iInfo)

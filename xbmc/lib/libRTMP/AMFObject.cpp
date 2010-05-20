@@ -2,31 +2,31 @@
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
  *
- *  This file is part of libRTMP.
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
  *
- *  libRTMP is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  libRTMP is distributed in the hope that it will be useful,
+ *  This Program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with libRTMP; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, write to
+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  http://www.gnu.org/copyleft/gpl.html
+ *
  */
 
+#include "stdafx.h"
 #ifdef _LINUX
   #include <arpa/inet.h>
   #include "linux/PlatformInclude.h"
 #endif
 
-#include "utils/log.h"
-#include "StdString.h"
 #include "AMFObject.h"
+#include "utils/log.h"
 #include "rtmp.h"
 
 RTMP_LIB::AMFObjectProperty RTMP_LIB::AMFObject::m_invalidProp;
@@ -321,7 +321,7 @@ int RTMP_LIB::AMFObject::Encode(char * pBuffer, int nSize) const
     int nRes = m_properties[i].Encode(pBuffer, nSize);
     if (nRes == -1)
     {
-      CLog::Log(LOGERROR,"AMFObject::Encode - failed to encode property in index %d", (int)i);
+      CLog::Log(LOGERROR,"AMFObject::Encode - failed to encode property in index %d", i);
     }
     else
     {

@@ -102,8 +102,6 @@ VGMSTREAM * init_vgmstream_ps2_mib(STREAMFILE *streamFile) {
     vgmstream = allocate_vgmstream(channel_count,((loopStart!=0) && (loopEnd!=0)));
     if (!vgmstream) goto fail;
 
-	if(interleave==0) interleave=0x10;
-
     /* fill in the vital statistics */
 	if(gotMIH) {
 		// Read stuff from the MIH file 
@@ -127,15 +125,10 @@ VGMSTREAM * init_vgmstream_ps2_mib(STREAMFILE *streamFile) {
 	}
 
 	if(loopStart!=0) {
-		if(vgmstream->channels==1) {
-			vgmstream->loop_start_sample = loopStart/16*18;
-			vgmstream->loop_end_sample = loopEnd/16*28;
-		} else {
-			vgmstream->loop_start_sample = ((loopStart/(interleave*channel_count))*interleave)/16*14*(2/channel_count);
-			vgmstream->loop_start_sample += (loopStart%(interleave*channel_count))/16*14*(2/channel_count);
-			vgmstream->loop_end_sample = ((loopEnd/(interleave*channel_count))*interleave)/16*28*(2/channel_count);
-			vgmstream->loop_end_sample += (loopEnd%(interleave*channel_count))/16*14*(2/channel_count);
-		}
+		vgmstream->loop_start_sample = ((loopStart/(interleave*channel_count))*interleave)/16*14*channel_count;
+		vgmstream->loop_start_sample += (loopStart%(interleave*channel_count))/16*14*channel_count;
+		vgmstream->loop_end_sample = ((loopEnd/(interleave*channel_count))*interleave)/16*14*channel_count;
+		vgmstream->loop_end_sample += (loopEnd%(interleave*channel_count))/16*14*channel_count;
 	}
 
 	vgmstream->coding_type = coding_PSX;
@@ -156,7 +149,7 @@ VGMSTREAM * init_vgmstream_ps2_mib(STREAMFILE *streamFile) {
             if (!vgmstream->ch[i].streamfile) goto fail;
 
             vgmstream->ch[i].channel_start_offset=
-                vgmstream->ch[i].offset=i*vgmstream->interleave_block_size;
+                vgmstream->ch[i].offset=0;
         }
     }
 

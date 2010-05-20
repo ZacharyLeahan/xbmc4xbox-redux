@@ -20,18 +20,16 @@
  */
 
 #include "Edl.h"
-#include "StringUtils.h"
+#include "include.h"
+#include "stdafx.h"
 #include "Util.h"
 #include "FileSystem/File.h"
 #include "FileSystem/MythFile.h"
 #include "AdvancedSettings.h"
-#include "utils/log.h"
-#include "tinyXML/tinyxml.h"
-#include "PlatformDefs.h"
 
 extern "C"
 {
-#include "cmyth/include/cmyth/cmyth.h"
+#include "lib/libcmyth/cmyth.h"
 }
 
 using namespace std;
@@ -76,13 +74,13 @@ bool CEdl::ReadEditDecisionLists(const CStdString& strMovie, const float fFrameR
    * content (obtained from http://en.wikipedia.org/wiki/Frame_rate)
    */
   float fFramesPerSecond;
-  if (fFrameRate == 59.940f) // NTSC or 60i content
+  if (fFrameRate == 59.940) // NTSC or 60i content
   {
     CLog::Log(LOGDEBUG, "%s - Adjusting frames per second from 59.940 to 29.97 assuming NTSC or 60i (interlaced)",
               __FUNCTION__);
     fFramesPerSecond = 29.97f;
   }
-  else if (fFrameRate == 47.952f) // 24p -> NTSC conversion
+  else if (fFrameRate == 47.952) // 24p -> NTSC conversion
   {
     CLog::Log(LOGDEBUG, "%s - Adjusting frames per second from 47.952 to 23.976 assuming 24p -> NTSC conversion (interlaced)",
               __FUNCTION__);
@@ -92,7 +90,7 @@ bool CEdl::ReadEditDecisionLists(const CStdString& strMovie, const float fFrameR
   {
     CLog::Log(LOGDEBUG, "%s - Setting frames per second to 25.0 assuming PAL (interlaced)",
                __FUNCTION__);
-    fFramesPerSecond = 25.0f;
+    fFramesPerSecond = 25.0;
   }
   else if (iHeight == 1080) // Don't know of any 1080p content being broadcast so assume 1080i
   {
@@ -118,17 +116,17 @@ bool CEdl::ReadEditDecisionLists(const CStdString& strMovie, const float fFrameR
     /*
      * Read any available file format until a valid EDL related file is found.
      */
-    if (!bFound)
-      bFound = ReadVideoReDo(strMovie);
+  if (!bFound)
+    bFound = ReadVideoReDo(strMovie);
 
-    if (!bFound)
-      bFound = ReadEdl(strMovie);
+  if (!bFound)
+    bFound = ReadEdl(strMovie);
 
-    if (!bFound)
-      bFound = ReadComskip(strMovie, fFramesPerSecond);
+  if (!bFound)
+    bFound = ReadComskip(strMovie, fFramesPerSecond);
 
-    if (!bFound)
-      bFound = ReadBeyondTV(strMovie);
+  if (!bFound)
+    bFound = ReadBeyondTV(strMovie);
   }
   /*
    * Or if the movie points to MythTV and isn't live TV.
@@ -218,7 +216,7 @@ bool CEdl::ReadEdl(const CStdString& strMovie)
   }
   else if (HasCut() || HasSceneMarker())
   {
-    CLog::Log(LOGDEBUG, "%s - Read %"PRIuS" cuts and %"PRIuS" scene markers in EDL file: %s", __FUNCTION__,
+    CLog::Log(LOGDEBUG, "%s - Read %i cuts and %i scene markers in EDL file: %s", __FUNCTION__,
               m_vecCuts.size(), m_vecSceneMarkers.size(), edlFilename.c_str());
     return true;
   }
@@ -299,7 +297,7 @@ bool CEdl::ReadComskip(const CStdString& strMovie, const float fFramesPerSecond)
   }
   else if (HasCut())
   {
-    CLog::Log(LOGDEBUG, "%s - Read %"PRIuS" commercial breaks from Comskip file: %s", __FUNCTION__, m_vecCuts.size(),
+    CLog::Log(LOGDEBUG, "%s - Read %i commercial breaks from Comskip file: %s", __FUNCTION__, m_vecCuts.size(),
               comskipFilename.c_str());
     return true;
   }
@@ -389,7 +387,7 @@ bool CEdl::ReadVideoReDo(const CStdString& strMovie)
   }
   else if (HasCut() || HasSceneMarker())
   {
-    CLog::Log(LOGDEBUG, "%s - Read %"PRIuS" cuts and %"PRIuS" scene markers in VideoReDo file: %s", __FUNCTION__,
+    CLog::Log(LOGDEBUG, "%s - Read %i cuts and %i scene markers in VideoReDo file: %s", __FUNCTION__,
               m_vecCuts.size(), m_vecSceneMarkers.size(), videoReDoFilename.c_str());
     return true;
   }
@@ -472,7 +470,7 @@ bool CEdl::ReadBeyondTV(const CStdString& strMovie)
   }
   else if (HasCut())
   {
-    CLog::Log(LOGDEBUG, "%s - Read %"PRIuS" commercial breaks from Beyond TV file: %s", __FUNCTION__, m_vecCuts.size(),
+    CLog::Log(LOGDEBUG, "%s - Read %i commercial breaks from Beyond TV file: %s", __FUNCTION__, m_vecCuts.size(),
               beyondTVFilename.c_str());
     return true;
   }
@@ -607,7 +605,7 @@ bool CEdl::WriteMPlayerEdl()
   CStdString strBuffer;
   for (int i = 0; i < (int)m_vecCuts.size(); i++)
   {
-    /*
+    /* 
      * MPlayer doesn't understand the scene marker (2) or commercial break (3) identifiers that XBMC
      * supports in EDL files.
      *
@@ -832,7 +830,7 @@ bool CEdl::ReadMythCommBreaks(const CStdString& strMovie, const float fFramesPer
 
   if (HasCut())
   {
-    CLog::Log(LOGDEBUG, "%s - Added %"PRIuS" commercial breaks from MythTV for: %s. Used detected frame rate of %.3f fps to calculate times from the frame markers.",
+    CLog::Log(LOGDEBUG, "%s - Added %i commercial breaks from MythTV for: %s. Used detected frame rate of %.3f fps to calculate times from the frame markers.",
               __FUNCTION__, m_vecCuts.size(), url.GetFileName().c_str(), fFramesPerSecond);
     return true;
   }

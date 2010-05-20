@@ -19,11 +19,8 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "DllLibCurl.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 #include <assert.h>
 
@@ -32,8 +29,6 @@ using namespace XCURL;
 /* okey this is damn ugly. our dll loader doesn't allow for postload, preunload functions */
 static long g_curlReferences = 0;
 DllLibCurlGlobal g_curlInterface;
-
-
 
 bool DllLibCurlGlobal::Load()
 {
@@ -76,13 +71,17 @@ void DllLibCurlGlobal::Unload()
 void DllLibCurlGlobal::CheckIdle()
 {
   CSingleLock lock(m_critSection);
-  /* 20 seconds idle time before closing handle */
-  const unsigned int idletime = 30000;
-
+#ifdef _XBOX  
+  /* 10 seconds idle time before closing handle. Set this low on Xbox to save memory */
+  const DWORD idletime = 10000;
+#else
+  /* 30 seconds idle time before closing handle */
+  const DWORD idletime = 30000;
+#endif
   VEC_CURLSESSIONS::iterator it = m_sessions.begin();
   while(it != m_sessions.end())
   {
-    if( !it->m_busy && it->m_idletimestamp + idletime < CTimeUtils::GetTimeMS())
+    if( !it->m_busy && it->m_idletimestamp + idletime < GetTickCount())
     {
       CLog::Log(LOGINFO, "%s - Closing session to %s://%s (easy=%p, multi=%p)\n", __FUNCTION__, it->m_protocol.c_str(), it->m_hostname.c_str(), (void*)it->m_easy, (void*)it->m_multi);
 
@@ -196,7 +195,7 @@ void DllLibCurlGlobal::easy_release(CURL_HANDLE** easy_handle, CURLM** multi_han
       /* will reset verbose too so it won't print that it closed connections on cleanup*/
       easy_reset(easy);
       it->m_busy = false;
-      it->m_idletimestamp = CTimeUtils::GetTimeMS();
+      it->m_idletimestamp = GetTickCount();
       return;
     }
   }

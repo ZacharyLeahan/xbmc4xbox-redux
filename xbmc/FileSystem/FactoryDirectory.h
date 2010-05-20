@@ -22,10 +22,10 @@
 
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 /*!
- \ingroup filesystem
+ \ingroup filesystem 
  \brief Get access to a directory of a file system.
 
  The Factory can be used to create a directory object

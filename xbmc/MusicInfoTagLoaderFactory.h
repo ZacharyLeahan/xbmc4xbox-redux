@@ -24,13 +24,13 @@
 
 namespace MUSIC_INFO
 {
-  class CMusicInfoTagLoaderFactory
-  {
-    public:
-      CMusicInfoTagLoaderFactory(void);
-      virtual ~CMusicInfoTagLoaderFactory();
 
-      static IMusicInfoTagLoader* CreateLoader(const CStdString& strFileName);
-  };
+class CMusicInfoTagLoaderFactory
+{
+public:
+  CMusicInfoTagLoaderFactory(void);
+  virtual ~CMusicInfoTagLoaderFactory();
+
+  static IMusicInfoTagLoader* CreateLoader(const CStdString& strFileName);
+};
 }
-

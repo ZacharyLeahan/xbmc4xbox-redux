@@ -20,25 +20,23 @@
  */
 
 
-#include "system.h"
+#include "stdafx.h"
 #include "VirtualDirectory.h"
 #include "FactoryDirectory.h"
-#include "Settings.h"
 #include "Util.h"
 #include "Profile.h"
 #include "Directory.h"
 #include "DirectoryCache.h"
-#include "../MediaManager.h"
-#include "File.h"
-#include "FileItem.h"
-#include "TextureManager.h"
-#ifdef _WIN32
-#include "WIN32Util.h"
+#ifdef HAS_XBOX_HARDWARE
+#include "utils/MemoryUnitManager.h"
 #endif
+#include "DetectDVDType.h"
+#include "FileSystem/File.h"
+#include "FileItem.h"
 
 using namespace XFILE;
 
-namespace XFILE
+namespace DIRECTORY
 {
 
 CVirtualDirectory::CVirtualDirectory(void)
@@ -79,7 +77,7 @@ bool CVirtualDirectory::GetDirectory(const CStdString& strPath, CFileItemList &i
   VECSOURCES shares;
   GetSources(shares);
   if (!strPath.IsEmpty() && strPath != "files://")
-    return CDirectory::GetDirectory(strPath, items, m_strFileMask, bUseFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo, true);
+    return CDirectory::GetDirectory(strPath, items, m_strFileMask, bUseFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo);
 
   // if strPath is blank, clear the list (to avoid parent items showing up)
   if (strPath.IsEmpty())
@@ -115,6 +113,7 @@ bool CVirtualDirectory::GetDirectory(const CStdString& strPath, CFileItemList &i
           || pItem->IsVideoDb()
           || pItem->IsMusicDb()
           || pItem->IsPlugin()
+          || pItem->IsPluginRoot()
           || pItem->m_strPath == "special://musicplaylists/"
           || pItem->m_strPath == "special://videoplaylists/"
           || pItem->m_strPath == "musicsearch://")
@@ -127,13 +126,11 @@ bool CVirtualDirectory::GetDirectory(const CStdString& strPath, CFileItemList &i
       strIcon = "DefaultDVDRom.png";
     else if (pItem->IsCDDA())
       strIcon = "DefaultCDDA.png";
-    else if (pItem->IsRemovable() && g_TextureManager.HasTexture("DefaultRemovableDisk.png"))
-      strIcon = "DefaultRemovableDisk.png";
     else
       strIcon = "DefaultHardDisk.png";
 
     pItem->SetIconImage(strIcon);
-    if (share.m_iHasLock == 2 && g_settings.GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+    if (share.m_iHasLock == 2 && g_settings.m_vecProfiles[0].getLockMode() != LOCK_MODE_EVERYONE)
       pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_LOCKED);
     else
       pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_NONE);
@@ -212,25 +209,23 @@ void CVirtualDirectory::GetSources(VECSOURCES &shares) const
   // add our plug n play shares
 
   if (m_allowNonLocalSources)
-    g_mediaManager.GetRemovableDrives(shares);
+  {
+#ifdef HAS_XBOX_HARDWARE
+    g_memoryUnitManager.GetMemoryUnitSources(shares);
+#endif
+    CUtil::AutoDetectionGetSource(shares);
+  }
 
-#ifdef HAS_DVD_DRIVE
   // and update our dvd share
   for (unsigned int i = 0; i < shares.size(); ++i)
   {
     CMediaSource& share = shares[i];
     if (share.m_iDriveType == CMediaSource::SOURCE_TYPE_DVD)
     {
-      if(g_mediaManager.IsAudio(share.strPath))
-      {
-        share.strStatus = "Audio-CD";
-        share.strPath = "cdda://local/";
-      }
-      else
-        share.strStatus = g_mediaManager.GetDiskLabel(share.strPath);
+      share.strStatus = MEDIA_DETECT::CDetectDVDMedia::GetDVDLabel();
+      share.strPath = MEDIA_DETECT::CDetectDVDMedia::GetDVDPath();
     }
   }
-#endif
 }
 }
 

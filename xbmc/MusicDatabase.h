@@ -25,7 +25,9 @@
 #pragma once
 #include "Database.h"
 #include "Album.h"
-#include "addons/Scraper.h"
+#include "StringUtils.h"
+
+struct SScraperInfo;
 
 class CArtist;
 class CFileItem;
@@ -111,7 +113,6 @@ public:
   CMusicDatabase(void);
   virtual ~CMusicDatabase(void);
 
-  virtual bool Open();
   virtual bool CommitTransaction();
   void EmptyCache();
   void Clean();
@@ -130,8 +131,6 @@ public:
   bool GetSongByFileName(const CStdString& strFileName, CSong& song);
   int GetAlbumIdByPath(const CStdString& path);
   bool GetSongById(int idSong, CSong& song);
-  bool GetSongByKaraokeNumber( int number, CSong& song );
-  bool SetKaraokeSongDelay( int idSong, int delay );
   bool GetSongsByPath(const CStdString& strPath, CSongMap& songs, bool bAppendToMap = false);
   bool Search(const CStdString& search, CFileItemList &items);
 
@@ -188,21 +187,11 @@ public:
   int GetVariousArtistsAlbumsCount();
 
   bool SetSongRating(const CStdString &filePath, char rating);
-  bool SetScraperForPath(const CStdString& strPath, const ADDON::ScraperPtr& info);
-  bool GetScraperForPath(const CStdString& strPath, ADDON::ScraperPtr& info);
-
-  /*! \brief Check whether a given scraper is in use.
-   \param scraper the scraper to check for.
-   \return true if the scraper is in use, false otherwise.
-   */
-  bool ScraperInUse(const ADDON::ScraperPtr &scraper) const;
+  bool SetScraperForPath(const CStdString& strPath, const SScraperInfo& info);
+  bool GetScraperForPath(const CStdString& strPath, SScraperInfo& info);
 
   void ExportToXML(const CStdString &xmlFile, bool singleFiles = false, bool images=false, bool overwrite=false);
   void ImportFromXML(const CStdString &xmlFile);
-
-  void ExportKaraokeInfo(const CStdString &outFile, bool asHTML );
-  void ImportKaraokeInfo(const CStdString &inputFile );
-
   void SetPropertiesForFileItem(CFileItem& item);
   static void SetPropertiesFromArtist(CFileItem& item, const CArtist& artist);
   static void SetPropertiesFromAlbum(CFileItem& item, const CAlbum& album);
@@ -212,11 +201,8 @@ protected:
   std::map<CStdString, int /*CPathCache*/> m_pathCache;
   std::map<CStdString, int /*CPathCache*/> m_thumbCache;
   std::map<CStdString, CAlbumCache> m_albumCache;
-
   virtual bool CreateTables();
   virtual int GetMinVersion() const { return 14; };
-  const char *GetDefaultDBName() const { return "MyMusic7"; };
-
   int AddAlbum(const CStdString& strAlbum1, int idArtist, const CStdString &extraArtists, const CStdString &strArtist1, int idThumb, int idGenre, const CStdString &extraGenres, int year);
   int AddGenre(const CStdString& strGenre);
   int AddArtist(const CStdString& strArtist);
@@ -224,7 +210,6 @@ protected:
   int AddThumb(const CStdString& strThumb1);
   void AddExtraAlbumArtists(const CStdStringArray& vecArtists, int idAlbum);
   void AddExtraSongArtists(const CStdStringArray& vecArtists, int idSong, bool bCheck = true);
-  void AddKaraokeData(const CSong& song);
   void AddExtraGenres(const CStdStringArray& vecGenres, int idSong, int idAlbum, bool bCheck = true);
   bool SetAlbumInfoSongs(int idAlbumInfo, const VECSONGS& songs);
   bool GetAlbumInfoSongs(int idAlbumInfo, VECSONGS& songs);

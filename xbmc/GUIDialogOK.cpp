@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogOK.h"
 #include "GUIWindowManager.h"
 

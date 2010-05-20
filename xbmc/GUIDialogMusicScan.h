@@ -31,7 +31,7 @@ public:
   CGUIDialogMusicScan(void);
   virtual ~CGUIDialogMusicScan(void);
   virtual bool OnMessage(CGUIMessage& message);
-  virtual void FrameMove();
+  virtual void Render();
 
   void StartScanning(const CStdString& strDirectory);
   void StartAlbumScan(const CStdString& strDirectory);

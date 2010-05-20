@@ -30,10 +30,8 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "system.h" // for HANDLE
-#ifdef _LINUX
-#include "PlatformInclude.h"
-#endif
+
+#include "xbox/PlatformInclude.h"
 #include "Event.h"
 
 class IRunnable
@@ -57,15 +55,11 @@ public:
   CThread(IRunnable* pRunnable);
   virtual ~CThread();
   void Create(bool bAutoDelete = false, unsigned stacksize = 0);
-  bool WaitForThreadExit(unsigned int milliseconds);
-  DWORD WaitForSingleObject(HANDLE hHandle, unsigned int milliseconds);
-  DWORD WaitForMultipleObjects(DWORD nCount, HANDLE *lpHandles, BOOL bWaitAll, unsigned int milliseconds);
-  void Sleep(unsigned int milliseconds);
+  bool WaitForThreadExit(DWORD dwMilliseconds);
+  DWORD WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
+  DWORD WaitForMultipleObjects(DWORD nCount, HANDLE *lpHandles, BOOL bWaitAll, DWORD dwMilliseconds);
+  void Sleep(DWORD dwMilliseconds);
   bool SetPriority(const int iPriority);
-  void SetPrioritySched_RR(void);
-  int GetMinPriority(void);
-  int GetMaxPriority(void);
-  int GetNormalPriority(void);
   void SetName( LPCTSTR szThreadName );
   HANDLE ThreadHandle();
   operator HANDLE();
@@ -80,13 +74,7 @@ public:
 protected:
   virtual void OnStartup(){};
   virtual void OnExit(){};
-  virtual void OnException(){} // signal termination handler
-  virtual void Process();
-
-#ifdef _LINUX
-  static void term_handler (int signum);
-#endif
-
+  virtual void Process(); 
   volatile bool m_bStop;
   HANDLE m_ThreadHandle;
 
@@ -103,11 +91,7 @@ private:
   float m_fLastUsage;
 
 private:
-#ifndef _WIN32
-  static int staticThread(void* data);
-#else
   static DWORD WINAPI staticThread(LPVOID* data);
-#endif
 };
 
 #endif // !defined(AFX_THREAD_H__ACFB7357_B961_4AC1_9FB2_779526219817__INCLUDED_)

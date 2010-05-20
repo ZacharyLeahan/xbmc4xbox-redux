@@ -22,7 +22,10 @@
  */
 
 #include "DllLibass.h"
-#include "utils/CriticalSection.h"
+
+extern "C"{
+  #include "../../../lib/libass/ass.h"
+}
 
 /** Wrapper for Libass **/
 
@@ -32,14 +35,14 @@ public:
   CDVDSubtitlesLibass();
   ~CDVDSubtitlesLibass();
 
-  ASS_Image* RenderImage(int imageWidth, int imageHeight, double pts);
-  ASS_Event* GetEvents();
+  ass_image_t* RenderImage(int imageWidth, int imageHeight, double pts);
+  ass_event_t* GetEvents();
 
   int GetNrOfEvents();
 
   bool DecodeHeader(char* data, int size);
   bool DecodeDemuxPkt(char* data, int size, double start, double duration);
-  bool CreateTrack(char* buf);
+  bool ReadFile(const std::string& strFile);
 
   long GetNrOfReferences();
   long Acquire();
@@ -48,9 +51,8 @@ public:
 private:
   DllLibass m_dll;
   long m_references;
-  ASS_Library* m_library;
-  ASS_Track* m_track;
-  ASS_Renderer* m_renderer;
-  CCriticalSection m_section;
+  ass_library_t* m_library;
+  ass_track_t* m_track;
+  ass_renderer_t* m_renderer;
 };
 

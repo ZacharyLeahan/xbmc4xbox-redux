@@ -19,32 +19,22 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "log.h"
-#ifndef _LINUX
 #include <share.h>
-#include "CharsetConverter.h"
-#endif
 #include "CriticalSection.h"
 #include "SingleLock.h"
-#include "FileSystem/File.h"
 #include "StdString.h"
 #include "Settings.h"
 #include "AdvancedSettings.h"
-#include "Thread.h"
+#include "Util.h"
 
-FILE* CLog::m_file = NULL;
+FILE* CLog::fd = NULL;
 
 static CCriticalSection critSec;
 
 static char levelNames[][8] =
 {"DEBUG", "INFO", "NOTICE", "WARNING", "ERROR", "SEVERE", "FATAL", "NONE"};
-
-#ifdef _WIN32
-#define LINE_ENDING "\r\n"
-#else
-#define LINE_ENDING "\n"
-#endif
 
 
 CLog::CLog()
@@ -56,10 +46,10 @@ CLog::~CLog()
 void CLog::Close()
 {
   CSingleLock waitLock(critSec);
-  if (m_file)
+  if (fd)
   {
-    fclose(m_file);
-    m_file = NULL;
+    fclose(fd);
+    fd = NULL;
   }
 }
 
@@ -70,8 +60,20 @@ void CLog::Log(int loglevel, const char *format, ... )
      (g_advancedSettings.m_logLevel > LOG_LEVEL_NONE && loglevel >= LOGNOTICE))
   {
     CSingleLock waitLock(critSec);
-    if (!m_file)
-      return;
+    if (!fd)
+    {
+	  // We should only continue when the logfolder is set
+	  if (g_stSettings.m_logFolder.IsEmpty()) return;
+
+      // g_stSettings.m_logFolder is initialized in the CSettings constructor to Q:\\
+      // and if we are running from DVD, it's changed to T:\\ in CApplication::Create()
+      CStdString LogFile;
+      CUtil::AddFileToFolder(g_stSettings.m_logFolder, "xbmc.log", LogFile);
+      fd = _fsopen(LogFile, "a+", _SH_DENYWR);
+    }
+      
+    if (!fd)
+      return ;
 
     SYSTEMTIME time;
     GetLocalTime(&time);
@@ -80,8 +82,8 @@ void CLog::Log(int loglevel, const char *format, ... )
     GlobalMemoryStatus(&stat);
 
     CStdString strPrefix, strData;
-
-    strPrefix.Format("%02.2d:%02.2d:%02.2d T:%"PRIu64" M:%9"PRIu64" %7s: ", time.wHour, time.wMinute, time.wSecond, (uint64_t)CThread::GetCurrentThreadId(), (uint64_t)stat.dwAvailPhys, levelNames[loglevel]);
+    
+    strPrefix.Format("%02.2d:%02.2d:%02.2d M:%9u %7s: ", time.wHour, time.wMinute, time.wSecond, stat.dwAvailPhys, levelNames[loglevel]);
 
     strData.reserve(16384);
     va_list va;
@@ -108,19 +110,13 @@ void CLog::Log(int loglevel, const char *format, ... )
 #endif
 
     /* fixup newline alignment, number of spaces should equal prefix length */
-    strData.Replace("\n", LINE_ENDING"                                            ");
-    strData += LINE_ENDING;
+    strData.Replace("\n", "\n                                            ");
+    strData += "\n";
 
-    fwrite(strPrefix.c_str(),strPrefix.size(),1,m_file);
-    fwrite(strData.c_str(),strData.size(),1,m_file);
-#ifdef __arm__
-    if (g_advancedSettings.m_logLevel > LOG_LEVEL_NORMAL)
-    	fflush(m_file);//TEMP!!!
-#else
-    fflush(m_file);
-#endif
+    fwrite(strPrefix.c_str(), strPrefix.size(), 1, fd);
+    fwrite(strData.c_str(), strData.size(), 1, fd);
+    fflush(fd);
   }
-#ifndef _LINUX
 #if defined(_DEBUG) || defined(PROFILE)
   else
   {
@@ -140,51 +136,6 @@ void CLog::Log(int loglevel, const char *format, ... )
 
   }
 #endif
-#endif
-}
-
-bool CLog::Init(const char* path)
-{
-  CSingleLock waitLock(critSec);
-  if (!m_file)
-  {
-    // g_settings.m_logFolder is initialized in the CSettings constructor
-    // and changed in CApplication::Create()
-#ifdef _WIN32
-    CStdStringW pathW;
-    g_charsetConverter.utf8ToW(path, pathW, false);
-    CStdStringW strLogFile, strLogFileOld;
-
-    strLogFile.Format(L"%sxbmc.log", pathW);
-    strLogFileOld.Format(L"%sxbmc.old.log", pathW);
-
-    struct __stat64 info;
-    if (_wstat64(strLogFileOld.c_str(),&info) == 0 &&
-        !::DeleteFileW(strLogFileOld.c_str()))
-      return false;
-    if (_wstat64(strLogFile.c_str(),&info) == 0 &&
-        !::MoveFileW(strLogFile.c_str(),strLogFileOld.c_str()))
-      return false;
-
-    m_file = _wfsopen(strLogFile.c_str(),L"wb", _SH_DENYWR);
-#else
-    CStdString strLogFile, strLogFileOld;
-
-    strLogFile.Format("%sxbmc.log", path);
-    strLogFileOld.Format("%sxbmc.old.log", path);
-
-    struct stat64 info;
-    if (stat64(strLogFileOld.c_str(),&info) == 0 &&
-        remove(strLogFileOld.c_str()) != 0)
-      return false;
-    if (stat64(strLogFile.c_str(),&info) == 0 &&
-        rename(strLogFile.c_str(),strLogFileOld.c_str()) != 0)
-      return false;
-
-    m_file = fopen(strLogFile.c_str(),"wb");
-#endif
-  }
-  return m_file != NULL;
 }
 
 void CLog::DebugLog(const char *format, ... )
@@ -213,22 +164,18 @@ void CLog::DebugLogMemory()
   CStdString strData;
 
   GlobalMemoryStatus(&stat);
-#ifdef __APPLE__
-  strData.Format("%ju bytes free\n", stat.dwAvailPhys);
-#else
-  strData.Format("%lu bytes free\n", stat.dwAvailPhys);
-#endif
+  strData.Format("%i bytes free\n", stat.dwAvailPhys);
   OutputDebugString(strData.c_str());
 }
 
-void CLog::MemDump(char *pData, int length)
+void CLog::MemDump(BYTE *pData, int length)
 {
-  Log(LOGDEBUG, "MEM_DUMP: Dumping from %p", pData);
+  Log(LOGDEBUG, "MEM_DUMP: Dumping from %x", (unsigned int)pData);
   for (int i = 0; i < length; i+=16)
   {
     CStdString strLine;
     strLine.Format("MEM_DUMP: %04x ", i);
-    char *alpha = pData;
+    BYTE *alpha = pData;
     for (int k=0; k < 4 && i + 4*k < length; k++)
     {
       for (int j=0; j < 4 && i + 4*k + j < length; j++)
@@ -244,7 +191,8 @@ void CLog::MemDump(char *pData, int length)
       strLine += " ";
     for (int j=0; j < 16 && i + j < length; j++)
     {
-      if (*alpha > 31)
+      CStdString strFormat;
+      if (*alpha > 31 && *alpha < 128)
         strLine += *alpha;
       else
         strLine += '.';
@@ -253,85 +201,4 @@ void CLog::MemDump(char *pData, int length)
     Log(LOGDEBUG, "%s", strLine.c_str());
   }
 }
-
-
-void _VerifyGLState(const char* szfile, const char* szfunction, int lineno){
-#if defined(HAS_GL) && defined(_DEBUG)
-#define printMatrix(matrix)                                             \
-  {                                                                     \
-    for (int ixx = 0 ; ixx<4 ; ixx++)                                   \
-      {                                                                 \
-        CLog::Log(LOGDEBUG, "% 3.3f % 3.3f % 3.3f % 3.3f ",             \
-                  matrix[ixx*4], matrix[ixx*4+1], matrix[ixx*4+2],      \
-                  matrix[ixx*4+3]);                                     \
-      }                                                                 \
-  }
-  if (g_advancedSettings.m_logLevel < LOG_LEVEL_DEBUG_FREEMEM)
-    return;
-  GLenum err = glGetError();
-  if (err==GL_NO_ERROR)
-    return;
-  CLog::Log(LOGERROR, "GL ERROR: %s\n", gluErrorString(err));
-  if (szfile && szfunction)
-      CLog::Log(LOGERROR, "In file:%s function:%s line:%d", szfile, szfunction, lineno);
-  GLboolean bools[16];
-  GLfloat matrix[16];
-  glGetFloatv(GL_SCISSOR_BOX, matrix);
-  CLog::Log(LOGDEBUG, "Scissor box: %f, %f, %f, %f", matrix[0], matrix[1], matrix[2], matrix[3]);
-  glGetBooleanv(GL_SCISSOR_TEST, bools);
-  CLog::Log(LOGDEBUG, "Scissor test enabled: %d", (int)bools[0]);
-  glGetFloatv(GL_VIEWPORT, matrix);
-  CLog::Log(LOGDEBUG, "Viewport: %f, %f, %f, %f", matrix[0], matrix[1], matrix[2], matrix[3]);
-  glGetFloatv(GL_PROJECTION_MATRIX, matrix);
-  CLog::Log(LOGDEBUG, "Projection Matrix:");
-  printMatrix(matrix);
-  glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
-  CLog::Log(LOGDEBUG, "Modelview Matrix:");
-  printMatrix(matrix);
-//  abort();
-#endif
-}
-
-void LogGraphicsInfo()
-{
-#if defined(HAS_GL) || defined(HAS_GLES)
-  const GLubyte *s;
-
-  s = glGetString(GL_VENDOR);
-  if (s)
-    CLog::Log(LOGNOTICE, "GL_VENDOR = %s", s);
-  else
-    CLog::Log(LOGNOTICE, "GL_VENDOR = NULL");
-
-  s = glGetString(GL_RENDERER);
-  if (s)
-    CLog::Log(LOGNOTICE, "GL_RENDERER = %s", s);
-  else
-    CLog::Log(LOGNOTICE, "GL_RENDERER = NULL");
-
-  s = glGetString(GL_VERSION);
-  if (s)
-    CLog::Log(LOGNOTICE, "GL_VERSION = %s", s);
-  else
-    CLog::Log(LOGNOTICE, "GL_VERSION = NULL");
-
-  s = glGetString(GL_SHADING_LANGUAGE_VERSION);
-  if (s)
-    CLog::Log(LOGNOTICE, "GL_SHADING_LANGUAGE_VERSION = %s", s);
-  else
-    CLog::Log(LOGNOTICE, "GL_SHADING_LANGUAGE_VERSION = NULL");
-
-  s = glGetString(GL_EXTENSIONS);
-  if (s)
-    CLog::Log(LOGNOTICE, "GL_EXTENSIONS = %s", s);
-  else
-    CLog::Log(LOGNOTICE, "GL_EXTENSIONS = NULL");
-
-#else /* !HAS_GL */
-  CLog::Log(LOGNOTICE,
-            "Please define LogGraphicsInfo for your chosen graphics libary");
-#endif /* !HAS_GL */
-}
-
-
 

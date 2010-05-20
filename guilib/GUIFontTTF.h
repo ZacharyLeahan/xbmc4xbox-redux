@@ -1,6 +1,6 @@
 /*!
 \file GUIFont.h
-\brief
+\brief 
 */
 
 #ifndef CGUILIB_GUIFONTTTF_H
@@ -29,62 +29,45 @@
  */
 
 // forward definition
-class CBaseTexture;
-
 struct FT_FaceRec_;
 struct FT_LibraryRec_;
 struct FT_GlyphSlotRec_;
-struct FT_BitmapGlyphRec_;
 
 typedef struct FT_FaceRec_ *FT_Face;
 typedef struct FT_LibraryRec_ *FT_Library;
 typedef struct FT_GlyphSlotRec_ *FT_GlyphSlot;
-typedef struct FT_BitmapGlyphRec_ *FT_BitmapGlyph;
 
-typedef uint32_t character_t;
-typedef uint32_t color_t;
-typedef std::vector<character_t> vecText;
-typedef std::vector<color_t> vecColors;
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
-
-typedef struct _SVertex
-{
-  float u, v;
-  unsigned char r, g, b, a;
-  float x, y, z;
-} SVertex;
-
-
-class CGUIFontTTFBase
+class CGUIFontTTF
 {
   friend class CGUIFont;
-
-public:
-
-  CGUIFontTTFBase(const CStdString& strFileName);
-  virtual ~CGUIFontTTFBase(void);
-
-  void Clear();
-
-  bool Load(const CStdString& strFilename, float height = 20.0f, float aspect = 1.0f, float lineSpacing = 1.0f);
-
-  virtual void Begin() = 0;
-  virtual void End() = 0;
-
-  const CStdString& GetFileName() const { return m_strFileName; };
-
-protected:
   struct Character
   {
     short offsetX, offsetY;
     float left, top, right, bottom;
     float advance;
-    character_t letterAndStyle;
+    DWORD letterAndStyle;
   };
+public:
+
+  CGUIFontTTF(const CStdString& strFileName);
+  virtual ~CGUIFontTTF(void);
+
+  void Clear();
+
+  bool Load(const CStdString& strFilename, float height = 20.0f, float aspect = 1.0f, float lineSpacing = 1.0f);
+
+  void Begin();
+  void End();
+
+  const CStdString& GetFileName() const { return m_strFileName; };
+  void CopyReferenceCountFrom(CGUIFontTTF& ttf) { m_referenceCount = ttf.m_referenceCount; }
+  
+protected:
   void AddReference();
   void RemoveReference();
 
@@ -102,26 +85,19 @@ protected:
   // Stuff for pre-rendering for speed
   inline Character *GetCharacter(character_t letter);
   bool CacheCharacter(wchar_t letter, uint32_t style, Character *ch);
-  void RenderCharacter(float posX, float posY, const Character *ch, color_t color, bool roundX);
+  inline void RenderCharacter(float posX, float posY, const Character *ch, D3DCOLOR dwColor, bool roundX);
   void ClearCharacterCache();
-
-  virtual CBaseTexture* ReallocTexture(unsigned int& newHeight) = 0;
-  virtual bool CopyCharToTexture(FT_BitmapGlyph bitGlyph, Character *ch) = 0;
-  virtual void DeleteHardwareTexture() = 0;
-  virtual void RenderInternal(SVertex* v) = 0;
 
   // modifying glyphs
   void EmboldenGlyph(FT_GlyphSlot slot);
   void ObliqueGlyph(FT_GlyphSlot slot);
 
-  CBaseTexture* m_texture;        // texture that holds our rendered characters (8bit alpha only)
-
+  LPDIRECT3DDEVICE8 m_pD3DDevice;
+  LPDIRECT3DTEXTURE8 m_texture;      // texture that holds our rendered characters (8bit alpha only)
   unsigned int m_textureWidth;       // width of our texture
   unsigned int m_textureHeight;      // heigth of our texture
   int m_posX;                        // current position in the texture
   int m_posY;
-
-  color_t m_color;
 
   Character *m_char;                 // our characters
   Character *m_charquick[256*4];     // ascii chars (4 styles) here
@@ -141,30 +117,15 @@ protected:
   float m_originX;
   float m_originY;
 
-  bool m_bTextureLoaded;
-  unsigned int m_nTexture;
-
-  SVertex* m_vertex;
-  int      m_vertex_count;
-  int      m_vertex_size;
-
-  float    m_textureScaleX;
-  float    m_textureScaleY;
-
   static int justification_word_weight;
+  static unsigned int max_texture_size;
 
   CStdString m_strFileName;
+
+  DWORD m_numCharactersRendered;
 
 private:
   int m_referenceCount;
 };
-
-#if defined(HAS_GL) || defined(HAS_GLES)
-#include "GUIFontTTFGL.h"
-#define CGUIFontTTF CGUIFontTTFGL
-#elif defined(HAS_DX)
-#include "GUIFontTTFDX.h"
-#define CGUIFontTTF CGUIFontTTFDX
-#endif
 
 #endif

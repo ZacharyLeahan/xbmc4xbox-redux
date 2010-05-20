@@ -19,10 +19,9 @@
  *
  */
 
+#include "include.h"
 #include "GUIWrappingListContainer.h"
 #include "FileItem.h"
-#include "Key.h"
-#include "utils/log.h"
 
 CGUIWrappingListContainer::CGUIWrappingListContainer(int parentID, int controlID, float posX, float posY, float width, float height, ORIENTATION orientation, int scrollTime, int preloadItems, int fixedPosition)
     : CGUIBaseContainer(parentID, controlID, posX, posY, width, height, orientation, scrollTime, preloadItems)
@@ -48,7 +47,7 @@ void CGUIWrappingListContainer::UpdatePageControl(int offset)
 
 bool CGUIWrappingListContainer::OnAction(const CAction &action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_PAGE_UP:
     Scroll(-m_itemsPerPage);
@@ -59,7 +58,7 @@ bool CGUIWrappingListContainer::OnAction(const CAction &action)
     // smooth scrolling (for analog controls)
   case ACTION_SCROLL_UP:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > 0.4)
       {
@@ -72,7 +71,7 @@ bool CGUIWrappingListContainer::OnAction(const CAction &action)
     break;
   case ACTION_SCROLL_DOWN:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > 0.4)
       {
@@ -187,7 +186,7 @@ bool CGUIWrappingListContainer::SelectItemFromPoint(const CPoint &point)
   { // scroll backward
     if (!InsideLayout(m_layout, point))
       return false;
-    float amount = std::min((start - pos) / sizeOfItem, mouse_max_amount);
+    float amount = min((start - pos) / sizeOfItem, mouse_max_amount);
     m_analogScrollCount += amount * amount * mouse_scroll_speed;
     if (m_analogScrollCount > 1)
     {
@@ -201,7 +200,7 @@ bool CGUIWrappingListContainer::SelectItemFromPoint(const CPoint &point)
     if (!InsideLayout(m_layout, point))
       return false;
 
-    float amount = std::min((pos - end) / sizeOfItem, mouse_max_amount);
+    float amount = min((pos - end) / sizeOfItem, mouse_max_amount);
     m_analogScrollCount += amount * amount * mouse_scroll_speed;
     if (m_analogScrollCount > 1)
     {

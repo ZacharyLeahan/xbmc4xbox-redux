@@ -1200,7 +1200,7 @@
   <string id="13409">Top 250:</string>
   <string id="13410">Naladit na LastFM</string>
   <string id="13411">Minimální rychlost větráčku</string>
-
+  <string id="13412">- RSS zprávy  - převrácení (obsahují text zprava doleva)</string>
   <string id="13413">Probíhá stahování</string>
   <string id="13414">Zobrazovat mezi Interprety i ty, kteří se vyskytují pouze u kompilací</string>
   <string id="13415">Způsob vykreslování</string>
@@ -2076,14 +2076,14 @@
   <string id="22020">Návod</string>
   <string id="22021">Odchylka poměru stran k minimalizaci černých okrajů</string>
   <string id="22022">Zobrazovat videa v seznamu soborů</string>
-  <string id="22023">DirectX výrobce:</string>
-  <string id="22024">Direct3D verze:</string>
+  <string id="22023">DirectX výrobce</string>
+  <string id="22024">Direct3D verze</string>
 
   <!-- strings 22030 thru 22060 reserved for karaoke -->
 
   <string id="22030">Font</string>
   <string id="22031">- Velikost</string>
-  <string id="22032">- Barva</string>
+  <string id="22032">-  Barva</string>
   <string id="22033">- Znaková sada</string>
   <string id="22034">Exportovat do HTML</string>
   <string id="22035">Exportovat do CSV</string>

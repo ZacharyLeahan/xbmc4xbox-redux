@@ -20,7 +20,6 @@
 * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "StdString.h"
 #include "Thread.h"
 
 class CUdpClient : CThread
@@ -54,7 +53,7 @@ protected:
     DWORD binarySize;
   };
 
-  bool DispatchNextCommand();
+  void DispatchNextCommand();
 
   SOCKET client_socket;
 

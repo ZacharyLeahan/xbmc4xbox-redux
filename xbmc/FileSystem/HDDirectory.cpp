@@ -19,36 +19,18 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "HDDirectory.h"
 #include "Util.h"
-#include "utils/IoSupport.h"
+#include "xbox/IoSupport.h"
 #include "iso9660.h"
 #include "URL.h"
 #include "GUISettings.h"
 #include "FileItem.h"
-#include "AutoPtrHandle.h"
-#include "utils/AliasShortcutUtils.h"
-
-#ifndef _LINUX
-#include "utils/CharsetConverter.h"
-#endif
-
-#ifndef INVALID_FILE_ATTRIBUTES
-#define INVALID_FILE_ATTRIBUTES ((DWORD) -1)
-#endif
-
-#ifdef _WIN32
-typedef WIN32_FIND_DATAW LOCAL_WIN32_FIND_DATA;
-#define LocalFindFirstFile FindFirstFileW
-#define LocalFindNextFile FindNextFileW
-#else
-typedef WIN32_FIND_DATA LOCAL_WIN32_FIND_DATA;
-#define LocalFindFirstFile FindFirstFile
-#define LocalFindNextFile FindNextFile
-#endif
 
 using namespace AUTOPTR;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CHDDirectory::CHDDirectory(void)
 {}
@@ -58,24 +40,18 @@ CHDDirectory::~CHDDirectory(void)
 
 bool CHDDirectory::GetDirectory(const CStdString& strPath1, CFileItemList &items)
 {
-  LOCAL_WIN32_FIND_DATA wfd;
+  WIN32_FIND_DATA wfd;
 
   CStdString strPath=strPath1;
-
-  if (IsAliasShortcut(strPath))
-    TranslateAliasShortcut(strPath);
+  g_charsetConverter.utf8ToStringCharset(strPath);
 
   CStdString strRoot = strPath;
   CURL url(strPath);
 
   memset(&wfd, 0, sizeof(wfd));
   if (!CUtil::HasSlashAtEnd(strPath) )
-#ifndef _LINUX
     strRoot += "\\";
   strRoot.Replace("/", "\\");
-#else
-    strRoot += "/";
-#endif
   if (CUtil::IsDVD(strRoot) && m_isoReader.IsScanned())
   {
     // Reset iso reader and remount or
@@ -86,17 +62,12 @@ bool CHDDirectory::GetDirectory(const CStdString& strPath1, CFileItemList &items
     CIoSupport::RemapDriveLetter('D', "Cdrom0");
   }
 
-#ifndef _LINUX
-  CStdStringW strSearchMask;
-  g_charsetConverter.utf8ToW(strRoot, strSearchMask, false);
-  strSearchMask += "*.*";
-#else
   CStdString strSearchMask = strRoot;
-#endif
+  strSearchMask += "*.*";
 
   FILETIME localTime;
-  CAutoPtrFind hFind ( LocalFindFirstFile(strSearchMask.c_str(), &wfd));
-
+  CAutoPtrFind hFind ( FindFirstFile(strSearchMask.c_str(), &wfd));
+  
   // on error, check if path exists at all, this will return true if empty folder
   if (!hFind.isValid())
       return Exists(strPath1);
@@ -107,47 +78,48 @@ bool CHDDirectory::GetDirectory(const CStdString& strPath1, CFileItemList &items
     {
       if (wfd.cFileName[0] != 0)
       {
-        CStdString strLabel;
-#ifndef _LINUX
-        g_charsetConverter.wToUTF8(wfd.cFileName,strLabel);
-#else
-        strLabel = wfd.cFileName;
-#endif
         if ( (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
         {
-          if (strLabel != "." && strLabel != "..")
+          CStdString strDir = wfd.cFileName;
+          if (strDir != "." && strDir != "..")
           {
+            CStdString strLabel=wfd.cFileName;
+            g_charsetConverter.unknownToUTF8(strLabel);
             CFileItemPtr pItem(new CFileItem(strLabel));
             pItem->m_strPath = strRoot;
-            pItem->m_strPath += strLabel;
+            pItem->m_strPath += wfd.cFileName;
+            g_charsetConverter.unknownToUTF8(pItem->m_strPath);
             pItem->m_bIsFolder = true;
             CUtil::AddSlashAtEnd(pItem->m_strPath);
             FileTimeToLocalFileTime(&wfd.ftLastWriteTime, &localTime);
             pItem->m_dateTime=localTime;
 
-            if (wfd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-              pItem->SetProperty("file:hidden", true);
             items.Add(pItem);
           }
         }
         else
         {
+          CStdString strLabel=wfd.cFileName;
+          g_charsetConverter.unknownToUTF8(strLabel);
           CFileItemPtr pItem(new CFileItem(strLabel));
           pItem->m_strPath = strRoot;
-          pItem->m_strPath += strLabel;
+          pItem->m_strPath += wfd.cFileName;
+          g_charsetConverter.unknownToUTF8(pItem->m_strPath);
+
           pItem->m_bIsFolder = false;
           pItem->m_dwSize = CUtil::ToInt64(wfd.nFileSizeHigh, wfd.nFileSizeLow);
           FileTimeToLocalFileTime(&wfd.ftLastWriteTime, &localTime);
           pItem->m_dateTime=localTime;
 
-          if (wfd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-            pItem->SetProperty("file:hidden", true);
-
           items.Add(pItem);
         }
       }
     }
-    while (LocalFindNextFile((HANDLE)hFind, &wfd));
+    while (FindNextFile((HANDLE)hFind, &wfd));
+#ifdef _XBOX
+    // if we use AutoPtrHandle, this auto-closes
+    FindClose((HANDLE)hFind); //should be closed
+#endif
   }
   return true;
 }
@@ -155,22 +127,21 @@ bool CHDDirectory::GetDirectory(const CStdString& strPath1, CFileItemList &items
 bool CHDDirectory::Create(const char* strPath)
 {
   CStdString strPath1 = strPath;
+  g_charsetConverter.utf8ToStringCharset(strPath1);
   if (!CUtil::HasSlashAtEnd(strPath1))
-#ifndef _LINUX
     strPath1 += '\\';
-#else
-    strPath1 += '/';
-#endif
 
-#ifndef _LINUX
-  if (strPath1.size() == 3 && strPath1[1] == ':')
-    return Exists(strPath);  // A drive - we can't "create" a drive
-  CStdStringW strWPath1;
-  g_charsetConverter.utf8ToW(strPath1, strWPath1, false);
-  if(::CreateDirectoryW(strWPath1, NULL))
-#else
+  // okey this is really evil, since the create will succeed
+  // the caller will have no idea that a different directory was created
+  if (g_guiSettings.GetBool("services.ftpautofatx"))
+  {
+    CStdString strPath2(strPath1);
+    CUtil::GetFatXQualifiedPath(strPath1);
+    if(strPath2 != strPath1)
+      CLog::Log(LOGNOTICE,"fatxq: %s -> %s",strPath2.c_str(), strPath1.c_str());
+  }
+
   if(::CreateDirectory(strPath1.c_str(), NULL))
-#endif
     return true;
   else if(GetLastError() == ERROR_ALREADY_EXISTS)
     return true;
@@ -180,30 +151,20 @@ bool CHDDirectory::Create(const char* strPath)
 
 bool CHDDirectory::Remove(const char* strPath)
 {
-#ifndef _LINUX
-  CStdStringW strWPath;
-  g_charsetConverter.utf8ToW(strPath, strWPath, false);
-  return (::RemoveDirectoryW(strWPath) || GetLastError() == ERROR_PATH_NOT_FOUND) ? true : false;
-#else
-  return ::RemoveDirectory(strPath) ? true : false;
-#endif
+  CStdString strPath1 = strPath;
+  g_charsetConverter.utf8ToStringCharset(strPath1);
+  return (::RemoveDirectory(strPath1) || GetLastError() == ERROR_PATH_NOT_FOUND) ? true : false;
 }
 
 bool CHDDirectory::Exists(const char* strPath)
 {
   CStdString strReplaced=strPath;
-#ifndef _LINUX
-  CStdStringW strWReplaced;
+  g_charsetConverter.utf8ToStringCharset(strReplaced);
   strReplaced.Replace("/","\\");
+  CUtil::GetFatXQualifiedPath(strReplaced);
   if (!CUtil::HasSlashAtEnd(strReplaced))
     strReplaced += '\\';
-  g_charsetConverter.utf8ToW(strReplaced, strWReplaced, false);
-  DWORD attributes = GetFileAttributesW(strWReplaced);
-#else
   DWORD attributes = GetFileAttributes(strReplaced.c_str());
-#endif
-  if(attributes == INVALID_FILE_ATTRIBUTES)
-    return false;
-  if (FILE_ATTRIBUTE_DIRECTORY & attributes) return true;
+  if (FILE_ATTRIBUTE_DIRECTORY == attributes) return true;
   return false;
 }

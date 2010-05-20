@@ -18,15 +18,9 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "utils/log.h"
+ 
+#include "stdafx.h"
 #include "dll_util.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <stdlib.h>
-#include <string.h>
 
 #ifdef _cplusplus
 extern "C"
@@ -56,7 +50,7 @@ unsigned char dummy_func[] = {
 
 /* Create a new callable function
  * This allocates a few bytes with the next content
- *
+ * 
  * 1 function in assembly code (dummy_func)
  * 2 datapointer               (pointer to dll string)
  * 3 datapointer               (pointer to function string)
@@ -83,40 +77,22 @@ uintptr_t create_dummy_function(const char* strDllName, const char* strFunctionN
   memcpy(pData, dummy_func, iFunctionSize);
 
   // insert pointers to datapointers into assembly code (fills 0x00000000 in dummy_func)
-  *(int*)(pData + 4) = (intptr_t)offDataPointer1;
-  *(int*)(pData + 10) = (intptr_t)offDataPointer2;
-  *(int*)(pData + 17) = (intptr_t)offDataPointer3;
+  *(int*)(pData + 4) = (int)offDataPointer1;
+  *(int*)(pData + 10) = (int)offDataPointer2;
+  *(int*)(pData + 17) = (int)offDataPointer3;
 
   // 2 fill datapointer with pointer to 5 (string)
-  *(int*)offDataPointer1 = (intptr_t)offStringFunc;
+  *(int*)offDataPointer1 = (int)offStringFunc;
   // 3 fill datapointer with pointer to 6 (string)
-  *(int*)offDataPointer2 = (intptr_t)offStringDll;
+  *(int*)offDataPointer2 = (int)offStringDll;
   // 4 fill datapointer with pointer to dll_dummy_output
-  *(int*)offDataPointer3 = (intptr_t)dll_dummy_output;
+  *(int*)offDataPointer3 = (int)dll_dummy_output;
 
   // copy arguments to 5 (string) and 6 (string)
   memcpy(offStringDll, strDllName, iDllNameSize);
   memcpy(offStringFunc, strFunctionName, iFunctionNameSize);
 
   return (uintptr_t)pData;
-}
-
-uintptr_t get_win_function_address(const char* strDllName, const char* strFunctionName)
-{
-#ifdef _WIN32
-  HMODULE handle = GetModuleHandle(strDllName);
-  if(handle == NULL)
-  {
-    handle = LoadLibrary(strDllName);
-  }
-  if(handle != NULL)
-  {
-    uintptr_t pGNSI = (uintptr_t)GetProcAddress(handle, strFunctionName);
-    if(pGNSI != NULL)
-      return pGNSI;
-  }
-#endif
-  return 0;
 }
 
 #ifdef _cplusplus

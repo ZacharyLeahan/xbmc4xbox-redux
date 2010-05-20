@@ -20,25 +20,8 @@
  */
 
 #include "Win32Exception.h"
-#ifndef _LINUX
 #include "eh.h"
-#endif
 #include "log.h"
-
-#ifdef _LINUX
-
-void win32_exception::writelog(const char *prefix)  const
-{
-  if( prefix )
-    CLog::Log(LOGERROR, "%s : %s (code:0x%08x) at %p",
-              prefix, what(), (unsigned int) code(), where());
-  else
-    CLog::Log(LOGERROR, "%s (code:0x%08x) at %p",
-              what(), (unsigned int) code(), where());
-}
-
-
-#else
 
 void win32_exception::install_handler()
 {
@@ -101,4 +84,3 @@ void access_violation::writelog(const char *prefix) const
 
 }
 
-#endif

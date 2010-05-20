@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSmartPlaylistEditor.h"
 #include "GUIDialogKeyboard.h"
 #include "Util.h"
@@ -28,7 +29,6 @@
 #include "GUISettings.h"
 #include "Settings.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
 
 using namespace std;
 
@@ -79,7 +79,7 @@ CGUIDialogSmartPlaylistEditor::~CGUIDialogSmartPlaylistEditor()
 
 bool CGUIDialogSmartPlaylistEditor::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_PREVIOUS_MENU)
     m_cancelled = true;
   return CGUIDialog::OnAction(action);
 }
@@ -250,6 +250,16 @@ void CGUIDialogSmartPlaylistEditor::UpdateButtons()
 {
   CONTROL_ENABLE(CONTROL_OK); // always enabled since we can have no rules -> match everything (as we do with default partymode playlists)
 
+  if (m_playlist.m_playlistRules.size() <= 1)
+  {
+    CONTROL_DISABLE(CONTROL_RULE_REMOVE);
+    CONTROL_DISABLE(CONTROL_MATCH);
+  }
+  else
+  {
+    CONTROL_ENABLE(CONTROL_RULE_REMOVE);
+    CONTROL_ENABLE(CONTROL_MATCH);
+  }
   // name
   if (m_mode == "partyvideo" || m_mode == "partymusic")
   {
@@ -260,9 +270,6 @@ void CGUIDialogSmartPlaylistEditor::UpdateButtons()
   {
   SET_CONTROL_LABEL2(CONTROL_NAME, m_playlist.m_playlistName);
   }
-
-  CONTROL_ENABLE_ON_CONDITION(CONTROL_RULE_REMOVE, m_playlist.m_playlistRules.size() > 0);
-  CONTROL_ENABLE_ON_CONDITION(CONTROL_MATCH, m_playlist.m_playlistRules.size() > 1);
 
   int currentItem = GetSelectedItem();
   CGUIMessage msgReset(GUI_MSG_LABEL_RESET, GetID(), CONTROL_RULE_LIST);
@@ -501,3 +508,4 @@ bool CGUIDialogSmartPlaylistEditor::EditPlaylist(const CStdString &path, const C
   editor->DoModal(g_windowManager.GetActiveWindow());
   return !editor->m_cancelled;
 }
+

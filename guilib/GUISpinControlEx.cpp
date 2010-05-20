@@ -18,7 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "include.h"
 #include "GUISpinControlEx.h"
 
 CGUISpinControlEx::CGUISpinControlEx(int parentID, int controlID, float posX, float posY, float width, float height, float spinWidth, float spinHeight, const CLabelInfo& spinInfo, const CTextureInfo &textureFocus, const CTextureInfo &textureNoFocus, const CTextureInfo& textureUp, const CTextureInfo& textureDown, const CTextureInfo& textureUpFocus, const CTextureInfo& textureDownFocus, const CLabelInfo& labelInfo, int iType)
@@ -33,33 +34,35 @@ CGUISpinControlEx::~CGUISpinControlEx(void)
 {
 }
 
+void CGUISpinControlEx::PreAllocResources()
+{
+  CGUISpinControl::PreAllocResources();
+  m_buttonControl.PreAllocResources();
+}
+
 void CGUISpinControlEx::AllocResources()
 {
-  // Correct alignment - we always align the spincontrol on the right
-  m_label.GetLabelInfo().align = (m_label.GetLabelInfo().align & XBFONT_CENTER_Y) | XBFONT_RIGHT;
+  // Correct alignment - we always align the spincontrol on the right,
+  // and we always use a negative offsetX
+  m_label.align = (m_label.align & 4) | XBFONT_RIGHT;
+  if (m_label.offsetX > 0)
+    m_label.offsetX = -m_label.offsetX;
   CGUISpinControl::AllocResources();
   m_buttonControl.AllocResources();
   if (m_height == 0)
     m_height = GetSpinHeight();
 }
 
-void CGUISpinControlEx::FreeResources(bool immediately)
+void CGUISpinControlEx::FreeResources()
 {
-  CGUISpinControl::FreeResources(immediately);
-  m_buttonControl.FreeResources(immediately);
+  CGUISpinControl::FreeResources();
+  m_buttonControl.FreeResources();
 }
 
 void CGUISpinControlEx::DynamicResourceAlloc(bool bOnOff)
 {
   CGUISpinControl::DynamicResourceAlloc(bOnOff);
   m_buttonControl.DynamicResourceAlloc(bOnOff);
-}
-
-
-void CGUISpinControlEx::SetInvalid()
-{
-  CGUISpinControl::SetInvalid();
-  m_buttonControl.SetInvalid();
 }
 
 void CGUISpinControlEx::Render()
@@ -125,31 +128,14 @@ CStdString CGUISpinControlEx::GetDescription() const
   return strLabel;
 }
 
-void CGUISpinControlEx::SetItemInvalid(bool invalid)
+void CGUISpinControlEx::SettingsCategorySetSpinTextColor(const CGUIInfoColor &color)
 {
-  if (invalid)
-  {
-    m_label.GetLabelInfo().textColor = m_buttonControl.GetLabelInfo().disabledColor;
-    m_label.GetLabelInfo().focusedColor = m_buttonControl.GetLabelInfo().disabledColor;
-  }
-  else
-  {
-    m_label.GetLabelInfo().textColor = m_buttonControl.GetLabelInfo().textColor;
-    m_label.GetLabelInfo().focusedColor = m_buttonControl.GetLabelInfo().focusedColor;
-  }
+  m_label.textColor = color;
+  m_label.focusedColor = color;
 }
 
 void CGUISpinControlEx::SetSpinPosition(float spinPosX)
 {
   m_spinPosX = spinPosX;
   SetPosition(m_buttonControl.GetXPosition(), m_buttonControl.GetYPosition());
-}
-
-void CGUISpinControlEx::RenderText(float posX, float width)
-{
-  const float spaceWidth = 10;
-  // check our limits from the button control
-  float x = std::max(m_buttonControl.m_label.GetRenderRect().x2 + spaceWidth, posX);
-  m_label.SetScrolling(HasFocus());
-  CGUISpinControl::RenderText(x, width + posX - x);
 }

@@ -18,15 +18,18 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "utils/SingleLock.h"
-#include "utils/log.h"
+ 
+#include "stdafx.h"
 #include "DVDAudio.h"
-#include "Util.h"
+#ifdef _XBOX
+#include "cores/mplayer/ASyncDirectSound.h"
+#include "cores/mplayer/ac97directsound.h"
+#else
+#include "cores/mplayer/Win32DirectSound.h"
+#endif
 #include "DVDClock.h"
 #include "DVDCodecs/DVDCodecs.h"
 #include "DVDPlayerAudio.h"
-#include "../AudioRenderers/AudioRendererFactory.h"
 
 using namespace std;
 
@@ -60,14 +63,14 @@ void CDVDAudio::RegisterAudioCallback(IAudioCallback* pCallback)
 {
   CSingleLock lock (m_critSection);
   m_pCallback = pCallback;
-  if (m_pCallback && m_pAudioDecoder && !m_bPassthrough)
-    m_pCallback->OnInitialize(m_iChannels, m_iBitrate, m_iBitsPerSample);
+  if (m_pCallback && m_pAudioDecoder) m_pAudioDecoder->RegisterAudioCallback(pCallback);
 }
 
 void CDVDAudio::UnRegisterAudioCallback()
 {
   CSingleLock lock (m_critSection);
   m_pCallback = NULL;
+  if (m_pAudioDecoder) m_pAudioDecoder->UnRegisterAudioCallback();
 }
 
 bool CDVDAudio::Create(const DVDAudioFrame &audioframe, CodecID codec)
@@ -76,7 +79,31 @@ bool CDVDAudio::Create(const DVDAudioFrame &audioframe, CodecID codec)
 
   // if passthrough isset do something else
   CSingleLock lock (m_critSection);
-  m_pAudioDecoder = CAudioRendererFactory::Create(m_pCallback, audioframe.channels, audioframe.channel_map, audioframe.sample_rate, audioframe.bits_per_sample, false, false, audioframe.passthrough);
+
+  const char* codecstring="";
+
+  if(codec == CODEC_ID_AAC)
+    codecstring = "AAC";
+  else if (codec == CODEC_ID_VORBIS)
+    codecstring = "Vorbis";
+  else if(codec == CODEC_ID_AC3 || codec == CODEC_ID_DTS)
+    codecstring = ""; // TODO, fix ac3 and dts decoder to output standard windows mapping
+  else
+    codecstring = "PCM";
+
+#ifdef _XBOX
+  // we don't allow resampling now, there is a bug in sscc that causes it to return the wrong chunklen.
+  if( audioframe.passthrough )
+    m_pAudioDecoder = new CAc97DirectSound(m_pCallback, audioframe.channels, audioframe.sample_rate, audioframe.bits_per_sample, true); // true = resample, 128 buffers
+  else
+    m_pAudioDecoder = new CASyncDirectSound(m_pCallback, audioframe.channels, audioframe.sample_rate, audioframe.bits_per_sample, codecstring);
+#else
+
+  if( audioframe.passthrough )
+    return false;
+
+  m_pAudioDecoder = new CWin32DirectSound(m_pCallback, audioframe.channels, audioframe.sample_rate, audioframe.bits_per_sample, false, codecstring);
+#endif
 
   if (!m_pAudioDecoder) return false;
 
@@ -89,8 +116,6 @@ bool CDVDAudio::Create(const DVDAudioFrame &audioframe, CodecID codec)
   if (m_pBuffer) delete[] m_pBuffer;
   m_pBuffer = new BYTE[m_dwPacketSize];
 
-  if(m_pCallback && !m_bPassthrough)
-    m_pCallback->OnInitialize(m_iChannels, m_iBitrate, m_iBitsPerSample);
 
   return true;
 }
@@ -178,10 +203,6 @@ DWORD CDVDAudio::AddPackets(const DVDAudioFrame &audioframe)
 
   DWORD total = len;
   DWORD copied;
-
-  //Feed audio to the visualizer if necessary.
-  if(m_pCallback && !m_bPassthrough)
-    m_pCallback->OnAudioData(data, len);
 
   if (m_iBufferSize > 0) // See if there are carryover bytes from the last call. need to add them 1st.
   {

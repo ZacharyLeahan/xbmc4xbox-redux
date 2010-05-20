@@ -19,14 +19,14 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "XBMSDirectory.h"
 #include "Util.h"
-#include "SectionLoader.h"
 #include "URL.h"
 #include "FileItem.h"
-#include "utils/CharsetConverter.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 extern "C"
 {
@@ -121,11 +121,11 @@ bool CXBMSDirectory::GetDirectory(const CStdString& strPathUtf8, CFileItemList &
                                             strPassword.c_str() );
   }
   CStdString strFileName = url.GetFileName();
-  CStdString strDir;
+  CStdString strDir, strFile;
   strDir = "";
   if (cc_xstream_client_setcwd(conn, "/") == CC_XSTREAM_CLIENT_OK)
   {
-    CStdString strFile = url.GetFileName();
+    strFile = url.GetFileName();
     for (int i = 0; i < (int)strFile.size(); ++i)
     {
       if (strFile[i] == '/' || strFile[i] == '\\')
@@ -204,7 +204,7 @@ bool CXBMSDirectory::GetDirectory(const CStdString& strPathUtf8, CFileItemList &
       pstrModificationStart += strlen("<MODIFICATION>");
       strncpy(szModification, pstrModificationStart, pstrModificationEnd - pstrModificationStart);
       szModification[pstrModificationEnd - pstrModificationStart] = 0;
-      int64_t lTimeDate = _atoi64(szModification);
+      __int64 lTimeDate = _atoi64(szModification);
 
       FILETIME fileTime, localTime;
       LONGLONG ll = Int32x32To64(lTimeDate, 10000000) + 116444736000000000LL;
@@ -292,7 +292,7 @@ bool CXBMSDirectory::Exists(const char* strPath)
   CStdString strPath2(strPath);
   if (GetDirectory(strPath2,items))
     return true;
-
+  
   return false;
 }
 

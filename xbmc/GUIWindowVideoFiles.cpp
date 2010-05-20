@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowVideoFiles.h"
 #include "Util.h"
 #include "Picture.h"
@@ -40,19 +40,20 @@
 #include "GUIDialogYesNo.h"
 #include "FileSystem/File.h"
 #include "PlayList.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 
 using namespace std;
+using namespace MEDIA_DETECT;
 using namespace XFILE;
 using namespace PLAYLIST;
 using namespace VIDEO;
 
+#define CONTROL_LIST              50
+#define CONTROL_THUMBS            51
+
 #define CONTROL_PLAY_DVD           6
 #define CONTROL_STACK              7
 #define CONTROL_BTNSCAN            8
+#define CONTROL_IMDB               9
 #define CONTROL_BTNPLAYLISTS      13
 
 CGUIWindowVideoFiles::CGUIWindowVideoFiles()
@@ -77,7 +78,7 @@ bool CGUIWindowVideoFiles::OnMessage(CGUIMessage& message)
       if (!strDestination.IsEmpty())
       {
         message.SetStringParam("");
-        g_settings.m_iVideoStartWindow = GetID();
+        g_stSettings.m_iVideoStartWindow = GetID();
         CLog::Log(LOGINFO, "Attempting to quickpath to: %s", strDestination.c_str());
         // reset directory path, as we have effectively cleared it here
         m_history.ClearPathHistory();
@@ -169,10 +170,10 @@ bool CGUIWindowVideoFiles::OnMessage(CGUIMessage& message)
         // toggle between the following states:
         //   0 : no stacking
         //   1 : stacking
-        g_settings.m_iMyVideoStack++;
+        g_stSettings.m_iMyVideoStack++;
 
-        if (g_settings.m_iMyVideoStack > STACK_SIMPLE)
-          g_settings.m_iMyVideoStack = STACK_NONE;
+        if (g_stSettings.m_iMyVideoStack > STACK_SIMPLE)
+          g_stSettings.m_iMyVideoStack = STACK_NONE;
 
         g_settings.Save();
         UpdateButtons();
@@ -198,10 +199,8 @@ bool CGUIWindowVideoFiles::OnMessage(CGUIMessage& message)
         // use play button to add folders of items to temp playlist
         if (iAction == ACTION_PLAYER_PLAY && pItem->m_bIsFolder && !pItem->IsParentFolder())
         {
-#ifdef HAS_DVD_DRIVE
           if (pItem->IsDVD())
-            return MEDIA_DETECT::CAutorun::PlayDisc();
-#endif
+            return CAutorun::PlayDisc();
 
           if (pItem->m_bIsShareOrDrive)
             return false;
@@ -225,7 +224,7 @@ bool CGUIWindowVideoFiles::OnMessage(CGUIMessage& message)
 
 bool CGUIWindowVideoFiles::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_TOGGLE_WATCHED)
+  if (action.id == ACTION_TOGGLE_WATCHED)
   {
     CFileItemPtr pItem = m_vecItems->Get(m_viewControl.GetSelectedItem());
 
@@ -248,12 +247,12 @@ void CGUIWindowVideoFiles::UpdateButtons()
       CONTROL_ENABLE(CONTROL_STACK);
       if (stack->GetControlType() == CGUIControl::GUICONTROL_RADIO)
       {
-        SET_CONTROL_SELECTED(GetID(), CONTROL_STACK, g_settings.m_iMyVideoStack == STACK_SIMPLE);
+        SET_CONTROL_SELECTED(GetID(), CONTROL_STACK, g_stSettings.m_iMyVideoStack == STACK_SIMPLE);
         SET_CONTROL_LABEL(CONTROL_STACK, 14000);  // Stack
       }
       else
       {
-        SET_CONTROL_LABEL(CONTROL_STACK, g_settings.m_iMyVideoStack + 14000);
+        SET_CONTROL_LABEL(CONTROL_STACK, g_stSettings.m_iMyVideoStack + 14000);
       }
     }
     else
@@ -273,22 +272,22 @@ bool CGUIWindowVideoFiles::GetDirectory(const CStdString &strDirectory, CFileIte
   if (!CGUIWindowVideoBase::GetDirectory(strDirectory, items))
     return false;
 
-  ADDON::ScraperPtr info2 = m_database.GetScraperForPath(strDirectory);
+  SScraperInfo info2;
 
   m_stackingAvailable = true;
   m_cleaningAvailable = true;
 
 
-  if ((info2 && info2->Content() == CONTENT_TVSHOWS) || items.IsTuxBox())
+  if ((m_database.GetScraperForPath(strDirectory,info2) && info2.strContent.Equals("tvshows")) || items.IsTuxBox())
   { // dont stack or clean strings in tv dirs
     m_stackingAvailable = false;
     m_cleaningAvailable = false;
   }
-  else if (!items.IsStack() && g_settings.m_iMyVideoStack != STACK_NONE)
+  else if (!items.IsStack() && g_stSettings.m_iMyVideoStack != STACK_NONE)
     items.Stack();
 
-  if (info2 && info2->Content() != CONTENT_NONE)
-    items.SetContent(ADDON::TranslateContent(info2->Content()));
+  if ((!info2.strContent.IsEmpty() && !info2.strContent.Equals("None")) && items.GetContent().IsEmpty())
+    items.SetContent(info2.strContent.c_str());
   else
     items.SetContent("files");
 
@@ -309,7 +308,12 @@ void CGUIWindowVideoFiles::OnPrepareFileItems(CFileItemList &items)
       if ((item->m_bIsFolder && !CUtil::IsInArchive(item->m_strPath)) || m_cleaningAvailable)
         item->CleanString();
     }
-  }
+}
+}
+
+bool CGUIWindowVideoFiles::OnClick(int iItem)
+{
+  return CGUIWindowVideoBase::OnClick(iItem);
 }
 
 bool CGUIWindowVideoFiles::OnPlayMedia(int iItem)
@@ -317,13 +321,11 @@ bool CGUIWindowVideoFiles::OnPlayMedia(int iItem)
   if ( iItem < 0 || iItem >= (int)m_vecItems->Size() ) return false;
   CFileItemPtr pItem = m_vecItems->Get(iItem);
 
-#ifdef HAS_DVD_DRIVE
   if (pItem->IsDVD())
-    return MEDIA_DETECT::CAutorun::PlayDisc();
-#endif
+    return CAutorun::PlayDisc();
 
   if (pItem->m_bIsShareOrDrive)
-    return false;
+  	return false;
 
   if (pItem->m_strPath == "add" && pItem->GetLabel() == g_localizeStrings.Get(1026)) // 'add source button' in empty root
   {
@@ -379,9 +381,8 @@ bool CGUIWindowVideoFiles::OnUnAssignContent(int iItem, int label1, int label2, 
   {
     if (!bCanceled)
     {
-      ADDON::ScraperPtr info;
+      SScraperInfo info;
       SScanSettings settings;
-      settings.exclude = true;
       m_database.SetScraperForPath(m_vecItems->Get(iItem)->m_strPath,info,settings);
     }
   }
@@ -389,34 +390,45 @@ bool CGUIWindowVideoFiles::OnUnAssignContent(int iItem, int label1, int label2, 
   return false;
 }
 
-void CGUIWindowVideoFiles::OnAssignContent(int iItem, int iFound, ADDON::ScraperPtr& info, SScanSettings& settings)
+void CGUIWindowVideoFiles::OnAssignContent(int iItem, int iFound, SScraperInfo& info, SScanSettings& settings)
 {
+  if (!g_guiSettings.GetBool("videolibrary.enabled")) 
+    return;
+ 
   CFileItemPtr item = m_vecItems->Get(iItem);
   bool bScan=false;
   if (iFound == 0)
   {
-    info = m_database.GetScraperForPath(item->m_strPath, settings);
+    m_database.GetScraperForPath(item->m_strPath,info,settings,iFound);
   }
-
-  if (CGUIDialogContentSettings::Show(info, settings, bScan))
+  SScraperInfo info2 = info;
+  SScanSettings settings2 = settings;
+  
+  if (CGUIDialogContentSettings::Show(info2, settings2, bScan))
   {
-    if(settings.exclude || !info)
+    if((info2.strContent.IsEmpty() || info2.strContent.Equals("None")) && 
+      (!info.strContent.IsEmpty() && !info.strContent.Equals("None")))
     {
       OnUnAssignContent(iItem,20375,20340,20341);
     }
-    else
+    if (!info.strContent.IsEmpty()      && 
+        !info2.strContent.IsEmpty()     &&
+        !info.strContent.Equals("None") && 
+       (info2.strContent != info.strContent ||
+        !info.strPath.Equals(info2.strPath)))
     {
       if (OnUnAssignContent(iItem,20442,20443,20444))
         bScan = true;
     }
 
     m_database.Open();
-    m_database.SetScraperForPath(item->m_strPath,info,settings);
+    m_database.SetScraperForPath(item->m_strPath,info2,settings2);
     m_database.Close();
 
-    if (!settings.exclude && bScan)
+    if (bScan)
     {
-      OnScan(item->m_strPath);
+      GetScraperForItem(item.get(),info2,settings2);
+      OnScan(item->m_strPath,info2,settings2);
     }
   }
 }
@@ -474,60 +486,63 @@ void CGUIWindowVideoFiles::GetContextButtons(int itemNumber, CContextButtons &bu
       // add scan button somewhere here
       if (pScanDlg && pScanDlg->IsScanning())
         buttons.Add(CONTEXT_BUTTON_STOP_SCANNING, 13353);  // Stop Scanning
-      if (!item->IsDVD() && item->m_strPath != "add" &&
-         (g_settings.GetCurrentProfile().canWriteDatabases() || g_passwordManager.bMasterUser))
+      if (g_guiSettings.GetBool("videolibrary.enabled") && !item->IsDVD() && item->m_strPath != "add" &&
+         (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteDatabases() || g_passwordManager.bMasterUser))
       {
         CGUIDialogVideoScan *pScanDlg = (CGUIDialogVideoScan *)g_windowManager.GetWindow(WINDOW_DIALOG_VIDEO_SCAN);
         if (!pScanDlg || (pScanDlg && !pScanDlg->IsScanning()))
           buttons.Add(CONTEXT_BUTTON_SET_CONTENT, 20333);
         CVideoDatabase database;
         database.Open();
-        ADDON::ScraperPtr info = database.GetScraperForPath(item->m_strPath);
+        SScraperInfo info;
 
-        if (info && (!pScanDlg || (pScanDlg && !pScanDlg->IsScanning())))
-          buttons.Add(CONTEXT_BUTTON_SCAN, 13349);
+        if (item && database.GetScraperForPath(item->m_strPath,info))
+        {
+          if (!info.strPath.IsEmpty() && !info.strContent.IsEmpty())
+            if (!pScanDlg || (pScanDlg && !pScanDlg->IsScanning()))
+              buttons.Add(CONTEXT_BUTTON_SCAN, 13349);
+        }
       }
     }
     else
     {
       CGUIWindowVideoBase::GetContextButtons(itemNumber, buttons);
-      if (!item->GetPropertyBOOL("pluginreplacecontextitems") && !item->IsParentFolder())
+      if (!item->GetPropertyBOOL("pluginreplacecontextitems"))
       {
         // Movie Info button
         if (pScanDlg && pScanDlg->IsScanning())
           buttons.Add(CONTEXT_BUTTON_STOP_SCANNING, 13353);
-        if (g_settings.GetCurrentProfile().canWriteDatabases() || g_passwordManager.bMasterUser)
+        if (g_guiSettings.GetBool("videolibrary.enabled") && 
+          (g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteDatabases() || g_passwordManager.bMasterUser))
         {
-          ADDON::ScraperPtr info;
+          SScraperInfo info;
           VIDEO::SScanSettings settings;
-          GetScraperForItem(item.get(), info, settings);
+          int iFound = GetScraperForItem(item.get(), info, settings);
 
           int infoString = 13346;
-
-          if (info && info->Content() == CONTENT_TVSHOWS)
+          if (info.strContent.Equals("tvshows"))
             infoString = item->m_bIsFolder ? 20351 : 20352;
-          if (info && info->Content() == CONTENT_MUSICVIDEOS)
+          if (info.strContent.Equals("musicvideos"))
             infoString = 20393;
-          if(item->IsLiveTV())
-            infoString = 20352;
 
-          if (item->m_bIsFolder)
+          if (item->m_bIsFolder && !item->IsParentFolder())
           {
             if (!pScanDlg || (pScanDlg && !pScanDlg->IsScanning()))
               if (!item->IsPlayList() && !item->IsLiveTV())
                 buttons.Add(CONTEXT_BUTTON_SET_CONTENT, 20333);
-            if (!info)
+            if (iFound==0)
             { // scraper not set - allow movie information or set content
               CStdString strPath(item->m_strPath);
               CUtil::AddSlashAtEnd(strPath);
-              if (m_database.HasMovieInfo(strPath) || m_database.HasTvShowInfo(strPath))
+              if ((info.strContent.Equals("movies") && m_database.HasMovieInfo(strPath)) ||
+                  (info.strContent.Equals("tvshows") && m_database.HasTvShowInfo(strPath)))
                 buttons.Add(CONTEXT_BUTTON_INFO, infoString);
             }
             else
             { // scraper found - allow movie information, scan for new content, or set different type of content
-              if (info->Content() != CONTENT_MUSICVIDEOS)
+              if (!info.strContent.Equals("musicvideos"))
                 buttons.Add(CONTEXT_BUTTON_INFO, infoString);
-              if (info->Content() != CONTENT_NONE)
+              if (!info.strPath.IsEmpty() && !info.strContent.IsEmpty())
                 if (!pScanDlg || (pScanDlg && !pScanDlg->IsScanning()))
                   buttons.Add(CONTEXT_BUTTON_SCAN, 13349);
             }
@@ -535,10 +550,11 @@ void CGUIWindowVideoFiles::GetContextButtons(int itemNumber, CContextButtons &bu
           else
           {
             // single file
-            if ( m_database.HasMovieInfo(item->m_strPath)
-              || m_database.HasEpisodeInfo(item->m_strPath) 
-              || (item->IsLiveTV() && item->HasVideoInfoTag())
-              || (info && info->Content() == CONTENT_MUSICVIDEOS) )
+            if ((info.strContent.Equals("movies") && (iFound > 0 ||
+                 m_database.HasMovieInfo(item->m_strPath)))      ||
+                 m_database.HasEpisodeInfo(item->m_strPath)      ||
+                 info.strContent.Equals("livetv")                ||
+                 info.strContent.Equals("musicvideos"))
             {
               buttons.Add(CONTEXT_BUTTON_INFO, infoString);
 
@@ -547,16 +563,19 @@ void CGUIWindowVideoFiles::GetContextButtons(int itemNumber, CContextButtons &bu
               else
                 buttons.Add(CONTEXT_BUTTON_MARK_WATCHED, 16103);   //Mark as Watched
             }
-            if (!m_database.HasMovieInfo(item->m_strPath) 
-            &&  !m_database.HasEpisodeInfo(item->m_strPath) 
-            &&  !item->IsLiveTV())
-              buttons.Add(CONTEXT_BUTTON_ADD_TO_LIBRARY, 527); // Add to Database
+            m_database.Open();
+            if (!item->IsParentFolder())
+            {
+              if (!m_database.HasMovieInfo(item->m_strPath) && !m_database.HasEpisodeInfo(item->m_strPath))
+                buttons.Add(CONTEXT_BUTTON_ADD_TO_LIBRARY, 527); // Add to Database
+            }
+            m_database.Close();
           }
         }
       }
       if (!item->IsParentFolder())
       {
-        if ((m_vecItems->m_strPath.Equals("special://videoplaylists/")) ||
+        if ((m_vecItems->m_strPath.Equals("special://videoplaylists/")) || 
              g_guiSettings.GetBool("filelists.allowfiledeletion"))
         { // video playlists or file operations are allowed
           if (!item->IsReadOnly())
@@ -573,7 +592,7 @@ void CGUIWindowVideoFiles::GetContextButtons(int itemNumber, CContextButtons &bu
   else
   {
     if (pScanDlg && pScanDlg->IsScanning())
-      buttons.Add(CONTEXT_BUTTON_STOP_SCANNING, 13353);  // Stop Scanning
+      buttons.Add(CONTEXT_BUTTON_STOP_SCANNING, 13353);	// Stop Scanning
   }
   if(!(item && item->GetPropertyBOOL("pluginreplacecontextitems")))
   {
@@ -593,11 +612,8 @@ bool CGUIWindowVideoFiles::OnContextButton(int itemNumber, CONTEXT_BUTTON button
   {
     if (CGUIDialogContextMenu::OnContextButton("video", item, button))
     {
-      //TODO should we search DB for entries from plugins?
-      if (button == CONTEXT_BUTTON_REMOVE_SOURCE && !item->IsPlugin())
-      {
-          OnUnAssignContent(itemNumber,20375,20340,20341);
-      }
+      if (button == CONTEXT_BUTTON_REMOVE_SOURCE)
+      OnUnAssignContent(itemNumber,20375,20340,20341);
       Update("");
       return true;
     }
@@ -611,8 +627,12 @@ bool CGUIWindowVideoFiles::OnContextButton(int itemNumber, CONTEXT_BUTTON button
 
   case CONTEXT_BUTTON_SET_CONTENT:
     {
+      SScraperInfo info;
       SScanSettings settings;
-      ADDON::ScraperPtr info = m_database.GetScraperForPath(item->HasVideoInfoTag() ? item->GetVideoInfoTag()->m_strPath : item->m_strPath, settings);
+      if (item->HasVideoInfoTag())  // files view shouldn't need this check I think?
+        m_database.GetScraperForPath(item->GetVideoInfoTag()->m_strPath, info, settings);
+      else
+        m_database.GetScraperForPath(item->m_strPath, info, settings);
       OnAssignContent(itemNumber,0, info, settings);
       return true;
     }

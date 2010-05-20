@@ -19,10 +19,11 @@
  *
  */
 
+#include "include.h"
 #include "GUITextBox.h"
 #include "utils/CharsetConverter.h"
+#include "StringUtils.h"
 #include "utils/GUIInfoManager.h"
-#include "tinyXML/tinyxml.h"
 
 using namespace std;
 
@@ -78,7 +79,7 @@ CGUITextBox::~CGUITextBox(void)
   m_autoScrollRepeatAnim = NULL;
 }
 
-void CGUITextBox::DoRender(unsigned int currentTime)
+void CGUITextBox::DoRender(DWORD currentTime)
 {
   m_renderTime = currentTime;
 

@@ -27,10 +27,11 @@
 class CGUIViewStateWindowVideo : public CGUIViewState
 {
 public:
-  CGUIViewStateWindowVideo(const CFileItemList& items) : CGUIViewState(items, CONTENT_VIDEO) {}
+  CGUIViewStateWindowVideo(const CFileItemList& items) : CGUIViewState(items) {}
 
 protected:
   virtual CStdString GetLockType();
+  virtual bool UnrollArchives();
   virtual int GetPlaylist();
   virtual CStdString GetExtensions();
 };

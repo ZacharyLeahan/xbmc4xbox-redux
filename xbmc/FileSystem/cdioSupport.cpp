@@ -19,24 +19,16 @@
  *
  */
 
-#include "system.h"
-
-#ifdef HAS_DVD_DRIVE
-
+#include "stdafx.h"
 #include "cdioSupport.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
-#include <cdio/logging.h>
-#include <cdio/util.h>
-#ifdef _LINUX
-#include <cdio/mmc.h>
-#endif
-#include <cdio/cd_types.h>
+#include "lib/libcdio/cdio.h"
+#include "lib/libcdio/logging.h"
+#include "lib/libcdio/Util.h"
+
 
 using namespace MEDIA_DETECT;
 
 CLibcdio* CLibcdio::m_pInstance = NULL;
-char *CLibcdio::s_defaultDevice = NULL;
 
 /* Some interesting sector numbers stored in the above buffer. */
 #define ISO_SUPERBLOCK_SECTOR  16  /* buffer[0] */
@@ -108,8 +100,6 @@ CLibcdio::CLibcdio()
 
 CLibcdio::~CLibcdio()
 {
-  free(s_defaultDevice);
-  s_defaultDevice = NULL;
 }
 
 void CLibcdio::RemoveInstance()
@@ -206,28 +196,6 @@ driver_return_code_t CLibcdio::cdio_read_audio_sectors(
   return( ::cdio_read_audio_sectors(p_cdio, p_buf, i_lsn, i_blocks) );
 }
 
-char* CLibcdio::GetDeviceFileName()
-{
-  CSingleLock lock(*this);
-
-  if (s_defaultDevice == NULL)
-  {
-    if (getenv("XBMC_DVD_DEVICE") != NULL)
-      s_defaultDevice = strdup(getenv("XBMC_DVD_DEVICE"));
-    else
-    {
-      CdIo_t *p_cdio = ::cdio_open(NULL, DRIVER_UNKNOWN);
-      if (p_cdio != NULL)
-      {
-        s_defaultDevice = strdup(::cdio_get_arg(p_cdio, "source"));
-        ::cdio_destroy(p_cdio);
-      }
-      else
-        s_defaultDevice = "";
-    }
-  }
-  return s_defaultDevice;
-}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -245,9 +213,6 @@ CCdIoSupport::CCdIoSupport()
   m_nFs = 0;
   m_nUDFVerMinor = 0;
   m_nUDFVerMajor = 0;
-  m_nDataStart = 0;
-  m_nMsOffset = 0;
-  m_nStartTrack = 0;
 }
 
 CCdIoSupport::~CCdIoSupport()
@@ -267,8 +232,7 @@ HRESULT CCdIoSupport::CloseTray()
 HANDLE CCdIoSupport::OpenCDROM()
 {
   CSingleLock lock(*m_cdio);
-
-  char* source_name = m_cdio->GetDeviceFileName();
+  char* source_name = "\\\\.\\D:";
   CdIo* cdio = ::cdio_open(source_name, DRIVER_UNKNOWN);
 
   return (HANDLE) cdio;
@@ -448,7 +412,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
   if (fs & VIDEOCDI && num_audio == 0)
   {
     CLog::Log(LOGINFO, "Video CD   ");
-#if defined(HAVE_VCDINFO) && defined(DEBUG)
+#ifdef HAVE_VCDINFO
     if (!opts.no_vcd)
     {
       printf("\n");
@@ -554,7 +518,6 @@ int CCdIoSupport::GetJolietLevel( void )
 #define is_it_dbg(sig) /*\
     if (is_it(sig)) printf("%s, ", sigs[sig].description)*/
 
-#ifndef _LINUX
 int CCdIoSupport::GuessFilesystem(int start_session, track_t track_num)
 {
   int ret = FS_UNKNOWN;
@@ -689,91 +652,6 @@ int CCdIoSupport::GuessFilesystem(int start_session, track_t track_num)
 
   return ret;
 }
-#else
-int CCdIoSupport::GuessFilesystem(int start_session, track_t track_num)
-{
-  CSingleLock lock(*m_cdio);
-
-  int ret = FS_UNKNOWN;
-  cdio_iso_analysis_t anal;
-  cdio_fs_anal_t fs;
-  bool udf = false;
-
-  memset(&anal, 0, sizeof(anal));
-  discmode_t mode = ::cdio_get_discmode(cdio);
-  if (::cdio_is_discmode_dvd(mode))
-  {
-    m_strDiscLabel = "";
-    m_nIsofsSize = ::cdio_get_disc_last_lsn(cdio);
-    m_nJolietLevel = ::cdio_get_joliet_level(cdio);
-
-    return FS_ISO_9660;
-  }
-
-  fs = ::cdio_guess_cd_type(cdio, start_session, track_num, &anal);
-
-  switch(CDIO_FSTYPE(fs))
-    {
-    case CDIO_FS_AUDIO:
-      ret = FS_NO_DATA;
-      break;
-
-    case CDIO_FS_HIGH_SIERRA:
-      ret = FS_HIGH_SIERRA;
-      break;
-
-    case CDIO_FS_ISO_9660:
-      ret = FS_ISO_9660;
-      break;
-
-    case CDIO_FS_INTERACTIVE:
-      ret = FS_ISO_9660_INTERACTIVE;
-      break;
-
-    case CDIO_FS_HFS:
-      ret = FS_HFS;
-      break;
-
-    case CDIO_FS_UFS:
-      ret = FS_UFS;
-      break;
-
-    case CDIO_FS_EXT2:
-      ret = FS_EXT2;
-      break;
-
-    case CDIO_FS_UDFX:
-      ret = FS_UDFX;
-      udf = true;
-      break;
-
-    case CDIO_FS_UDF:
-      ret = FS_UDF;
-      udf = true;
-      break;
-
-    case CDIO_FS_ISO_UDF:
-      ret = FS_ISO_UDF;
-      udf = true;
-      break;
-
-    default:
-      break;
-    }
-
-  if (udf)
-  {
-    m_nUDFVerMinor = anal.UDFVerMinor;
-    m_nUDFVerMajor = anal.UDFVerMajor;
-  }
-
-  m_strDiscLabel = anal.iso_label;
-  m_nIsofsSize = anal.isofs_size;
-  m_nJolietLevel = anal.joliet_level;
-
-  return ret;
-}
-#endif
 
 void CCdIoSupport::GetCdTextInfo(trackinfo *pti, int trackNum)
 {
@@ -794,16 +672,10 @@ void CCdIoSupport::GetCdTextInfo(trackinfo *pti, int trackNum)
   }
 }
 
-CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
+CCdInfo* CCdIoSupport::GetCdInfo()
 {
   CSingleLock lock(*m_cdio);
-
-  char* source_name;
-  if(cDeviceFileName == NULL)
-    source_name = m_cdio->GetDeviceFileName();
-  else
-    source_name = cDeviceFileName;
-
+  char* source_name = "\\\\.\\D:";
   cdio = ::cdio_open(source_name, DRIVER_UNKNOWN);
   if (cdio == NULL)
   {
@@ -814,30 +686,18 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
     return NULL;
   }
 
-  bool bIsCDRom = true;
-
   m_nFirstTrackNum = ::cdio_get_first_track_num(cdio);
   if (m_nFirstTrackNum == CDIO_INVALID_TRACK)
   {
-#ifndef __APPLE__
     ::cdio_destroy(cdio);
     return NULL;
-#else
-    m_nFirstTrackNum = 1;
-    bIsCDRom = false;
-#endif
   }
 
   m_nNumTracks = ::cdio_get_num_tracks(cdio);
   if (m_nNumTracks == CDIO_INVALID_TRACK)
   {
-#ifndef __APPLE__
     ::cdio_destroy(cdio);
     return NULL;
-#else
-    m_nNumTracks = 1;
-    bIsCDRom = false;
-#endif
   }
 
   CCdInfo* info = new CCdInfo;
@@ -847,7 +707,7 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
   for (i = m_nFirstTrackNum; i <= CDIO_CDROM_LEADOUT_TRACK; i++)
   {
     msf_t msf;
-    if (bIsCDRom && !::cdio_get_track_msf(cdio, i, &msf))
+    if (!::cdio_get_track_msf(cdio, i, &msf))
     {
       char buf[1024];
       trackinfo ti;
@@ -868,7 +728,7 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
     trackinfo ti_0, ti;
     cdtext_init(&ti_0.cdtext);
     cdtext_init(&ti.cdtext);
-    if (bIsCDRom && TRACK_FORMAT_AUDIO == ::cdio_get_track_format(cdio, i))
+    if (TRACK_FORMAT_AUDIO == ::cdio_get_track_format(cdio, i))
     {
       m_nNumAudio++;
       ti.nfsInfo = FS_NO_DATA;
@@ -1076,8 +936,7 @@ int CCdIoSupport::CddbDecDigitSum(int n)
 UINT CCdIoSupport::MsfSeconds(msf_t *msf)
 {
   CSingleLock lock(*m_cdio);
-
-  return ::cdio_from_bcd8(msf->m)*60 + ::cdio_from_bcd8(msf->s);
+  return from_bcd8(msf->m)*60 + from_bcd8(msf->s);
 }
 
 
@@ -1108,6 +967,4 @@ ULONG CCdIoSupport::CddbDiscId()
 
   return ((n % 0xff) << 24 | t << 8 | m_nNumTracks);
 }
-
-#endif
 

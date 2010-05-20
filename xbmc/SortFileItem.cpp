@@ -19,14 +19,22 @@
  *
  */
 
+#include "stdafx.h"
 #include "AdvancedSettings.h"
 #include "SortFileItem.h"
-#include "StringUtils.h"
 #include "VideoInfoTag.h"
 #include "MusicInfoTag.h"
 #include "FileItem.h"
 #include "URL.h"
 #include "utils/log.h"
+
+#ifndef PRId64
+#ifdef _MSC_VER
+#define PRId64 "I64d"
+#else
+#define PRId64 "lld"
+#endif
+#endif
 
 #define RETURN_IF_NULL(x,y) if ((x) == NULL) { CLog::Log(LOGWARNING, "%s, sort item is null", __FUNCTION__); return y; }
 
@@ -335,13 +343,6 @@ void SSortFileItem::ByGenre(CFileItemPtr &item)
   else
     item->SetSortLabel(item->GetVideoInfoTag()->m_strGenre);
 }
-
-void SSortFileItem::ByCountry(CFileItemPtr &item)
-{
-  if (!item) return;
-  item->SetSortLabel(item->GetVideoInfoTag()->m_strCountry);
-}
-
 
 void SSortFileItem::ByYear(CFileItemPtr &item)
 {

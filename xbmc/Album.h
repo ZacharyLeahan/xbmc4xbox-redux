@@ -31,8 +31,6 @@
 #include "Song.h"
 #include "utils/ScraperUrl.h"
 
-class TiXmlNode;
-
 class CAlbum
 {
 public:
@@ -68,7 +66,7 @@ public:
   CStdString strAlbum;
   CStdString strArtist;
   CStdString strGenre;
-  CScraperUrl thumbURL;
+  CScraperUrl thumbURL;  
   CStdString strMoods;
   CStdString strStyles;
   CStdString strThemes;

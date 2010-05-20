@@ -22,14 +22,6 @@
  *
  */
 
-#include "utils/CriticalSection.h"
-#ifdef _WIN32
-#include "system.h" // for SOCKET
-#endif
-
-#include <list>
-#include <map>
-
 class DllLoader;
 
 struct AllocLenCaller
@@ -49,7 +41,7 @@ enum TrackedFileType
 typedef struct _TrackedFile
 {
   TrackedFileType type;
-  uintptr_t handle;
+  unsigned handle;
   char* name;
 } TrackedFile;
 
@@ -82,21 +74,21 @@ typedef struct _DllTrackInfo
   DllLoader* pDll;
   uintptr_t lMinAddr;
   uintptr_t lMaxAddr;
-
+  
   DataList dataList;
 
   // list with dll's that are loaded by this dll
   DllList dllList;
-
+  
   // for dummy functions that are created if no exported function could be found
   DummyList dummyList;
-
+  
   FileList fileList;
   SocketList socketList;
   CriticalSectionList criticalSectionList;
 
   HeapObjectList heapobjectList;
-
+  
   VAllocList virtualList;
 } DllTrackInfo;
 
@@ -132,17 +124,11 @@ DllTrackInfo* tracker_get_dlltrackinfo(uintptr_t caller);
 
 void tracker_dll_data_track(DllLoader* pDll, uintptr_t addr);
 
-#ifdef _LINUX
-#define _ReturnAddress() __builtin_return_address(0)
-#endif
-
 #ifdef _cplusplus
 }
 #endif
 
-#ifndef _LINUX
 extern "C" void * _ReturnAddress(void);
 #pragma intrinsic(_ReturnAddress)
-#endif
 
 #endif // _DLL_TRACKER_H_

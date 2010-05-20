@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIWindowMusicInfo.h"
 #include "GUIWindowManager.h"
 #include "Util.h"
@@ -36,15 +37,17 @@
 #include "MediaManager.h"
 #include "FileSystem/Directory.h"
 #include "utils/AsyncFileCopy.h"
-#include "Settings.h"
 #include "AdvancedSettings.h"
-#include "GUISettings.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
-#include "TextureCache.h"
 
-using namespace std;
 using namespace XFILE;
+
+#define CONTROL_ALBUM           20
+#define CONTROL_ARTIST          21
+#define CONTROL_DATE            22
+#define CONTROL_RATING          23
+#define CONTROL_GENRE           24
+#define CONTROL_MOODS           25
+#define CONTROL_STYLES          26
 
 #define CONTROL_IMAGE            3
 #define CONTROL_TEXTAREA         4
@@ -87,7 +90,7 @@ bool CGUIWindowMusicInfo::OnMessage(CGUIMessage& message)
       CGUIDialog::OnMessage(message);
       m_bViewReview = true;
       m_bRefresh = false;
-      RefreshThumb();
+        RefreshThumb();
       Update();
       return true;
     }
@@ -231,6 +234,10 @@ void CGUIWindowMusicInfo::Update()
   if (m_bArtistInfo)
   {
     CONTROL_ENABLE(CONTROL_BTN_GET_FANART);
+    SetLabel(CONTROL_ARTIST, m_artist.strArtist );
+    SetLabel(CONTROL_GENRE, m_artist.strGenre);
+    SetLabel(CONTROL_MOODS, m_artist.strMoods);
+    SetLabel(CONTROL_STYLES, m_artist.strStyles );
     if (m_bViewReview)
     {
       SET_CONTROL_VISIBLE(CONTROL_TEXTAREA);
@@ -255,6 +262,19 @@ void CGUIWindowMusicInfo::Update()
   else
   {
     CONTROL_DISABLE(CONTROL_BTN_GET_FANART);
+    SetLabel(CONTROL_ALBUM, m_album.strAlbum );
+    SetLabel(CONTROL_ARTIST, m_album.strArtist );
+    CStdString date; date.Format("%d", m_album.iYear);
+    SetLabel(CONTROL_DATE, date );
+
+    CStdString strRating;
+    if (m_album.iRating > 0)
+      strRating.Format("%i/9", m_album.iRating);
+    SetLabel(CONTROL_RATING, strRating );
+
+    SetLabel(CONTROL_GENRE, m_album.strGenre);
+    SetLabel(CONTROL_MOODS, m_album.strMoods);
+    SetLabel(CONTROL_STYLES, m_album.strStyles );
 
     if (m_bViewReview)
     {
@@ -287,7 +307,7 @@ void CGUIWindowMusicInfo::Update()
   }
 
   // disable the GetThumb button if the user isn't allowed it
-  CONTROL_ENABLE_ON_CONDITION(CONTROL_BTN_GET_THUMB, g_settings.GetCurrentProfile().canWriteDatabases() || g_passwordManager.bMasterUser);
+  CONTROL_ENABLE_ON_CONDITION(CONTROL_BTN_GET_THUMB, g_settings.m_vecProfiles[g_settings.m_iLastLoadedProfileIndex].canWriteDatabases() || g_passwordManager.bMasterUser);
 
   if (!m_album.strArtist.IsEmpty() && CLastFmManager::GetInstance()->IsLastFmEnabled())
   {
@@ -311,6 +331,12 @@ void CGUIWindowMusicInfo::SetLabel(int iControl, const CStdString& strLabel)
     SET_CONTROL_LABEL(iControl, strLabel);
   }
 }
+
+void CGUIWindowMusicInfo::Render()
+{
+  CGUIDialog::Render();
+}
+
 
 void CGUIWindowMusicInfo::RefreshThumb()
 {
@@ -416,27 +442,30 @@ void CGUIWindowMusicInfo::OnGetThumb()
   }
 
   // Grab the thumbnail(s) from the web
-  vector<CStdString> thumbs;
+  CScraperUrl url;
   if (m_bArtistInfo)
-    m_artist.thumbURL.GetThumbURLs(thumbs);
+    url = m_artist.thumbURL;
   else
-    m_album.thumbURL.GetThumbURLs(thumbs);
+    url = m_album.thumbURL;
 
-  for (unsigned int i = 0; i < thumbs.size(); ++i)
+  for (unsigned int i = 0; i < url.m_url.size(); i++)
   {
-    CStdString strItemPath;
-    strItemPath.Format("thumb://Remote%i", i);
-    CFileItemPtr item(new CFileItem(strItemPath, false));
-    item->SetThumbnailImage(thumbs[i]);
+    CStdString strThumb;
+    strThumb.Format("thumb://Remote%i",i);
+    CFileItemPtr item(new CFileItem(strThumb, false));
+    item->SetThumbnailImage("http://this.is/a/thumb/from/the/web");
     item->SetIconImage("DefaultPicture.png");
-    item->SetLabel(g_localizeStrings.Get(20015));
-    
-    // TODO: Do we need to clear the cached image?
-    //    CTextureCache::Get().ClearCachedImage(thumb);
+    item->GetVideoInfoTag()->m_strPictureURL.m_url.push_back(url.m_url[i]);
+    item->SetLabel(g_localizeStrings.Get(415));
+    item->SetProperty("labelonthumbload", g_localizeStrings.Get(20015));
+    // make sure any previously cached thumb is removed
+    if (CFile::Exists(item->GetCachedPictureThumb()))
+      CFile::Delete(item->GetCachedPictureThumb());
     items.Add(item);
   }
 
   // local thumb
+  CStdString cachedLocalThumb;
   CStdString localThumb;
   if (m_bArtistInfo)
   {
@@ -450,10 +479,15 @@ void CGUIWindowMusicInfo::OnGetThumb()
     localThumb = m_albumItem->GetUserMusicThumb();
   if (CFile::Exists(localThumb))
   {
-    CFileItemPtr item(new CFileItem("thumb://Local", false));
-    item->SetThumbnailImage(localThumb);
-    item->SetLabel(g_localizeStrings.Get(20017));
-    items.Add(item);
+    CUtil::AddFileToFolder(g_advancedSettings.m_cachePath, "localthumb.jpg", cachedLocalThumb);
+    CPicture pic;
+    if (pic.CreateThumbnail(localThumb, cachedLocalThumb))
+    {
+      CFileItemPtr item(new CFileItem("thumb://Local", false));
+      item->SetThumbnailImage(cachedLocalThumb);
+      item->SetLabel(g_localizeStrings.Get(20017));
+      items.Add(item);
+    }
   }
   else
   {
@@ -465,7 +499,7 @@ void CGUIWindowMusicInfo::OnGetThumb()
     item->SetLabel(g_localizeStrings.Get(20018));
     items.Add(item);
   }
-
+  
   CStdString result;
   bool flip=false;
   VECSOURCES sources(g_settings.m_musicSources);
@@ -484,23 +518,30 @@ void CGUIWindowMusicInfo::OnGetThumb()
   else
     cachedThumb = CUtil::GetCachedAlbumThumb(m_album.strAlbum, m_album.strArtist);
 
-  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
-  if (result.Left(14) == "thumb://Remote")
+  if (result.Left(14).Equals("thumb://Remote"))
   {
-    int number = atoi(result.Mid(14));
-    CFile::Cache(thumbs[number], cachedThumb);
+    CStdString strFile;
+    CFileItem chosen(result, false);
+    CStdString thumb = chosen.GetCachedPictureThumb();
+    if (CFile::Exists(thumb))
+    {
+      // NOTE: This could fail if the thumbloader was too slow and the user too impatient
+      CFile::Cache(thumb, cachedThumb);
+    }
+    else
+      result = "thumb://None";
+  }
+  if (result == "thumb://None")
+  { // cache the default thumb
+    CPicture pic;
+    pic.CacheSkinImage("DefaultAlbumCover.png", cachedThumb);
   }
   else if (result == "thumb://Local")
-    CFile::Cache(localThumb, cachedThumb);
+    CFile::Cache(cachedLocalThumb, cachedThumb);
   else if (CFile::Exists(result))
-    CPicture::CreateThumbnail(result, cachedThumb);
-  else
-    result = "thumb://None";
-
-  if (result == "thumb://None")
-  { // clear this thumb (note - it'll likely be recached, nothing we can do about that at this point)
-    CTextureCache::Get().ClearCachedImage(cachedThumb, true);
-    cachedThumb = "";
+  {
+    CPicture pic;
+    pic.CreateThumbnail(result, cachedThumb);
   }
 
   m_albumItem->SetThumbnailImage(cachedThumb);
@@ -530,21 +571,28 @@ void CGUIWindowMusicInfo::OnGetFanart()
   }
 
   // Grab the thumbnails from the web
+  CStdString strPath;
+  CUtil::AddFileToFolder(g_advancedSettings.m_cachePath,"fanartthumbs",strPath);
+  CUtil::WipeDir(strPath);
+  DIRECTORY::CDirectory::Create(strPath);
   for (unsigned int i = 0; i < m_artist.fanart.GetNumFanarts(); i++)
   {
     CStdString strItemPath;
     strItemPath.Format("fanart://Remote%i",i);
     CFileItemPtr item(new CFileItem(strItemPath, false));
-    CStdString thumb = m_artist.fanart.GetPreviewURL(i);
-    item->SetThumbnailImage(CTextureCache::GetWrappedThumbURL(thumb));
+    item->SetThumbnailImage("http://this.is/a/thumb/from/the/web");
     item->SetIconImage("DefaultPicture.png");
-    item->SetLabel(g_localizeStrings.Get(20441));
+    item->GetVideoInfoTag()->m_fanart = m_artist.fanart;
+    item->SetProperty("fanart_number", (int)i);
+    item->SetLabel(g_localizeStrings.Get(415));
+    item->SetProperty("labelonthumbload", g_localizeStrings.Get(20441));
 
-    // TODO: Do we need to clear the cached image?
-    //    CTextureCache::Get().ClearCachedImage(thumb);
+    // make sure any previously cached thumb is removed
+    if (CFile::Exists(item->GetCachedPictureThumb()))
+      CFile::Delete(item->GetCachedPictureThumb());
     items.Add(item);
   }
-
+  
   // Grab a local thumb
   CMusicDatabase database;
   database.Open();
@@ -557,9 +605,9 @@ void CGUIWindowMusicInfo::OnGetFanart()
     CFileItemPtr itemLocal(new CFileItem("fanart://Local",false));
     itemLocal->SetThumbnailImage(strLocal);
     itemLocal->SetLabel(g_localizeStrings.Get(20438));
-
-    // TODO: Do we need to clear the cached image?
-    CTextureCache::Get().ClearCachedImage(strLocal);
+    // make sure any previously cached thumb is removed
+    if (CFile::Exists(itemLocal->GetCachedPictureThumb()))
+      CFile::Delete(itemLocal->GetCachedPictureThumb());
     items.Add(itemLocal);
   }
   else
@@ -569,7 +617,7 @@ void CGUIWindowMusicInfo::OnGetFanart()
     itemNone->SetLabel(g_localizeStrings.Get(20439));
     items.Add(itemNone);
   }
-
+  
   CStdString result;
   VECSOURCES sources(g_settings.m_musicSources);
   g_mediaManager.GetLocalDrives(sources);
@@ -580,12 +628,13 @@ void CGUIWindowMusicInfo::OnGetFanart()
   // delete the thumbnail if that's what the user wants, else overwrite with the
   // new thumbnail
   if (result.Equals("fanart://Current"))
-   return;
+   return; 
 
   if (result.Equals("fanart://Local"))
     result = strLocal;
-
-  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
+ 
+  if (CFile::Exists(cachedThumb))
+    CFile::Delete(cachedThumb);
 
   if (!result.Equals("fanart://None"))
   { // local file
@@ -601,10 +650,11 @@ void CGUIWindowMusicInfo::OnGetFanart()
       result = tempFile;
     }
 
+    CPicture pic;
     if (flip)
-      CPicture::ConvertFile(result, cachedThumb,0,1920,-1,100,true);
+      pic.ConvertFile(result, cachedThumb,0,1920,-1,100,true);
     else
-      CPicture::CacheFanart(result, cachedThumb);
+      pic.CacheFanart(result, cachedThumb);
 
     m_albumItem->SetProperty("fanart_image",cachedThumb);
     m_hasUpdatedThumb = true;
@@ -626,9 +676,10 @@ void CGUIWindowMusicInfo::OnSearch(const CFileItem* pItem)
   if (idAlbum != -1)
   {
     CAlbum album;
+    CStdString strPath;
+
     if (database.GetAlbumInfo(idAlbum,album,&album.songs))
     {
-      CStdString strPath;
       database.GetAlbumPath(idAlbum,strPath);
       SetAlbum(album,strPath);
       Update();
@@ -637,7 +688,7 @@ void CGUIWindowMusicInfo::OnSearch(const CFileItem* pItem)
 }
 
 CFileItemPtr CGUIWindowMusicInfo::GetCurrentListItem(int offset)
-{
-  return m_albumItem;
+{ 
+  return m_albumItem; 
 }
 

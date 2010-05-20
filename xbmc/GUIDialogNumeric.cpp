@@ -19,13 +19,13 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogNumeric.h"
 #include "GUILabelControl.h"
 #include "utils/md5.h"
+#include "xbox/XKGeneral.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogOK.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
 
 #define CONTROL_HEADING_LABEL  1
 #define CONTROL_INPUT_LABEL    4
@@ -45,6 +45,7 @@ CGUIDialogNumeric::CGUIDialogNumeric(void)
 
   m_mode = INPUT_PASSWORD;
   m_block = 0;
+  m_integer = 0;
   memset(&m_datetime, 0, sizeof(SYSTEMTIME));
   m_dirty = false;
 }
@@ -55,34 +56,34 @@ CGUIDialogNumeric::~CGUIDialogNumeric(void)
 
 bool CGUIDialogNumeric::OnAction(const CAction &action)
 {
-  if (action.GetID() == ACTION_CLOSE_DIALOG || action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_CLOSE_DIALOG || action.id == ACTION_PREVIOUS_MENU)
     OnCancel();
-  else if (action.GetID() == ACTION_NEXT_ITEM)
+  else if (action.id == ACTION_NEXT_ITEM)
     OnNext();
-  else if (action.GetID() == ACTION_PREV_ITEM)
+  else if (action.id == ACTION_PREV_ITEM)
     OnPrevious();
-  else if (action.GetID() == ACTION_BACKSPACE)
+  else if (action.id == ACTION_BACKSPACE)
     OnBackSpace();
-  else if (action.GetID() == ACTION_ENTER)
+  else if (action.id == ACTION_ENTER)
     OnOK();
-  else if (action.GetID() >= REMOTE_0 && action.GetID() <= REMOTE_9)
-    OnNumber(action.GetID() - REMOTE_0);
-  else if (action.GetID() >= KEY_VKEY && action.GetID() < KEY_ASCII)
+  else if (action.id >= REMOTE_0 && action.id <= REMOTE_9)
+    OnNumber(action.id - REMOTE_0);
+  else if (action.id >= KEY_VKEY && action.id < KEY_ASCII)
   { // input from the keyboard (vkey, not ascii)
-    BYTE b = action.GetID() & 0xFF;
+    BYTE b = action.id & 0xFF;
     if (b == 0x25) OnPrevious();     // left
     else if (b == 0x27) OnNext();  // right
     else if (b == 0x0D) OnOK();         // enter
     else if (b == 0x08) OnBackSpace();    // backspace
     else if (b == 0x1B) OnCancel();        // escape
   }
-  else if (action.GetID() >= KEY_ASCII) // FIXME make it KEY_UNICODE
+  else if (action.id >= KEY_ASCII) // FIXME make it KEY_UNICODE
   { // input from the keyboard
-    if (action.GetUnicode() == 10 || action.GetUnicode() == 13) OnOK(); // enter
-    else if (action.GetUnicode() == 8) OnBackSpace(); // backspace
-    else if (action.GetUnicode() == 27) OnCancel(); // escape
-    else if (action.GetUnicode() >= 48 && action.GetUnicode() < 58)  // number
-      OnNumber(action.GetUnicode() - 48);
+    if (action.unicode == 10 || action.unicode == 13) OnOK(); // enter
+    else if (action.unicode == 8) OnBackSpace(); // backspace
+    else if (action.unicode == 27) OnCancel(); // escape
+    else if (action.unicode >= 48 && action.unicode < 58)  // number
+      OnNumber(action.unicode - 48);
   }
   else
     return CGUIDialog::OnAction(action);
@@ -145,10 +146,14 @@ void CGUIDialogNumeric::OnBackSpace()
     m_block--;
     return;
   }
-  if (m_mode == INPUT_NUMBER || m_mode == INPUT_PASSWORD)
+  if (m_mode == INPUT_NUMBER)
   { // just go back one character
-    if (!m_number.IsEmpty())
-      m_number.Delete(m_number.GetLength() - 1);
+    m_integer /= 10;
+  }
+  else if (m_mode == INPUT_PASSWORD)
+  {
+    if (!m_password.IsEmpty())
+      m_password.Delete(m_password.GetLength() - 1);
   }
   else if (m_mode == INPUT_IP_ADDRESS)
   {
@@ -227,19 +232,19 @@ void CGUIDialogNumeric::OnNext()
     VerifyDate(m_block == 2);
 }
 
-void CGUIDialogNumeric::FrameMove()
+void CGUIDialogNumeric::Render()
 {
   CStdString strLabel;
   unsigned int start = 0;
   unsigned int end = 0;
   if (m_mode == INPUT_PASSWORD)
   {
-    for (unsigned int i=0; i < m_number.size(); i++)
+    for (unsigned int i=0; i < m_password.size(); i++)
       strLabel += '*';
   }
   else if (m_mode == INPUT_NUMBER)
   { // simple - just render text directly
-    strLabel = m_number;
+    strLabel.Format("%d", m_integer);
   }
   else if (m_mode == INPUT_TIME)
   { // format up the time
@@ -273,14 +278,19 @@ void CGUIDialogNumeric::FrameMove()
     pLabel->SetLabel(strLabel);
     pLabel->SetHighlight(start, end);
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
 void CGUIDialogNumeric::OnNumber(unsigned int num)
 {
-  if (m_mode == INPUT_NUMBER || m_mode == INPUT_PASSWORD)
+  if (m_mode == INPUT_NUMBER)
   {
-    m_number += num + '0';
+    m_integer *= 10;
+    m_integer += num;
+  }
+  else if (m_mode == INPUT_PASSWORD)
+  {
+    m_password += num + '0';
   }
   else if (m_mode == INPUT_TIME)
   {
@@ -479,9 +489,20 @@ void CGUIDialogNumeric::SetMode(INPUT_MODE mode, void *initial)
       }
     }
   }
-  if (m_mode == INPUT_NUMBER || m_mode == INPUT_PASSWORD)
+  if (m_mode == INPUT_NUMBER)
+  { // convert number from string to number
+    m_integer = 0;
+    CStdString password = *(CStdString *)initial;
+    unsigned int ch = 0;
+    while (ch < password.size() && isdigit(password[ch]))
+    {
+      m_integer *= 10;
+      m_integer += password[ch++] - '0';
+    }
+  }
+  if (m_mode == INPUT_PASSWORD)
   {
-    m_number = *(CStdString *)initial;
+    m_password = *(CStdString *)initial;
   }
 }
 
@@ -489,16 +510,21 @@ void CGUIDialogNumeric::GetOutput(void *output)
 {
   if (!output) return;
   if (m_mode == INPUT_TIME || m_mode == INPUT_TIME_SECONDS || m_mode == INPUT_DATE)
-    memcpy(output, &m_datetime, sizeof(m_datetime));
+    *(SYSTEMTIME*)output = m_datetime;
   if (m_mode == INPUT_IP_ADDRESS)
   {
     CStdString *ipaddress = (CStdString *)output;
     ipaddress->Format("%d.%d.%d.%d", m_ip[0], m_ip[1], m_ip[2], m_ip[3]);
   }
-  if (m_mode == INPUT_NUMBER || m_mode == INPUT_PASSWORD)
+  if (m_mode == INPUT_NUMBER)
   {
     CStdString *number = (CStdString *)output;
-    *number = m_number;
+    number->Format("%d", m_integer);
+  }
+  if (m_mode == INPUT_PASSWORD)
+  {
+    CStdString *pass = (CStdString *)output;
+    *pass = m_password;
   }
 }
 
@@ -513,7 +539,7 @@ bool CGUIDialogNumeric::ShowAndGetSeconds(CStdString &timeString, const CStdStri
   time.wSecond = seconds - time.wHour * 3600 - time.wMinute * 60;
   pDialog->SetMode(INPUT_TIME_SECONDS, (void *)&time);
   pDialog->SetHeading(heading);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
   if (!pDialog->IsConfirmed() || pDialog->IsCanceled())
     return false;
   pDialog->GetOutput(&time);
@@ -528,7 +554,7 @@ bool CGUIDialogNumeric::ShowAndGetTime(SYSTEMTIME &time, const CStdString &headi
   if (!pDialog) return false;
   pDialog->SetMode(INPUT_TIME, (void *)&time);
   pDialog->SetHeading(heading);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
   if (!pDialog->IsConfirmed() || pDialog->IsCanceled())
     return false;
   pDialog->GetOutput(&time);
@@ -541,7 +567,7 @@ bool CGUIDialogNumeric::ShowAndGetDate(SYSTEMTIME &date, const CStdString &headi
   if (!pDialog) return false;
   pDialog->SetMode(INPUT_DATE, (void *)&date);
   pDialog->SetHeading(heading);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
   if (!pDialog->IsConfirmed() || pDialog->IsCanceled())
     return false;
   pDialog->GetOutput(&date);
@@ -554,7 +580,7 @@ bool CGUIDialogNumeric::ShowAndGetIPAddress(CStdString &IPAddress, const CStdStr
   if (!pDialog || !IPAddress) return false;
   pDialog->SetMode(INPUT_IP_ADDRESS, (void *)&IPAddress);
   pDialog->SetHeading(heading);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
   if (!pDialog->IsConfirmed() || pDialog->IsCanceled())
     return false;
   pDialog->GetOutput(&IPAddress);
@@ -568,7 +594,7 @@ bool CGUIDialogNumeric::ShowAndGetNumber(CStdString& strInput, const CStdString 
   pDialog->SetHeading( strHeading );
 
   pDialog->SetMode(INPUT_NUMBER, (void *)&strInput);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
 
   if (!pDialog->IsConfirmed() || pDialog->IsCanceled())
     return false;
@@ -643,7 +669,7 @@ bool CGUIDialogNumeric::ShowAndVerifyInput(CStdString& strToVerify, const CStdSt
   if (!bVerifyInput)
     strInput = strToVerify;
   pDialog->SetMode(INPUT_PASSWORD, (void *)&strInput);
-  pDialog->DoModal();
+  pDialog->DoModalThreadSafe();
 
   pDialog->GetOutput(&strInput);
 
@@ -653,9 +679,9 @@ bool CGUIDialogNumeric::ShowAndVerifyInput(CStdString& strToVerify, const CStdSt
     strToVerify ="";
     return false;
   }
-
+  
   CStdString md5pword2;
-  XBMC::XBMC_MD5 md5state;
+  XBMC::MD5 md5state;
   md5state.append(strInput);
   md5state.getDigest(md5pword2);
 

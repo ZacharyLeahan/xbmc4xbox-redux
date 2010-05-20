@@ -21,24 +21,18 @@
  */
 #include "Database.h"
 
-#ifdef _LINUX
-#include "PlatformDefs.h" // FILETIME
-#endif
-
 typedef std::vector<CStdString> VECPROGRAMPATHS;
 
 #define COMPARE_PERCENTAGE     0.90f // 90%
 #define COMPARE_PERCENTAGE_MIN 0.50f // 50%
 
-class CFileItem;
+#define PROGRAM_DATABASE_NAME "MyPrograms6.db"
 
 class CProgramDatabase : public CDatabase
 {
 public:
   CProgramDatabase(void);
   virtual ~CProgramDatabase(void);
-  virtual bool Open();
-
   bool AddTrainer(int iTitleId, const CStdString& strText);
   bool RemoveTrainer(const CStdString& strText);
   bool GetTrainers(unsigned int iTitleId, std::vector<CStdString>& vecTrainers);
@@ -53,20 +47,19 @@ public:
   int GetRegion(const CStdString& strFilenameAndPath);
   bool SetRegion(const CStdString& strFilenameAndPath, int iRegion=-1);
 
-  uint32_t GetTitleId(const CStdString& strFilenameAndPath);
-  bool SetTitleId(const CStdString& strFilenameAndPath, uint32_t dwTitleId);
+  int GetTitleId(const CStdString& strFilenameAndPath);
+  bool SetTitleId(const CStdString& strFilenameAndPath, int idTitle);
   bool IncTimesPlayed(const CStdString& strFileName1);
   bool SetDescription(const CStdString& strFileName1, const CStdString& strDescription);
-  bool GetXBEPathByTitleId(const uint32_t titleId, CStdString& strPathAndFilename);
+  bool GetXBEPathByTitleId(const int idTitle, CStdString& strPathAndFilename);
 
-  uint32_t GetProgramInfo(CFileItem *item);
+  int GetProgramInfo(CFileItem *item);
   bool AddProgramInfo(CFileItem *item, unsigned int titleID);
 
 protected:
   virtual bool CreateTables();
   virtual bool UpdateOldVersion(int version);
   virtual int GetMinVersion() const { return 3; };
-  const char *GetDefaultDBName() const { return "MyPrograms6"; };
 
-  FILETIME TimeStampToLocalTime( uint64_t timeStamp );
+  FILETIME TimeStampToLocalTime( unsigned __int64 timeStamp );
 };

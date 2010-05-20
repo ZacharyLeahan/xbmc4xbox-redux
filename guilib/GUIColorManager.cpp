@@ -19,12 +19,11 @@
  *
  */
 
+#include "include.h"
 #include "GUIColorManager.h"
 #include "Util.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "addons/Skin.h"
-#include "utils/log.h"
-#include "tinyXML/tinyxml.h"
+#include "SkinInfo.h"
 
 CGUIColorManager g_colorManager;
 
@@ -54,10 +53,10 @@ void CGUIColorManager::Load(const CStdString &colorFile)
 
   // first load the default color map if it exists
   CStdString path, basePath;
-  CUtil::AddFileToFolder(g_SkinInfo->Path(), "colors", basePath);
+  CUtil::AddFileToFolder(g_SkinInfo.GetBaseDir(), "colors", basePath);
   CUtil::AddFileToFolder(basePath, "defaults.xml", path);
 
-  if (xmlDoc.LoadFile(PTH_IC(path)))
+  if (xmlDoc.LoadFile(path))
     LoadXML(xmlDoc);
 
   // now the color map requested

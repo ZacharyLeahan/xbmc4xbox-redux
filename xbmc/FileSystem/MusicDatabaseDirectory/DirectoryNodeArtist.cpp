@@ -22,9 +22,9 @@
 #include "DirectoryNodeArtist.h"
 #include "QueryParams.h"
 #include "MusicDatabase.h"
-#include "GUISettings.h"
+#include "Settings.h"
 
-using namespace XFILE::MUSICDATABASEDIRECTORY;
+using namespace DIRECTORY::MUSICDATABASEDIRECTORY;
 
 CDirectoryNodeArtist::CDirectoryNodeArtist(const CStdString& strName, CDirectoryNode* pParent)
   : CDirectoryNode(NODE_TYPE_ARTIST, strName, pParent)

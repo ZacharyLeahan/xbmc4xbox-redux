@@ -21,22 +21,14 @@
 
 #pragma once
 #include "deque"
-#include "system.h" // for SOCKET
-
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <map>
 
 typedef struct htsmsg htsmsg_t;
-
-class CFileItem;
 
 namespace HTSP
 {
 
 template<typename T>
-class const_circular_iter
+class const_circular_iter 
   : public std::iterator< typename std::iterator_traits<T>::iterator_category
                         , typename std::iterator_traits<T>::value_type
                         , typename std::iterator_traits<T>::difference_type
@@ -129,7 +121,7 @@ struct SChannel
   {
     return std::find(tags.begin(), tags.end(), tag) != tags.end();
   }
-  bool operator<(const SChannel &right) const
+  bool operator<(const SChannel &right)
   {
     return num < right.num;
   }
@@ -166,7 +158,7 @@ struct SQueueStatus
   uint32_t delay;   // Estimated delay of queue (in µs)
   uint32_t bdrops;  // Number of B-frames dropped
   uint32_t pdrops;  // Number of P-frames dropped
-  uint32_t idrops;  // Number of I-frames dropped
+  uint32_t idrops;  // Number of I-frames dropped 
 
   SQueueStatus() { Clear(); }
   void Clear()

@@ -19,26 +19,10 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
+#include "stdafx.h"
 #include "dialog.h"
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "lib/libPython/Python/Python.h"
 #include "../XBPythonDll.h"
-#include "Application.h"
-#include "Settings.h"
 #include "pyutil.h"
 #include "GUIDialogFileBrowser.h"
 #include "GUIDialogNumeric.h"
@@ -72,9 +56,6 @@ namespace PYXBMC
 
     self = (WindowDialog*)type->tp_alloc(type, 0);
     if (!self) return NULL;
-    new(&self->sXMLFileName) string();
-    new(&self->sFallBackPath) string();
-    new(&self->vecControls) std::vector<Control*>();
 
     self->iWindowId = -1;
 
@@ -84,10 +65,6 @@ namespace PYXBMC
     if (!Window_CreateNewWindow((Window*)self, true))
     {
       // error is already set by Window_CreateNewWindow, just release the memory
-      self->vecControls.clear();
-      self->vecControls.~vector();
-      self->sFallBackPath.~string();
-      self->sXMLFileName.~string();
       self->ob_type->tp_free((PyObject*)self);
       return NULL;
     }
@@ -134,7 +111,7 @@ namespace PYXBMC
 
     //send message and wait for user input
     ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, window, ACTIVE_WINDOW};
-    g_application.getApplicationMessenger().SendMessage(tMsg, true);
+    g_applicationMessenger.SendMessage(tMsg, true);
 
     return Py_BuildValue((char*)"b", pDialog->IsConfirmed());
   }
@@ -183,9 +160,9 @@ namespace PYXBMC
     VECSOURCES *shares = g_settings.GetSourcesFromType(utf8Line[1]);
     if (!shares) return NULL;
 
-    if (useFileDirectories && !utf8Line[2].size() == 0)
+    if (useFileDirectories && !utf8Line[2].size() == 0) 
       utf8Line[2] += "|.rar|.zip";
-
+    
     value = cDefault;
     if (browsetype == 1)
       CGUIDialogFileBrowser::ShowAndGetFile(*shares, utf8Line[2], utf8Line[0], value, 0 != useThumbs, 0 != useFileDirectories);
@@ -328,7 +305,7 @@ namespace PYXBMC
 
     //send message and wait for user input
     ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, window, ACTIVE_WINDOW};
-    g_application.getApplicationMessenger().SendMessage(tMsg, true);
+    g_applicationMessenger.SendMessage(tMsg, true);
 
     return Py_BuildValue((char*)"b", pDialog->IsConfirmed());
   }
@@ -373,7 +350,7 @@ namespace PYXBMC
 
     //send message and wait for user input
     ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, window, ACTIVE_WINDOW};
-    g_application.getApplicationMessenger().SendMessage(tMsg, true);
+    g_applicationMessenger.SendMessage(tMsg, true);
 
     return Py_BuildValue((char*)"i", pDialog->GetSelectedLabel());
   }
@@ -419,7 +396,7 @@ namespace PYXBMC
     for (int i = 1; i < 4; i++)
       pDialog->SetLine(i - 1,utf8Line[i]);
 
-    pDialog->StartModal();
+    pDialog->StartModal(true);    // NOTE: See the comment in CGUIDialogProgress::StartModal()
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -586,7 +563,7 @@ namespace PYXBMC
     DialogProgress_Type.tp_doc = dialogProgress__doc__;
     DialogProgress_Type.tp_methods = DialogProgress_methods;
     DialogProgress_Type.tp_base = 0;
-    DialogProgress_Type.tp_new = PyType_GenericNew;
+    DialogProgress_Type.tp_new = 0;
   }
 
 
@@ -603,7 +580,7 @@ namespace PYXBMC
     Dialog_Type.tp_doc = dialog__doc__;
     Dialog_Type.tp_methods = Dialog_methods;
     Dialog_Type.tp_base = 0;
-    Dialog_Type.tp_new = PyType_GenericNew;
+    Dialog_Type.tp_new = 0;
   }
 }
 

@@ -19,15 +19,18 @@
  *
  */
 
+#include "stdafx.h"
 #include "BackgroundInfoLoader.h"
 #include "FileItem.h"
 #include "AdvancedSettings.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 
 using namespace std;
 
+#ifdef _XBOX
+#define ITEMS_PER_THREAD 10
+#else
 #define ITEMS_PER_THREAD 5
+#endif
 
 CBackgroundInfoLoader::CBackgroundInfoLoader(int nThreads)
 {
@@ -115,7 +118,7 @@ void CBackgroundInfoLoader::Load(CFileItemList& items)
 
   if (items.Size() == 0)
     return;
-
+  
   EnterCriticalSection(m_lock);
 
   for (int nItem=0; nItem < items.Size(); nItem++)
@@ -135,15 +138,13 @@ void CBackgroundInfoLoader::Load(CFileItemList& items)
   m_nActiveThreads = nThreads;
   for (int i=0; i < nThreads; i++)
   {
-    CThread *pThread = new CThread(this);
+    CThread *pThread = new CThread(this); 
     pThread->Create();
-#ifndef _LINUX
     pThread->SetPriority(THREAD_PRIORITY_BELOW_NORMAL);
-#endif
     pThread->SetName("Background Loader");
     m_workers.push_back(pThread);
   }
-
+      
   LeaveCriticalSection(m_lock);
 }
 

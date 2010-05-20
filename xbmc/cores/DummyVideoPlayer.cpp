@@ -19,16 +19,12 @@
  *
  */
  
-#include "system.h"
+#include "stdafx.h"
 #include "DummyVideoPlayer.h"
 #include "GUIFontManager.h"
 #include "GUITextLayout.h"
-#include "GUIFont.h" // for XBFONT_* defines
 #include "Application.h"
 #include "AdvancedSettings.h"
-#include "WindowingFactory.h"
-#include "utils/log.h"
-#include "utils/TimeUtils.h"
 
 CDummyVideoPlayer::CDummyVideoPlayer(IPlayerCallback& callback)
     : IPlayer(callback),
@@ -75,28 +71,25 @@ bool CDummyVideoPlayer::IsPlaying() const
 void CDummyVideoPlayer::Process()
 {
   m_clock = 0;
-  m_lastTime = CTimeUtils::GetTimeMS();
+  m_lastTime = timeGetTime();
 
   m_callback.OnPlayBackStarted();
   while (!m_bStop)
   {
     if (!m_paused)
-      m_clock += (CTimeUtils::GetTimeMS() - m_lastTime)*m_speed;
-    m_lastTime = CTimeUtils::GetTimeMS();
+      m_clock += (timeGetTime() - m_lastTime)*m_speed;
+    m_lastTime = timeGetTime();
     Sleep(0);
     g_graphicsContext.Lock();
     if (g_graphicsContext.IsFullScreenVideo())
     {
-#ifdef HAS_DX	
-      g_Windowing.Get3DDevice()->BeginScene();
-#endif
+      g_graphicsContext.Get3DDevice()->BeginScene();
       g_graphicsContext.Clear();
-      g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetVideoResolution(), false);
+      g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetVideoResolution(), 0, 0, false);
       Render();
-      g_application.RenderNoPresent();
-#ifdef HAS_DX     
-      g_Windowing.Get3DDevice()->EndScene();
-#endif      
+      if (g_application.NeedRenderFullScreen())
+        g_application.RenderFullScreen();
+      g_graphicsContext.Get3DDevice()->EndScene();
     }
     g_graphicsContext.Unlock();
   }
@@ -167,6 +160,10 @@ void CDummyVideoPlayer::Seek(bool bPlus, bool bLargeStep)
       SeekPercentage(percent);
     }
   }
+}
+
+void CDummyVideoPlayer::ToggleFrameDrop()
+{
 }
 
 void CDummyVideoPlayer::GetAudioInfo(CStdString& strAudioInfo)
@@ -266,21 +263,17 @@ bool CDummyVideoPlayer::SetPlayerState(CStdString state)
 
 void CDummyVideoPlayer::Render()
 {
-  const CRect vw = g_graphicsContext.GetViewWindow();
-#ifdef HAS_DX
-  D3DVIEWPORT9 newviewport;
-  D3DVIEWPORT9 oldviewport;
-  g_Windowing.Get3DDevice()->GetViewport(&oldviewport);
+  RECT vw = g_graphicsContext.GetViewWindow();
+  D3DVIEWPORT8 newviewport;
+  D3DVIEWPORT8 oldviewport;
+  g_graphicsContext.Get3DDevice()->GetViewport(&oldviewport);
   newviewport.MinZ = 0.0f;
   newviewport.MaxZ = 1.0f;
-  newviewport.X = (DWORD)vw.x1;
-  newviewport.Y = (DWORD)vw.y1;
-  newviewport.Width = (DWORD)vw.Width();
-  newviewport.Height = (DWORD)vw.Height();
-  g_graphicsContext.SetClipRegion(vw.x1, vw.y1, vw.Width(), vw.Height());
-#else
-  g_graphicsContext.SetViewPort(vw.x1, vw.y1, vw.Width(), vw.Height());
-#endif 
+  newviewport.X = vw.left;
+  newviewport.Y = vw.top;
+  newviewport.Width = vw.right - vw.left;
+  newviewport.Height = vw.bottom - vw.top;
+  g_graphicsContext.SetClipRegion((float)vw.left, (float)vw.top, (float)vw.right - vw.left, (float)vw.bottom - vw.top);
   CGUIFont *font = g_fontManager.GetFont("font13");
   if (font)
   {
@@ -291,13 +284,9 @@ void CDummyVideoPlayer::Render()
     int ms = (int)(m_clock % 1000);
     CStdString currentTime;
     currentTime.Format("Video goes here %02i:%02i:%03i", mins, secs, ms);
-    float posX = (vw.x1 + vw.x2) * 0.5f;
-    float posY = (vw.y1 + vw.y2) * 0.5f;
+    float posX = (vw.left + vw.right) * 0.5f;
+    float posY = (vw.top + vw.bottom) * 0.5f;
     CGUITextLayout::DrawText(font, posX, posY, 0xffffffff, 0, currentTime, XBFONT_CENTER_X | XBFONT_CENTER_Y);
   }
-#ifdef HAS_DX
   g_graphicsContext.RestoreClipRegion();
-#else
-  g_graphicsContext.RestoreViewPort();
-#endif
 }

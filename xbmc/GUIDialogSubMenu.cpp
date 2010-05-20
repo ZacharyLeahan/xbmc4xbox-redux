@@ -19,10 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSubMenu.h"
 
-CGUIDialogSubMenu::CGUIDialogSubMenu(int id, const CStdString &xmlFile)
-    : CGUIDialog(id, xmlFile)
+CGUIDialogSubMenu::CGUIDialogSubMenu(void)
+    : CGUIDialog(WINDOW_DIALOG_SUB_MENU, "DialogSubMenu.xml")
 {
 }
 

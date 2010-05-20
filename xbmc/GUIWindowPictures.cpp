@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowPictures.h"
 #include "Util.h"
 #include "Picture.h"
@@ -29,23 +29,25 @@
 #include "GUIDialogPictureInfo.h"
 #include "GUIDialogProgress.h"
 #include "PlayListFactory.h"
+#include "FileSystem/MultiPathDirectory.h"
 #include "PictureInfoLoader.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogOK.h"
+#include "FileSystem/Directory.h"
 #include "FileSystem/File.h"
 #include "PlayList.h"
-#include "Settings.h"
-#include "GUISettings.h"
-#include "utils/TimeUtils.h"
-#include "utils/log.h"
 
 #define CONTROL_BTNVIEWASICONS      2
 #define CONTROL_BTNSORTBY           3
 #define CONTROL_BTNSORTASC          4
+#define CONTROL_LIST               50
+#define CONTROL_THUMBS             51
 #define CONTROL_LABELFILES         12
 
 using namespace std;
+using namespace MEDIA_DETECT;
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace PLAYLIST;
 
 #define CONTROL_BTNSLIDESHOW   6
@@ -268,18 +270,18 @@ void CGUIWindowPictures::OnPrepareFileItems(CFileItemList& items)
   bool bShowProgress=!g_windowManager.HasModalDialog();
   bool bProgressVisible=false;
 
-  unsigned int tick=CTimeUtils::GetTimeMS();
+  DWORD dwTick=timeGetTime();
 
   while (loader.IsLoading() && m_dlgProgress && !m_dlgProgress->IsCanceled())
   {
     if (bShowProgress)
     { // Do we have to init a progress dialog?
-      unsigned int elapsed=CTimeUtils::GetTimeMS()-tick;
+      DWORD dwElapsed=timeGetTime()-dwTick;
 
-      if (!bProgressVisible && elapsed>1500 && m_dlgProgress)
+      if (!bProgressVisible && dwElapsed>1500 && m_dlgProgress)
       { // tag loading takes more then 1.5 secs, show a progress dialog
         CURL url(items.m_strPath);
-
+        
         m_dlgProgress->SetHeading(189);
         m_dlgProgress->SetLine(0, 505);
         m_dlgProgress->SetLine(1, "");
@@ -312,7 +314,7 @@ bool CGUIWindowPictures::Update(const CStdString &strDirectory)
   m_vecItems->SetThumbnailImage("");
   if (g_guiSettings.GetBool("pictures.generatethumbs"))
     m_thumbLoader.Load(*m_vecItems);
-  m_vecItems->SetThumbnailImage(CPictureThumbLoader::GetCachedThumb(*m_vecItems));
+  m_vecItems->SetCachedPictureThumb();
 
   return true;
 }
@@ -363,10 +365,8 @@ bool CGUIWindowPictures::ShowPicture(int iItem, bool startSlideShow)
     return false;
   }
 
-#ifdef HAS_DVD_DRIVE
   if (pItem->IsDVD())
-    return MEDIA_DETECT::CAutorun::PlayDisc();
-#endif
+    return CAutorun::PlayDisc();
 
   if (pItem->m_bIsShareOrDrive)
     return false;
@@ -386,11 +386,11 @@ bool CGUIWindowPictures::ShowPicture(int iItem, bool startSlideShow)
       pSlideShow->Add(pItem.get());
     }
   }
-
+     
   if (pSlideShow->NumSlides() == 0)
-    return false;
+    return false; 
 
-  pSlideShow->Select(strPicture);
+  pSlideShow->Select(strPicture); 
 
   if (startSlideShow)
     pSlideShow->StartSlideShow(false);
@@ -500,13 +500,13 @@ bool CGUIWindowPictures::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   {
   case CONTEXT_BUTTON_VIEW_SLIDESHOW:
     if (item && item->m_bIsFolder)
-      OnSlideShow(item->m_strPath);
+    OnSlideShow(item->m_strPath);
     else
       ShowPicture(itemNumber, true);
     return true;
   case CONTEXT_BUTTON_RECURSIVE_SLIDESHOW:
     if (item)
-      OnSlideShowRecursive(item->m_strPath);
+    OnSlideShowRecursive(item->m_strPath);
     return true;
   case CONTEXT_BUTTON_INFO:
     OnInfo(itemNumber);
@@ -537,7 +537,110 @@ bool CGUIWindowPictures::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
 
 void CGUIWindowPictures::OnItemLoaded(CFileItem *pItem)
 {
-  CPictureThumbLoader::ProcessFoldersAndArchives(pItem);
+  if (pItem->IsCBR() || pItem->IsCBZ())
+  {
+    CStdString strTBN(CUtil::ReplaceExtension(pItem->m_strPath,".tbn"));
+    if (CFile::Exists(strTBN))
+    {
+      CPicture pic;
+      if (pic.CreateThumbnail(strTBN, pItem->GetCachedPictureThumb(),true))
+      {
+        pItem->SetCachedPictureThumb();
+        pItem->FillInDefaultIcon();
+        return;
+      }
+    }
+  }
+  if ((pItem->m_bIsFolder || pItem->IsCBR() || pItem->IsCBZ()) && !pItem->m_bIsShareOrDrive && !pItem->HasThumbnail() && !pItem->IsParentFolder())
+  {
+    // first check for a folder.jpg
+    CStdString thumb = "folder.jpg";
+    CStdString strPath = pItem->m_strPath;
+    if (pItem->IsCBR())
+    {
+      CUtil::CreateArchivePath(strPath,"rar",pItem->m_strPath,"");
+      thumb = "cover.jpg";
+    }
+    if (pItem->IsCBZ())
+    {
+      CUtil::CreateArchivePath(strPath,"zip",pItem->m_strPath,"");
+      thumb = "cover.jpg";
+    }
+    if (pItem->IsMultiPath())
+      strPath = CMultiPathDirectory::GetFirstPath(pItem->m_strPath);
+    thumb = CUtil::AddFileToFolder(strPath, thumb);
+    if (CFile::Exists(thumb))
+    {
+      CPicture pic;
+      pic.CreateThumbnail(thumb, pItem->GetCachedPictureThumb(),true);
+    }
+    else if (!pItem->IsPlugin())
+    {
+      // we load the directory, grab 4 random thumb files (if available) and then generate
+      // the thumb.
+
+      CFileItemList items;
+
+      CDirectory::GetDirectory(strPath, items, g_stSettings.m_pictureExtensions, false, false);
+
+      // create the folder thumb by choosing 4 random thumbs within the folder and putting
+      // them into one thumb.
+      // count the number of images
+      for (int i=0; i < items.Size();)
+      {
+        if (!items[i]->IsPicture() || items[i]->IsZIP() || items[i]->IsRAR() || items[i]->IsPlayList())
+        {
+          items.Remove(i);
+        }
+        else
+          i++;
+      }
+
+      if (items.IsEmpty())
+      {
+        if (pItem->IsCBZ() || pItem->IsCBR())
+        {
+          CDirectory::GetDirectory(strPath, items, g_stSettings.m_pictureExtensions, false, false);
+          for (int i=0;i<items.Size();++i)
+          {
+            CFileItemPtr item = items[i];
+            if (item->m_bIsFolder)
+            {
+              OnItemLoaded(item.get());
+              pItem->SetThumbnailImage(items[i]->GetThumbnailImage());
+              pItem->SetIconImage(items[i]->GetIconImage());
+              return;
+            }
+          }
+        }
+        return; // no images in this folder
+      }
+
+      // randomize them
+      items.Randomize();
+
+      if (items.Size() < 4 || pItem->IsCBR() || pItem->IsCBZ())
+      { // less than 4 items, so just grab the first thumb
+        CStdString folderThumb(pItem->GetCachedPictureThumb());
+        items.Sort(SORT_METHOD_LABEL, SORT_ORDER_ASC);
+        CPicture pic;
+        pic.CreateThumbnail(items[0]->m_strPath, folderThumb);
+      }
+      else
+      {
+        // ok, now we've got the files to get the thumbs from, lets create it...
+        // we basically load the 4 thumbs, resample to 62x62 pixels, and add them
+        CStdString strFiles[4];
+        for (int thumb = 0; thumb < 4; thumb++)
+          strFiles[thumb] = items[thumb]->m_strPath;
+        CPicture pic;
+        pic.CreateFolderThumb(strFiles, pItem->GetCachedPictureThumb());
+      }
+    }
+    // refill in the icon to get it to update
+    pItem->SetCachedPictureThumb();
+    pItem->FillInDefaultIcon();
+  }
 }
 
 void CGUIWindowPictures::LoadPlayList(const CStdString& strPlayList)

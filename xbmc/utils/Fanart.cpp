@@ -19,12 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "Fanart.h"
 #include "tinyXML/tinyxml.h"
 #include "Util.h"
 #include "Picture.h"
 #include "FileSystem/FileCurl.h"
-#include "StringUtils.h"
 #include "FileSystem/File.h"
 
 const unsigned int CFanart::max_fanart_colors=3;
@@ -89,25 +89,17 @@ bool CFanart::Unpack()
   return true;
 }
 
-CStdString CFanart::GetImageURL(unsigned int index) const
+const CStdString CFanart::GetImageURL() const
 {
-  if (index >= m_fanart.size())
+  if (m_fanart.size() == 0)
     return "";
-  
-  if (m_url.IsEmpty())
-    return m_fanart[index].strImage;
-  return CUtil::AddFileToFolder(m_url, m_fanart[index].strImage);
-}
 
-CStdString CFanart::GetPreviewURL(unsigned int index) const
-{
-  if (index >= m_fanart.size())
-    return "";
-  
-  CStdString thumb = !m_fanart[index].strPreview.IsEmpty() ? m_fanart[index].strPreview : m_fanart[index].strImage;
+  CStdString result;
   if (m_url.IsEmpty())
-    return thumb;
-  return CUtil::AddFileToFolder(m_url, thumb);
+    result = m_fanart[0].strImage;
+  else
+    result.Format("%s%s", m_url.c_str(), m_fanart[0].strImage.c_str());
+  return result;
 }
 
 const CStdString CFanart::GetColor(unsigned int index) const
@@ -160,7 +152,8 @@ bool CFanart::DownloadThumb(unsigned int index, const CStdString &strDestination
 
 bool CFanart::DownloadImage(const CStdString &url, const CStdString &destination) const
 {
-  return CPicture::CacheFanart(url, destination);
+  CPicture pic;
+  return pic.CacheFanart(url, destination);
 }
 
 bool CFanart::DownloadImage(const CStdString &strDestination) const
@@ -177,11 +170,11 @@ unsigned int CFanart::GetNumFanarts()
 
 bool CFanart::ParseColors(const CStdString &colorsIn, CStdString &colorsOut)
 {
-  // Formats:
+  // Formats: 
   // 0: XBMC ARGB Hexadecimal string comma seperated "FFFFFFFF,DDDDDDDD,AAAAAAAA"
   // 1: The TVDB RGB Int Triplets, pipe seperate with leading/trailing pipes "|68,69,59|69,70,58|78,78,68|"
 
-  // Essentially we read the colors in using the proper format, and store them in our own fixed temporary format (3 DWORDS), and then
+  // Essentially we read the colors in using the proper format, and store them in our own fixed temporary format (3 DWORDS), and then 
   // write them back in in the specified format.
 
   if (colorsIn.IsEmpty())

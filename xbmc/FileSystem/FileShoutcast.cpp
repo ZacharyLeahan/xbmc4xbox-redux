@@ -24,45 +24,33 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "system.h"
 #include "AdvancedSettings.h"
-#include "Application.h"
 #include "FileShoutcast.h"
 #include "GUISettings.h"
 #include "GUIDialogProgress.h"
 #include "GUIWindowManager.h"
 #include "URL.h"
-#include "utils/TimeUtils.h"
 #include "LocalizeStrings.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-// prevent inclusion of config.h from libshout
-#define __SRCONFIG_H__
-#include "lib/libshout/rip_manager.h"
-#include "lib/libshout/filelib.h"
-#undef __SRCONFIG_H__
+/* needed for the shoutcast headers */
+#if defined(_XBOX) && !defined(WIN32)
+#define WIN32 1
+#endif
 
+#include "lib/libshout/types.h"
+#include "lib/libshout/rip_manager.h"
+#include "lib/libshout/util.h"
+#include "lib/libshout/filelib.h"
 #include "RingBuffer.h"
 #include "ShoutcastRipFile.h"
 #include "utils/GUIInfoManager.h"
-#include "utils/log.h"
 
-//using namespace std; On VS2010 error_code conflicts with std::error_code
-using namespace XFILE;
 using namespace MUSIC_INFO;
-
-#ifndef HAS_SHOUTCAST
-extern "C"
-{
-  error_code rip_manager_start(void (*status_callback)(int message, void *data), RIP_MANAGER_OPTIONS *options) { return 0; }
-  void       rip_manager_stop() { }
-  void       set_rip_manager_options_defaults(RIP_MANAGER_OPTIONS*) {}
-  int        rip_manager_get_content_type() { return 0; }
-}
-#endif
+using namespace XFILE;
 
 const int SHOUTCASTTIMEOUT = 60;
 static CRingBuffer m_ringbuf;
@@ -94,7 +82,7 @@ void rip_callback(int message, void *data)
       m_fileState.bBuffering = false;
     }
     else if (info->status == RM_STATUS_RECONNECTING)
-  { }
+    {}
     break;
   case RM_ERROR:
     ERROR_INFO *errInfo;
@@ -120,33 +108,18 @@ void rip_callback(int message, void *data)
 
 }
 
-extern "C" {
-error_code filelib_write_show(char *buf, u_long size)
+error_code filelib_write(char *buf, u_long size)
 {
-  if ((unsigned int)size > m_ringbuf.getSize())
+  if ((int)size > m_ringbuf.Size())
   {
     CLog::Log(LOGERROR, "Shoutcast chunk too big: %lu", size);
     return SR_ERROR_BUFFER_FULL;
   }
-  while (m_ringbuf.getMaxWriteSize() < (unsigned int)size) Sleep(10);
-  m_ringbuf.WriteData(buf, size);
+  while (m_ringbuf.GetMaxWriteSize() < (int)size) Sleep(10);
+  m_ringbuf.WriteBinary(buf, size);
   m_ripFile.Write( buf, size ); //will only write, if it has to
-  if (m_fileState.bBuffering)
-  {
-    if (rip_manager_get_content_type() == CONTENT_TYPE_OGG)
-    {
-      if (m_ringbuf.getMaxReadSize() > (m_ringbuf.getSize() / 8) )
-      {
-        // hack because ogg streams are very broke, force it to go.
-        m_fileState.bBuffering = false;
-      }
-    }
-  }
-
   return SR_SUCCESS;
 }
-}
-
 CFileShoutcast* m_pShoutCastRipper = NULL;
 
 CFileShoutcast::CFileShoutcast()
@@ -163,7 +136,7 @@ CFileShoutcast::CFileShoutcast()
     m_fileState.bRipDone = false;
     m_fileState.bRipStarted = false;
     m_fileState.bRipError = false;
-    m_ringbuf.Create(1024*1024); // must be big enough. some stations use 192kbps.
+    m_ringbuf.Create(1024*256);
     m_pShoutCastRipper = this;
   }
 }
@@ -202,12 +175,12 @@ void CFileShoutcast::StopRecording()
 }
 
 
-int64_t CFileShoutcast::GetPosition()
+__int64 CFileShoutcast::GetPosition()
 {
   return 0;
 }
 
-int64_t CFileShoutcast::GetLength()
+__int64 CFileShoutcast::GetLength()
 {
   return 0;
 }
@@ -215,18 +188,19 @@ int64_t CFileShoutcast::GetLength()
 
 bool CFileShoutcast::Open(const CURL& url)
 {
-  m_lastTime = CTimeUtils::GetTimeMS();
+  m_dwLastTime = timeGetTime();
   int ret;
+  RIP_MANAGER_OPTIONS m_opt;
+  m_opt.relay_port = 8000;
+  m_opt.max_port = 18000;
+  m_opt.flags = OPT_AUTO_RECONNECT |
+                OPT_SEPERATE_DIRS |
+                OPT_SEARCH_PORTS |
+                OPT_ADD_ID3;
 
+  // No progress dialog for now as it may deadlock when DVDplayer is used
   CGUIDialogProgress* dlgProgress = NULL;
-
-  // dvdplayer can deadlock with progress dialog so check first
-  if (g_application.GetCurrentPlayer() == EPC_PAPLAYER)
-  {
-    dlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
-  }
-
-  set_rip_manager_options_defaults(&m_opt);
+  //CGUIDialogProgress* dlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
 
   strcpy(m_opt.output_directory, "./");
   m_opt.proxyurl[0] = '\0';
@@ -237,12 +211,8 @@ bool CFileShoutcast::Open(const CURL& url)
   {
     const CStdString &strProxyServer = g_guiSettings.GetString("network.httpproxyserver");
     const CStdString &strProxyPort = g_guiSettings.GetString("network.httpproxyport");
-    // Should we check for valid strings here
-#ifndef _LINUX
-    _snprintf( m_opt.proxyurl, MAX_URL_LEN, "http://%s:%s", strProxyServer.c_str(), strProxyPort.c_str() );
-#else
-    snprintf( m_opt.proxyurl, MAX_URL_LEN, "http://%s:%s", strProxyServer.c_str(), strProxyPort.c_str() );
-#endif
+	  // Should we check for valid strings here
+	  _snprintf( m_opt.proxyurl, MAX_URL_LEN, "http://%s:%s", strProxyServer.c_str(), strProxyPort.c_str() );
   }
 
   CStdString strUrl = url.Get();
@@ -267,7 +237,7 @@ bool CFileShoutcast::Open(const CURL& url)
   }
   int iShoutcastTimeout = 10 * SHOUTCASTTIMEOUT; //i.e: 10 * 10 = 100 * 100ms = 10s
   int iCount = 0;
-  while (!m_fileState.bRipDone && !m_fileState.bRipStarted && !m_fileState.bRipError && (!dlgProgress || !dlgProgress->IsCanceled()))
+  while (!m_fileState.bRipDone && !m_fileState.bRipStarted && !m_fileState.bRipError)
   {
     if (iCount <= iShoutcastTimeout) //Normally, this isn't the problem,
       //because if RIP_MANAGER fails, this would be here
@@ -289,19 +259,12 @@ bool CFileShoutcast::Open(const CURL& url)
     iCount++;
   }
 
-  if (dlgProgress && dlgProgress->IsCanceled())
-  {
-     Close();
-     dlgProgress->Close();
-     return false;
-  }
-
   /* store content type of stream */
-  m_contenttype = rip_manager_get_content_type();
+  m_contenttype = m_ripInfo.contenttype;
 
   //CHANGED CODE: Don't reset timer anymore.
 
-  while (!m_fileState.bRipDone && !m_fileState.bRipError && m_fileState.bBuffering && (!dlgProgress || !dlgProgress->IsCanceled()))
+  while (!m_fileState.bRipDone && !m_fileState.bRipError && m_fileState.bBuffering)
   {
     if (iCount <= iShoutcastTimeout) //Here is the real problem: Sometimes the buffer fills just to
       //slowly, thus the quality of the stream will be bad, and should be
@@ -310,7 +273,7 @@ bool CFileShoutcast::Open(const CURL& url)
       Sleep(100);
       char szTmp[1024];
       //g_dialog.SetCaption(0, "Shoutcast" );
-      sprintf(szTmp, g_localizeStrings.Get(23052).c_str(), m_ringbuf.getMaxReadSize());
+      sprintf(szTmp, g_localizeStrings.Get(23052).c_str(), m_ringbuf.GetMaxReadSize());
       if (dlgProgress)
       {
         dlgProgress->SetLine(2, szTmp );
@@ -343,12 +306,6 @@ bool CFileShoutcast::Open(const CURL& url)
     }
     iCount++;
   }
-  if (dlgProgress && dlgProgress->IsCanceled())
-  {
-     Close();
-     dlgProgress->Close();
-     return false;
-  }
   if ( m_fileState.bRipError )
   {
     if (dlgProgress)
@@ -372,7 +329,7 @@ bool CFileShoutcast::Open(const CURL& url)
   return true;
 }
 
-unsigned int CFileShoutcast::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileShoutcast::Read(void* lpBuf, __int64 uiBufSize)
 {
   if (m_fileState.bRipDone)
   {
@@ -381,20 +338,20 @@ unsigned int CFileShoutcast::Read(void* lpBuf, int64_t uiBufSize)
   }
 
   int slept=0;
-  while (m_ringbuf.getMaxReadSize() <= 0)
+  while (m_ringbuf.GetMaxReadSize() <= 0)
   {
     Sleep(10);
     if (slept += 10 > SHOUTCASTTIMEOUT*1000)
       return -1;
   }
 
-  int iRead = m_ringbuf.getMaxReadSize();
+  int iRead = m_ringbuf.GetMaxReadSize();
   if (iRead > uiBufSize) iRead = (int)uiBufSize;
-  m_ringbuf.ReadData((char*)lpBuf, iRead);
+  m_ringbuf.ReadBinary((char*)lpBuf, iRead);
 
-  if (CTimeUtils::GetTimeMS() - m_lastTime > 500)
+  if (timeGetTime() - m_dwLastTime > 500)
   {
-    m_lastTime = CTimeUtils::GetTimeMS();
+    m_dwLastTime = timeGetTime();
     CMusicInfoTag tag;
     GetMusicInfoTag(tag);
     g_infoManager.SetCurrentSongTag(tag);
@@ -410,7 +367,7 @@ void CFileShoutcast::outputTimeoutMessage(const char* message)
   Sleep(1500);
 }
 
-int64_t CFileShoutcast::Seek(int64_t iFilePosition, int iWhence)
+__int64 CFileShoutcast::Seek(__int64 iFilePosition, int iWhence)
 {
   return -1;
 }
@@ -431,6 +388,8 @@ bool CFileShoutcast::IsRecording()
   return m_ripFile.IsRecording();
 }
 
+
+
 bool CFileShoutcast::GetMusicInfoTag(CMusicInfoTag& tag)
 {
   m_ripFile.GetMusicInfoTag(tag);
@@ -439,15 +398,5 @@ bool CFileShoutcast::GetMusicInfoTag(CMusicInfoTag& tag)
 
 CStdString CFileShoutcast::GetContent()
 {
-  switch (m_contenttype)
-  {
-    case CONTENT_TYPE_MP3:
-      return "audio/mpeg";
-    case CONTENT_TYPE_OGG:
-      return "audio/ogg";
-    case CONTENT_TYPE_AAC:
-      return "audio/aac";
-    default:
-      return "application/octet-stream";
-  }
+  return m_contenttype;
 }

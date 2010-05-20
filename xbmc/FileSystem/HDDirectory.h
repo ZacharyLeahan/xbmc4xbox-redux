@@ -23,7 +23,7 @@
 
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 
 class CHDDirectory : public IDirectory

@@ -1,42 +1,20 @@
 /*!
 \file GUIFont.h
-\brief
+\brief 
 */
 
 #ifndef CGUILIB_GUIFONT_H
 #define CGUILIB_GUIFONT_H
 #pragma once
 
-/*
- *      Copyright (C) 2003-2010 Team XBMC
- *      http://www.xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
- *
- */
-
 #include "StdString.h"
-#include <assert.h>
 
 typedef uint32_t character_t;
 typedef uint32_t color_t;
 typedef std::vector<character_t> vecText;
 typedef std::vector<color_t> vecColors;
 
-class CGUIFontTTFBase;
+class CGUIFontTTF;
 
 // flags for alignment
 #define XBFONT_LEFT       0x00000000
@@ -54,18 +32,15 @@ class CGUIFontTTFBase;
 class CScrollInfo
 {
 public:
-  CScrollInfo(unsigned int wait = 50, float pos = 0, int speed = defaultSpeed, const CStdString &scrollSuffix = " | ")
-  {
+  CScrollInfo(unsigned int wait = 50, float pos = 0, int speed = defaultSpeed, const CStdStringW &scrollSuffix = L" | ")
+  { 
     initialWait = wait;
     initialPos = pos;
     SetSpeed(speed ? speed : defaultSpeed);
     suffix = scrollSuffix;
     Reset();
   };
-  void SetSpeed(int speed)
-  {
-    pixelSpeed = speed * 0.001f;
-  }
+  void SetSpeed(int speed);
   void Reset()
   {
     waitTime = initialWait;
@@ -95,7 +70,7 @@ public:
   unsigned int characterPos;
   unsigned int initialWait;
   float initialPos;
-  CStdString suffix;
+  CStdStringW suffix;
 
   static const int defaultSpeed = 60;
 private:
@@ -105,12 +80,12 @@ private:
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
 class CGUIFont
 {
 public:
-  CGUIFont(const CStdString& strFontName, uint32_t style, color_t textColor, color_t shadowColor, float lineSpacing, CGUIFontTTFBase *font);
+  CGUIFont(const CStdString& strFontName, uint32_t style, color_t textColor, color_t shadowColor, float lineSpacing, CGUIFontTTF *font);
   virtual ~CGUIFont();
 
   CStdString& GetFontName();
@@ -140,22 +115,25 @@ public:
   uint32_t GetStyle() const { return m_style; };
 
   static wchar_t RemapGlyph(wchar_t letter);
-
-  CGUIFontTTFBase* GetFont() const
+  
+  CGUIFontTTF* GetFont() const
   {
-    return m_font;
+     return m_font;
   }
-
-  void SetFont(CGUIFontTTFBase* font);
-
+  
+  void SetFont(CGUIFontTTF* font)
+  {
+     m_font = font;
+  }
+  
 protected:
   CStdString m_strFontName;
   uint32_t m_style;
   color_t m_shadowColor;
   color_t m_textColor;
   float m_lineSpacing;
-  CGUIFontTTFBase *m_font; // the font object has the size information
-
+  CGUIFontTTF *m_font; // the font object has the size information
+  
 private:
   bool ClippedRegionIsEmpty(float x, float y, float width, uint32_t alignment) const;
 };

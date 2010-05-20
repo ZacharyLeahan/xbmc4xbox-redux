@@ -31,11 +31,16 @@
  **********************************************************************/
 
 #include "qry_dat.h"
-#include "system.h" // for PRId64
 
 #ifndef __GNUC__
 #pragma warning (disable:4800)
 #pragma warning (disable:4715)
+#endif
+
+#ifndef PRId64
+#ifdef _MSC_VER
+#define PRId64 "I64d"
+#endif
 #endif
 
 using namespace std;

@@ -25,7 +25,7 @@
 class CURL;
 class TiXmlElement;
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CDirectoryTuxBox : public IDirectory
   {

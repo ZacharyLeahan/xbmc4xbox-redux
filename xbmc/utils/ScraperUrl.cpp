@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "XMLUtils.h"
 #include "ScraperUrl.h"
 #include "AdvancedSettings.h"
@@ -139,7 +140,7 @@ bool CScraperUrl::ParseString(CStdString strUrl)
     m_xml = strUrl;
   }
   else
-  {
+  { 
     while (pElement)
     {
       ParseElement(pElement);
@@ -174,7 +175,7 @@ const CScraperUrl::SUrlEntry CScraperUrl::GetSeasonThumb(int season) const
   return result;
 }
 
-bool CScraperUrl::Get(const SUrlEntry& scrURL, std::string& strHTML, XFILE::CFileCurl& http, const CStdString& cacheContext1)
+bool CScraperUrl::Get(const SUrlEntry& scrURL, string& strHTML, XFILE::CFileCurl& http, const CStdString& cacheContext1)
 {
   CURL url(scrURL.m_url);
   http.SetReferer(scrURL.m_spoof);
@@ -204,7 +205,7 @@ bool CScraperUrl::Get(const SUrlEntry& scrURL, std::string& strHTML, XFILE::CFil
   }
 
   CStdString strHTML1(strHTML);
-
+        
   if (scrURL.m_post)
   {
     CStdString strOptions = url.GetOptions();
@@ -212,7 +213,7 @@ bool CScraperUrl::Get(const SUrlEntry& scrURL, std::string& strHTML, XFILE::CFil
     url.SetOptions("");
 
     if (!http.Post(url.Get(), strOptions, strHTML1))
-      return false;
+      return false;    
   }
   else
     if (!http.Get(url.Get(), strHTML1))
@@ -256,7 +257,8 @@ bool CScraperUrl::DownloadThumbnail(const CStdString &thumb, const CScraperUrl::
   { // do a direct file copy
     try
     {
-      return CPicture::CreateThumbnail(entry.m_url, thumb);
+      CPicture picture;
+      return picture.CreateThumbnail(entry.m_url, thumb);
     }
     catch (...)
     {
@@ -272,7 +274,8 @@ bool CScraperUrl::DownloadThumbnail(const CStdString &thumb, const CScraperUrl::
   {
     try
     {
-      return CPicture::CreateThumbnailFromMemory((const BYTE *)thumbData.c_str(), thumbData.size(), CUtil::GetExtension(entry.m_url), thumb);
+      CPicture picture;
+      return picture.CreateThumbnailFromMemory((const BYTE *)thumbData.c_str(), thumbData.size(), CUtil::GetExtension(entry.m_url), thumb);
     }
     catch (...)
     {
@@ -296,40 +299,15 @@ bool CScraperUrl::ParseEpisodeGuide(CStdString strUrls)
   if (doc.RootElement())
   {
     TiXmlHandle docHandle( &doc );
-    TiXmlElement *link = docHandle.FirstChild("episodeguide").Element();
-    if (link->FirstChildElement("url"))
+    TiXmlElement *link = docHandle.FirstChild( "episodeguide" ).FirstChild( "url" ).Element();
+    while (link)
     {
-      link = link->FirstChildElement("url");
-      while (link)
-      {
-        ParseElement(link);
-        link = link->NextSiblingElement("url");
-      }
+      ParseElement(link);
+      link = link->NextSiblingElement("url");
     }
-    else if (link->FirstChild() && link->FirstChild()->Value())
-      ParseString(link->FirstChild()->Value());
   }
   else
     return false;
 
   return true;
-}
-
-void CScraperUrl::GetThumbURLs(std::vector<CStdString> &thumbs, int season) const
-{
-  for (vector<SUrlEntry>::const_iterator iter = m_url.begin(); iter != m_url.end(); ++iter)
-  {
-    if ((iter->m_type == CScraperUrl::URL_TYPE_GENERAL && season == -1)
-     || (iter->m_type == CScraperUrl::URL_TYPE_SEASON && iter->m_season == season))
-    {
-      CStdString thumb = iter->m_url;
-      CStdString spoof = iter->m_spoof;
-      if (!spoof.IsEmpty())
-      {
-        CUtil::URLEncode(spoof);
-        thumb += "|Referer=" + spoof;
-      }
-      thumbs.push_back(thumb);
-    }
-  }
 }

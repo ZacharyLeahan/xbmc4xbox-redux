@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlayListFactory.h"
 #include "PlayListM3U.h"
 #include "PlayListPLS.h"
@@ -90,7 +91,7 @@ CPlayList* CPlayListFactory::Create(const CFileItem& item)
 
   if (extension == ".ram")
     return new CPlayListRAM();
-
+  
   if (extension == ".url")
     return new CPlayListURL();
 

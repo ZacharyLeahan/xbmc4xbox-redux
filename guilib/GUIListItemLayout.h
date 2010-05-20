@@ -26,7 +26,6 @@
 
 class CGUIListItem;
 class CFileItem;
-class CLabelInfo;
 
 class CGUIListItemLayout
 {
@@ -35,14 +34,13 @@ public:
   CGUIListItemLayout(const CGUIListItemLayout &from);
   virtual ~CGUIListItemLayout();
   void LoadLayout(TiXmlElement *layout, bool focused);
-  void Render(CGUIListItem *item, int parentID, unsigned int time = 0);
+  void Render(CGUIListItem *item, int parentID, DWORD time = 0);
   float Size(ORIENTATION orientation) const;
   unsigned int GetFocusedItem() const;
   void SetFocusedItem(unsigned int focus);
   bool IsAnimating(ANIMATION_TYPE animType);
   void ResetAnimation(ANIMATION_TYPE animType);
   void SetInvalid() { m_invalidated = true; };
-  void FreeResources(bool immediately = false);
 
 //#ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
   void CreateListControlLayouts(float width, float height, bool focused, const CLabelInfo &labelInfo, const CLabelInfo &labelInfo2, const CTextureInfo &texture, const CTextureInfo &textureFocus, float texHeight, float iconWidth, float iconHeight, int nofocusCondition, int focusCondition);

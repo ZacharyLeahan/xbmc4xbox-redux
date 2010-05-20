@@ -19,15 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogSettings.h"
-#include "GUISpinControlEx.h"
-#include "GUIRadioButtonControl.h"
-#include "GUISettingsSliderControl.h"
 #include "GUIImage.h"
 #include "GUIControlGroupList.h"
-#include "LocalizeStrings.h"
-#include "GUISettings.h"
-#include "utils/log.h"
 
 #define CONTROL_GROUP_LIST          5
 #define CONTROL_SETTINGS_LABEL      2
@@ -203,7 +198,7 @@ void CGUIDialogSettings::UpdateSetting(unsigned int id)
 
 bool CGUIDialogSettings::OnAction(const CAction& action)
 {
-  if (action.GetID() == ACTION_PREVIOUS_MENU)
+  if (action.id == ACTION_PREVIOUS_MENU)
   {
     OnCancel();
     Close();

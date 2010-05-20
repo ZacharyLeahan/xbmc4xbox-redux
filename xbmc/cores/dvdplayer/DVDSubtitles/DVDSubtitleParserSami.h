@@ -32,4 +32,7 @@ public:
   CDVDSubtitleParserSami(CDVDSubtitleStream* pStream, const std::string& strFile);
   virtual ~CDVDSubtitleParserSami();
   virtual bool Open(CDVDStreamInfo &hints);
+
+private:
+  void AddText(CRegExp& tags, CDVDOverlayText*, const char* data, int len);
 };

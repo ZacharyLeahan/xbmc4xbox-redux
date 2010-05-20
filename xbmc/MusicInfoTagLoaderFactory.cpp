@@ -19,7 +19,7 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "MusicInfoTagLoaderFactory.h"
 #include "MusicInfoTagLoaderMP3.h"
 #include "MusicInfoTagLoaderOgg.h"
@@ -41,10 +41,10 @@
 #include "MusicInfoTagLoaderNSF.h"
 #include "MusicInfoTagLoaderSPC.h"
 #include "MusicInfoTagLoaderGYM.h"
+#include "MusicInfoTagLoaderAdplug.h"
 #include "MusicInfoTagLoaderYM.h"
 #include "MusicInfoTagLoaderDatabase.h"
 #include "MusicInfoTagLoaderASAP.h"
-#include "MusicInfoTagLoaderMidi.h"
 
 #include "Util.h"
 #include "FileItem.h"
@@ -100,13 +100,11 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CStdString& 
     CMusicInfoTagLoaderMP4 *pTagLoader = new CMusicInfoTagLoaderMP4();
     return (IMusicInfoTagLoader*)pTagLoader;
   }
-#ifdef HAS_DVD_DRIVE
   else if (strExtension == "cdda")
   {
     CMusicInfoTagLoaderCDDA *pTagLoader = new CMusicInfoTagLoaderCDDA();
     return (IMusicInfoTagLoader*)pTagLoader;
   }
-#endif
   else if (strExtension == "ape" || strExtension == "mac")
   {
     CMusicInfoTagLoaderApe *pTagLoader = new CMusicInfoTagLoaderApe();
@@ -169,16 +167,14 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CStdString& 
     CMusicInfoTagLoaderYM *pTagLoader = new CMusicInfoTagLoaderYM();
     return (IMusicInfoTagLoader*)pTagLoader;
   }
-#ifdef HAS_ASAP_CODEC
+  else if (AdplugCodec::IsSupportedFormat(strExtension))
+  {
+    CMusicInfoTagLoaderAdplug *pTagLoader = new CMusicInfoTagLoaderAdplug();
+    return (IMusicInfoTagLoader*)pTagLoader;
+  }
   else if (ASAPCodec::IsSupportedFormat(strExtension) || strExtension == "asapstream")
   {
     CMusicInfoTagLoaderASAP *pTagLoader = new CMusicInfoTagLoaderASAP();
-    return (IMusicInfoTagLoader*)pTagLoader;
-  }
-#endif
-  else if ( TimidityCodec::IsSupportedFormat( strExtension ) )
-  {
-    CMusicInfoTagLoaderMidi * pTagLoader = new CMusicInfoTagLoaderMidi();
     return (IMusicInfoTagLoader*)pTagLoader;
   }
 

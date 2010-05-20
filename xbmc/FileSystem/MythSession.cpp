@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "DllLibCMyth.h"
 #include "MythSession.h"
 #include "VideoInfoTag.h"
@@ -27,15 +28,12 @@
 #include "FileItem.h"
 #include "URL.h"
 #include "Util.h"
-#include "StringUtils.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 #include "utils/TimeUtils.h"
 
 extern "C"
 {
-#include "cmyth/include/cmyth/cmyth.h"
-#include "cmyth/include/refmem/refmem.h"
+#include "lib/libcmyth/cmyth.h"
+#include "lib/libcmyth/mvp_refmem.h"
 }
 
 using namespace XFILE;

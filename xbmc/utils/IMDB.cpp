@@ -19,6 +19,12 @@
  *
  */
 
+
+// IMDB.cpp: implementation of the CIMDB class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
 #include "IMDB.h"
 #include "Util.h"
 #include "HTMLUtil.h"
@@ -32,8 +38,6 @@
 #include "GUIDialogOK.h"
 #include "Application.h"
 #include "GUIWindowManager.h"
-#include "LocalizeStrings.h"
-#include "log.h"
 
 using namespace HTML;
 using namespace std;
@@ -65,11 +69,11 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
 
   movieTitle.ToLower();
 
-  if (m_info->Content() == CONTENT_MUSICVIDEOS)
+  if (m_info.strContent.Equals("musicvideos"))
     movieTitle.Replace("-"," ");
 
-  CLog::Log(LOGDEBUG, "%s: Searching for '%s' using %s scraper (file: '%s', content: '%s')",
-    __FUNCTION__, movieTitle.c_str(), m_info->Name().c_str(), m_info->Path().c_str(), ADDON::TranslateContent(m_info->Content()).c_str());
+  CLog::Log(LOGDEBUG, "scraper: Searching for '%s' using %s scraper (file: '%s', content: '%s', language: '%s', date: '%s', framework: '%s')",
+    movieTitle.c_str(), m_info.strTitle.c_str(), m_info.strPath.c_str(), m_info.strContent.c_str(), m_info.strLanguage.c_str(), m_info.strDate.c_str(), m_info.strFramework.c_str());
 
   if (!pUrl)
   {
@@ -77,10 +81,10 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
     {
       GetURL(strMovie, movieTitle, movieYear, scrURL);
     }
-    else if (m_info->Content() == CONTENT_MUSICVIDEOS)
+    else if (m_info.strContent.Equals("musicvideos"))
     {
-      if (!m_parser.HasFunction("FileNameScrape"))
-        return false;
+    if (!m_parser.HasFunction("FileNameScrape"))
+       return false;
 
       CScraperUrl scrURL("filenamescrape");
       CUtil::RemoveExtension(strName);
@@ -92,8 +96,8 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
       return 0;
   }
   else
-    scrURL = *pUrl;
-
+    scrURL = *pUrl;  
+  
   vector<CStdString> strHTML;
   for (unsigned int i=0;i<scrURL.m_url.size();++i)
   {
@@ -107,7 +111,7 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
   for (unsigned int i=0;i<strHTML.size();++i)
     m_parser.m_param[i] = strHTML[i];
   m_parser.m_param[strHTML.size()] = scrURL.m_url[0].m_url;
-  CStdString strXML = m_parser.Parse(strFunction);
+  CStdString strXML = m_parser.Parse(strFunction,&m_info.settings);
   CLog::Log(LOGDEBUG,"scraper: %s returned %s",strFunction.c_str(),strXML.c_str());
   if (strXML.IsEmpty())
   {
@@ -132,7 +136,7 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
     ShowErrorDialog(doc.RootElement());
     return -1;
   }
-
+ 
   TiXmlHandle docHandle( &doc );
 
   TiXmlElement* xurl = doc.RootElement()->FirstChildElement("url");
@@ -165,6 +169,7 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
       }
     }
 
+    CScraperUrl url;
     TiXmlNode *title = movie->FirstChild("title");
     TiXmlElement *link = movie->FirstChildElement("url");
     TiXmlNode *year = movie->FirstChild("year");
@@ -172,7 +177,6 @@ int CIMDB::InternalFindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieli
     TiXmlNode* language = movie->FirstChild("language");
     if (title && title->FirstChild() && link && link->FirstChild())
     {
-      CScraperUrl url;
       url.strTitle = title->FirstChild()->Value();
       while (link && link->FirstChild())
       {
@@ -240,7 +244,7 @@ void CIMDB::ShowErrorDialog(const TiXmlElement* element)
   CGUIDialogOK* dialog = (CGUIDialogOK*)g_windowManager.GetWindow(WINDOW_DIALOG_OK);
   dialog->SetHeading(strTitle);
   dialog->SetLine(0,strMessage);
-  g_application.getApplicationMessenger().DoModal(dialog,WINDOW_DIALOG_OK);
+  dialog->DoModal();
 }
 
 bool CIMDB::InternalGetEpisodeList(const CScraperUrl& url, IMDB_EPISODELIST& details)
@@ -260,7 +264,7 @@ bool CIMDB::InternalGetEpisodeList(const CScraperUrl& url, IMDB_EPISODELIST& det
     m_parser.m_param[0] = strHTML;
     m_parser.m_param[1] = url.m_url[i].m_url;
 
-    CStdString strXML = m_parser.Parse("GetEpisodeList");
+    CStdString strXML = m_parser.Parse("GetEpisodeList",&m_info.settings);
     CLog::Log(LOGDEBUG,"scraper: GetEpisodeList returned %s",strXML.c_str());
     if (strXML.IsEmpty())
     {
@@ -382,7 +386,7 @@ bool CIMDB::InternalGetDetails(const CScraperUrl& url, CVideoInfoTag& movieDetai
   m_parser.m_param[strHTML.size()] = url.strId;
   m_parser.m_param[strHTML.size()+1] = url.m_url[0].m_url;
 
-  CStdString strXML = m_parser.Parse(strFunction);
+  CStdString strXML = m_parser.Parse(strFunction,&m_info.settings);
   CLog::Log(LOGDEBUG,"scraper: %s returned %s",strFunction.c_str(),strXML.c_str());
   if (strXML.IsEmpty())
   {
@@ -461,14 +465,14 @@ void CIMDB::RemoveAllAfter(char* szMovie, const char* szSearch)
 
 void CIMDB::GetURL(const CStdString &movieFile, const CStdString &movieName, const CStdString &movieYear, CScraperUrl& scrURL)
 {
-  if (!movieYear.IsEmpty())
-    m_parser.m_param[1] = movieYear;
+    if (!movieYear.IsEmpty())
+      m_parser.m_param[1] = movieYear;
 
-  // convert to the encoding requested by the parser
-  g_charsetConverter.utf8To(m_parser.GetSearchStringEncoding(), movieName, m_parser.m_param[0]);
-  CUtil::URLEncode(m_parser.m_param[0]);
-
-  scrURL.ParseString(m_parser.Parse("CreateSearchUrl"));
+    // convert to the encoding requested by the parser
+    g_charsetConverter.utf8To(m_parser.GetSearchStringEncoding(), movieName, m_parser.m_param[0]);
+    CUtil::URLEncode(m_parser.m_param[0]);
+ 
+  scrURL.ParseString(m_parser.Parse("CreateSearchUrl",&m_info.settings));
 }
 
 // threaded functions
@@ -482,8 +486,8 @@ void CIMDB::Process()
     if (!(m_found=FindMovie(m_strMovie, m_movieList)))
     {
       // retry without replacing '.' and '-' if searching for a tvshow
-      if (m_info->Content() == CONTENT_TVSHOWS)
-        CLog::Log(LOGERROR, "%s: Error looking up tvshow %s", __FUNCTION__, m_strMovie.c_str());
+      if (m_info.strContent.Equals("tvshows"))
+          CLog::Log(LOGERROR, "%s: Error looking up tvshow %s", __FUNCTION__, m_strMovie.c_str());
       else
         CLog::Log(LOGERROR, "%s: Error looking up movie %s", __FUNCTION__, m_strMovie.c_str());
     }
@@ -514,7 +518,7 @@ int CIMDB::FindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieList, CGUI
   //CLog::Log(LOGDEBUG,"CIMDB::FindMovie(%s)", strMovie.c_str());
 
   // load our scraper xml
-  if (!m_parser.Load(m_info))
+  if (!m_parser.Load(CUtil::AddFileToFolder("special://xbmc/system/scrapers/video/", m_info.strPath)))
     return 0;
   m_parser.ClearCache();
 
@@ -545,13 +549,13 @@ int CIMDB::FindMovie(const CStdString &strMovie, IMDB_MOVIELIST& movieList, CGUI
     CloseThread();
     return found;
   }
-
+  
   // unthreaded
   bool sortList = true;
   int success = InternalFindMovie(strMovie, movieList, sortList);
   // sort our movie list by fuzzy match
   if (sortList)
-    std::sort(movieList.begin(), movieList.end(), RelevanceSortFunction);
+  std::sort(movieList.begin(), movieList.end(), RelevanceSortFunction);
   return success;
 }
 
@@ -561,7 +565,7 @@ bool CIMDB::GetDetails(const CScraperUrl &url, CVideoInfoTag &movieDetails, CGUI
   m_url = url;
   m_movieDetails = movieDetails;
   // load our scraper xml
-  if (!m_parser.Load(m_info))
+  if (!m_parser.Load("special://xbmc/system/scrapers/video/"+m_info.strPath))
     return false;
 
   // fill in the defaults
@@ -631,7 +635,7 @@ bool CIMDB::GetEpisodeList(const CScraperUrl& url, IMDB_EPISODELIST& movieDetail
   m_episode = movieDetails;
 
   // load our scraper xml
-  if (!m_parser.Load(m_info))
+  if (!m_parser.Load(CUtil::AddFileToFolder("special://xbmc/system/scrapers/video/", m_info.strPath)))
     return false;
 
   // fill in the defaults
@@ -676,7 +680,7 @@ bool CIMDB::ScrapeFilename(const CStdString& strFileName, CVideoInfoTag& details
 
   CUtil::RemoveExtension(m_parser.m_param[0]);
   m_parser.m_param[0].Replace("_"," ");
-  CStdString strResult = m_parser.Parse("FileNameScrape");
+  CStdString strResult = m_parser.Parse("FileNameScrape",&m_info.settings);
   CLog::Log(LOGDEBUG,"scraper: FileNameScrape returned %s", strResult.c_str());
   TiXmlDocument doc;
   doc.Parse(strResult.c_str());

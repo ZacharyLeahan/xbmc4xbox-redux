@@ -19,6 +19,7 @@
  *
  */
 
+#include "include.h"
 #include "GUIRSSControl.h"
 #include "GUIWindowManager.h"
 #include "GUISettings.h"
@@ -29,9 +30,9 @@
 
 using namespace std;
 
-CGUIRSSControl::CGUIRSSControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoColor &channelColor, const CGUIInfoColor &headlineColor, CStdString& strRSSTags)
+CGUIRSSControl::CGUIRSSControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoColor &channelColor, const CGUIInfoColor &headlineColor, CStdString& strRSSTags, int scrollSpeed)
 : CGUIControl(parentID, controlID, posX, posY, width, height),
-  m_scrollInfo(0,0,labelInfo.scrollSpeed,"")
+  m_scrollInfo(0,0,scrollSpeed,"")
 {
   m_label = labelInfo;
   m_headlineColor = headlineColor;
@@ -96,8 +97,8 @@ void CGUIRSSControl::Render()
     if (m_pReader == NULL)
     {
       if (g_rssManager.GetReader(GetID(), GetParentID(), this, m_pReader))
-        m_scrollInfo.characterPos = m_pReader->m_SavedScrollPos;
-      else
+        m_scrollInfo.characterPos = m_pReader->m_SavedScrollPos; 
+      else 
       {
         if (m_strRSSTags != "")
         {

@@ -18,8 +18,8 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "system.h"
+ 
+#include "stdafx.h"
 #include "DVDFactoryInputStream.h"
 #include "DVDInputStream.h"
 #include "DVDInputStreamFile.h"
@@ -28,35 +28,20 @@
 #include "DVDInputStreamFFmpeg.h"
 #include "DVDInputStreamTV.h"
 #include "DVDInputStreamRTMP.h"
-#include "DVDInputStreamMPLS.h"
-#ifdef HAS_FILESYSTEM_HTSP
 #include "DVDInputStreamHTSP.h"
-#endif
 #ifdef ENABLE_DVDINPUTSTREAM_STACK
 #include "DVDInputStreamStack.h"
 #endif
-#ifdef HAS_FILESYSTEM_MMS
-#include "DVDInputStreamMMS.h"
-#endif
 #include "FileItem.h"
-#include "MediaManager.h"
 
 CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, const std::string& file, const std::string& content)
 {
   CFileItem item(file.c_str(), false);
   if (item.IsDVDFile(false, true) || item.IsDVDImage() ||
-#ifdef HAS_DVD_DRIVE
-    file.compare(g_mediaManager.TranslateDevicePath("")) == 0 )
-#else
-  0 )
-#endif
+      file.compare("\\Device\\Cdrom0") == 0)
   {
     return (new CDVDInputStreamNavigator(pPlayer));
   }
-#ifdef HAS_LIBBDNAV
-  else if (item.IsType(".mpls"))
-    return new CDVDInputStreamMPLS;
-#endif
   else if(file.substr(0, 6) == "rtp://"
        || file.substr(0, 7) == "rtsp://"
        || file.substr(0, 6) == "sdp://"
@@ -65,8 +50,7 @@ CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, 
     return new CDVDInputStreamFFmpeg();
   else if(file.substr(0, 7) == "myth://"
        || file.substr(0, 8) == "cmyth://"
-       || file.substr(0, 8) == "gmyth://"
-       || file.substr(0, 6) == "vtp://")
+       || file.substr(0, 8) == "gmyth://")
     return new CDVDInputStreamTV();
 #ifdef ENABLE_DVDINPUTSTREAM_STACK
   else if(file.substr(0, 8) == "stack://")
@@ -74,22 +58,16 @@ CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, 
 #endif
   else if(file.substr(0, 7) == "rtmp://")
     return new CDVDInputStreamRTMP();
-#ifdef HAS_FILESYSTEM_HTSP
   else if(file.substr(0, 7) == "htsp://")
     return new CDVDInputStreamHTSP();
-#endif
-#ifdef HAS_FILESYSTEM_MMS
-  else if(file.substr(0,6) == "mms://" || file.substr(0,7) == "mmsh://")
-    return new CDVDInputStreamMMS();
-#endif
 
   //else if (item.IsShoutCast())
   //  /* this should be replaced with standard file as soon as ffmpeg can handle raw aac */
   //  /* currently ffmpeg isn't able to detect that */
   //  return (new CDVDInputStreamHttp());
-  //else if (item.IsInternetStream() )
+  //else if (item.IsInternetStream() )  
   //  return (new CDVDInputStreamHttp());
-
+  
   // our file interface handles all these types of streams
   return (new CDVDInputStreamFile());
 }

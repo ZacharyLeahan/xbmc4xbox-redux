@@ -21,8 +21,6 @@
  *
  */
 
-#include "StdString.h"
-
 class CFileItem;
 class CMediaSource;
 
@@ -30,6 +28,9 @@ class CMediaSource;
 #include <map>
 
 typedef std::vector<CMediaSource> VECSOURCES;
+
+typedef std::map<CStdString, CStdString> MAPPASSWORDS;
+typedef std::map<CStdString, CStdString>::iterator IMAPPASSWORDS;
 
 typedef enum
 {
@@ -55,23 +56,29 @@ public:
   bool IsProfileLockUnlocked(int iProfile, bool& bCanceled);
   bool IsMasterLockUnlocked(bool bPromptUser);
   bool IsMasterLockUnlocked(bool bPromptUser, bool& bCanceled);
-
+  
   void UpdateMasterLockRetryCount(bool bResetCount);
+  bool GetSMBShareUserPassword();
+  void SetSMBShare(const CStdString &strShare);
+  CStdString GetSMBShare();
   bool CheckStartUpLock();
   bool CheckMenuLock(int iWindowID);
   bool SetMasterLockMode(bool bDetails=true);
+  CStdString GetSMBAuthFilename(const CStdString& strAuth);
   bool LockSource(const CStdString& strType, const CStdString& strName, bool bState);
   void LockSources(bool lock);
   void RemoveSourceLocks();
-  bool IsDatabasePathUnlocked(const CStdString& strPath, VECSOURCES& vecSources);
+  bool IsDatabasePathUnlocked(CStdString& strPath, VECSOURCES& VECSOURCES);
+
+	MAPPASSWORDS			m_mapSMBPasswordCache; // SMB share password cache
 
   bool bMasterUser;
   int iMasterLockRetriesLeft;
-
+protected:
+  CStdString m_SMBShare;
 private:
   int VerifyPassword(LockType btnType, const CStdString& strPassword, const CStdString& strHeading);
 };
 
 extern CGUIPassword g_passwordManager;
-
 

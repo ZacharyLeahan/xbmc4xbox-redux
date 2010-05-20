@@ -19,48 +19,31 @@
  *
  */
 
-#include "system.h"
+#include "include.h"
 #include "AudioContext.h"
 #include "GUIAudioManager.h"
+#include "IAudioDeviceChangedCallback.h"
 #include "Settings.h"
 #include "GUISettings.h"
-#ifdef _WIN32
-#include "WINDirectSound.h"
-#endif
+#include "XBAudioConfig.h"
+
+#ifndef _XBOX
 extern HWND g_hWnd;
+#endif
 
 
 CAudioContext g_audioContext;
-
-#ifdef _WIN32
-static GUID g_digitaldevice;
-BOOL CALLBACK DSEnumCallback(
-  LPGUID lpGuid,
-  LPCSTR lpcstrDescription,
-  LPCSTR lpcstrModule,
-  LPVOID lpContext
-)
-{
-  if(strstr(lpcstrDescription, "Digital Output") != NULL)
-  {
-    g_digitaldevice = *lpGuid;
-    return false;
-  }
-  return true;
-}
-#endif
 
 CAudioContext::CAudioContext()
 {
   m_bAC3EncoderActive=false;
   m_iDevice=DEFAULT_DEVICE;
-  m_strDevice.clear();
 #ifdef HAS_AUDIO
 #ifdef HAS_AUDIO_PASS_THROUGH
   m_pAC97Device=NULL;
 #endif
   m_pDirectSoundDevice=NULL;
-#endif
+#endif  
 }
 
 CAudioContext::~CAudioContext()
@@ -68,113 +51,54 @@ CAudioContext::~CAudioContext()
 }
 
 // \brief Create a new device by type (DEFAULT_DEVICE, DIRECTSOUND_DEVICE, AC97_DEVICE)
+// Note: DEFAULT_DEVICE is created by the IAudioDeviceChangedCallback
 void CAudioContext::SetActiveDevice(int iDevice)
 {
-  CStdString strAudioDev = g_guiSettings.GetString("audiooutput.audiodevice");
-
   /* if device is the same, no need to bother */
-#ifdef _WIN32
-
-  int iPos = strAudioDev.Find(':');
-  if(iPos != CStdString::npos)
-    strAudioDev.erase(0, iPos+1);
-
-  if (iDevice == DEFAULT_DEVICE)
-    iDevice = DIRECTSOUND_DEVICE; // default device on win32 is directsound device
-  if(m_iDevice == iDevice && strAudioDev.Equals(m_strDevice))
-  {
-    if (iDevice != NONE && m_pDirectSoundDevice)
-    {
-      DSCAPS devCaps = {0};
-      devCaps.dwSize = sizeof(devCaps);
-      HRESULT hr = m_pDirectSoundDevice->GetCaps(&devCaps);
-      if (SUCCEEDED(hr)) // Make sure the DirectSound interface is still valid.
-        return;
-      CLog::Log(LOGDEBUG, "%s - DirectSoundDevice no longer valid and is going to be recreated (0x%08x)", __FUNCTION__, hr);
-    }
-  }
-
-#else
   if(m_iDevice == iDevice)
     return;
-#endif
 
-  CLog::Log(LOGDEBUG, "%s - SetActiveDevice from %i to %i", __FUNCTION__, m_iDevice, iDevice);
+  if (iDevice==DEFAULT_DEVICE)
+  {
+    /* we just tell callbacks to init, it will setup audio */
+    g_audioManager.Initialize(iDevice);
+    return;
+  }
+
   /* deinit current device */
   RemoveActiveDevice();
 
   m_iDevice=iDevice;
-  m_strDevice=strAudioDev;
 
 #ifdef HAS_AUDIO
-  memset(&g_digitaldevice, 0, sizeof(GUID));
-  if (FAILED(DirectSoundEnumerate(DSEnumCallback, this)))
-    CLog::Log(LOGERROR, "%s - failed to enumerate output devices", __FUNCTION__);
-
-  if (iDevice==DIRECTSOUND_DEVICE
-  ||  iDevice==DIRECTSOUND_DEVICE_DIGITAL)
+  if (iDevice==DIRECTSOUND_DEVICE)
   {
-    LPGUID guid = NULL;
-#ifdef _WIN32
-    CWDSound p_dsound;
-    std::vector<DSDeviceInfo > deviceList = p_dsound.GetSoundDevices();
-    std::vector<DSDeviceInfo >::const_iterator iter = deviceList.begin();
-    for (int i=0; iter != deviceList.end(); i++)
-    {
-      DSDeviceInfo dev = *iter;
-
-      if (strAudioDev.Equals(dev.strDescription))
-      {
-        guid = dev.lpGuid;
-        CLog::Log(LOGDEBUG, "%s - selecting %s as output devices", __FUNCTION__, dev.strDescription.c_str());
-        break;
-      }
-
-      ++iter;
-    }
-#else
-    if(iDevice == DIRECTSOUND_DEVICE_DIGITAL
-    && ( g_digitaldevice.Data1 || g_digitaldevice.Data2
-      || g_digitaldevice.Data3 || g_digitaldevice.Data4 ))
-      guid = &g_digitaldevice;
-#endif
-
     // Create DirectSound
-    if (FAILED(DirectSoundCreate( guid, &m_pDirectSoundDevice, NULL )))
+    if (FAILED(DirectSoundCreate( NULL, &m_pDirectSoundDevice, NULL )))
     {
       CLog::Log(LOGERROR, "DirectSoundCreate() Failed");
       return;
     }
+#ifndef _XBOX
     if (FAILED(m_pDirectSoundDevice->SetCooperativeLevel(g_hWnd, DSSCL_PRIORITY)))
     {
       CLog::Log(LOGERROR, "DirectSoundDevice::SetCooperativeLevel() Failed");
       return;
     }
+#endif
   }
-  else if (iDevice == DIRECTSOUND_DEVICE_DIGITAL)
-  {
-
-  }
-#ifdef HAS_AUDIO_PASS_THROUGH
   else if (iDevice==AC97_DEVICE)
   {
+#ifdef HAS_AUDIO_PASS_THROUGH
     // Create AC97 Device
     if (FAILED(Ac97CreateMediaObject(DSAC97_CHANNEL_DIGITAL, NULL, NULL, &m_pAC97Device)))
+#endif
     {
       CLog::Log(LOGERROR, "Failed to create digital Ac97CreateMediaObject()");
       return;
     }
   }
-#endif
-  // Don't log an error if the caller specifically asked for no device
-  // externalplayer does this to ensure all audio devices are closed
-  // during external playback
-  else if (iDevice != NONE)
-  {
-    CLog::Log(LOGERROR, "Failed to create audio device");
-    return;
-  }
-#endif
+#endif  
   g_audioManager.Initialize(m_iDevice);
 }
 
@@ -187,7 +111,6 @@ int CAudioContext::GetActiveDevice()
 // \brief Remove the current sound device, eg. to setup new speaker config
 void CAudioContext::RemoveActiveDevice()
 {
-  CLog::Log(LOGDEBUG, "%s - Removing device %i", __FUNCTION__, m_iDevice);
   g_audioManager.DeInitialize(m_iDevice);
   m_iDevice=NONE;
 
@@ -196,7 +119,7 @@ void CAudioContext::RemoveActiveDevice()
   SAFE_RELEASE(m_pAC97Device);
 #endif
   SAFE_RELEASE(m_pDirectSoundDevice);
-#endif
+#endif  
 }
 
 // \brief set a new speaker config
@@ -206,15 +129,34 @@ void CAudioContext::SetupSpeakerConfig(int iChannels, bool& bAudioOnAllSpeakers,
   bAudioOnAllSpeakers = false;
 
 #ifdef HAS_AUDIO
-  return; //not implemented
-  DWORD spconfig = DSSPEAKER_USE_DEFAULT;
-  if (AUDIO_IS_BITSTREAM(g_guiSettings.GetInt("audiooutput.mode")))
+  DWORD spconfig = DSSPEAKER_USE_DEFAULT;  
+  if (g_guiSettings.GetInt("audiooutput.mode") == AUDIO_DIGITAL)
   {
-    if (g_settings.m_currentVideoSettings.m_OutputToAllSpeakers && !bIsMusic)
+    if (((g_guiSettings.GetBool("musicplayer.outputtoallspeakers")) && (bIsMusic)) || (g_stSettings.m_currentVideoSettings.m_OutputToAllSpeakers && !bIsMusic))
     {
-      bAudioOnAllSpeakers = true;
-      m_bAC3EncoderActive = true;
-      spconfig = DSSPEAKER_USE_DEFAULT; //Allows ac3 encoder should it be enabled
+      if( g_audioConfig.GetAC3Enabled() )
+      {
+        bAudioOnAllSpeakers = true;      
+        m_bAC3EncoderActive = true;
+        spconfig = DSSPEAKER_USE_DEFAULT; //Allows ac3 encoder should it be enabled
+      }
+      else
+      {
+        if (iChannels == 1)
+          spconfig = DSSPEAKER_MONO;
+        else
+        { 
+#ifdef HAS_XBOX_AUDIO
+          // check if surround mode is allowed, if not then use normal stereo  
+          // don't always set it to default as that enabled ac3 encoder if that is allowed in dash
+          // ruining quality
+          if( XC_AUDIO_FLAGS_BASIC( XGetAudioFlags() ) == XC_AUDIO_FLAGS_SURROUND )
+            spconfig = DSSPEAKER_SURROUND;
+          else
+#endif
+            spconfig = DSSPEAKER_STEREO;
+        }
+      }        
     }
     else
     {
@@ -223,7 +165,10 @@ void CAudioContext::SetupSpeakerConfig(int iChannels, bool& bAudioOnAllSpeakers,
       else if (iChannels == 2)
         spconfig = DSSPEAKER_STEREO;
       else
+      {
         spconfig = DSSPEAKER_USE_DEFAULT; //Allows ac3 encoder should it be enabled
+        m_bAC3EncoderActive = g_audioConfig.GetAC3Enabled();
+      }
     }
   }
   else // We don't want to use the Dolby Digital Encoder output. Downmix to surround instead.
@@ -231,11 +176,16 @@ void CAudioContext::SetupSpeakerConfig(int iChannels, bool& bAudioOnAllSpeakers,
     if (iChannels == 1)
       spconfig = DSSPEAKER_MONO;
     else
-    {
-      // check if surround mode is allowed, if not then use normal stereo
+    { 
+      // check if surround mode is allowed, if not then use normal stereo  
       // don't always set it to default as that enabled ac3 encoder if that is allowed in dash
       // ruining quality
-      spconfig = DSSPEAKER_STEREO;
+#ifdef HAS_XBOX_AUDIO
+      if( XC_AUDIO_FLAGS_BASIC( XGetAudioFlags() ) == XC_AUDIO_FLAGS_SURROUND )
+        spconfig = DSSPEAKER_SURROUND;
+      else
+#endif
+        spconfig = DSSPEAKER_STEREO;
     }
   }
 
@@ -243,16 +193,22 @@ void CAudioContext::SetupSpeakerConfig(int iChannels, bool& bAudioOnAllSpeakers,
   if(m_pDirectSoundDevice)
   {
     m_pDirectSoundDevice->GetSpeakerConfig(&spconfig_old);
-    spconfig_old = DSSPEAKER_CONFIG(spconfig_old);
+#ifdef HAS_XBOX_AUDIO
+    DWORD spconfig_default = XGetAudioFlags();
+    if (spconfig_old == spconfig_default)
+#endif
+      spconfig_old = DSSPEAKER_USE_DEFAULT;
   }
 
   /* speaker config identical, no need to do anything */
   if(spconfig == spconfig_old) return;
-  CLog::Log(LOGDEBUG, "%s - Speakerconfig changed from %i to %i", __FUNCTION__, spconfig_old, spconfig);
-#endif
+#endif  
 
   /* speaker config has changed, caller need to recreate it */
   RemoveActiveDevice();
+#ifdef HAS_XBOX_AUDIO
+  DirectSoundOverrideSpeakerConfig(spconfig);
+#endif
 }
 
 bool CAudioContext::IsAC3EncoderActive() const
@@ -262,6 +218,186 @@ bool CAudioContext::IsAC3EncoderActive() const
 
 bool CAudioContext::IsPassthroughActive() const
 {
-  return (m_iDevice == DIRECTSOUND_DEVICE_DIGITAL);
+  return (m_iDevice == AC97_DEVICE);
 }
 
+#ifdef HAS_XBOX_AUDIO
+bool CAudioContext::GetMixBin(DSMIXBINVOLUMEPAIR* dsmbvp, int* MixBinCount, DWORD* dwChannelMask, int Type, int Channels)
+{
+  //3, 5, >6 channel are invalid XBOX wav formats thus can not be processed at this stage
+
+  if(Type == 0 || Type == DSMIXBINTYPE_DMO)
+  { // FL, FR, C, LFE, BL, BR, (FLC, FRC, BC, SL, SR, TC, TFL, TFC, TFR, TBL, TBC, TBR)
+    // This is the standard windows format, any channel can be left out, the channel mask indicate
+    // wich ones are present. Let's use the standard features for this.
+
+    *MixBinCount = 0;
+    if(*dwChannelMask == 0)
+    { // no channel mask specified, generate one
+      switch(Channels)
+      {
+        case 6:
+          *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+          break;
+        case 5:
+          *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+          break;
+        case 4:
+          *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+          break;
+        case 3:
+          *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER;
+          break;
+        case 2:
+          *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+          break;
+        case 1:
+          *dwChannelMask = SPEAKER_FRONT_CENTER;
+          break;
+      }      
+    }
+    return true;
+  }
+
+  *MixBinCount = Channels;
+
+  if (Channels == 6) //Handle 6 channels.
+  {
+    *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+
+    switch (Type)
+    {
+    case DSMIXBINTYPE_AAC:  //C, FL, FR, SL, SR, LFE
+      {
+        DSMIXBINVOLUMEPAIR dsm[6] =
+          {
+            {DSMIXBIN_FRONT_CENTER, 0},
+            {DSMIXBIN_FRONT_LEFT , 0},
+            {DSMIXBIN_FRONT_RIGHT, 0},
+            {DSMIXBIN_BACK_LEFT, 0},
+            {DSMIXBIN_BACK_RIGHT, 0},
+            {DSMIXBIN_LOW_FREQUENCY, 0}
+          };
+        memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+        return true;
+      }
+    case DSMIXBINTYPE_OGG:  //FL, C, FR, SL, SR, LFE
+      {
+        DSMIXBINVOLUMEPAIR dsm[6] =
+          {
+            {DSMIXBIN_FRONT_LEFT , 0},
+            {DSMIXBIN_FRONT_CENTER, 0},
+            {DSMIXBIN_FRONT_RIGHT, 0},
+            {DSMIXBIN_BACK_LEFT, 0},
+            {DSMIXBIN_BACK_RIGHT, 0},
+            {DSMIXBIN_LOW_FREQUENCY, 0}
+          };
+        memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+        return true;
+      }
+    case DSMIXBINTYPE_STANDARD:  //FL, FR, SL, SR, C, LFE
+      {
+        DSMIXBINVOLUMEPAIR dsm[6] =
+          {
+            {DSMIXBIN_FRONT_LEFT , 0},
+            {DSMIXBIN_FRONT_RIGHT, 0},
+            {DSMIXBIN_BACK_LEFT, 0},
+            {DSMIXBIN_BACK_RIGHT, 0},
+            {DSMIXBIN_FRONT_CENTER, 0},
+            {DSMIXBIN_LOW_FREQUENCY, 0}
+          };
+        memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+        return true;
+      }
+    }
+    //Didn't manage to get anything
+    CLog::Log(LOGERROR, "Invalid Mixbin type specified, reverting to standard");
+    GetMixBin(dsmbvp, MixBinCount, dwChannelMask, DSMIXBINTYPE_STANDARD, Channels);
+    return true;
+  }
+  else if (Channels == 4)
+  {
+    DSMIXBINVOLUMEPAIR dsm[4] = { DSMIXBINVOLUMEPAIRS_DEFAULT_4CHANNEL };
+    memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+    *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    return true;
+  }
+  else if (Channels == 2)
+  {
+    if ( Type == DSMIXBINTYPE_STEREOALL )
+    {
+      *MixBinCount = 8;
+      DSMIXBINVOLUMEPAIR dsm[8] =
+        {
+          {DSMIXBIN_FRONT_LEFT , 0},
+          {DSMIXBIN_FRONT_RIGHT, 0},
+          {DSMIXBIN_BACK_LEFT, 0},
+          {DSMIXBIN_BACK_RIGHT, 0},
+          // left and right both to center and LFE, but attenuate each 3dB first
+          // so they're the same level.
+          // attenuate the center another 3dB so that it is a total 6dB lower
+          // so that stereo effect is not lost.
+          {DSMIXBIN_LOW_FREQUENCY, -301},
+          {DSMIXBIN_LOW_FREQUENCY, -301},
+          {DSMIXBIN_FRONT_CENTER, -602},
+          {DSMIXBIN_FRONT_CENTER, -602}
+        };
+      memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+      *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_FRONT_CENTER | SPEAKER_LOW_FREQUENCY | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    }
+    else if (Type == DSMIXBINTYPE_STEREOLEFT)
+    {
+      *MixBinCount = 8;
+      DSMIXBINVOLUMEPAIR dsm[8] =
+        {
+          // left route to 4 channels
+          {DSMIXBIN_FRONT_LEFT , 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_FRONT_RIGHT , 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_BACK_LEFT, 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_BACK_RIGHT, 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+        };
+      memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+      *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    }
+    else if (Type == DSMIXBINTYPE_STEREORIGHT)
+    {
+      *MixBinCount = 8;
+      DSMIXBINVOLUMEPAIR dsm[8] =
+        {
+          // right route to 4 channels
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_FRONT_LEFT , 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_FRONT_RIGHT , 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_BACK_LEFT, 0},
+          {DSMIXBIN_LOW_FREQUENCY, DSBVOLUME_MIN},
+          {DSMIXBIN_BACK_RIGHT, 0},
+        };
+      memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+      *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT | SPEAKER_BACK_LEFT | SPEAKER_BACK_RIGHT;
+    }
+    else
+    {
+      DSMIXBINVOLUMEPAIR dsm[2] = { DSMIXBINVOLUMEPAIRS_DEFAULT_STEREO };
+      memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+      *dwChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+    }
+    return true;
+  }
+  else if (Channels == 1)
+  {
+    *MixBinCount = 2;
+    DSMIXBINVOLUMEPAIR dsm[2] = { DSMIXBINVOLUMEPAIRS_DEFAULT_MONO };
+    memcpy(dsmbvp, &dsm, sizeof(DSMIXBINVOLUMEPAIR)*(*MixBinCount));
+    *dwChannelMask = SPEAKER_FRONT_LEFT;
+    return true;
+  }
+  CLog::Log(LOGERROR, "Invalid Mixbin channels specified, get MixBins failed");
+  return false;
+}
+#endif

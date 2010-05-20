@@ -21,9 +21,11 @@
  *
  */
 
-#include "StdString.h"
-#include "tinyXML/tinyxml.h" // no use forwarding these, as this class is the main workhorse anyway,
-                             // thus it simplifies the include patterns
+#include "../xbmc/xbox/PlatformDefs.h"
+
+// forward
+class TiXmlDocument;
+class TiXmlNode;
 
 class XMLUtils
 {
@@ -51,6 +53,5 @@ public:
   static void SetBoolean(TiXmlNode* pRootNode, const char *strTag, bool value);
   static void SetHex(TiXmlNode* pRootNode, const char *strTag, uint32_t value);
   static void SetPath(TiXmlNode* pRootNode, const char *strTag, const CStdString& strValue);
-  static void SetLong(TiXmlNode* pRootNode, const char *strTag, long iValue);
 };
 

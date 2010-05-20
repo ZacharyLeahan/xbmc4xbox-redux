@@ -22,15 +22,13 @@
  *
  */
 
+#include "system.h"
 #include "Thread.h"
 #include "Socket.h"
 #include "EventClient.h"
 #include "CriticalSection.h"
-#include "SingleLock.h"
-
 #include <map>
 #include <queue>
-#include <vector>
 
 namespace EVENTSERVER
 {
@@ -61,7 +59,7 @@ namespace EVENTSERVER
 
     // start / stop server
     void StartServer();
-    void StopServer(bool bWait);
+    void StopServer();
 
     // get events
     unsigned short GetButtonCode(std::string& strMapName, bool& isAxis, float& amount);
@@ -72,12 +70,12 @@ namespace EVENTSERVER
   protected:
     CEventServer();
     void Cleanup();
-    void Run();
     void ProcessPacket(SOCKETS::CAddress& addr, int packetSize);
     void ProcessEvents();
     void RefreshClients();
 
     std::map<unsigned long, EVENTCLIENT::CEventClient*>  m_clients;
+    CThread*             m_pThread;
     static CEventServer* m_pInstance;
     SOCKETS::CUDPSocket* m_pSocket;
     int              m_iPort;

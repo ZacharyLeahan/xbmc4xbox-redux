@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "HTTPDirectory.h"
 #include "URL.h"
 #include "Util.h"
@@ -26,11 +27,9 @@
 #include "FileItem.h"
 #include "utils/RegExp.h"
 #include "AdvancedSettings.h"
-#include "StringUtils.h"
-#include "utils/CharsetConverter.h"
-#include "utils/log.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CHTTPDirectory::CHTTPDirectory(void){}
 CHTTPDirectory::~CHTTPDirectory(void){}
@@ -63,28 +62,27 @@ bool CHTTPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
     {
       strLink = reItem.GetReplaceString("\\1");
       strName = reItem.GetReplaceString("\\2");
-
+ 
       if(strLink[0] == '/')
         strLink = strLink.Mid(1);
-
+ 
       CStdString strNameTemp = strName.Trim();
       CStdString strLinkTemp = strLink;
       CUtil::RemoveSlashAtEnd(strLinkTemp);
       CUtil::RemoveSlashAtEnd(strNameTemp);
       CUtil::URLDecode(strLinkTemp);
-
+ 
       if (strNameTemp == strLinkTemp)
       {
         g_charsetConverter.unknownToUTF8(strName);
         CUtil::RemoveSlashAtEnd(strName);
-
+       
         CFileItemPtr pItem(new CFileItem(strName));
         pItem->m_strPath = strBasePath + strLink;
-        pItem->SetProperty("IsHTTPDirectory", true);
-
+       
         if(CUtil::HasSlashAtEnd(pItem->m_strPath))
           pItem->m_bIsFolder = true;
-
+       
         url.SetFileName(pItem->m_strPath);
         pItem->m_strPath = url.Get();
 
@@ -104,16 +102,16 @@ bool CHTTPDirectory::GetDirectory(const CStdString& strPath, CFileItemList &item
           {
             double Size = atof(reSize.GetReplaceString("\\1"));
             CStdString strUnit = reSize.GetReplaceString("\\2");
-
+        
             if (strUnit == "M")
               Size = Size * 1024;
             else if (strUnit == "G")
               Size = Size * 1000 * 1024;
-
-            pItem->m_dwSize = (int64_t)(Size * 1024);
+        
+            pItem->m_dwSize = (__int64)(Size * 1024);
           }
         }
-
+       
         items.Add(pItem);
       }
     }

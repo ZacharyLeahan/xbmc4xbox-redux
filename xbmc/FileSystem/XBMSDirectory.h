@@ -22,7 +22,7 @@
 
 #include "IDirectory.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
 class CXBMSDirectory :
       public IDirectory

@@ -23,35 +23,31 @@
 
 #include "cores/DllLoader/LibraryLoader.h"
 #include "StdString.h"
-#include "DllPaths.h"
 
 ///////////////////////////////////////////////////////////
 //
 //  DECLARE_DLL_WRAPPER
 //
 //  Declares the constructor of the wrapper class.
-//  This must be followed by one or more
+//  This must be followed by one or more 
 //  DEFINE_METHODX/DEFINE_METHOD_LINKAGEX and
 //  one BEGIN_METHOD_RESOLVE/END_METHOD_RESOLVE block.
 //
 //  classname: name of the wrapper class to construct
 //  dllname: file including path of the dll to wrap
-
+//
 #define DECLARE_DLL_WRAPPER(classname, dllname) \
-XDECLARE_DLL_WRAPPER(classname,dllname)
-
-#define XDECLARE_DLL_WRAPPER(classname, dllname) \
 public: \
-  classname () : DllDynamic( dllname ) {}
+  classname () : DllDynamic( #dllname ) {}
 
 ///////////////////////////////////////////////////////////
 //
 //  DECLARE_DLL_WRAPPER_TEMPLATE_BEGIN
 //
 //  Declares the constructor of the wrapper class.
-//  The method SetFile(strDllName) can be used to set the
+//  The method SetFile(strDllName) can be used to set the 
 //  dll of this wrapper.
-//  This must be followed by one or more
+//  This must be followed by one or more 
 //  DEFINE_METHODX/DEFINE_METHOD_LINKAGEX and
 //  one BEGIN_METHOD_RESOLVE/END_METHOD_RESOLVE block.
 //
@@ -110,7 +106,7 @@ public: \
 //
 //  DEFINE_METHOD_LINKAGE
 //
-//  Defines a function for an export from a dll, if the
+//  Defines a function for an export from a dll, if the 
 //  calling convention is not __cdecl.
 //  Use DEFINE_METHOD_LINKAGE for each function to be resolved.
 //
@@ -231,21 +227,21 @@ public: \
 //  linkage: Calling convention of the function
 //  name:    Name of the function
 //  args:    Argument types of the function
-//
+//  
 //  Actual function call will expand to something like this
 //  this will align the stack (esp) at the point of function
 //  entry as required by gcc compiled dlls, it is abit abfuscated
 //  to allow for different sized variables
 //
-//  __int64 test(__int64 p1, char p2, char p3)
-//  {
-//    int o,s = ((sizeof(p1)+3)&~3)+((sizeof(p2)+3)&~3)+((sizeof(p3)+3)&~3);
+//  __int64 test(__int64 p1, char p2, char p3) 
+//  { 
+//    int o,s = ((sizeof(p1)+3)&~3)+((sizeof(p2)+3)&~3)+((sizeof(p3)+3)&~3); 
 //    __asm mov [o],esp;
 //    __asm sub esp, [s];
 //    __asm and esp, ~15;
-//    __asm add esp, [s]
+//    __asm add esp, [s] 
 //    m_test(p1, p2, p3);  //return value will still be correct aslong as we don't mess with it
-//    __asm mov esp,[o];
+//    __asm mov esp,[o]; 
 //  };
 
 #define ALS(a) ((sizeof(a)+3)&~3)
@@ -333,7 +329,7 @@ public: \
 //  Defines a method that resolves the exported functions
 //  defined with DEFINE_METHOD or DEFINE_METHOD_LINKAGE.
 //  There must be a RESOLVE_METHOD or RESOLVE_METHOD_RENAME
-//  for each DEFINE_METHOD or DEFINE_METHOD_LINKAGE within this
+//  for each DEFINE_METHOD or DEFINE_METHOD_LINKAGE within this 
 //  block. This block must be followed by an END_METHOD_RESOLVE.
 //
 #define BEGIN_METHOD_RESOLVE() \
@@ -395,7 +391,7 @@ public: \
 //  };
 //
 //  2.  Define a class, derived from DllDynamic and the previously defined
-//      interface class. Define the constructor of the class using the
+//      interface class. Define the constructor of the class using the 
 //      DECLARE_DLL_WRAPPER macro. Use the DEFINE_METHODX/DEFINE_METHOD_LINKAGEX
 //      macros to define the functions from the interface above, where X is number of
 //      parameters the function has. The function parameters
@@ -404,14 +400,14 @@ public: \
 //      Use the RESOLVE_METHOD/RESOLVE_METHOD_RENAME to do the actually resolve the functions
 //      from the dll when it's loaded. The RESOLVE_METHOD/RESOLVE_METHOD_RENAME have to
 //      be between the BEGIN_METHOD_RESOLVE/END_METHOD_RESOLVE block.
-//
+//      
 //  class DllExample : public DllDynamic, DllExampleInterface
 //  {
-//    DECLARE_DLL_WRAPPER(DllExample, special://xbmcbin/system/Example.dll)
+//    DECLARE_DLL_WRAPPER(DllExample, special://xbmc/system/Example.dll)
 //    LOAD_SYMBOLS()  // add this if you want to load debug symbols for the dll
 //    DEFINE_METHOD2(void, foo, (int p1, char* p2))
 //    DEFINE_METHOD_LINKAGE2(void, __stdcall, bar, (char* p1, int p2))
-//    DEFINE_METHOD_FP(void, foobar, (int type, char* szTest))  //  No need to define this function in the
+//    DEFINE_METHOD_FP(void, foobar, (int type, char* szTest))  //  No need to define this function in the 
 //                                                              //  interface class, as it's a function pointer.
 //                                                              //  But its not recognised by IntelliSence
 //    BEGIN_METHOD_RESOLVE()
@@ -426,7 +422,7 @@ public: \
 //  class DllExample : public DllDynamic, DllExampleInterface
 //  {
 //  public:
-//    DllExample() : DllDynamic( "special://xbmcbin/system/Example.dll" ) {}
+//    DllExample() : DllDynamic( "special://xbmc/system/Example.dll" ) {}
 //  protected:
 //    virtual bool LoadSymbols() { return true; }
 //  protected:
@@ -445,9 +441,9 @@ public: \
 //    {
 //      return m_bar(p1, p2);
 //    }
-//  protected:
-//    typedef void (* foobar_METHOD) (int type, char* szTest);
-//  public:
+//  protected: 
+//    typedef void (* foobar_METHOD) (int type, char* szTest); 
+//  public: 
 //    foobar_METHOD foobar;
 //  protected:
 //    virtual bool ResolveExports()

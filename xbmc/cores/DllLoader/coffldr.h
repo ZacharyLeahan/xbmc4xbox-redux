@@ -1,5 +1,5 @@
 #ifndef __COFFLDR_H_
-#define __COFFLDR_H_
+#define __COFFLDR_H_ 
 
 /*
  *      Copyright (C) 2005-2008 Team XBMC
@@ -24,8 +24,6 @@
 
 //#pragma message("including coffldr.h")
 #include "coff.h"
-
-#include <stdio.h>
 
 #ifndef _FILE_DEFINED
 struct _iobuf {

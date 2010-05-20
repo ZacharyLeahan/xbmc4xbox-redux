@@ -21,13 +21,7 @@
  *
  */
 
-#if !defined(_LINUX) && !defined(HAS_GL)
-
 #include "GraphicContext.h"
-#include "RenderFlags.h"
-#include "BaseRenderer.h"
-#include "D3DResource.h"
-#include "settings/VideoSettings.h"
 
 //#define MP_DIRECTRENDERING
 
@@ -37,8 +31,23 @@
 #define NUM_BUFFERS 2
 #endif
 
+#define MAX_PLANES 3
+#define MAX_FIELDS 3
+
 #define ALIGN(value, alignment) (((value)+((alignment)-1))&~((alignment)-1))
 #define CLAMP(a, min, max) ((a) > (max) ? (max) : ( (a) < (min) ? (min) : a ))
+
+typedef struct YV12Image
+{
+  BYTE *   plane[MAX_PLANES];
+  unsigned stride[MAX_PLANES];
+  unsigned width;
+  unsigned height;
+  unsigned flags;
+
+  unsigned cshift_x; /* this is the chroma shift used */
+  unsigned cshift_y;
+} YV12Image;
 
 #define AUTOSOURCE -1
 
@@ -56,6 +65,7 @@
 #define RENDER_FLAG_FIELDMASK   0x03
 
 #define RENDER_FLAG_NOOSD       0x04 /* don't draw any osd */
+#define RENDER_FLAG_NOOSDALPHA  0x08 /* don't allow alpha when osd is drawn */
 
 /* these two flags will be used if we need to render same image twice (bob deinterlacing) */
 #define RENDER_FLAG_NOLOCK      0x10   /* don't attempt to lock texture before rendering */
@@ -70,10 +80,6 @@
 
 #define CONF_FLAGS_YUV_FULLRANGE 0x08
 #define CONF_FLAGS_FULLSCREEN    0x10
-
-class CBaseTexture;
-
-namespace DXVA { class CProcessor; }
 
 struct DRAWRECT
 {
@@ -99,61 +105,95 @@ struct YUVRANGE
   int v_min, v_max;
 };
 
+struct YUVCOEF
+{
+  float r_up, r_vp;
+  float g_up, g_vp;
+  float b_up, b_vp;
+};
+
 extern YUVRANGE yuv_range_lim;
 extern YUVRANGE yuv_range_full;
+extern YUVCOEF yuv_coef_bt601;
+extern YUVCOEF yuv_coef_bt709;
+extern YUVCOEF yuv_coef_ebu;
+extern YUVCOEF yuv_coef_smtp240m;
 
-class CWinRenderer : public CBaseRenderer
+class CWinRenderer
 {
 public:
-  CWinRenderer();
+  CWinRenderer(LPDIRECT3DDEVICE8 pDevice);
   ~CWinRenderer();
 
+  virtual void GetVideoRect(RECT &rs, RECT &rd);
+  virtual float GetAspectRatio();
   virtual void Update(bool bPauseDrawing);
   virtual void SetupScreenshot() {};
-  void CreateThumbnail(CBaseTexture *texture, unsigned int width, unsigned int height);
+  virtual void SetViewMode(int iViewMode);
+  void CreateThumbnail(LPDIRECT3DSURFACE8 surface, unsigned int width, unsigned int height);
 
   // Player functions
   virtual bool Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags);
+  virtual bool IsConfigured() { return m_bConfigured; } 
   virtual int          GetImage(YV12Image *image, int source = AUTOSOURCE, bool readonly = false);
   virtual void         ReleaseImage(int source, bool preserve = false);
   virtual unsigned int DrawSlice(unsigned char *src[], int stride[], int w, int h, int x, int y);
-  virtual void         AddProcessor(DXVA::CProcessor* processor, int64_t id);
+  virtual void         DrawAlpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride);
   virtual void         FlipPage(int source);
   virtual unsigned int PreInit();
   virtual void         UnInit();
   virtual void         Reset(); /* resets renderer after seek for example */
-  virtual bool         IsConfigured() { return m_bConfigured; }
 
-  virtual bool         Supports(ERENDERFEATURE feature);
-  virtual bool         Supports(EINTERLACEMETHOD method);
-  virtual bool         Supports(ESCALINGMETHOD method);
-
+  void AutoCrop(bool bCrop);
   void RenderUpdate(bool clear, DWORD flags = 0, DWORD alpha = 255);
+  RESOLUTION GetResolution();  
 
 protected:
   virtual void Render(DWORD flags);
+  virtual void CalcNormalDisplayRect(float fOffsetX1, float fOffsetY1, float fScreenWidth, float fScreenHeight, float fUserPixelRatio, float fZoomAmount);
+  void CalculateFrameAspectRatio(int desired_width, int desired_height);
+  void ChooseBestResolution(float fps);
+  virtual void ManageDisplay();
   void CopyAlpha(int w, int h, unsigned char* src, unsigned char *srca, int srcstride, unsigned char* dst, unsigned char* dsta, int dststride);
   virtual void ManageTextures();
+  void DeleteOSDTextures(int index);
+  void Setup_Y8A8Render();
+  void RenderOSD();
   void DeleteYV12Texture(int index);
   void ClearYV12Texture(int index);
   bool CreateYV12Texture(int index);
   void CopyYV12Texture(int dest);
   int  NextYV12Texture();
 
-  void UpdateVideoFilter();
-
-  bool LoadEffect(CD3DEffect &effect, CStdString filename);
-
   // low memory renderer (default PixelShaderRenderer)
-  void RenderLowMem(CD3DEffect &effect, DWORD flags);
-  void RenderProcessor(DWORD flags);
+  void RenderLowMem(DWORD flags);
   int m_iYV12RenderBuffer;
   int m_NumYV12Buffers;
 
+  float m_fSourceFrameRatio; // the frame aspect ratio of the source (corrected for pixel ratio)
+  RESOLUTION m_iResolution;    // the resolution we're running in
+  float m_fps;        // fps of movie
+  RECT rd;          // destination rect
+  RECT rs;          // source rect
+  unsigned int m_iSourceWidth;    // width
+  unsigned int m_iSourceHeight;   // height
+
   bool m_bConfigured;
 
-  typedef BYTE*                   YUVMEMORYPLANES[MAX_PLANES];
-  typedef YUVMEMORYPLANES         YUVMEMORYBUFFERS[NUM_BUFFERS];
+  // OSD stuff
+  LPDIRECT3DTEXTURE8 m_pOSDYTexture[NUM_BUFFERS];
+  LPDIRECT3DTEXTURE8 m_pOSDATexture[NUM_BUFFERS];
+  float m_OSDWidth;
+  float m_OSDHeight;
+  DRAWRECT m_OSDRect;
+  int m_iOSDRenderBuffer;
+  int m_iOSDTextureWidth;
+  int m_iOSDTextureHeight[NUM_BUFFERS];
+  int m_NumOSDBuffers;
+  bool m_OSDRendered;
+
+  typedef LPDIRECT3DTEXTURE8 YUVPLANES[MAX_PLANES];
+  typedef YUVPLANES          YUVBUFFERS[NUM_BUFFERS];
 
   #define PLANE_Y 0
   #define PLANE_U 1
@@ -164,66 +204,27 @@ protected:
   #define FIELD_EVEN 2
 
   // YV12 decoder textures
-  struct SVideoPlane
-  {
-    CD3DTexture    texture;
-    D3DLOCKED_RECT rect;
-  };
+  // field index 0 is full image, 1 is odd scanlines, 2 is even scanlines
+  YUVBUFFERS m_YUVTexture;
 
-  struct SVideoBuffer
-  {
-    SVideoBuffer()
-    {
-      proc = NULL;
-      id   = 0;
-    }
-   ~SVideoBuffer()
-    {
-      Clear();
-    }
+  // render device
+  LPDIRECT3DDEVICE8 m_pD3DDevice;
 
-    void StartDecode();
-    void StartRender();
-
-    void Clear();
-
-    DXVA::CProcessor* proc;
-    int64_t           id;
-    SVideoPlane       planes[MAX_PLANES];
-  };
-
-  SVideoBuffer m_VideoBuffers[NUM_BUFFERS];
-
-  CD3DTexture m_HQKernelTexture;
-  CD3DEffect  m_YUV2RGBEffect;
-  CD3DEffect  m_YUV2RGBHQScalerEffect;
-
-  ESCALINGMETHOD m_scalingMethod;
-  ESCALINGMETHOD m_scalingMethodGui;
-
-  D3DCAPS9 m_deviceCaps;
-
-  bool m_bUseHQScaler;
-  bool m_bFilterInitialized;
+  // pixel shader (low memory shader used in all renderers while in GUI)
+  DWORD m_hLowMemShader;
 
   // clear colour for "black" bars
   DWORD m_clearColour;
-  unsigned int m_flags;
 };
 
 
 class CPixelShaderRenderer : public CWinRenderer
 {
 public:
-  CPixelShaderRenderer();
+  CPixelShaderRenderer(LPDIRECT3DDEVICE8 pDevice);
   virtual bool Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags);
 
 protected:
   virtual void Render(DWORD flags);
 };
-
-#else
-#include "LinuxRenderer.h"
-#endif
-
 

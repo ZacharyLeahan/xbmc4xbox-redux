@@ -19,23 +19,23 @@
  *
  */
 
-#include "system.h" // needed prior to Util.h due to include order issues
+#include "stdafx.h"
 #include "Util.h"
 #include "URL.h"
 #include "FileItem.h"
 #include "HDHomeRun.h"
-#include "utils/TimeUtils.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 using namespace std;
 
-class CUrlOptions
+class CUrlOptions 
   : public map<CStdString, CStdString>
-{
+{  
 public:
   CUrlOptions(const CStdString& data)
-  {
-    vector<CStdString> options;
+  {    
+    vector<CStdString> options;    
     CUtil::Tokenize(data, options, "&");
     for(vector<CStdString>::iterator it = options.begin();it != options.end(); it++)
     {
@@ -56,7 +56,7 @@ public:
       CUtil::URLDecode(value);
       insert(value_type(name, value));
     }
-  }
+  }  
 };
 
 
@@ -84,10 +84,9 @@ bool CDirectoryHomeRun::GetDirectory(const CStdString& strPath, CFileItemList &i
   if(url.GetHostName().IsEmpty())
   {
     // no hostname, list all available devices
-    int target_ip = 0;
-    struct hdhomerun_discover_device_t result_list[64];
-    int count = m_dll.discover_find_devices_custom(target_ip, HDHOMERUN_DEVICE_TYPE_TUNER, HDHOMERUN_DEVICE_ID_WILDCARD, result_list, 64);
-    if (count < 0)
+	  struct hdhomerun_discover_device_t result_list[64];
+    int count = m_dll.discover_find_devices(HDHOMERUN_DEVICE_TYPE_TUNER, result_list, 64);
+	  if (count < 0)
       return false;
 
     for(int i=0;i<count;i++)
@@ -98,8 +97,8 @@ bool CDirectoryHomeRun::GetDirectory(const CStdString& strPath, CFileItemList &i
 
       device.Format("%x", result_list[i].device_id);
       ip.Format("%u.%u.%u.%u",
-            (unsigned int)(ip_addr >> 24) & 0xFF, (unsigned int)(ip_addr >> 16) & 0xFF,
-            (unsigned int)(ip_addr >> 8) & 0xFF, (unsigned int)(ip_addr >> 0) & 0xFF);
+		    (unsigned int)(ip_addr >> 24) & 0xFF, (unsigned int)(ip_addr >> 16) & 0xFF,
+		    (unsigned int)(ip_addr >> 8) & 0xFF, (unsigned int)(ip_addr >> 0) & 0xFF);
 
       item.reset(new CFileItem("hdhomerun://" + device + "/tuner0/", true));
       item->SetLabel(device + "-0 On " + ip);
@@ -114,8 +113,8 @@ bool CDirectoryHomeRun::GetDirectory(const CStdString& strPath, CFileItemList &i
     return true;
   }
   else
-  {
-    hdhomerun_device_t* device = m_dll.device_create_from_str(url.GetHostName().c_str(), NULL);
+  {    
+    hdhomerun_device_t* device = m_dll.device_create_from_str(url.GetHostName().c_str());
     if(!device)
       return false;
 
@@ -151,7 +150,7 @@ bool CDirectoryHomeRun::GetDirectory(const CStdString& strPath, CFileItemList &i
 // -------------------------------------------
 // ------------------ File -------------------
 // -------------------------------------------
-CFileHomeRun::CFileHomeRun()
+CFileHomeRun::CFileHomeRun() 
 {
   m_device = NULL;
   m_dll.Load();
@@ -178,8 +177,8 @@ bool CFileHomeRun::Exists(const CURL& url)
   return false;
 }
 
-int64_t CFileHomeRun::Seek(int64_t iFilePosition, int iWhence)
-{
+__int64 CFileHomeRun::Seek(__int64 iFilePosition, int iWhence)
+{ 
   return -1;
 }
 
@@ -188,12 +187,12 @@ int CFileHomeRun::Stat(const CURL& url, struct __stat64* buffer)
   return 0;
 }
 
-int64_t CFileHomeRun::GetPosition()
+__int64 CFileHomeRun::GetPosition()
 {
   return 0;
 }
 
-int64_t CFileHomeRun::GetLength()
+__int64 CFileHomeRun::GetLength()
 {
   return 0;
 }
@@ -202,8 +201,8 @@ bool CFileHomeRun::Open(const CURL &url)
 {
   if(!m_dll.IsLoaded())
     return false;
-
-  m_device = m_dll.device_create_from_str(url.GetHostName().c_str(), NULL);
+  
+  m_device = m_dll.device_create_from_str(url.GetHostName().c_str());
   if(!m_device)
     return false;
 
@@ -225,15 +224,15 @@ bool CFileHomeRun::Open(const CURL &url)
   return true;
 }
 
-unsigned int CFileHomeRun::Read(void* lpBuf, int64_t uiBufSize)
+unsigned int CFileHomeRun::Read(void* lpBuf, __int64 uiBufSize)
 {
   unsigned int datasize;
   // for now, let it it time out after 5 seconds,
-  // neither of the players can be forced to
+  // neither of the players can be forced to 
   // continue even if read return 0 as can happen
   // on live streams.
-  unsigned int timestamp = CTimeUtils::GetTimeMS() + 5000;
-  while(1)
+  DWORD timestamp = GetTickCount() + 5000;
+  while(1) 
   {
     datasize = (unsigned int)min((unsigned int) uiBufSize,UINT_MAX);
     uint8_t* ptr = m_dll.device_stream_recv(m_device, datasize, &datasize);
@@ -243,7 +242,7 @@ unsigned int CFileHomeRun::Read(void* lpBuf, int64_t uiBufSize)
       return datasize;
     }
 
-    if(CTimeUtils::GetTimeMS() > timestamp)
+    if(GetTickCount() > timestamp)
       return 0;
 
     Sleep(64);
@@ -252,7 +251,7 @@ unsigned int CFileHomeRun::Read(void* lpBuf, int64_t uiBufSize)
 }
 
 void CFileHomeRun::Close()
-{
+{  
   if(m_device)
   {
     m_dll.device_stream_stop(m_device);

@@ -37,8 +37,6 @@ enum DVDStreamType
   DVDSTREAM_TYPE_TV     = 6,
   DVDSTREAM_TYPE_RTMP   = 7,
   DVDSTREAM_TYPE_HTSP   = 8,
-  DVDSTREAM_TYPE_MMS    = 9,
-  DVDSTREAM_TYPE_MPLS   = 10
 };
 
 #define DVDSTREAM_BLOCK_SIZE_FILE (2048 * 16)
@@ -80,7 +78,7 @@ public:
 
   int GetBlockSize() { return DVDSTREAM_BLOCK_SIZE_FILE; }
   bool IsStreamType(DVDStreamType type) const { return m_streamType == type; }
-  virtual bool IsEOF() = 0;
+  virtual bool IsEOF() = 0;  
   virtual int GetCurrentGroupId() { return 0; }
   virtual BitstreamStats GetBitstreamStats() const { return m_stats; }
 

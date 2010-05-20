@@ -19,11 +19,13 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "OGGFileDirectory.h"
 #include "OggTag.h"
 
 using namespace MUSIC_INFO;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 COGGFileDirectory::COGGFileDirectory(void)
 {

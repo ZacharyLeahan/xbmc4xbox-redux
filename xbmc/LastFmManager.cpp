@@ -19,10 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "LastFmManager.h"
 #include "Album.h"
 #include "Artist.h"
 #include "Application.h"
+#include "ApplicationRenderer.h"
 #include "PlayListPlayer.h"
 #include "Util.h"
 #include "PlayListFactory.h"
@@ -37,19 +39,10 @@
 #include "GUIWindowManager.h"
 #include "GUIDialogProgress.h"
 #include "GUIDialogYesNo.h"
-#include "GUIDialogOK.h"
-#include "GUISettings.h"
-#include "GUIUserMessages.h"
+#include "Settings.h"
 #include "PlayList.h"
 #include "Crc32.h"
 #include "AdvancedSettings.h"
-#include "Settings.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
-#include "tinyXML/tinyxml.h"
-#include "utils/TimeUtils.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
 
 #include <sstream>
 
@@ -133,7 +126,7 @@ bool CLastFmManager::RadioHandShake()
   CFileCurl http;
   CStdString html;
 
-  CStdString strPassword = g_guiSettings.GetString("scrobbler.lastfmpass");
+  CStdString strPassword = g_guiSettings.GetString("scrobbler.lastfmpassword");
   CStdString strUserName = g_guiSettings.GetString("scrobbler.lastfmusername");
   if (strUserName.IsEmpty() || strPassword.IsEmpty())
   {
@@ -141,8 +134,8 @@ bool CLastFmManager::RadioHandShake()
     return false;
   }
 
-  CStdString passwordmd5(strPassword);
-  passwordmd5.ToLower();
+  CStdString passwordmd5;
+  CreateMD5Hash(strPassword, passwordmd5);
 
   CStdString url;
   CUtil::URLEncode(strUserName);
@@ -185,6 +178,10 @@ void CLastFmManager::InitProgressDialog(const CStdString& strUrl)
         dlgProgress->StartModal();
     }
   }
+  else
+  {
+    g_ApplicationRenderer.SetBusy(true);
+  }
 }
 
 void CLastFmManager::UpdateProgressDialog(const int iStringID)
@@ -203,11 +200,15 @@ void CLastFmManager::CloseProgressDialog()
     dlgProgress->Close();
     dlgProgress = NULL;
   }
+  else
+  {
+    g_ApplicationRenderer.SetBusy(false);
+  }
 }
 
 bool CLastFmManager::ChangeStation(const CURL& stationUrl)
 {
-  unsigned int start = CTimeUtils::GetTimeMS();
+  DWORD start = timeGetTime();
 
   InitProgressDialog(stationUrl.Get());
 
@@ -215,7 +216,6 @@ bool CLastFmManager::ChangeStation(const CURL& stationUrl)
   if (!RadioHandShake())
   {
     CloseProgressDialog();
-    CGUIDialogOK::ShowAndGetInput(15200, 15206, 0, 0);
     return false;
   }
 
@@ -259,7 +259,7 @@ bool CLastFmManager::ChangeStation(const CURL& stationUrl)
     g_application.m_strPlayListFile = stationUrl.Get(); //needed to highlight the playing item
     g_playlistPlayer.SetCurrentPlaylist(PLAYLIST_MUSIC);
     g_playlistPlayer.Play(0);
-    CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(CTimeUtils::GetTimeMS() - start));
+    CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(timeGetTime() - start));
     CloseProgressDialog();
     return true;
   }
@@ -269,7 +269,7 @@ bool CLastFmManager::ChangeStation(const CURL& stationUrl)
 
 bool CLastFmManager::RequestRadioTracks()
 {
-  unsigned int start = CTimeUtils::GetTimeMS();
+  DWORD start = timeGetTime();
   CStdString url;
   CStdString html;
   url.Format("http://" + m_RadioBaseUrl + m_RadioBasePath + "/xspf.php?sk=%s&discovery=0&desktop=", m_RadioSession);
@@ -362,7 +362,7 @@ bool CLastFmManager::RequestRadioTracks()
         newItem->GetMusicInfoTag()->SetAlbum(child->Value());
       }
     }
-
+   
     pElement = pTrackElement->FirstChildElement("duration");
     if (pElement)
     {
@@ -409,15 +409,16 @@ bool CLastFmManager::RequestRadioTracks()
   //end parse
   CSingleLock lock(m_lockCache);
   int iNrCachedTracks = m_RadioTrackQueue->size();
-  CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(CTimeUtils::GetTimeMS() - start));
+  CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(timeGetTime() - start));
   return iNrCachedTracks > 0;
 }
 
 void CLastFmManager::CacheTrackThumb(const int nrInitialTracksToAdd)
 {
-  unsigned int start = CTimeUtils::GetTimeMS();
+  DWORD start = timeGetTime();
   CSingleLock lock(m_lockCache);
   int iNrCachedTracks = m_RadioTrackQueue->size();
+  CPicture pic;
   CFileCurl http;
   for (int i = 0; i < nrInitialTracksToAdd && i < iNrCachedTracks; i++)
   {
@@ -441,7 +442,7 @@ void CLastFmManager::CacheTrackThumb(const int nrInitialTracksToAdd)
         try
         {
           //download to temp, then make a thumb
-          if (CFile::Exists(thumbFile) || (http.Download(coverUrl, cachedFile) && CPicture::CreateThumbnail(cachedFile, thumbFile)))
+          if (CFile::Exists(thumbFile) || (http.Download(coverUrl, cachedFile) && pic.CreateThumbnail(cachedFile, thumbFile)))
           {
             if (CFile::Exists(cachedFile))
               CFile::Delete(cachedFile);
@@ -460,7 +461,7 @@ void CLastFmManager::CacheTrackThumb(const int nrInitialTracksToAdd)
       item->GetMusicInfoTag()->SetLoaded();
     }
   }
-  CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(CTimeUtils::GetTimeMS() - start));
+  CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(timeGetTime() - start));
 }
 
 void CLastFmManager::AddToPlaylist(const int nrTracks)
@@ -482,7 +483,7 @@ void CLastFmManager::AddToPlaylist(const int nrTracks)
         CSingleLock lock2(m_lockPlaylist);
         playlist.Add(item);
       }
-      else
+      else 
       {
         break;
       }
@@ -500,14 +501,14 @@ void CLastFmManager::OnSongChange(CFileItem& newSong)
       StopRadio(true);
     }
     else
-    {
-      unsigned int start = CTimeUtils::GetTimeMS();
+    { 
+      DWORD start = timeGetTime();
       ReapSongs();
       MovePlaying();
       Update();
       SendUpdateMessage();
-
-      CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(CTimeUtils::GetTimeMS() - start));
+      
+      CLog::Log(LOGDEBUG, "%s: Done (time: %i ms)", __FUNCTION__, (int)(timeGetTime() - start));
     }
   }
   m_CurrentSong.IsLoved = false;
@@ -595,17 +596,17 @@ void CLastFmManager::SendUpdateMessage()
 
 void CLastFmManager::OnStartup()
 {
-  SetPriority( GetNormalPriority() );
+  SetPriority(THREAD_PRIORITY_NORMAL);
 }
 
 void CLastFmManager::Process()
 {
   bool bLastShuffleState = g_playlistPlayer.IsShuffled(PLAYLIST_MUSIC);
   PLAYLIST::REPEAT_STATE LastRepeatState = g_playlistPlayer.GetRepeat(PLAYLIST_MUSIC);
-
+  
   g_playlistPlayer.SetShuffle(PLAYLIST_MUSIC, false);
   g_playlistPlayer.SetRepeat(PLAYLIST_MUSIC, PLAYLIST::REPEAT_NONE);
-
+  
   while (!m_bStop)
   {
     WaitForSingleObject(m_hWorkerEvent, INFINITE);
@@ -620,18 +621,18 @@ void CLastFmManager::Process()
     iNrCachedTracks = m_RadioTrackQueue->size();
     CacheTrackThumb(iNrCachedTracks);
   }
-
-  g_playlistPlayer.SetShuffle(PLAYLIST_MUSIC, bLastShuffleState);
+	
+	g_playlistPlayer.SetShuffle(PLAYLIST_MUSIC, bLastShuffleState);
   g_playlistPlayer.SetRepeat(PLAYLIST_MUSIC, LastRepeatState);
-
+  
   CLog::Log(LOGINFO,"LastFM thread terminated");
 }
 
 void CLastFmManager::StopRadio(bool bKillSession /*= true*/)
 {
-  if (bKillSession)
+  if (bKillSession) 
   {
-    m_RadioSession = "";
+	m_RadioSession = "";
   }
   if (m_ThreadHandle)
   {
@@ -653,7 +654,7 @@ void CLastFmManager::StopRadio(bool bKillSession /*= true*/)
       }
     }
   }
-
+  
   if (!bKillSession)
   {
     SendUpdateMessage();
@@ -662,7 +663,9 @@ void CLastFmManager::StopRadio(bool bKillSession /*= true*/)
 
 void CLastFmManager::CreateMD5Hash(const CStdString& bufferToHash, CStdString& hash)
 {
-  hash = XBMC::XBMC_MD5::GetMD5(bufferToHash);
+  XBMC::MD5 md5state;
+  md5state.append(bufferToHash);
+  md5state.getDigest(hash);
   hash.ToLower();
 }
 
@@ -682,7 +685,7 @@ void CLastFmManager::CreateMD5Hash(const CStdString& bufferToHash, CStdString& h
 bool CLastFmManager::CallXmlRpc(const CStdString& action, const CStdString& artist, const CStdString& title)
 {
   CStdString strUserName = g_guiSettings.GetString("scrobbler.lastfmusername");
-  CStdString strPassword = g_guiSettings.GetString("scrobbler.lastfmpass");
+  CStdString strPassword = g_guiSettings.GetString("scrobbler.lastfmpassword");
   if (strUserName.IsEmpty() || strPassword.IsEmpty())
   {
     CLog::Log(LOGERROR, "Last.fm CallXmlRpc no username or password set.");
@@ -698,7 +701,7 @@ bool CLastFmManager::CallXmlRpc(const CStdString& action, const CStdString& arti
     CLog::Log(LOGERROR, "Last.fm CallXmlRpc no tracktitle provided.");
     return false;
   }
-
+  
   char ti[20];
   time_t rawtime;
   time ( &rawtime );
@@ -706,71 +709,71 @@ bool CLastFmManager::CallXmlRpc(const CStdString& action, const CStdString& arti
   strftime(ti, sizeof(ti), "%Y-%m-%d %H:%M:%S", now);
   CStdString strChallenge = ti;
 
-  CStdString strAuth(strPassword);
-  strAuth.ToLower();
+  CStdString strAuth;
+  CreateMD5Hash(strPassword, strAuth);
   strAuth.append(strChallenge);
   CreateMD5Hash(strAuth, strAuth);
 
   //create request xml
-  TiXmlDocument doc;
-  TiXmlDeclaration * decl = new TiXmlDeclaration( "1.0", "UTF-8", "" );
-  doc.LinkEndChild( decl );
-
-  TiXmlElement * elMethodCall = new TiXmlElement( "methodCall" );
-  doc.LinkEndChild( elMethodCall );
+	TiXmlDocument doc;
+	TiXmlDeclaration * decl = new TiXmlDeclaration( "1.0", "UTF-8", "" );
+	doc.LinkEndChild( decl );
+	
+	TiXmlElement * elMethodCall = new TiXmlElement( "methodCall" );
+	doc.LinkEndChild( elMethodCall );
 
   TiXmlElement * elMethodName = new TiXmlElement( "methodName" );
-  elMethodCall->LinkEndChild( elMethodName );
-  TiXmlText * txtAction = new TiXmlText( action );
-  elMethodName->LinkEndChild( txtAction );
+	elMethodCall->LinkEndChild( elMethodName );
+	TiXmlText * txtAction = new TiXmlText( action );
+	elMethodName->LinkEndChild( txtAction );
 
   TiXmlElement * elParams = new TiXmlElement( "params" );
-  elMethodCall->LinkEndChild( elParams );
+	elMethodCall->LinkEndChild( elParams );
 
   TiXmlElement * elParam = new TiXmlElement( "param" );
-  elParams->LinkEndChild( elParam );
+	elParams->LinkEndChild( elParam );
   TiXmlElement * elValue = new TiXmlElement( "value" );
-  elParam->LinkEndChild( elValue );
+	elParam->LinkEndChild( elValue );
   TiXmlElement * elString = new TiXmlElement( "string" );
-  elValue->LinkEndChild( elString );
-  TiXmlText * txtParam = new TiXmlText( strUserName );
-  elString->LinkEndChild( txtParam );
+	elValue->LinkEndChild( elString );
+	TiXmlText * txtParam = new TiXmlText( strUserName );
+	elString->LinkEndChild( txtParam );
 
   elParam = new TiXmlElement( "param" );
-  elParams->LinkEndChild( elParam );
+	elParams->LinkEndChild( elParam );
   elValue = new TiXmlElement( "value" );
-  elParam->LinkEndChild( elValue );
+	elParam->LinkEndChild( elValue );
   elString = new TiXmlElement( "string" );
-  elValue->LinkEndChild( elString );
-  txtParam = new TiXmlText( strChallenge );
-  elString->LinkEndChild( txtParam );
+	elValue->LinkEndChild( elString );
+	txtParam = new TiXmlText( strChallenge );
+	elString->LinkEndChild( txtParam );
 
   elParam = new TiXmlElement( "param" );
-  elParams->LinkEndChild( elParam );
+	elParams->LinkEndChild( elParam );
   elValue = new TiXmlElement( "value" );
-  elParam->LinkEndChild( elValue );
+	elParam->LinkEndChild( elValue );
   elString = new TiXmlElement( "string" );
-  elValue->LinkEndChild( elString );
-  txtParam = new TiXmlText( strAuth );
-  elString->LinkEndChild( txtParam );
+	elValue->LinkEndChild( elString );
+	txtParam = new TiXmlText( strAuth );
+	elString->LinkEndChild( txtParam );
 
   elParam = new TiXmlElement( "param" );
-  elParams->LinkEndChild( elParam );
+	elParams->LinkEndChild( elParam );
   elValue = new TiXmlElement( "value" );
-  elParam->LinkEndChild( elValue );
+	elParam->LinkEndChild( elValue );
   elString = new TiXmlElement( "string" );
-  elValue->LinkEndChild( elString );
-  txtParam = new TiXmlText( artist );
-  elString->LinkEndChild( txtParam );
+	elValue->LinkEndChild( elString );
+	txtParam = new TiXmlText( artist );
+	elString->LinkEndChild( txtParam );
 
   elParam = new TiXmlElement( "param" );
-  elParams->LinkEndChild( elParam );
+	elParams->LinkEndChild( elParam );
   elValue = new TiXmlElement( "value" );
-  elParam->LinkEndChild( elValue );
+	elParam->LinkEndChild( elValue );
   elString = new TiXmlElement( "string" );
-  elValue->LinkEndChild( elString );
-  txtParam = new TiXmlText( title );
-  elString->LinkEndChild( txtParam );
+	elValue->LinkEndChild( elString );
+	txtParam = new TiXmlText( title );
+	elString->LinkEndChild( txtParam );
 
   CStdString strBody;
   strBody << doc;
@@ -811,13 +814,13 @@ bool CLastFmManager::Love(bool askConfirmation)
         if (Love(*infoTag))
         {
           strMessage.Format(g_localizeStrings.Get(15289), strTitle);
-          g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Info, g_localizeStrings.Get(15200), strMessage, 7000, false);
+          g_application.m_guiDialogKaiToast.QueueNotification("", g_localizeStrings.Get(15200), strMessage, 7000);
           return true;
         }
-        else
+        else 
         {
           strMessage.Format(g_localizeStrings.Get(15290), strTitle);
-          g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Error, g_localizeStrings.Get(15200), strMessage, 7000, false);
+          g_application.m_guiDialogKaiToast.QueueNotification("", g_localizeStrings.Get(15200), strMessage, 7000);
           return false;
         }
       }
@@ -844,13 +847,13 @@ bool CLastFmManager::Ban(bool askConfirmation)
         if (Ban(*infoTag))
         {
           strMessage.Format(g_localizeStrings.Get(15291), strTitle);
-          g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Info, g_localizeStrings.Get(15200), strMessage, 7000, false);
+          g_application.m_guiDialogKaiToast.QueueNotification("", g_localizeStrings.Get(15200), strMessage, 7000);
           return true;
         }
-        else
+        else 
         {
           strMessage.Format(g_localizeStrings.Get(15292), strTitle);
-          g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Warning, g_localizeStrings.Get(15200), strMessage, 7000, false);
+          g_application.m_guiDialogKaiToast.QueueNotification("", g_localizeStrings.Get(15200), strMessage, 7000);
           return false;
         }
       }
@@ -866,10 +869,10 @@ bool CLastFmManager::Love(const CMusicInfoTag& musicinfotag)
     CLog::Log(LOGERROR, "LastFmManager Love, lastfm is not enabled.");
     return false;
   }
-
+  
   CStdString strTitle = musicinfotag.GetTitle();
   CStdString strArtist = musicinfotag.GetArtist();
-
+  
   CStdString strFilePath;
   if (m_CurrentSong.CurrentSong && !m_CurrentSong.CurrentSong->IsLastFM())
   {
@@ -907,11 +910,11 @@ bool CLastFmManager::Ban(const CMusicInfoTag& musicinfotag)
     CLog::Log(LOGERROR, "LastFmManager Ban, radio is not active");
     return false;
   }
-
+  
   if (CallXmlRpc("banTrack", musicinfotag.GetArtist(), musicinfotag.GetTitle()))
   {
     //we banned this track so skip to the next track
-    g_application.getApplicationMessenger().ExecBuiltIn("playercontrol(next)");
+    g_applicationMessenger.ExecBuiltIn("playercontrol(next)");
     m_CurrentSong.IsBanned = true;
     return true;
   }
@@ -980,7 +983,7 @@ bool CLastFmManager::Unban(const CMusicInfoTag& musicinfotag, bool askConfirmati
     CLog::Log(LOGERROR, "LastFmManager Unban, lasfm is not enabled");
     return false;
   }
-
+  
   CStdString strTitle = musicinfotag.GetTitle();
   CStdString strArtist = musicinfotag.GetArtist();
 
@@ -1007,8 +1010,8 @@ bool CLastFmManager::Unban(const CMusicInfoTag& musicinfotag, bool askConfirmati
 bool CLastFmManager::IsLastFmEnabled()
 {
   return (
-    !g_guiSettings.GetString("scrobbler.lastfmusername").IsEmpty() &&
-    !g_guiSettings.GetString("scrobbler.lastfmpass").IsEmpty()
+    !g_guiSettings.GetString("scrobbler.lastfmusername").IsEmpty() && 
+    !g_guiSettings.GetString("scrobbler.lastfmpassword").IsEmpty()
   );
 }
 
@@ -1018,11 +1021,11 @@ bool CLastFmManager::CanLove()
     m_CurrentSong.CurrentSong &&
     !m_CurrentSong.IsLoved &&
     IsLastFmEnabled() &&
-    (m_CurrentSong.CurrentSong->IsLastFM() ||
+    (m_CurrentSong.CurrentSong->IsLastFM() || 
     (
-      m_CurrentSong.CurrentSong->HasMusicInfoTag() &&
+      m_CurrentSong.CurrentSong->HasMusicInfoTag() && 
       m_CurrentSong.CurrentSong->GetMusicInfoTag()->Loaded() &&
-      !m_CurrentSong.CurrentSong->GetMusicInfoTag()->GetArtist().IsEmpty() &&
+      !m_CurrentSong.CurrentSong->GetMusicInfoTag()->GetArtist().IsEmpty() && 
       !m_CurrentSong.CurrentSong->GetMusicInfoTag()->GetTitle().IsEmpty()
     ))
   );
@@ -1036,7 +1039,7 @@ bool CLastFmManager::CanBan()
 bool CLastFmManager::CanScrobble(const CFileItem &fileitem)
 {
   return (
-    (!fileitem.IsInternetStream() && g_guiSettings.GetBool("scrobbler.lastfmsubmit")) ||
-    (fileitem.IsLastFM() && g_guiSettings.GetBool("scrobbler.lastfmsubmitradio"))
+    (!fileitem.IsInternetStream() && g_guiSettings.GetBool("scrobbler.lastfmsubmit")) || 
+    (fileitem.IsLastFM() && g_guiSettings.GetBool("scrobbler.lastfmlastfmsubmitradio"))
   );
 }

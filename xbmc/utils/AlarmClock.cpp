@@ -19,11 +19,9 @@
  *
  */
 
+#include "stdafx.h"
 #include "AlarmClock.h"
 #include "Application.h"
-#include "LocalizeStrings.h"
-#include "SingleLock.h"
-#include "log.h"
 
 CAlarmClock g_alarmClock;
 
@@ -71,7 +69,7 @@ void CAlarmClock::start(const CStdString& strName, float n_secs, const CStdStrin
   strMessage.Format(strStarted.c_str(),static_cast<int>(event.m_fSecs)/60);
 
   if(!bSilent)
-     g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Info, strAlarmClock, strMessage);
+    g_application.m_guiDialogKaiToast.QueueNotification(strAlarmClock,strMessage);
 
   event.watch.StartZero();
   CSingleLock lock(m_events);
@@ -91,7 +89,7 @@ void CAlarmClock::stop(const CStdString& strName)
     return;
 
   SAlarmClockEvent& event = iter->second;
-
+  
   CStdString strAlarmClock;
   if (event.m_strCommand.Equals("xbmc.shutdown") || event.m_strCommand.Equals("xbmc.shutdown()"))
     strAlarmClock = g_localizeStrings.Get(20144);
@@ -101,16 +99,16 @@ void CAlarmClock::stop(const CStdString& strName)
   CStdString strMessage;
   if( iter->second.watch.GetElapsedSeconds() > iter->second.m_fSecs )
     strMessage = g_localizeStrings.Get(13211);
-  else
+  else 
   {
     float remaining = static_cast<float>(iter->second.m_fSecs-iter->second.watch.GetElapsedSeconds());
     CStdString strStarted = g_localizeStrings.Get(13212);
     strMessage.Format(strStarted.c_str(),static_cast<int>(remaining)/60,static_cast<int>(remaining)%60);
   }
   if (iter->second.m_strCommand.IsEmpty() || iter->second.m_fSecs > iter->second.watch.GetElapsedSeconds())
-    g_application.m_guiDialogKaiToast.QueueNotification(CGUIDialogKaiToast::Info, strAlarmClock, strMessage);
+    g_application.m_guiDialogKaiToast.QueueNotification(strAlarmClock,strMessage);
   else
-    g_application.getApplicationMessenger().ExecBuiltIn(iter->second.m_strCommand);
+    g_applicationMessenger.ExecBuiltIn(iter->second.m_strCommand);
 
   iter->second.watch.Stop();
   m_event.erase(iter);
@@ -136,4 +134,3 @@ void CAlarmClock::Process()
     Sleep(100);
   }
 }
-

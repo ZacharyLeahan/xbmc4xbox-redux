@@ -26,17 +26,17 @@
 //
 // ****************************************************************************
 
+#include "include.h"
 #include "AnimatedGif.h"
 #include "FileSystem/SpecialProtocol.h"
-#include "utils/EndianSwap.h"
 
-#ifdef _WIN32
+#ifdef _WIN32PC
 extern "C" FILE *fopen_utf8(const char *_Filename, const char *_Mode);
 #else
 #define fopen_utf8 fopen
 #endif
 
-#pragma pack(1)
+#pragma pack(1) 
 // Error processing macro (NO-OP by default):
 #define ERRORMSG(PARAM) {}
 
@@ -45,11 +45,26 @@ extern "C" FILE *fopen_utf8(const char *_Filename, const char *_Mode);
  #define BI_RLE8       1L
  #define BI_RLE4       2L
  #define BI_BITFIELDS  3L
+#endif 
+
+// Use SDL macros to swap data endianness
+// This assumes that big endian systems use SDL
+// Macros do not do anything on little endian systems
+#ifdef HAS_SDL
+#include <SDL/SDL_endian.h>
+
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+#define SWAP16(X)    (void)X
+#define SWAP32(X)    (void)X
+#else
+#define SWAP16(X)    X=SDL_Swap16(X)
+#define SWAP32(X)    X=SDL_Swap32(X)
 #endif
 
-// Macros to swap data endianness
-#define SWAP16(X)    X=Endian_SwapLE16(X)
-#define SWAP32(X)    X=Endian_SwapLE32(X)
+#else
+#define SWAP16(X)    (void)X
+#define SWAP32(X)    (void)X
+#endif
 
 // pre-declaration:
 int LZWDecoder (char*, char*, short, int, int, int, const int);
@@ -73,24 +88,51 @@ CAnimatedGif::~CAnimatedGif()
 {
   delete [] pbmi;
   delete [] Raster;
-  delete [] Palette;
 }
+
+#ifdef _XBOX 
+// Round a number to the nearest power of 2 rounding up
+// runs pretty quickly - the only expensive op is the bsr
+// alternive would be to dec the source, round down and double the result
+// which is slightly faster but rounds 1 to 2
+DWORD __forceinline __stdcall PadPow2(DWORD x)
+{
+  __asm {
+    mov edx, x    // put the value in edx
+    xor ecx, ecx  // clear ecx - if x is 0 bsr doesn't alter it
+    bsr ecx, edx  // find MSB position
+    mov eax, 1    // shift 1 by result effectively
+    shl eax, cl   // doing a round down to power of 2
+    cmp eax, edx  // check if x was already a power of two
+    adc ecx, 0    // if it wasn't then CF is set so add to ecx
+    mov eax, 1    // shift 1 by result again, this does a round
+    shl eax, cl   // up as a result of adding CF to ecx
+  }
+  // return result in eax
+}
+#endif
 
 // Init: Allocates space for raster and palette in GDI-compatible structures.
 void CAnimatedGif::Init(int iWidth, int iHeight, int iBPP, int iLoops)
 {
-  delete[] Raster;
-  Raster = NULL;
+  if (Raster)
+  {
+    delete[] Raster;
+    Raster = NULL;
+  }
 
-  delete[] pbmi;
-  pbmi = NULL;
-
-  delete[] Palette;
-  Palette = NULL;
-
+  if (pbmi)
+  {
+    delete[] pbmi;
+    pbmi = NULL;
+  }
   // Standard members setup
   Transparent = -1;
+#ifdef _XBOX
+  BytesPerRow = PadPow2(Width = iWidth);
+#else
   BytesPerRow = Width = iWidth;
+#endif
   Height = iHeight;
   BPP = iBPP;
   // Animation Extra members setup:
@@ -104,12 +146,18 @@ void CAnimatedGif::Init(int iWidth, int iHeight, int iBPP, int iLoops)
   }
   else
   {
-    pbmi = (GUIBITMAPINFO*)new char[sizeof(GUIBITMAPINFOHEADER)];
-    Palette = new COLOR[256];
+    pbmi = (GUIBITMAPINFO*)new char[sizeof(GUIBITMAPINFOHEADER) + (1 << BPP) * sizeof(COLOR)];
+    Palette = (COLOR*)((char*)pbmi + sizeof(GUIBITMAPINFOHEADER));
   }
 
+#ifndef _XBOX // Not needed as already fixed to power of two
   BytesPerRow += (ALIGN - Width % ALIGN) % ALIGN; // Align BytesPerRow
   int size = BytesPerRow * Height;
+#else
+  // align to multiple of 4096 for XGSwizzleRect
+  int size = BytesPerRow * Height;
+  size += (4096 - size % 4096) % 4096;  // align size
+#endif
 
   Raster = new char [size];
 
@@ -126,12 +174,20 @@ void CAnimatedGif::Init(int iWidth, int iHeight, int iBPP, int iLoops)
   pbmi->bmiHeader.biClrImportant = 0;
 }
 
+#ifndef _XBOX 
+// GDIPaint: Paint the raster image onto a DC
+int CAnimatedGif::GDIPaint (HDC hdc, int x, int y)
+{
+  return SetDIBitsToDevice (hdc, x, y, Width, Height, 0, 0, 0, Height, (LPVOID)Raster, pbmi, 0);
+}
+#endif
+
 // operator=: copies an object's content to another
 CAnimatedGif& CAnimatedGif::operator = (CAnimatedGif& rhs)
 {
   Init(rhs.Width, rhs.Height, rhs.BPP); // respects virtualization
   memcpy(Raster, rhs.Raster, BytesPerRow*Height);
-  memcpy(Palette, rhs.Palette, 256*sizeof(COLOR));
+  memcpy((char*)Palette, (char*)rhs.Palette, (1 << BPP)*sizeof(*Palette));
   return *this;
 }
 
@@ -184,7 +240,7 @@ unsigned char CAnimatedGifSet::getbyte(FILE *fd)
   else
     return 0;
 }
-
+extern "C" void dllprintf( const char *format, ... );
 // ****************************************************************************
 // * LoadGIF                                                                  *
 // *   Load a GIF File into the CAnimatedGifSet object                             *
@@ -335,7 +391,7 @@ int CAnimatedGifSet::LoadGIF (const char * szFileName)
             }
             else
               nLoops = 0;
-
+            
             if (nLoops) nLoops++;
             getbyte(fd);
           }
@@ -415,7 +471,7 @@ int CAnimatedGifSet::LoadGIF (const char * szFileName)
       bool isPalRead = false;
       if (LocalColorMap && fread((char*)NextImage->Palette, 1, palSize, fd) == palSize)
         isPalRead = true;
-
+          
       // Copy global, if no palette
       if (!isPalRead)
         memcpy(NextImage->Palette, GlobalColorMap, palSize);
@@ -576,7 +632,7 @@ int LZWDecoder (char * bufIn, char * bufOut,
     // - Table Suffices contain the raw codes to be output
     while (OutCode >= FirstEntry)
     {
-      if (OutIndex > 4096 || OutCode >= 4096)
+      if (OutIndex > 4096 || OutCode >= 4096) 
         return 0;
       OutStack[OutIndex++] = Suffix[OutCode]; // Add suffix to Output Stack
       OutCode = Prefix[OutCode];       // Loop with preffix

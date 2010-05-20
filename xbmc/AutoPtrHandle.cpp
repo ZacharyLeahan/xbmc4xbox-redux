@@ -19,7 +19,7 @@
  *
  */
 
-#include "AutoPtrHandle.h"
+#include "stdafx.h"
 
 using namespace AUTOPTR;
 

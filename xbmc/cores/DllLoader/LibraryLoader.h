@@ -1,3 +1,6 @@
+#ifndef LIBRARY_LOADER
+#define LIBRARY_LOADER
+
 /*
  *      Copyright (C) 2005-2008 Team XBMC
  *      http://www.xbmc.org
@@ -19,13 +22,12 @@
  *
  */
 
-#ifndef LIBRARY_LOADER
-#define LIBRARY_LOADER
+#ifndef _WINDEF_
+typedef unsigned long HMODULE;
+#endif // _WINDEF_
 
-#ifndef _LINUX
-#include "system.h" // WIN32INCLUDES - needed for HMODULE
-#else
-#include "PlatformDefs.h"
+#ifndef NULL
+#define NULL 0
 #endif
 
 class LibraryLoader
@@ -33,24 +35,24 @@ class LibraryLoader
 public:
   LibraryLoader(const char* libraryFile);
   virtual ~LibraryLoader();
-
+  
   virtual bool Load() = 0;
   virtual void Unload() = 0;
-
+  
   virtual int ResolveExport(const char* symbol, void** ptr) = 0;
-  virtual int ResolveOrdinal(unsigned long ordinal, void** ptr);
+  virtual int ResolveExport(unsigned long ordinal, void** ptr) = 0;
   virtual bool IsSystemDll() = 0;
   virtual HMODULE GetHModule() = 0;
   virtual bool HasSymbols() = 0;
-
+    
   char* GetName(); // eg "mplayer.dll"
-  char* GetFileName(); // "special://xbmcbin/system/mplayer/players/mplayer.dll"
-  char* GetPath(); // "special://xbmcbin/system/mplayer/players/"
-
+  char* GetFileName(); // "special://xbmc/system/mplayer/players/mplayer.dll"
+  char* GetPath(); // "special://xbmc/system/mplayer/players/"
+  
   int IncrRef();
   int DecrRef();
   int GetRef();
-
+  
 private:
   char* m_sFileName;
   char* m_sPath;

@@ -19,13 +19,15 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "SpecialProtocolDirectory.h"
 #include "SpecialProtocol.h"
 #include "Directory.h"
 #include "Util.h"
 #include "FileItem.h"
 
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CSpecialProtocolDirectory::CSpecialProtocolDirectory(void)
 {
@@ -39,7 +41,7 @@ bool CSpecialProtocolDirectory::GetDirectory(const CStdString& strPath, CFileIte
 {
   CStdString untranslatedPath = strPath;  // Why do I need a copy??? - the GetDirectory() call below will override strPath???
   CStdString translatedPath = CSpecialProtocol::TranslatePath(strPath);
-  if (CDirectory::GetDirectory(translatedPath, items, m_strFileMask, m_useFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo, false))
+  if (CDirectory::GetDirectory(translatedPath, items, m_strFileMask, m_useFileDirectories, m_allowPrompting, m_cacheDirectory, m_extFileInfo))
   { // replace our paths as necessary
     items.m_strPath = untranslatedPath;
     for (int i = 0; i < items.Size(); i++)

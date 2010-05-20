@@ -28,24 +28,25 @@
 #include <string>
 #include <vector>
 #include "../utils/CriticalSection.h"
-#include "../addons/IAddon.h"
 
 class CURL;
 class CFileItemList;
 
-namespace XFILE
+namespace DIRECTORY
 {
 
 class CPluginDirectory : public IDirectory
 {
 public:
-  CPluginDirectory();
+  CPluginDirectory(void);
   ~CPluginDirectory(void);
   virtual bool GetDirectory(const CStdString& strPath, CFileItemList& items);
   virtual bool IsAllowed(const CStdString &strFile) const { return true; };
-  virtual bool Exists(const char* strPath) { return true; }
   static bool RunScriptWithParams(const CStdString& strPath);
-  static bool HasPlugins(const CONTENT_TYPE &type);
+  static bool HasPlugins(const CStdString &type);
+  bool GetPluginsDirectory(const CStdString &type, CFileItemList &items);
+  static void LoadPluginStrings(const CURL &url);
+  static void ClearPluginStrings();
   bool StartScript(const CStdString& strPath);
   static bool GetPluginResult(const CStdString& strPath, CFileItem &resultItem);
 
@@ -54,14 +55,11 @@ public:
   static bool AddItems(int handle, const CFileItemList *items, int totalItems);
   static void EndOfDirectory(int handle, bool success, bool replaceListing, bool cacheToDisc);
   static void AddSortMethod(int handle, SORT_METHOD sortMethod);
-  static CStdString GetSetting(int handle, const CStdString &key);
-  static void SetSetting(int handle, const CStdString &key, const CStdString &value);
   static void SetContent(int handle, const CStdString &strContent);
   static void SetProperty(int handle, const CStdString &strProperty, const CStdString &strValue);
   static void SetResolvedUrl(int handle, bool success, const CFileItem* resultItem);
 
 private:
-  ADDON::AddonPtr m_addon;
   bool WaitOnScriptResult(const CStdString &scriptPath, const CStdString &scriptName);
 
   static std::vector<CPluginDirectory*> globalHandles;

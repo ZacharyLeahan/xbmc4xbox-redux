@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "MythDirectory.h"
 #include "MythSession.h"
 #include "Util.h"
@@ -28,18 +29,16 @@
 #include "GUISettings.h"
 #include "AdvancedSettings.h"
 #include "FileItem.h"
-#include "StringUtils.h"
-#include "LocalizeStrings.h"
-#include "utils/log.h"
 #include "DirectoryCache.h"
 #include "TimeUtils.h"
 
 extern "C"
 {
-#include "cmyth/include/cmyth/cmyth.h"
-#include "cmyth/include/refmem/refmem.h"
+#include "lib/libcmyth/cmyth.h"
+#include "lib/libcmyth/mvp_refmem.h"
 }
 
+using namespace DIRECTORY;
 using namespace XFILE;
 using namespace std;
 
@@ -308,15 +307,7 @@ bool CMythDirectory::GetRecordings(const CStdString& base, CFileItemList &items,
        */
       if (type == MOVIES)
       {
-        /*
-         * Adding the production year, if available, to the label for Movies to aid in scraper
-         * lookups.
-         */
-        CStdString label(item->m_strTitle);
-        CStdString prodyear = GetValue(m_dll->proginfo_prodyear(program));
-        if (!prodyear.IsEmpty())
-          label += " (" + prodyear + ")";
-        item->SetLabel(label);
+        item->SetLabel(item->m_strTitle);
         item->SetLabelPreformated(true);
       }
 

@@ -19,6 +19,8 @@
  *
  */
 
+#include "stdafx.h"
+
 #include "DVDStreamInfo.h"
 
 #include "DVDCodecs/DVDCodecs.h"
@@ -41,7 +43,6 @@ void CDVDStreamInfo::Clear()
 {
   codec = CODEC_ID_NONE;
   type = STREAM_NONE;
-  software = false;
 
   if( extradata && extrasize ) free(extradata);
 
@@ -54,9 +55,6 @@ void CDVDStreamInfo::Clear()
   width    = 0;
   aspect   = 0.0;
   vfr      = false;
-  stills   = false;
-  level    = 0;
-  profile  = 0;
 
   channels   = 0;
   samplerate = 0;
@@ -86,9 +84,6 @@ bool CDVDStreamInfo::Equal(const CDVDStreamInfo& right, bool withextradata)
   ||  fpsrate  != right.fpsrate
   ||  height   != right.height
   ||  width    != right.width
-  ||  stills   != right.stills
-  ||  level    != right.level
-  ||  profile  != right.profile
   ||  vfr      != right.vfr) return false;
 
   // AUDIO
@@ -138,9 +133,6 @@ void CDVDStreamInfo::Assign(const CDVDStreamInfo& right, bool withextradata)
   height   = right.height;
   width    = right.width;
   aspect   = right.aspect;
-  stills   = right.stills;
-  level    = right.level;
-  profile  = right.profile;
 
   // AUDIO
   channels      = right.channels;
@@ -185,8 +177,6 @@ void CDVDStreamInfo::Assign(const CDemuxStream& right, bool withextradata)
     width     = stream->iWidth;
     aspect    = stream->fAspect;
     vfr       = stream->bVFR;
-    level     = stream->iLevel;
-    profile   = stream->iProfile;
   }
   else if(  right.type == STREAM_SUBTITLE )
   {

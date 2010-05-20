@@ -1,6 +1,6 @@
 /*!
 \file GUIToggleButtonControl.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUITOGGLEBUTTONCONTROL_H
@@ -33,7 +33,7 @@
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIToggleButtonControl : public CGUIButtonControl
 {
@@ -44,10 +44,10 @@ public:
 
   virtual void Render();
   virtual bool OnAction(const CAction &action);
+  virtual void PreAllocResources();
   virtual void AllocResources();
-  virtual void FreeResources(bool immediately = false);
+  virtual void FreeResources();
   virtual void DynamicResourceAlloc(bool bOnOff);
-  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   virtual void SetWidth(float width);
   virtual void SetHeight(float height);
@@ -55,11 +55,12 @@ public:
   void SetAltLabel(const std::string& label);
   virtual CStdString GetLabel() const;
   void SetToggleSelect(int toggleSelect) { m_toggleSelect = toggleSelect; };
-  void SetAltClickActions(const std::vector<CGUIActionDescriptor> &clickActions);
+  void SetAltClickActions(const std::vector<CStdString> &clickActions);
 
 protected:
   virtual void UpdateColors();
   virtual void OnClick();
+  virtual void SetInvalid();
   CGUIButtonControl m_selectButton;
   int m_toggleSelect;
 };

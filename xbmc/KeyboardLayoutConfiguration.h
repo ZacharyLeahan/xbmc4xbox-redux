@@ -22,9 +22,6 @@
  *
  */
 
-// Comment OUT, if not really debugging!!!
-// #define DEBUG_KEYBOARD_GETCHAR
-
 #ifdef _LINUX
 #include "linux/PlatformDefs.h"
 #elif defined (WIN32)
@@ -36,8 +33,7 @@
 #include <map>
 #include "utils/log.h"
 #include "../guilib/StdString.h"
-
-class TiXmlElement;
+#include "../guilib/tinyXML/tinyxml.h"
 
 class CKeyboardLayoutConfiguration
 {

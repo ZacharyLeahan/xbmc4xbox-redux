@@ -19,22 +19,14 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
-#include <climits>
-#include <cmath>
+#include "stdafx.h"
 #include <vector>
-#include <limits>
-#include <string.h>
-#include <stdint.h>
-
 #include "MediaSource.h"
+#ifdef HAS_XBOX_HARDWARE
+#include "xbox/custom_launch_params.h"
+#else
+typedef void CUSTOM_LAUNCH_DATA;
+#endif
 
 // A list of filesystem types for LegalPath/FileName
 #define LEGAL_NONE            0
@@ -48,6 +40,25 @@ namespace XFILE
 
 class CFileItem;
 class CFileItemList;
+class CTrainer;
+
+// for 'cherry' patching
+typedef enum
+{
+  COUNTRY_NULL = 0,
+  COUNTRY_USA,
+  COUNTRY_JAP,
+  COUNTRY_EUR
+} F_COUNTRY;
+
+typedef enum
+{
+  VIDEO_NULL = 0,
+  VIDEO_NTSCM,
+  VIDEO_NTSCJ,
+  VIDEO_PAL50,
+  VIDEO_PAL60
+} F_VIDEO;
 
 struct sortstringbyname
 {
@@ -60,6 +71,23 @@ struct sortstringbyname
     return strcmp(strLine1.c_str(), strLine2.c_str()) < 0;
   }
 };
+
+struct XBOXDETECTION
+{
+  std::vector<CStdString> client_ip;
+  std::vector<CStdString> client_info;
+  std::vector<unsigned int> client_lookup_count;
+  std::vector<bool> client_informed;
+};
+
+namespace MathUtils
+{
+  inline int round_int (double x);
+  inline int ceil_int (double x);
+  inline int truncate_int(double x);
+}
+
+
 
 class CUtil
 {
@@ -76,11 +104,19 @@ public:
   static bool IsDOSPath(const CStdString &path);
   static bool IsHD(const CStdString& strFileName);
   static CStdString GetParentPath(const CStdString& strPath);
+  static bool IsBuiltIn(const CStdString& execString);
+  static void GetBuiltInHelp(CStdString &help);
+  static int ExecBuiltIn(const CStdString& execString);
   static bool GetParentPath(const CStdString& strPath, CStdString& strParent);
   static void GetQualifiedFilename(const CStdString &strBasePath, CStdString &strFilename);
+  static bool InstallTrainer(CTrainer& trainer);
+  static bool RemoveTrainer();
+  static bool PatchCountryVideo(F_COUNTRY Country, F_VIDEO Video);
   static void RunShortcut(const char* szPath);
+  static void RunXBE(const char* szPath, char* szParameters = NULL, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL);
+  static void LaunchXbe(const char* szPath, const char* szXbe, const char* szParameters, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL); 
   static void GetDirectory(const CStdString& strFilePath, CStdString& strDirectoryPath);
-  static void GetHomePath(CStdString& strPath, const CStdString& strTarget = "XBMC_HOME");
+  static void GetHomePath(CStdString& strPath);
   static CStdString ReplaceExtension(const CStdString& strFile, const CStdString& strNewExtension);
   static void GetExtension(const CStdString& strFile, CStdString& strExtension);
   static bool HasSlashAtEnd(const CStdString& strFile);
@@ -97,8 +133,10 @@ public:
   static bool IsInZIP(const CStdString& strFile);
   static bool IsInArchive(const CStdString& strFile);
   static bool IsSpecial(const CStdString& strFile);
-  static bool IsPlugin(const CStdString& strFile);
+  static bool IsPlugin(const CStdString& strFile); 
+  static bool IsPluginRoot(const CStdString& strFile); 
   static bool IsCDDA(const CStdString& strFile);
+  static bool IsMemCard(const CStdString& strFile);
   static bool IsTuxBox(const CStdString& strFile);
   static bool IsMythTV(const CStdString& strFile);
   static bool IsHDHomeRun(const CStdString& strFile);
@@ -114,7 +152,15 @@ public:
   static int GetDVDIfoTitle(const CStdString& strPathFile);
   static void URLDecode(CStdString& strURLData);
   static void URLEncode(CStdString& strURLData);
+  static bool CacheXBEIcon(const CStdString& strFilePath, const CStdString& strIcon);
+  static bool GetXBEDescription(const CStdString& strFileName, CStdString& strDescription);
+  static bool SetXBEDescription(const CStdString& strFileName, const CStdString& strDescription);
+  static DWORD GetXbeID( const CStdString& strFilePath);
   static bool GetDirectoryName(const CStdString& strFileName, CStdString& strDescription);
+  static void CreateShortcuts(CFileItemList &items);
+  static void CreateShortcut(CFileItem* pItem);
+  static void GetFatXQualifiedPath(CStdString& strFileNameAndPath);
+  static bool ShortenFileName(CStdString& strFileNameAndPath);
   static bool IsISO9660(const CStdString& strFile);
   static bool IsSmb(const CStdString& strFile);
   static bool IsXBMS(const CStdString& strFile);
@@ -126,11 +172,14 @@ public:
   static bool IsWritable(const CStdString& strFile);
   static void GetDVDDriveIcon( const CStdString& strPath, CStdString& strIcon );
   static void RemoveTempFiles();
+  static void DeleteGUISettings();
 
+  static void RemoveIllegalChars( CStdString& strText);
   static void CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionCached, XFILE::IFileCallback *pCallback = NULL);
   static bool CacheRarSubtitles(const CStdString& strRarPath, const CStdString& strCompare);
   static void ClearSubtitles();
-  static int64_t ToInt64(uint32_t high, uint32_t low);
+  static void PrepareSubtitleFonts();
+  static __int64 ToInt64(DWORD dwHigh, DWORD dwLow);
   static void AddFileToFolder(const CStdString& strFolder, const CStdString& strFile, CStdString& strResult);
   static CStdString AddFileToFolder(const CStdString &strFolder, const CStdString &strFile)
   {
@@ -147,18 +196,20 @@ public:
   static bool ThumbCached(const CStdString& strFileName);
   static void ThumbCacheAdd(const CStdString& strFileName, bool bFileExists);
   static void ThumbCacheClear();
-  static void PlayDVD(const CStdString& strProtocol="dvd");
+  static void PlayDVD();
   static CStdString GetNextFilename(const CStdString &fn_template, int max);
   static void TakeScreenshot();
-  static void TakeScreenshot(const CStdString &filename, bool sync);
+  static void TakeScreenshot(const char* fn, bool flash);
+  static void SetBrightnessContrastGamma(float Brightness, float Contrast, float Gamma, bool bImmediate);
+  static void SetBrightnessContrastGammaPercent(float brightness, float contrast, float gamma, bool immediate);
   static void Tokenize(const CStdString& path, std::vector<CStdString>& tokens, const std::string& delimiters);
+  static void FlashScreen(bool bImmediate, bool bOn);
+  static void RestoreBrightnessContrastGamma();
+  static void InitGamma();
   static void StatToStatI64(struct _stati64 *result, struct stat *stat);
   static void Stat64ToStatI64(struct _stati64 *result, struct __stat64 *stat);
   static void StatI64ToStat64(struct __stat64 *result, struct _stati64 *stat);
-  static void Stat64ToStat(struct stat *result, struct __stat64 *stat);
-#ifdef _WIN32
-  static void Stat64ToStat64i32(struct _stat64i32 *result, struct __stat64 *stat);
-#endif
+  static void Stat64ToStat(struct _stat *result, struct __stat64 *stat);
   static bool CreateDirectoryEx(const CStdString& strPath);
 
 #ifdef _WIN32
@@ -183,15 +234,26 @@ public:
 
   static bool SetSysDateTimeYear(int iYear, int iMonth, int iDay, int iHour, int iMinute);
   static int GMTZoneCalc(int iRescBiases, int iHour, int iMinute, int &iMinuteNew);
+  static bool GetFTPServerUserName(int iFTPUserID, CStdString &strFtpUser1, int &iUserMax );
+  static bool SetFTPServerUserPassword(CStdString strFtpUserName, CStdString strFtpUserPassword);
+  static bool SetXBOXNickName(CStdString strXboxNickNameIn, CStdString &strXboxNickNameOut);
+  static bool GetXBOXNickName(CStdString &strXboxNickNameOut);
+  static bool AutoDetectionPing(CStdString strFTPUserName, CStdString strFTPPass, CStdString strNickName, int iFTPPort);
+  static bool AutoDetection();
+  static void AutoDetectionGetSource(VECSOURCES &share);
   static void GetSkinThemes(std::vector<CStdString>& vecTheme);
   static void GetRecursiveListing(const CStdString& strPath, CFileItemList& items, const CStdString& strMask, bool bUseFileDirectories=false);
   static void GetRecursiveDirsListing(const CStdString& strPath, CFileItemList& items);
   static void WipeDir(const CStdString& strPath);
-  static void CopyDirRecursive(const CStdString& strSrcPath, const CStdString& strDstPath);
   static void ForceForwardSlashes(CStdString& strPath);
+  static bool PWMControl(const CStdString &strRGBa, const CStdString &strRGBb, const CStdString &strWhiteA, const CStdString &strWhiteB, const CStdString &strTransition, int iTrTime);
+  static bool RunFFPatchedXBE(CStdString szPath1, CStdString& szNewPath);
+  static void RemoveKernelPatch();
+  static bool LookForKernelPatch();
 
   static double AlbumRelevance(const CStdString& strAlbumTemp1, const CStdString& strAlbum1, const CStdString& strArtistTemp1, const CStdString& strArtist1);
   static bool MakeShortenPath(CStdString StrInput, CStdString& StrOutput, int iTextMaxLength);
+  static float CurrentCpuUsage();
   static bool SupportsFileOperations(const CStdString& strPath);
 
   static CStdString GetCachedMusicThumb(const CStdString &path);
@@ -199,6 +261,8 @@ public:
   static CStdString GetDefaultFolderThumb(const CStdString &folderThumb);
   static void ClearFileItemCache();
 
+  static void BootToDash();
+  
   static void InitRandomSeed();
 
   // Get decimal integer representation of roman digit, ivxlcdm are valid
@@ -207,25 +271,6 @@ public:
   // Translate a string of roman numerals to decimal a decimal integer
   // return -1 on error, valid range is 1-3999
   static int TranslateRomanNumeral(const char* roman_numeral);
-
-#ifdef _LINUX
-  // this will run the command using sudo in a new process.
-  // the user that runs xbmc should be allowed to issue the given sudo command.
-  // in order to allow a user to run sudo without supplying the password you'll need to edit sudoers
-  // # sudo visudo
-  // and add a line at the end defining the user and allowed commands
-  static bool SudoCommand(const CStdString &strCommand);
-
-  //
-  // Forks to execute a shell command.
-  //
-  static bool Command(const CStdStringArray& arrArgs, bool waitExit = false);
-
-  //
-  // Forks to execute an unparsed shell command line.
-  //
-  static bool RunCommandLine(const CStdString& cmdLine, bool waitExit = false);
-#endif
 };
 
 

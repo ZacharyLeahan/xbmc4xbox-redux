@@ -19,13 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIViewControl.h"
 #include "GUIWindowManager.h"
 #include "Util.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
 #include "utils/GUIInfoManager.h"
-#include "Key.h"
 
 CGUIViewControl::CGUIViewControl(void)
 {
@@ -68,7 +67,7 @@ void CGUIViewControl::SetCurrentView(int viewMode)
   CGUIControl *previousView = NULL;
   if (m_currentView >= 0 && m_currentView < (int)m_visibleViews.size())
     previousView = m_visibleViews[m_currentView];
-
+  
   UpdateViewVisibility();
 
   // viewMode is of the form TYPE << 16 | ID

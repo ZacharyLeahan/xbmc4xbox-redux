@@ -32,28 +32,25 @@
 
 #ifdef _XBOX
 #include <xtl.h>
-#elif defined(_WIN32)
-#include <windows.h>
 #else
-#include "PlatformInclude.h"
+#include <windows.h>
 #endif
 
 class CEvent
 {
 public:
   void PulseEvent();
-  bool WaitMSec(unsigned int milliSeconds);
+  bool WaitMSec(DWORD dwMillSeconds);
   HANDLE GetHandle();
   void Reset();
   void Set();
   void Wait();
-  CEvent(bool manual = false);
-  CEvent(const CEvent& event);
-  CEvent& operator=(const CEvent& src);
-
+  CEvent();
   virtual ~CEvent();
 
 protected:
+  CEvent(const CEvent& event);
+  CEvent& operator=(const CEvent& src);
   HANDLE m_hEvent;
 };
 

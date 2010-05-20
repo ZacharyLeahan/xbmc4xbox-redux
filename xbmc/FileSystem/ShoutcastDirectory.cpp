@@ -19,6 +19,8 @@
  *
  */
 
+
+#include "stdafx.h"
 #include "ShoutcastDirectory.h"
 #include "Util.h"
 #include "FileCurl.h"
@@ -29,10 +31,9 @@
 #include "GUIDialogProgress.h"
 #include "URL.h"
 #include "FileItem.h"
-#include "tinyXML/tinyxml.h"
-#include "utils/log.h"
 
 using namespace XFILE;
+using namespace DIRECTORY;
 
 CShoutcastDirectory::CShoutcastDirectory(void)
 {
@@ -45,13 +46,13 @@ CShoutcastDirectory::~CShoutcastDirectory(void)
 bool CShoutcastDirectory::ParseGenres(TiXmlElement *root, CFileItemList &items, CURL &url)
 {
   TiXmlElement *element = root->FirstChildElement("genre");
-
+  
   if(element == NULL)
   {
     CLog::Log(LOGWARNING, "%s - No genres found", __FUNCTION__);
     return false;
   }
-
+    
   items.m_idepth = 1; /* genre list */
 
   CStdString genre, path;
@@ -87,12 +88,12 @@ bool CShoutcastDirectory::ParseStations(TiXmlElement *root, CFileItemList &items
   items.m_idepth = 2; /* station list */
 
   element = root->FirstChildElement("tunein");
-  if(element == NULL)
+  if(element == NULL) 
   {
     CLog::Log(LOGWARNING, "%s - No tunein base found", __FUNCTION__);
     return false;
   }
-
+  
   path = element->Attribute("base");
   path.TrimLeft("/");
 
@@ -121,7 +122,7 @@ bool CShoutcastDirectory::ParseStations(TiXmlElement *root, CFileItemList &items
 
     CFileItemPtr pItem(new CFileItem);
     pItem->m_bIsFolder = false;
-
+    
     /* we highjack the music tag for this stuff, they will be used by */
     /* viewstates to sort and display proper information */
     pItem->GetMusicInfoTag()->SetArtist(listeners);
@@ -156,11 +157,15 @@ bool CShoutcastDirectory::GetDirectory(const CStdString& strPath, CFileItemList 
   CUtil::RemoveSlashAtEnd(strRoot);
 
   /* keep backward competability (for users who already have this source defined) */
-  if( strRoot.Equals("shout://www.shoutcast.com") || strRoot.Equals("shout://") || strRoot.Equals("shout://classic.shoutcast.com") ||
+  if( strRoot.Equals("shout://www.shoutcast.com") || strRoot.Equals("shout://") || strRoot.Equals("shout://classic.shoutcast.com") || 
       strRoot.Equals("shout://www.shoutcast.com/sbin/newxml.phtml") )
     strRoot = SHOUTCAST_MASTER_LINK;
 
+  /* display progress dialog after 2 seconds */
+  DWORD dwTimeStamp = GetTickCount() + 2000;
+
   CGUIDialogProgress* dlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
+  bool dialogopen = false;
   if (dlgProgress)
   {
     dlgProgress->ShowProgressBar(false);
@@ -168,7 +173,6 @@ bool CShoutcastDirectory::GetDirectory(const CStdString& strPath, CFileItemList 
     dlgProgress->SetLine(0, 14003);
     dlgProgress->SetLine(1, "");
     dlgProgress->SetLine(2, "");
-    dlgProgress->StartModal();
   }
 
   CURL url(strRoot);
@@ -192,22 +196,22 @@ bool CShoutcastDirectory::GetDirectory(const CStdString& strPath, CFileItemList 
   url.SetProtocol(protocol);
 
   CStdString content = http.GetContent();
-  if( !(content.Equals("text/html") || content.Equals("text/xml")
-    || content.Equals("text/html;charset=utf-8") || content.Equals("text/xml;charset=utf-8") ))
+  if( !(content.Equals("text/html") || content.Equals("text/xml") 
+	  || content.Equals("text/html;charset=utf-8") || content.Equals("text/xml;charset=utf-8") ))
   {
     CLog::Log(LOGERROR, "%s - Invalid content type %s", __FUNCTION__, content.c_str());
     if (dlgProgress) dlgProgress->Close();
     return false;
   }
-
-
-  int size_read = 0;
+  
+  
+  int size_read = 0;  
   int size_total = (int)http.GetLength();
   int data_size = 0;
 
   CStdString data;
   data.reserve(size_total);
-
+  
   /* read response from server into string buffer */
   char buffer[16384];
   while( (size_read = http.Read(buffer, sizeof(buffer)-1)) > 0 )
@@ -216,7 +220,16 @@ bool CShoutcastDirectory::GetDirectory(const CStdString& strPath, CFileItemList 
     data += buffer;
     data_size += size_read;
 
-    dlgProgress->Progress();
+    if( dialogopen )
+    {
+      dlgProgress->Progress();
+    }
+    else if( GetTickCount() > dwTimeStamp )
+    {
+      dlgProgress->StartModal();
+      dlgProgress->Progress();
+      dialogopen = true;
+    }
 
     if (dlgProgress->IsCanceled())
     {

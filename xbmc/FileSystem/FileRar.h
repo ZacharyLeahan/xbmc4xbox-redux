@@ -30,16 +30,15 @@
 #include "utils/Thread.h"
 
 namespace XFILE
-{
-#ifdef HAS_FILESYSTEM_RAR
+{	
   class CFileRarExtractThread : public CThread
   {
   public:
     CFileRarExtractThread();
     ~CFileRarExtractThread();
-
-    void Start(Archive* pArc, CommandData* pCmd, CmdExtract* pExtract, int iSize);
-
+    
+    void Start(Archive* pArc, CommandData* pCmd, CmdExtract* pExtract, int iSize); 
+    
     virtual void OnStartup();
     virtual void OnExit();
     virtual void Process();
@@ -54,12 +53,11 @@ namespace XFILE
     CmdExtract* m_pExtract;
     int m_iSize;
   };
-#endif
 
-  class CFileRar : public IFile
-  {
-  public:
-    CFileRar();
+  class CFileRar : public IFile  
+	{
+	public:
+		CFileRar();
     CFileRar(bool bSeekable); // used for caching files
     virtual ~CFileRar();
     virtual int64_t       GetPosition();
@@ -74,7 +72,7 @@ namespace XFILE
     virtual void          Flush();
 
     virtual bool          OpenForWrite(const CURL& url);
-    unsigned int          Write(void *lpBuf, int64_t uiBufSize);
+    unsigned int          Write(void *lpBuf, __int64 uiBufSize);
 
   protected:
     CStdString m_strCacheDir;
@@ -86,25 +84,23 @@ namespace XFILE
     void InitFromUrl(const CURL& url);
     bool OpenInArchive();
     void CleanUp();
-
-    int64_t m_iFilePosition;
-    int64_t m_iFileSize;
+    
+    __int64 m_iFilePosition;
+    __int64 m_iFileSize;
     // rar stuff
     bool m_bUseFile;
     bool m_bOpen;
     bool m_bSeekable;
     CFile m_File; // for packed source
-#ifdef HAS_FILESYSTEM_RAR
     Archive* m_pArc;
     CommandData* m_pCmd;
     CmdExtract* m_pExtract;
     CFileRarExtractThread* m_pExtractThread;
-#endif
     byte* m_szBuffer;
     byte* m_szStartOfBuffer;
-    int64_t m_iDataInBuffer;
-    int64_t m_iBufferStart;
-  };
+    __int64 m_iDataInBuffer;
+    __int64 m_iBufferStart;
+	};
 
 }
 

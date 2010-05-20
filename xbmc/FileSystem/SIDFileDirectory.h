@@ -24,7 +24,7 @@
 #include "MusicFileDirectory.h"
 #include "cores/paplayer/DllSidplay2.h"
 
-namespace XFILE
+namespace DIRECTORY
 {
   class CSIDFileDirectory : public CMusicFileDirectory
   {
@@ -33,6 +33,6 @@ namespace XFILE
     virtual ~CSIDFileDirectory(void);
   private:
     DllSidplay2 m_dll;
-    virtual int GetTrackCount(const CStdString& strPath);
+    virtual int GetTrackCount(const CStdString& strPath); 
   };
 }

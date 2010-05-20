@@ -24,27 +24,21 @@
 #include "GUIWindow.h"
 #include "MusicInfoTag.h"
 
-namespace ADDON
-{
-  class CVisualisation;
-}
-
 class CGUIWindowVisualisation :
       public CGUIWindow
 {
 public:
   CGUIWindowVisualisation(void);
+  virtual ~CGUIWindowVisualisation(void);
+  virtual void AllocResources(bool forceLoad = false);
+  virtual void FreeResources(bool forceUnLoad = false);
   virtual bool OnMessage(CGUIMessage& message);
-  virtual void OnWindowLoaded();
   virtual bool OnAction(const CAction &action);
-  virtual void FrameMove();
+  virtual bool OnMouse(const CPoint &point);
+  virtual void Render();
 protected:
-  bool UpdateTrack();
-  virtual EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event);
-  unsigned int m_initTimer;
-  unsigned int m_lockedTimer;
+  DWORD m_dwInitTimer;
+  DWORD m_dwLockedTimer;
   bool m_bShowPreset;
-  boost::shared_ptr<ADDON::CVisualisation> m_addon;
   MUSIC_INFO::CMusicInfoTag m_tag;    // current tag info, for finding when the info manager updates
 };
-

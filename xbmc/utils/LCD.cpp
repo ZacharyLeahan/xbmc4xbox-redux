@@ -19,13 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "LCD.h"
-#include "GUISettings.h"
-#include "AdvancedSettings.h"
 #include "Settings.h"
-#include "CharsetConverter.h"
-#include "log.h"
-#include "XMLUtils.h"
+#include "AdvancedSettings.h"
 
 using namespace std;
 
@@ -33,7 +30,7 @@ void ILCD::StringToLCDCharSet(CStdString& strText)
 {
 
   //0 = HD44780, 1=KS0073
-  unsigned int iLCDContr = 0;
+  unsigned int iLCDContr = g_guiSettings.GetInt("lcd.type") == LCD_TYPE_LCD_KS0073 ? 1 : 0;
   //the timeline is using blocks
   //a block is used at address 0xA0, smallBlocks at address 0xAC-0xAF
 
@@ -132,7 +129,7 @@ unsigned char ILCD::GetLCDCharsetCharacter( UINT _nCharacter, int _nCharset )
                                                             {0x1f, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1f}, //        |_|
                                                           },
                                                           { // Medium Char                                    //   _
-                                                            {0x1f, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, //
+                                                            {0x1f, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, //    
                                                             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1f, 0x1f}, //         _
                                                             {0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x1f, 0x1f}, //  |_     _
                                                             {0x1f, 0x1f, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18}, //   _      |
@@ -152,7 +149,7 @@ unsigned char ILCD::GetLCDCharsetCharacter( UINT _nCharacter, int _nCharset )
                                                             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
                                                             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
                                                           } };
-  if ( _nCharset == -1 )
+  if ( _nCharset == -1 ) 
     _nCharset = m_eCurrentCharset;
 
 
@@ -166,6 +163,8 @@ unsigned char ILCD::GetLCDCharsetCharacter( UINT _nCharacter, int _nCharset )
 
 CStdString ILCD::GetProgressBar(double tCurrent, double tTotal)
 {
+  CStdString strProgressBar;
+  double tmpTest, dBlockSize, dBlockSizeRest;
   unsigned char cLCDsmallBlocks = 0xb0; //this char (0xAC-0xAF) will be translated in LCD.cpp to the smallBlock
   unsigned char cLCDbigBlock = 0xab;  //this char will be translated in LCD.cpp to the right bigBlock
   int iBigBlock = 5;      // a big block is a combination of 5 small blocks
@@ -173,10 +172,10 @@ CStdString ILCD::GetProgressBar(double tCurrent, double tTotal)
 
   if (m_iColumns > 0)
   {
-    double dBlockSize = tTotal * 0.99 / m_iColumns / iBigBlock; // mult with 0.99 to show the last bar
-    double dBlockSizeRest = (tCurrent - ((int)(tCurrent / dBlockSize) * dBlockSize));
+    dBlockSize = tTotal * 0.99 / m_iColumns / iBigBlock; // mult with 0.99 to show the last bar
+    dBlockSizeRest = (tCurrent - ((int)(tCurrent / dBlockSize) * dBlockSize));
 
-    CStdString strProgressBar = "[";
+    strProgressBar = "[";
     for (int i = 1;i <= m_iColumns;i++)
     {
       //set full blocks
@@ -187,7 +186,7 @@ CStdString ILCD::GetProgressBar(double tCurrent, double tTotal)
       //set a part of a block at the end, when needed
       else if (tCurrent > (i - 1) * iBigBlock * dBlockSize + dBlockSize)
       {
-        double tmpTest = tCurrent - ((int)(tCurrent / (iBigBlock * dBlockSize)) * iBigBlock * dBlockSize );
+        tmpTest = tCurrent - ((int)(tCurrent / (iBigBlock * dBlockSize)) * iBigBlock * dBlockSize );
         tmpTest = (tmpTest / dBlockSize);
         if (tmpTest >= iBigBlock) tmpTest = iBigBlock - 1;
         strProgressBar += char(cLCDsmallBlocks - (int)tmpTest);
@@ -243,16 +242,16 @@ CStdString ILCD::GetBigDigit( UINT _nCharset, int _nDigit, UINT _nLine, UINT _nM
     return "";
 
   // Define the 2x1 line characters
-  unsigned char arrMedNumbers[10][2][1] = { {{0x0a}, {0x0c}}, // 0
-                                            {{0x08}, {0x08}}, // 1 // 0xaf
-                                            {{0x0e}, {0x0d}}, // 2
-                                            {{0x09}, {0x0b}}, // 3
-                                            {{0x0c}, {0x08}}, // 4
-                                            {{0x0d}, {0x0b}}, // 5
-                                            {{0x0d}, {0x0c}}, // 6
-                                            {{0x0e}, {0x08}}, // 7
-                                            {{0x0f}, {0x0c}}, // 8
-                                            {{0x0f}, {0x0b}}, // 9
+  unsigned char arrMedNumbers[10][2][1] = { {0x0a, 0x0c}, // 0
+                                            {0x08, 0x08}, // 1 // 0xaf
+                                            {0x0e, 0x0d}, // 2
+                                            {0x09, 0x0b}, // 3
+                                            {0x0c, 0x08}, // 4
+                                            {0x0d, 0x0b}, // 5
+                                            {0x0d, 0x0c}, // 6
+                                            {0x0e, 0x08}, // 7
+                                            {0x0f, 0x0c}, // 8
+                                            {0x0f, 0x0b}, // 9
                                           };
 
   // Define the 2x2 bold line characters
@@ -321,6 +320,7 @@ CStdString ILCD::GetBigDigit( UINT _nCharset, int _nDigit, UINT _nLine, UINT _nM
                                               {0x0b, 0xa0, 0x0a}, }, // 9
                                           };
 
+  unsigned char* arrChars[CUSTOM_CHARSET_MAX] = { NULL, (unsigned char*)&arrMedNumbers, (unsigned char*)&arrBigNumbers };
 
   if ( _nDigit < 0 )
   {
@@ -332,6 +332,7 @@ CStdString ILCD::GetBigDigit( UINT _nCharset, int _nDigit, UINT _nLine, UINT _nM
   // Set the current size, and value (base numer)
   nCurrentSize = 1;
   nCurrentValue = 10;
+  nValue;
 
   // Build the characters
   strDigits = "";
@@ -367,7 +368,7 @@ CStdString ILCD::GetBigDigit( UINT _nCharset, int _nDigit, UINT _nLine, UINT _nM
           break;
         }
       }
-
+        
     }
     // Add as partial string
     // Note that is it reversed, I.E. 'LSB' is added first
@@ -391,15 +392,9 @@ void ILCD::Initialize()
   lcdPath = g_settings.GetUserDataItem("LCD.xml");
   LoadSkin(lcdPath);
   m_eCurrentCharset = CUSTOM_CHARSET_DEFAULT;
-  m_disableOnPlay = 0;
 
   // Big number blocks, used for screensaver clock
   // Note, the big block isn't here, it's in the LCD's ROM
-}
-
-bool ILCD::IsConnected()
-{
-  return true;
 }
 
 void ILCD::LoadSkin(const CStdString &xmlFile)
@@ -412,24 +407,12 @@ void ILCD::LoadSkin(const CStdString &xmlFile)
   if (!doc.LoadFile(xmlFile.c_str()))
   {
     CLog::Log(LOGERROR, "Unable to load LCD skin file %s", xmlFile.c_str());
-    TiXmlBase::SetCondenseWhiteSpace(condensed);
-    return;
+    goto done;
   }
 
   TiXmlElement *element = doc.RootElement();
   if (!element || strcmp(element->Value(), "lcd") != 0)
-  {
-    TiXmlBase::SetCondenseWhiteSpace(condensed);
-    return;
-  }
-
-  // load our settings
-  CStdString disableOnPlay;
-  XMLUtils::GetString(element, "disableonplay", disableOnPlay);
-  if (disableOnPlay.Find("video") != -1)
-    m_disableOnPlay |= DISABLE_ON_PLAY_VIDEO;
-  if (disableOnPlay.Find("music") != -1)
-    m_disableOnPlay |= DISABLE_ON_PLAY_MUSIC;
+    goto done;
 
   TiXmlElement *mode = element->FirstChildElement();
   while (mode)
@@ -460,6 +443,7 @@ void ILCD::LoadSkin(const CStdString &xmlFile)
     }
     mode = mode->NextSiblingElement();
   }
+done:
   TiXmlBase::SetCondenseWhiteSpace(condensed);
 }
 
@@ -477,7 +461,6 @@ void ILCD::LoadMode(TiXmlNode *node, LCD_MODE mode)
 
 void ILCD::Reset()
 {
-  m_disableOnPlay = DISABLE_ON_PLAY_NONE;
   for (unsigned int i = 0; i < LCD_MODE_MAX; i++)
     m_lcdMode[i].clear();
 }
@@ -499,11 +482,4 @@ void ILCD::Render(LCD_MODE mode)
   // fill remainder with empty space
   while (outLine < 4)
     SetLine(outLine++, "");
-}
-
-void ILCD::DisableOnPlayback(bool playingVideo, bool playingAudio)
-{
-  if ((playingVideo && (m_disableOnPlay & DISABLE_ON_PLAY_VIDEO)) ||
-      (playingAudio && (m_disableOnPlay & DISABLE_ON_PLAY_MUSIC)))
-    SetBackLight(0);
 }

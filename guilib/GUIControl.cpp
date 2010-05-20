@@ -19,15 +19,12 @@
  *
  */
 
+#include "include.h"
 #include "GUIControl.h"
 
 #include "utils/GUIInfoManager.h"
-#include "utils/log.h"
 #include "LocalizeStrings.h"
 #include "GUIWindowManager.h"
-#include "GUIControlProfiler.h"
-#include "MouseStat.h"
-#include "Key.h"
 
 using namespace std;
 
@@ -52,8 +49,6 @@ CGUIControl::CGUIControl()
   m_controlRight = 0;
   m_controlUp = 0;
   m_controlDown = 0;
-  m_controlNext = 0;
-  m_controlPrev = 0;
   ControlType = GUICONTROL_UNKNOWN;
   m_bInvalidated = true;
   m_bAllocated=false;
@@ -84,8 +79,6 @@ CGUIControl::CGUIControl(int parentID, int controlID, float posX, float posY, fl
   m_controlRight = 0;
   m_controlUp = 0;
   m_controlDown = 0;
-  m_controlNext = 0;
-  m_controlPrev = 0;
   ControlType = GUICONTROL_UNKNOWN;
   m_bInvalidated = true;
   m_bAllocated=false;
@@ -109,7 +102,7 @@ void CGUIControl::AllocResources()
   m_bAllocated=true;
 }
 
-void CGUIControl::FreeResources(bool immediately)
+void CGUIControl::FreeResources()
 {
   if (m_bAllocated)
   {
@@ -125,7 +118,7 @@ void CGUIControl::FreeResources(bool immediately)
     m_bAllocated=false;
   }
   m_hasRendered = false;
-}
+} 
 
 void CGUIControl::DynamicResourceAlloc(bool bOnOff)
 {
@@ -136,17 +129,13 @@ void CGUIControl::DynamicResourceAlloc(bool bOnOff)
 // 1. animate and set the animation transform
 // 2. if visible, paint
 // 3. reset the animation transform
-void CGUIControl::DoRender(unsigned int currentTime)
+void CGUIControl::DoRender(DWORD currentTime)
 {
   Animate(currentTime);
   if (m_hasCamera)
     g_graphicsContext.SetCameraPosition(m_camera);
   if (IsVisible())
-  {
-    GUIPROFILER_RENDER_BEGIN(this);
     Render();
-    GUIPROFILER_RENDER_END(this);
-  }
   if (m_hasCamera)
     g_graphicsContext.RestoreCameraPosition();
   g_graphicsContext.RemoveTransform();
@@ -160,7 +149,7 @@ void CGUIControl::Render()
 
 bool CGUIControl::OnAction(const CAction &action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_MOVE_DOWN:
     if (!HasFocus()) return false;
@@ -185,18 +174,6 @@ bool CGUIControl::OnAction(const CAction &action)
     OnRight();
     return true;
     break;
-
-  case ACTION_NEXT_CONTROL:
-      if (!HasFocus()) return false;
-      OnNextControl();
-      return true;
-      break;
-
-  case ACTION_PREV_CONTROL:
-      if (!HasFocus()) return false;
-      OnPrevControl();
-      return true;
-      break;
   }
   return false;
 }
@@ -259,26 +236,6 @@ void CGUIControl::OnRight()
       CGUIMessage msg(GUI_MSG_MOVE, GetParentID(), GetID(), ACTION_MOVE_RIGHT);
       SendWindowMessage(msg);
     }
-  }
-}
-
-void CGUIControl::OnNextControl()
-{
-  if (m_controlID != m_controlNext)
-  {
-    // Send a message to the window with the sender set as the window
-    CGUIMessage msg(GUI_MSG_MOVE, GetParentID(), GetID(), ACTION_NEXT_CONTROL, m_controlNext);
-    SendWindowMessage(msg);
-  }
-}
-
-void CGUIControl::OnPrevControl()
-{
-  if (m_controlID != m_controlPrev)
-  {
-    // Send a message to the window with the sender set as the window
-    CGUIMessage msg(GUI_MSG_MOVE, GetParentID(), GetID(), ACTION_PREV_CONTROL, m_controlPrev);
-    SendWindowMessage(msg);
   }
 }
 
@@ -455,19 +412,13 @@ void CGUIControl::SetNavigation(int up, int down, int left, int right)
   m_controlRight = right;
 }
 
-void CGUIControl::SetTabNavigation(int next, int prev)
+void CGUIControl::SetNavigationActions(const vector<CStdString> &up, const vector<CStdString> &down,
+                                       const vector<CStdString> &left, const vector<CStdString> &right)
 {
-  m_controlNext = next;
-  m_controlPrev = prev;
-}
-
-void CGUIControl::SetNavigationActions(const vector<CGUIActionDescriptor> &up, const vector<CGUIActionDescriptor> &down,
-                                       const vector<CGUIActionDescriptor> &left, const vector<CGUIActionDescriptor> &right, bool replace)
-{
-  if (m_leftActions.empty()  || replace) m_leftActions  = left;
-  if (m_rightActions.empty() || replace) m_rightActions = right;
-  if (m_upActions.empty()    || replace) m_upActions    = up;
-  if (m_downActions.empty()  || replace) m_downActions  = down;
+  m_leftActions = left;
+  m_rightActions = right;
+  m_upActions = up;
+  m_downActions = down;
 }
 
 void CGUIControl::SetWidth(float width)
@@ -508,20 +459,6 @@ void CGUIControl::SetVisible(bool bVisible)
 bool CGUIControl::HitTest(const CPoint &point) const
 {
   return m_hitRect.PtInRect(point);
-}
-
-EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint &point, const CMouseEvent &event)
-{
-  CPoint childPoint(point);
-  m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
-  if (!CanFocusFromPoint(childPoint))
-    return EVENT_RESULT_UNHANDLED;
-
-  bool handled = OnMouseOver(childPoint);
-  EVENT_RESULT ret = OnMouseEvent(childPoint, event);
-  if (ret)
-    return ret;
-  return (handled && (event.m_id == ACTION_MOUSE_MOVE)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
 }
 
 // override this function to implement custom mouse behaviour
@@ -630,7 +567,7 @@ void CGUIControl::ResetAnimations()
 bool CGUIControl::CheckAnimation(ANIMATION_TYPE animType)
 {
   // rule out the animations we shouldn't perform
-  if (!IsVisible() || !HasRendered())
+  if (!IsVisible() || !HasRendered()) 
   { // hidden or never rendered - don't allow exit or entry animations for this control
     if (animType == ANIM_TYPE_WINDOW_CLOSE)
     { // could be animating a (delayed) window open anim, so reset it
@@ -757,7 +694,7 @@ void CGUIControl::UpdateStates(ANIMATION_TYPE type, ANIMATION_PROCESS currentPro
   }
 }
 
-void CGUIControl::Animate(unsigned int currentTime)
+void CGUIControl::Animate(DWORD currentTime)
 {
   // check visible state outside the loop, as it could change
   GUIVISIBLE visible = m_visible;
@@ -830,9 +767,19 @@ int CGUIControl::GetNextControl(int direction) const
   }
 }
 
-bool CGUIControl::CanFocusFromPoint(const CPoint &point) const
+// input the point with respect to this control to hit, and return
+// the control and the point with respect to his control if we have a hit
+bool CGUIControl::CanFocusFromPoint(const CPoint &point, CGUIControl **control, CPoint &controlPoint) const
 {
-  return CanFocus() && HitTest(point);
+  controlPoint = point;
+  m_transform.InverseTransformPosition(controlPoint.x, controlPoint.y);
+  if (CanFocus() && HitTest(controlPoint))
+  {
+    *control = (CGUIControl *)this;
+    return true;
+  }
+  *control = NULL;
+  return false;
 }
 
 void CGUIControl::UnfocusFromPoint(const CPoint &point)
@@ -869,17 +816,17 @@ void CGUIControl::SetCamera(const CPoint &camera)
   m_hasCamera = true;
 }
 
-void CGUIControl::ExecuteActions(const vector<CGUIActionDescriptor> &actions)
+void CGUIControl::ExecuteActions(const vector<CStdString> &actions)
 {
   // we should really save anything we need, as the action may cause the window to close
   int savedID = GetID();
   int savedParent = GetParentID();
-  vector<CGUIActionDescriptor> savedActions = actions;
+  vector<CStdString> savedActions = actions;
 
   for (unsigned int i = 0; i < savedActions.size(); i++)
   {
     CGUIMessage message(GUI_MSG_EXECUTE, savedID, savedParent);
-    message.SetAction(savedActions[i]);
+    message.SetStringParam(savedActions[i]);
     g_windowManager.SendMessage(message);
   }
 }
@@ -887,7 +834,7 @@ void CGUIControl::ExecuteActions(const vector<CGUIActionDescriptor> &actions)
 CPoint CGUIControl::GetRenderPosition() const
 {
   float z = 0;
-  CPoint point(GetXPosition(), GetYPosition());
+  CPoint point(m_posX, m_posY);
   m_transform.TransformPosition(point.x, point.y, z);
   if (m_parentControl)
     point += m_parentControl->GetRenderPosition();

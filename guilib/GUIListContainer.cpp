@@ -19,10 +19,10 @@
  *
  */
 
+#include "include.h"
 #include "GUIListContainer.h"
 #include "GUIListItem.h"
-#include "GUIInfoManager.h"
-#include "Key.h"
+#include "utils/GUIInfoManager.h"
 
 CGUIListContainer::CGUIListContainer(int parentID, int controlID, float posX, float posY, float width, float height, ORIENTATION orientation, int scrollTime, int preloadItems)
     : CGUIBaseContainer(parentID, controlID, posX, posY, width, height, orientation, scrollTime, preloadItems)
@@ -37,7 +37,7 @@ CGUIListContainer::~CGUIListContainer(void)
 
 bool CGUIListContainer::OnAction(const CAction &action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
   case ACTION_PAGE_UP:
     {
@@ -68,7 +68,7 @@ bool CGUIListContainer::OnAction(const CAction &action)
     // smooth scrolling (for analog controls)
   case ACTION_SCROLL_UP:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > 0.4)
       {
@@ -88,7 +88,7 @@ bool CGUIListContainer::OnAction(const CAction &action)
     break;
   case ACTION_SCROLL_DOWN:
     {
-      m_analogScrollCount += action.GetAmount() * action.GetAmount();
+      m_analogScrollCount += action.amount1 * action.amount1;
       bool handled = false;
       while (m_analogScrollCount > 0.4)
       {
@@ -150,7 +150,7 @@ bool CGUIListContainer::MoveUp(bool wrapAround)
       if (offset < 0) offset = 0;
       SetCursor(m_items.size() - offset - 1);
       ScrollToOffset(offset);
-      SetContainerMoving(-1);
+      g_infoManager.SetContainerMoving(GetID(), -1);
     }
   }
   else
@@ -175,7 +175,7 @@ bool CGUIListContainer::MoveDown(bool wrapAround)
   { // move first item in list, and set our container moving in the "down" direction
     SetCursor(0);
     ScrollToOffset(0);
-    SetContainerMoving(1);
+    g_infoManager.SetContainerMoving(GetID(), 1);
   }
   else
     return false;
@@ -215,7 +215,7 @@ void CGUIListContainer::SetCursor(int cursor)
   if (cursor > m_itemsPerPage - 1) cursor = m_itemsPerPage - 1;
   if (cursor < 0) cursor = 0;
   if (!m_wasReset)
-    SetContainerMoving(cursor - m_cursor);
+    g_infoManager.SetContainerMoving(GetID(), cursor - m_cursor);
   m_cursor = cursor;
 }
 
@@ -243,47 +243,6 @@ void CGUIListContainer::SelectItem(int item)
     }
   }
 }
-
-int CGUIListContainer::GetCursorFromPoint(const CPoint &point, CPoint *itemPoint) const
-{
-  if (!m_focusedLayout || !m_layout)
-    return -1;
-
-  int row = 0;
-  float pos = (m_orientation == VERTICAL) ? point.y : point.x;
-  while (row < m_itemsPerPage + 1)  // 1 more to ensure we get the (possible) half item at the end.
-  {
-    const CGUIListItemLayout *layout = (row == m_cursor) ? m_focusedLayout : m_layout;
-    if (pos < layout->Size(m_orientation) && row + m_offset < (int)m_items.size())
-    { // found correct "row" -> check horizontal
-      if (!InsideLayout(layout, point))
-        return -1;
-
-      if (itemPoint)
-        *itemPoint = m_orientation == VERTICAL ? CPoint(point.x, pos) : CPoint(pos, point.y);
-      return row;
-    }
-    row++;
-    pos -= layout->Size(m_orientation);
-  }
-  return -1;
-}
-
-bool CGUIListContainer::SelectItemFromPoint(const CPoint &point)
-{
-  CPoint itemPoint;
-  int row = GetCursorFromPoint(point, &itemPoint);
-  if (row < 0)
-    return false;
-
-  SetContainerMoving(row - m_cursor);
-  m_cursor = row;
-  CGUIListItemLayout *focusedLayout = GetFocusedLayout();
-  if (focusedLayout)
-    focusedLayout->SelectItemFromPoint(itemPoint);
-  return true;
-}
-
 //#ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
 CGUIListContainer::CGUIListContainer(int parentID, int controlID, float posX, float posY, float width, float height,
                                  const CLabelInfo& labelInfo, const CLabelInfo& labelInfo2,

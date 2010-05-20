@@ -1,6 +1,6 @@
 /*!
 \file GUIDialog.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -27,11 +27,10 @@
  */
 
 #include "GUIWindow.h"
-#include "Key.h"
 
 /*!
  \ingroup winmsg
- \brief
+ \brief 
  */
 class CGUIDialog :
       public CGUIWindow
@@ -42,10 +41,10 @@ public:
 
   virtual bool OnAction(const CAction &action);
   virtual bool OnMessage(CGUIMessage& message);
-  virtual void FrameMove();
   virtual void Render();
 
-  void DoModal(int iWindowID = WINDOW_INVALID, const CStdString &param = ""); // modal
+  virtual void DoModal(int iWindowID = WINDOW_INVALID, const CStdString &param = ""); // modal
+  void DoModalThreadSafe(); // threadsafe version of DoModal
   void Show(); // modeless
 
   virtual void Close(bool forceClose = false);
@@ -56,23 +55,18 @@ public:
   virtual bool IsAnimating(ANIMATION_TYPE animType);
 
   void SetAutoClose(unsigned int timeoutMs);
-  void SetSound(bool OnOff) { m_enableSound = OnOff; };
-
 protected:
-  virtual bool RenderAnimation(unsigned int time);
+  virtual bool RenderAnimation(DWORD time);
   virtual void SetDefaults();
   virtual void OnWindowLoaded();
 
-  friend class CApplicationMessenger;
   void DoModal_Internal(int iWindowID = WINDOW_INVALID, const CStdString &param = ""); // modal
   void Show_Internal(); // modeless
-  void Close_Internal(bool forceClose = false);
 
   bool m_bRunning;
   bool m_bModal;
   bool m_dialogClosing;
   bool m_autoClosing;
-  bool m_enableSound;
-  unsigned int m_showStartTime;
-  unsigned int m_showDuration;
+  DWORD m_showStartTime;
+  DWORD m_showDuration;
 };

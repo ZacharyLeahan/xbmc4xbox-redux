@@ -1,6 +1,6 @@
 /*!
 \file GUIInfoTypes.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUIINFOTYPES_H
@@ -28,8 +28,6 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "StdString.h"
 
 class CGUIListItem;
 
@@ -62,7 +60,7 @@ public:
 
 private:
   color_t GetColor() const;
-  int     m_info;
+  int      m_info;
   color_t m_color;
 };
 
@@ -88,13 +86,6 @@ public:
    \return text with any localized strings filled in.
    */
   static CStdString ReplaceLocalize(const CStdString &label);
-
-  /*!
-   \brief Replaces instances of $ADDON[id number] with the appropriate localized addon string
-   \param label text to replace
-   \return text with any localized strings filled in.
-   */
-  static CStdString ReplaceAddonStrings(const CStdString &label);
 
 private:
   void Parse(const CStdString &label);

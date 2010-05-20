@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "DVDInputStream.h"
 
 CDVDInputStream::CDVDInputStream(DVDStreamType streamType)

@@ -19,9 +19,8 @@
  *
  */
 
+#include "stdafx.h"
 #include "DateTime.h"
-#include "LangInfo.h"
-#include "LocalizeStrings.h"
 
 #define SECONDS_PER_DAY 86400UL
 #define SECONDS_PER_HOUR 3600UL
@@ -608,9 +607,7 @@ void CDateTime::Serialize(CArchive& ar)
   else
   {
     Reset();
-    int state;
-    ar >> (int &)state;
-    m_state = CDateTime::STATE(state);
+    ar>>(int&)m_state;
     if (m_state==valid)
     {
       SYSTEMTIME st;
@@ -869,9 +866,9 @@ void CDateTime::SetFromDBDate(const CStdString &date)
   }
   else
   {
-    year = atoi(date.Mid(0,4).c_str());
-    month = atoi(date.Mid(5,2).c_str());
-    day = atoi(date.Mid(8,2).c_str());
+  year = atoi(date.Mid(0,4).c_str());
+  month = atoi(date.Mid(5,2).c_str());
+  day = atoi(date.Mid(8,2).c_str());
   }
   SetDate(year, month, day);
 }

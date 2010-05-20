@@ -21,8 +21,6 @@
  *
  */
 
-#include "StdString.h"
-
 #include <vector>
 
 #ifdef __GNUC__
@@ -86,7 +84,7 @@ public:
   float GetTextWidth() const { return m_textWidth; };
   
   float GetTextWidth(const CStdStringW &text) const;
-  bool Update(const CStdString &text, float maxWidth = 0, bool forceUpdate = false, bool forceLTRReadingOrder = false);
+  bool Update(const CStdString &text, float maxWidth = 0, bool forceLTRReadingOrder = false);
   void SetText(const CStdStringW &text, float maxWidth = 0, bool forceLTRReadingOrder = false);
 
   unsigned int GetTextLength() const;

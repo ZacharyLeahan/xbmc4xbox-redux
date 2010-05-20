@@ -31,9 +31,8 @@
 #include "lib/libXDAAP/client.h"
 #include "FileCurl.h"
 #include "URL.h"
-#include "utils/CriticalSection.h"
 
-class CDaapClient : public CCriticalSection
+class CDaapClient : public CCriticalSection 
 {
 public:
 
@@ -48,19 +47,20 @@ public:
   DAAP_Status m_Status;
 
   //Buffers
-  int m_iDatabase;
-  void *m_pArtistsHead;
+  int m_iDatabase;  
+  void *m_pArtistsHead;  
 
   void Release();
 
 protected:
-  static void StatusCallback(DAAP_SClient *pClient, DAAP_Status status, int value, void* pContext);
+  static void StatusCallback(DAAP_SClient *pClient, DAAP_Status status, int value, void* pContext);    
 };
 
 extern CDaapClient g_DaapClient;
 
 
 #include "IFile.h"
+#include "cores/paplayer/RingHoldBuffer.h"
 
 namespace XFILE
 {
@@ -69,13 +69,13 @@ class CFileDAAP : public IFile
 public:
   CFileDAAP();
   virtual ~CFileDAAP();
-  virtual int64_t GetPosition();
-  virtual int64_t GetLength();
+  virtual __int64 GetPosition();
+  virtual __int64 GetLength();
   virtual bool Open(const CURL& url);
   virtual bool Exists(const CURL& url);
   virtual int Stat(const CURL& url, struct __stat64* buffer);
-  virtual unsigned int Read(void* lpBuf, int64_t uiBufSize);
-  virtual int64_t Seek(int64_t iFilePosition, int iWhence = SEEK_SET);
+  virtual unsigned int Read(void* lpBuf, __int64 uiBufSize);
+  virtual __int64 Seek(__int64 iFilePosition, int iWhence = SEEK_SET);
   virtual void Close();
 
 protected:
@@ -83,8 +83,8 @@ protected:
   bool StartStreaming();
   bool StopStreaming();
 
-  int64_t m_fileSize; //holds full size
-  int64_t m_filePos; //holds current position in file
+  __int64 m_fileSize; //holds full size
+  __int64 m_filePos; //holds current position in file
 
 
   DAAP_SClient *m_thisClient;
@@ -92,7 +92,7 @@ protected:
   DAAP_ClientHost_Song m_song;
 
   bool m_bOpened;
-
+  
   CStdString m_hashurl; // the url that should be used in hash calculation
   CURL       m_url;     // the complete url we have connected too
   CFileCurl  m_curl;

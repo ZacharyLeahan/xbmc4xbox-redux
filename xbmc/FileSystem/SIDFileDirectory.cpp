@@ -19,10 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "SIDFileDirectory.h"
 
 using namespace MUSIC_INFO;
-using namespace XFILE;
+using namespace DIRECTORY;
 
 CSIDFileDirectory::CSIDFileDirectory(void)
 {

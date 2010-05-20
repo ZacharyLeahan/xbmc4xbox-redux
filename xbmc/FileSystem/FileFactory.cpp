@@ -20,59 +20,33 @@
  */
 
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#include "system.h"
+#include "stdafx.h"
 #include "FileFactory.h"
 #include "FileHD.h"
 #include "FileCurl.h"
 #include "FileShoutcast.h"
 #include "FileLastFM.h"
 #include "FileFileReader.h"
-#ifdef HAS_FILESYSTEM_SMB
-#ifdef _WIN32
-#include "WINFileSmb.h"
-#else
-#include "FileSmb.h"
-#endif
-#endif
-#ifdef HAS_FILESYSTEM_CCX
-#include "FileXBMSP.h"
-#endif
-#ifdef HAS_FILESYSTEM_CDDA
-#include "FileCDDA.h"
-#endif
 #ifdef HAS_FILESYSTEM
 #include "FileISO.h"
-#ifdef HAS_FILESYSTEM_RTV
+#include "FileSMB.h"
+#include "FileXBMSP.h"
 #include "FileRTV.h"
-#endif
-#ifdef HAS_FILESYSTEM_DAAP
+#include "FileSndtrk.h"
+#include "FileCDDA.h"
+#include "FileMemUnit.h"
 #include "FileDAAP.h"
 #endif
-#endif
-#ifdef HAS_FILESYSTEM_SAP
-#include "SAPFile.h"
-#endif
-#ifdef HAS_FILESYSTEM_VTP
-#include "VTPFile.h"
-#endif
+#include "FileMMS.h"
 #include "FileZip.h"
-#ifdef HAS_FILESYSTEM_RAR
 #include "FileRar.h"
-#endif
-#ifdef HAS_FILESYSTEM_SFTP
-#include "FileSFTP.h"
-#endif
 #include "FileMusicDatabase.h"
 #include "FileSpecialProtocol.h"
 #include "MultiPathFile.h"
-#include "../utils/Network.h"
+#include "xbox/network.h"
 #include "FileTuxBox.h"
 #include "HDHomeRun.h"
 #include "MythFile.h"
-#include "Application.h"
 #include "URL.h"
 #include "utils/log.h"
 
@@ -98,22 +72,20 @@ IFile* CFileFactory::CreateLoader(const CURL& url)
   strProtocol.MakeLower();
 
   if (strProtocol == "zip") return new CFileZip();
-#ifdef HAS_FILESYSTEM_RAR
   else if (strProtocol == "rar") return new CFileRar();
-#endif
   else if (strProtocol == "musicdb") return new CFileMusicDatabase();
   else if (strProtocol == "videodb") return NULL;
   else if (strProtocol == "special") return new CFileSpecialProtocol();
   else if (strProtocol == "multipath") return new CMultiPathFile();
   else if (strProtocol == "file" || strProtocol.IsEmpty()) return new CFileHD();
   else if (strProtocol == "filereader") return new CFileFileReader();
-#if defined(HAS_FILESYSTEM_CDDA) && defined(HAS_DVD_DRIVE)
-  else if (strProtocol == "cdda") return new CFileCDDA();
-#endif
 #ifdef HAS_FILESYSTEM
   else if (strProtocol == "iso9660") return new CFileISO();
+  else if (strProtocol == "soundtrack") return new CFileSndtrk();
+  else if (strProtocol == "cdda") return new CFileCDDA();
+  else if (strProtocol.Left(3) == "mem") return new CFileMemUnit();
 #endif
-  if( g_application.getNetwork().IsAvailable() )
+  if( g_network.IsAvailable() )
   {
     if (strProtocol == "http"
     ||  strProtocol == "https"
@@ -123,40 +95,18 @@ IFile* CFileFactory::CreateLoader(const CURL& url)
     ||  strProtocol == "ftpx"
     ||  strProtocol == "ftps"
     ||  strProtocol == "rss") return new CFileCurl();
-#ifdef HAS_FILESYSTEM_SFTP
-    else if (strProtocol == "sftp" || strProtocol == "ssh") return new CFileSFTP();
-#endif
+    else if (strProtocol == "mms") return new CFileMMS();
     else if (strProtocol == "shout") return new CFileShoutcast();
     else if (strProtocol == "lastfm") return new CFileLastFM();
     else if (strProtocol == "tuxbox") return new CFileTuxBox();
     else if (strProtocol == "hdhomerun") return new CFileHomeRun();
     else if (strProtocol == "myth") return new CMythFile();
     else if (strProtocol == "cmyth") return new CMythFile();
-#ifdef HAS_FILESYSTEM_SMB
-#ifdef _WIN32
-    else if (strProtocol == "smb") return new CWINFileSMB();
-#else
-    else if (strProtocol == "smb") return new CFileSMB();
-#endif
-#endif
-#ifdef HAS_FILESYSTEM_CCX
-    else if (strProtocol == "xbms") return new CFileXBMSP();
-#endif
 #ifdef HAS_FILESYSTEM
-#ifdef HAS_FILESYSTEM_RTV
+    else if (strProtocol == "smb") return new CFileSMB();
+    else if (strProtocol == "xbms") return new CFileXBMSP();
     else if (strProtocol == "rtv") return new CFileRTV();
-#endif
-#ifdef HAS_FILESYSTEM_DAAP
     else if (strProtocol == "daap") return new CFileDAAP();
-#endif
-#endif
-    else if (strProtocol == "myth") return new CMythFile();
-    else if (strProtocol == "cmyth") return new CMythFile();
-#ifdef HAS_FILESYSTEM_SAP
-    else if (strProtocol == "sap") return new CSAPFile();
-#endif
-#ifdef HAS_FILESYSTEM_VTP
-    else if (strProtocol == "vtp") return new CVTPFile();
 #endif
   }
 

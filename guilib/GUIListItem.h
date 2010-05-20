@@ -1,6 +1,6 @@
 /*!
 \file GUIListItem.h
-\brief
+\brief 
 */
 
 #ifndef GUILIB_GUILISTITEM_H
@@ -40,7 +40,7 @@ class CArchive;
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIListItem
 {
@@ -96,7 +96,7 @@ public:
   CGUIListItemLayout *GetFocusedLayout();
 
   void FreeIcons();
-  void FreeMemory(bool immediately = false);
+  void FreeMemory();
   void SetInvalid();
 
   bool m_bIsFolder;     ///< is item a folder or a file
@@ -148,4 +148,3 @@ private:
   CStdString m_strLabel;      // text of column1
 };
 #endif
-

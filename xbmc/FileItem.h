@@ -87,7 +87,6 @@ public:
   bool IsPicture() const;
   bool IsLyrics() const;
   bool IsAudio() const;
-  bool IsKaraoke() const;
   bool IsCUESheet() const;
   bool IsShoutCast() const;
   bool IsLastFM() const;
@@ -97,6 +96,7 @@ public:
   bool IsPythonScript() const;
   bool IsXBE() const;
   bool IsPlugin() const;
+  bool IsPluginRoot() const;
   bool IsDefaultXBE() const;
   bool IsShortCut() const;
   bool IsNFO() const;
@@ -128,6 +128,7 @@ public:
   void SetCanQueue(bool bYesNo);
   bool IsParentFolder() const;
   bool IsFileFolder() const;
+  bool IsMemoryUnit() const;
   bool IsRemovable() const;
   bool IsTuxBox() const;
   bool IsMythTV() const;
@@ -188,7 +189,11 @@ public:
   // Gets the cached thumb filename (no existence checks)
   CStdString GetCachedVideoThumb() const;
   CStdString GetCachedEpisodeThumb() const;
+  CStdString GetCachedPictureThumb() const;
   CStdString GetCachedArtistThumb() const;
+  CStdString GetCachedProgramThumb() const;
+  CStdString GetCachedGameSaveThumb() const;
+  CStdString GetCachedProfileThumb() const;
   CStdString GetCachedSeasonThumb() const;
   CStdString GetCachedActorThumb() const;
   /*!
@@ -216,7 +221,10 @@ public:
 
   // Sets the cached thumb for the item if it exists
   void SetCachedVideoThumb();
+  void SetCachedPictureThumb();
   void SetCachedArtistThumb();
+  void SetCachedProgramThumb();
+  void SetCachedGameSavesThumb();
   void SetCachedMusicThumb();
   void SetCachedSeasonThumb();
 
@@ -233,6 +241,7 @@ public:
 
   // Caches the user thumb and assigns it to the item
   void SetUserVideoThumb();
+  void SetUserProgramThumb();
   void SetUserMusicThumb(bool alwaysCheckRemote = false);
 
   // finds a matching local trailer file
@@ -260,7 +269,7 @@ public:
   bool m_bIsShareOrDrive;    ///< is this a root share/drive
   int m_iDriveType;     ///< If \e m_bIsShareOrDrive is \e true, use to get the share type. Types see: CMediaSource::m_iDriveType
   CDateTime m_dateTime;             ///< file creation date & time
-  int64_t m_dwSize;             ///< file size (0 for folders)
+  __int64 m_dwSize;             ///< file size (0 for folders)
   CStdString m_strDVDLabel;
   CStdString m_strTitle;
   int m_iprogramCount;
@@ -411,7 +420,11 @@ public:
   bool AlwaysCache() const;
 
   void SetCachedVideoThumbs();
+  void SetCachedProgramThumbs();
+  void SetCachedGameSavesThumbs();
   void SetCachedMusicThumbs();
+  void SetProgramThumbs();
+  void SetGameSavesThumbs();
 
   void Swap(unsigned int item1, unsigned int item2);
 

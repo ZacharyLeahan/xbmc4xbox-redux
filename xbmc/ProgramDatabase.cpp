@@ -19,19 +19,20 @@
  *
  */
 
+#include "stdafx.h"
 #include "ProgramDatabase.h"
 #include "Util.h"
+#include "xbox/xbeheader.h"
 #include "GUIWindowFileManager.h"
 #include "FileItem.h"
-#include "GUISettings.h"
-#include "Settings.h"
-#include "log.h"
+#include "Crc32.h"
 
 using namespace XFILE;
 
 //********************************************************************************************************************************
 CProgramDatabase::CProgramDatabase(void)
 {
+  m_strDatabaseFile=PROGRAM_DATABASE_NAME;
 }
 
 //********************************************************************************************************************************
@@ -41,11 +42,6 @@ CProgramDatabase::~CProgramDatabase(void)
 }
 
 //********************************************************************************************************************************
-bool CProgramDatabase::Open()
-{
-  return CDatabase::Open();
-}
-
 bool CProgramDatabase::CreateTables()
 {
 
@@ -55,6 +51,8 @@ bool CProgramDatabase::CreateTables()
 
     CLog::Log(LOGINFO, "create files table");
     m_pDS->exec("CREATE TABLE files ( idFile integer primary key, strFilename text, titleId integer, xbedescription text, iTimesPlayed integer, lastAccessed integer, iRegion integer, iSize integer)\n");
+    CLog::Log(LOGINFO, "create trainers table");
+    m_pDS->exec("CREATE TABLE trainers (idKey integer auto_increment primary key, idCRC integer, idTitle integer, strTrainerPath text, strSettings text, Active integer)\n");
     CLog::Log(LOGINFO, "create files index");
     m_pDS->exec("CREATE INDEX idxFiles ON files(strFilename)");
     CLog::Log(LOGINFO, "create files - titleid index");
@@ -62,8 +60,7 @@ bool CProgramDatabase::CreateTables()
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "programdatabase::unable to create tables:%u",
-              GetLastError());
+    CLog::Log(LOGERROR, "programdatabase::unable to create tables:%lu", GetLastError());
     return false;
   }
 
@@ -87,7 +84,7 @@ bool CProgramDatabase::UpdateOldVersion(int version)
   return true;
 }
 
-uint32_t CProgramDatabase::GetTitleId(const CStdString& strFilenameAndPath)
+int CProgramDatabase::GetRegion(const CStdString& strFilenameAndPath)
 {
   if (NULL == m_pDB.get()) return 0;
   if (NULL == m_pDS.get()) return 0;
@@ -104,9 +101,38 @@ uint32_t CProgramDatabase::GetTitleId(const CStdString& strFilenameAndPath)
       m_pDS->close();
       return 0;
     }
-    uint32_t dwTitleId = m_pDS->fv("files.TitleId").get_asInt();
+    int iRegion = m_pDS->fv("files.iRegion").get_asInt();
     m_pDS->close();
-    return dwTitleId;
+
+    return iRegion;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR, "CProgramDatabase:GetRegion(%s) failed", strFilenameAndPath.c_str());
+  }
+  return 0;
+}
+
+int CProgramDatabase::GetTitleId(const CStdString& strFilenameAndPath)
+{
+  if (NULL == m_pDB.get()) return 0;
+  if (NULL == m_pDS.get()) return 0;
+
+  try
+  {
+    CStdString strSQL = FormatSQL("select * from files where files.strFileName like '%s'", strFilenameAndPath.c_str());
+    if (!m_pDS->query(strSQL.c_str()))
+      return 0;
+
+    int iRowsFound = m_pDS->num_rows();
+    if (iRowsFound == 0)
+    {
+      m_pDS->close();
+      return 0;
+    }
+    int idTitle = m_pDS->fv("files.TitleId").get_asInt();
+    m_pDS->close();
+    return idTitle;
   }
   catch (...)
   {
@@ -115,7 +141,7 @@ uint32_t CProgramDatabase::GetTitleId(const CStdString& strFilenameAndPath)
   return 0;
 }
 
-bool CProgramDatabase::SetTitleId(const CStdString& strFileName, uint32_t dwTitleId)
+bool CProgramDatabase::SetRegion(const CStdString& strFileName, int iRegion)
 {
   try
   {
@@ -133,11 +159,11 @@ bool CProgramDatabase::SetTitleId(const CStdString& strFileName, uint32_t dwTitl
     int idFile = m_pDS->fv("files.idFile").get_asInt();
     m_pDS->close();
 
-    CLog::Log(LOGDEBUG, "CProgramDatabase::SetTitle(%s), idFile=%i, region=%u",
-              strFileName.c_str(), idFile,dwTitleId);
+    CLog::Log(LOGDEBUG, "CProgramDatabase::SetRegion(%s), idFile=%i, region=%i",
+              strFileName.c_str(), idFile,iRegion);
 
-    strSQL=FormatSQL("update files set titleId=%u where idFile=%i",
-                  dwTitleId, idFile);
+    strSQL=FormatSQL("update files set iRegion=%i where idFile=%i",
+                  iRegion, idFile);
     m_pDS->exec(strSQL.c_str());
     return true;
   }
@@ -149,14 +175,48 @@ bool CProgramDatabase::SetTitleId(const CStdString& strFileName, uint32_t dwTitl
   return false;
 }
 
-bool CProgramDatabase::GetXBEPathByTitleId(const uint32_t titleId, CStdString& strPathAndFilename)
+bool CProgramDatabase::SetTitleId(const CStdString& strFileName, int idTitle)
 {
   try
   {
     if (NULL == m_pDB.get()) return false;
     if (NULL == m_pDS.get()) return false;
 
-    CStdString strSQL=FormatSQL("select files.strFilename from files where files.titleId=%u", titleId);
+    CStdString strSQL = FormatSQL("select * from files where files.strFileName like '%s'", strFileName.c_str());
+    if (!m_pDS->query(strSQL.c_str())) return false;
+    int iRowsFound = m_pDS->num_rows();
+    if (iRowsFound == 0)
+    {
+      m_pDS->close();
+      return false;
+    }
+    int idFile = m_pDS->fv("files.idFile").get_asInt();
+    m_pDS->close();
+
+    CLog::Log(LOGDEBUG, "CProgramDatabase::SetTitle(%s), idFile=%i, region=%i",
+              strFileName.c_str(), idFile, idTitle);
+
+    strSQL=FormatSQL("update files set titleId=%i where idFile=%i",
+                  idTitle, idFile);
+    m_pDS->exec(strSQL.c_str());
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR, "CProgramDatabase:SetDescription(%s) failed", strFileName.c_str());
+  }
+
+  return false;
+}
+
+bool CProgramDatabase::GetXBEPathByTitleId(const int idTitle, CStdString& strPathAndFilename)
+{
+  try
+  {
+    if (NULL == m_pDB.get()) return false;
+    if (NULL == m_pDS.get()) return false;
+
+    CStdString strSQL=FormatSQL("select files.strFilename from files where files.titleId=%i", idTitle);
     m_pDS->query(strSQL.c_str());
     if (m_pDS->num_rows() > 0)
     {
@@ -170,15 +230,240 @@ bool CProgramDatabase::GetXBEPathByTitleId(const uint32_t titleId, CStdString& s
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "CProgramDatabase::GetXBEPathByTitleId(%u) failed",
-              titleId);
+    CLog::Log(LOGERROR, "CProgramDatabase::GetXBEPathByTitleId(%i) failed", idTitle);
   }
   return false;
 }
 
-uint32_t CProgramDatabase::GetProgramInfo(CFileItem *item)
+bool CProgramDatabase::ItemHasTrainer(unsigned int iTitleId)
 {
-  uint32_t titleID = 0;
+  CStdString strSQL;
+  try
+  {
+    strSQL = FormatSQL("select * from trainers where idTitle=%u", iTitleId);
+    if (!m_pDS->query(strSQL.c_str()))
+      return false;
+    if (m_pDS->num_rows())
+      return true;
+
+    return false;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"error checking for title's trainers (%s)",strSQL.c_str());
+  }
+  return false;
+}
+
+bool CProgramDatabase::HasTrainer(const CStdString& strTrainerPath)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    strSQL = FormatSQL("select * from trainers where idCRC=%u", (unsigned __int32) crc);
+    if (!m_pDS->query(strSQL.c_str()))
+      return false;
+    if (m_pDS->num_rows())
+      return true;
+
+    return false;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"error checking for trainer existance (%s)",strSQL.c_str());
+  }
+  return false;
+}
+
+bool CProgramDatabase::AddTrainer(int iTitleId, const CStdString& strTrainerPath)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    char temp[101];
+    for( int i=0;i<100;++i)
+      temp[i] = '0';
+    temp[100] = '\0';
+    strSQL=FormatSQL("insert into trainers (idKey,idCRC,idTitle,strTrainerPath,strSettings,Active) values(NULL,%u,%u,'%s','%s',%i)",(unsigned __int32)crc,iTitleId,strTrainerPath.c_str(),temp,0);
+    if (!m_pDS->exec(strSQL.c_str()))
+      return false;
+
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"programdatabase: unable to add trainer (%s)",strSQL.c_str());
+  }
+  return false;
+}
+
+bool CProgramDatabase::RemoveTrainer(const CStdString& strTrainerPath)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    strSQL=FormatSQL("delete from trainers where idCRC=%u", (unsigned __int32)crc);
+    if (!m_pDS->exec(strSQL.c_str()))
+      return false;
+
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"programdatabase: unable to remove trainer (%s)",strSQL.c_str());
+  }
+  return false;
+}
+
+bool CProgramDatabase::GetTrainers(unsigned int iTitleId, std::vector<CStdString>& vecTrainers)
+{
+  vecTrainers.clear();
+  CStdString strSQL;
+  try
+  {
+    strSQL = FormatSQL("select * from trainers where idTitle=%u", iTitleId);
+    if (!m_pDS->query(strSQL.c_str()))
+      return false;
+
+    while (!m_pDS->eof())
+    {
+      vecTrainers.push_back(m_pDS->fv("strTrainerPath").get_asString());
+      m_pDS->next();
+    }
+
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"programdatabase: error reading trainers for %i (%s)",iTitleId,strSQL.c_str());
+  }
+  return false;
+
+}
+
+bool CProgramDatabase::GetAllTrainers(std::vector<CStdString>& vecTrainers)
+{
+  vecTrainers.clear();
+  CStdString strSQL;
+  try
+  {
+    strSQL = FormatSQL("select distinct strTrainerPath from trainers");//FormatSQL("select * from trainers");
+    if (!m_pDS->query(strSQL.c_str()))
+      return false;
+
+    while (!m_pDS->eof())
+    {
+      vecTrainers.push_back(m_pDS->fv("strTrainerPath").get_asString());
+      m_pDS->next();
+    }
+
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"programdatabase: error reading trainers (%s)",strSQL.c_str());
+  }
+  return false;
+}
+
+bool CProgramDatabase::SetTrainerOptions(const CStdString& strTrainerPath, unsigned int iTitleId, unsigned char* data, int numOptions)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    char temp[101];
+    int i;
+    for (i=0;i<numOptions && i<100;++i)
+    {
+      if (data[i] == 1)
+        temp[i] = '1';
+      else
+        temp[i] = '0';
+    }
+    temp[i] = '\0';
+
+    strSQL = FormatSQL("update trainers set strSettings='%s' where idCRC=%u and idTitle=%u", temp, (unsigned __int32)crc,iTitleId);
+    if (m_pDS->exec(strSQL.c_str()))
+      return true;
+
+    return false;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"CProgramDatabase::SetTrainerOptions failed (%s)",strSQL.c_str());
+  }
+
+  return false;
+}
+
+void CProgramDatabase::SetTrainerActive(const CStdString& strTrainerPath, unsigned int iTitleId, bool bActive)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    strSQL = FormatSQL("update trainers set Active=%u where idCRC=%u and idTitle=%u", bActive?1:0, (unsigned __int32)crc, iTitleId);
+    m_pDS->exec(strSQL.c_str());
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"CProgramDatabase::SetTrainerOptions failed (%s)",strSQL.c_str());
+  }
+}
+
+CStdString CProgramDatabase::GetActiveTrainer(unsigned int iTitleId)
+{
+  CStdString strSQL;
+  try
+  {
+    strSQL = FormatSQL("select * from trainers where idTitle=%u and Active=1", iTitleId);
+    if (!m_pDS->query(strSQL.c_str()))
+      return "";
+
+    if (!m_pDS->eof())
+      return m_pDS->fv("strTrainerPath").get_asString();
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"programdatabase: error finding active trainer for %i (%s)",iTitleId,strSQL.c_str());
+  }
+
+  return "";
+}
+
+bool CProgramDatabase::GetTrainerOptions(const CStdString& strTrainerPath, unsigned int iTitleId, unsigned char* data, int numOptions)
+{
+  CStdString strSQL;
+  Crc32 crc; crc.ComputeFromLowerCase(strTrainerPath);
+  try
+  {
+    strSQL = FormatSQL("select * from trainers where idCRC=%u and idTitle=%u", (unsigned __int32)crc, iTitleId);
+    if (m_pDS->query(strSQL.c_str()))
+    {
+      CStdString strSettings = m_pDS->fv("strSettings").get_asString();
+      for (int i=0;i<numOptions && i < 100;++i)
+        data[i] = strSettings[i]=='1'?1:0;
+
+      return true;
+    }
+
+    return false;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR,"CProgramDatabase::GetTrainerOptions failed (%s)",strSQL.c_str());
+  }
+
+  return false;
+}
+
+int CProgramDatabase::GetProgramInfo(CFileItem *item)
+{
+  int idTitle = 0;
   try
   {
     if (NULL == m_pDB.get()) return false;
@@ -194,12 +479,12 @@ uint32_t CProgramDatabase::GetProgramInfo(CFileItem *item)
       item->m_strTitle = item->GetLabel();  // is this needed?
       item->m_dateTime = TimeStampToLocalTime(_atoi64(m_pDS->fv("lastAccessed").get_asString().c_str()));
       item->m_dwSize = _atoi64(m_pDS->fv("iSize").get_asString().c_str());
-      titleID = m_pDS->fv("titleId").get_asInt();
+      idTitle = m_pDS->fv("titleId").get_asInt();
       if (item->m_dwSize == -1)
       {
         CStdString strPath;
         CUtil::GetDirectory(item->m_strPath,strPath);
-        int64_t iSize = CGUIWindowFileManager::CalculateFolderSize(strPath);
+        __int64 iSize = CGUIWindowFileManager::CalculateFolderSize(strPath);
         CStdString strSQL=FormatSQL("update files set iSize=%I64u where strFileName like '%s'",iSize,item->m_strPath.c_str());
         m_pDS->exec(strSQL.c_str());
       }
@@ -210,7 +495,7 @@ uint32_t CProgramDatabase::GetProgramInfo(CFileItem *item)
   {
     CLog::Log(LOGERROR, "CProgramDatabase::GetProgramInfo(%s) failed", item->m_strPath.c_str());
   }
-  return titleID;
+  return idTitle;
 }
 
 bool CProgramDatabase::AddProgramInfo(CFileItem *item, unsigned int titleID)
@@ -223,6 +508,9 @@ bool CProgramDatabase::AddProgramInfo(CFileItem *item, unsigned int titleID)
     int iRegion = -1;
     if (g_guiSettings.GetBool("myprograms.gameautoregion"))
     {
+      CXBE xbe;
+      iRegion = xbe.ExtractGameRegion(item->m_strPath);
+      if (iRegion < 1 || iRegion > 7)
         iRegion = 0;
     }
     FILETIME time;
@@ -230,18 +518,18 @@ bool CProgramDatabase::AddProgramInfo(CFileItem *item, unsigned int titleID)
     item->m_dateTime.GetAsTimeStamp(time);
 
     ULARGE_INTEGER lastAccessed;
-    lastAccessed.u.LowPart = time.dwLowDateTime;
+    lastAccessed.u.LowPart = time.dwLowDateTime; 
     lastAccessed.u.HighPart = time.dwHighDateTime;
 
-    CStdString strPath;
+    CStdString strPath, strParent;
     CUtil::GetDirectory(item->m_strPath,strPath);
     // special case - programs in root of sources
     bool bIsShare=false;
     CUtil::GetMatchingSource(strPath,g_settings.m_programSources,bIsShare);
-    int64_t iSize=0;
+    __int64 iSize=0;
     if (bIsShare || !item->IsDefaultXBE())
     {
-      struct __stat64 stat;
+      __stat64 stat;
       if (CFile::Stat(item->m_strPath,&stat) == 0)
         iSize = stat.st_size;
     }
@@ -260,7 +548,7 @@ bool CProgramDatabase::AddProgramInfo(CFileItem *item, unsigned int titleID)
   return true;
 }
 
-FILETIME CProgramDatabase::TimeStampToLocalTime(uint64_t timeStamp )
+FILETIME CProgramDatabase::TimeStampToLocalTime( unsigned __int64 timeStamp )
 {
   FILETIME fileTime;
   ::FileTimeToLocalFileTime( (const FILETIME *)&timeStamp, &fileTime);

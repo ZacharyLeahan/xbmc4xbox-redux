@@ -19,6 +19,7 @@
  *
  */
 
+#include "include.h"
 #include "GUIMessage.h"
 #include "LocalizeStrings.h"
 
@@ -55,6 +56,16 @@ CGUIMessage::CGUIMessage(int msg, int senderID, int controlID, int param1, int p
   m_param2 = param2;
   m_pointer = NULL;
   m_item = item;
+}
+
+CGUIMessage::CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, CVisualisation* vis)
+{
+  m_message = msg;
+  m_senderID = senderID;
+  m_controlID = controlID;
+  m_param1 = param1;
+  m_param2 = param2;
+  m_pointer = vis;
 }
 
 CGUIMessage::CGUIMessage(const CGUIMessage& msg)
@@ -115,7 +126,6 @@ const CGUIMessage& CGUIMessage::operator = (const CGUIMessage& msg)
   m_senderID = msg.m_senderID;
   m_params = msg.m_params;
   m_item = msg.m_item;
-  m_action = msg.m_action;
   return *this;
 }
 
@@ -174,12 +184,4 @@ size_t CGUIMessage::GetNumStringParams() const
   return m_params.size();
 }
 
-void CGUIMessage::SetAction(const CGUIActionDescriptor& action)
-{
-  m_action = action;
-}
 
-const CGUIActionDescriptor& CGUIMessage::GetAction() const
-{
-  return m_action;
-}

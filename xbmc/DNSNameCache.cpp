@@ -19,10 +19,10 @@
  *
  */
 
+#include "stdafx.h"
 #include "DNSNameCache.h"
-#include "Application.h"
-#include "utils/SingleLock.h"
-#include "utils/log.h"
+#include "Settings.h"
+#include "GUISettings.h"
 
 CDNSNameCache g_DNSCache;
 
@@ -34,61 +34,137 @@ CDNSNameCache::CDNSNameCache(void)
 CDNSNameCache::~CDNSNameCache(void)
 {}
 
-bool CDNSNameCache::Lookup(const CStdString& strHostName, CStdString& strIpAddress)
+bool CDNSNameCache::Lookup(const CStdString& strHostName, CStdString& strIpAdres)
 {
   // first see if this is already an ip address
-  unsigned long address = inet_addr(strHostName.c_str());
-  if (address != INADDR_NONE)
+  unsigned long ulHostIp = inet_addr( strHostName.c_str() );
+
+  if ( ulHostIp != 0xFFFFFFFF )
   {
-    strIpAddress.Format("%d.%d.%d.%d", (address & 0xFF), (address & 0xFF00) >> 8, (address & 0xFF0000) >> 16, (address & 0xFF000000) >> 24 );
+    // yes it is, just return it
+    strIpAdres.Format("%d.%d.%d.%d", (ulHostIp & 0xFF), (ulHostIp & 0xFF00) >> 8, (ulHostIp & 0xFF0000) >> 16, (ulHostIp & 0xFF000000) >> 24 );
     return true;
   }
 
-  // check if there's a custom entry or if it's already cached
-  if(g_DNSCache.GetCached(strHostName, strIpAddress))
-    return true;
-
-#ifndef _WIN32
-  // perform netbios lookup (win32 is handling this via gethostbyname)
-  char nmb_ip[100];
-  char line[200];
-
-  CStdString cmd = "nmblookup " + strHostName;
-  FILE* fp = popen(cmd, "r");
-  if (fp)
+  // nop this is a hostname
+  // check if we already cached the hostname <-> ip address
+  if(g_DNSCache.GetCached(strHostName, strIpAdres))
   {
-    while (fgets(line, sizeof line, fp))
+    // it was already cached
+    return true;
+  }
+
+  // hostname not found in cache.
+  // do a DNS lookup
+#ifndef _XBOX
+  {
+    WSADATA wsaData;    /* Used to open Windows connection */
+    SOCKET sd;          /* Socket descriptor */
+    struct sockaddr_in socket_address;
+    struct hostent *host;
+    int count = 0;
+
+    /* Open a windows connection */
+    if (WSAStartup(0x0101, &wsaData) != 0)
     {
-      if (sscanf(line, "%s *<00>\n", nmb_ip))
-      {
-        if (inet_addr(nmb_ip) != INADDR_NONE)
-          strIpAddress = nmb_ip;
-      }
+      OutputDebugString("Could not open Windows connection\n");
+      return false;
     }
-  }
-  pclose(fp);
 
-  if (!strIpAddress.IsEmpty())
-  {
-    g_DNSCache.Add(strHostName, strIpAddress);
+    /* Open up a socket */
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+
+    /* Make sure the socket was opened */
+    if (sd == INVALID_SOCKET)
+    {
+      OutputDebugString("Could not open socket.\n");
+      WSACleanup();
+      return false;
+    }
+
+    /* Bind with IP address */
+    memset(&socket_address, '\0', sizeof(struct sockaddr_in));
+    socket_address.sin_family = AF_INET;
+    socket_address.sin_port = htons((short)4000);
+
+    /* Get host by name */
+    host = gethostbyname(strHostName.c_str());
+
+    /* Print error message if could not find host */
+    if (host == NULL || host->h_addr_list[0] == NULL)
+    {
+      OutputDebugString("Could not find host\n");
+      closesocket(sd);
+      WSACleanup();
+      return false;
+    }
+
+    /* Print out host name */
+    CLog::Log(LOGDEBUG, "host name = %s\n", host->h_name);
+
+    /* Loop through and print out any aliases */
+    while(1)
+    {
+      if(host->h_aliases[count] == NULL)
+      {
+        break;
+      }
+      CLog::Log(LOGDEBUG, "alias %d: %s\n", count + 1, host->h_aliases[count]);
+      ++count;
+    }
+
+    /* Print out all IP addresses of name */
+    if (host->h_addr_list[0])
+    {
+      strIpAdres.Format("%d.%d.%d.%d", (unsigned char)host->h_addr_list[0][0], (unsigned char)host->h_addr_list[0][1], (unsigned char)host->h_addr_list[0][2], (unsigned char)host->h_addr_list[0][3]);
+      g_DNSCache.Add(strHostName, strIpAdres);
+    }
+
+    closesocket(sd);
+    WSACleanup();
+
     return true;
   }
+#else
+  CStdString suffix = g_guiSettings.GetString("network.dnssuffix");
+  CStdString fqdn;
+  if( suffix.length() > 0 && strHostName.Find(".") < 0)
+    fqdn = strHostName + "." + suffix;
+  else
+    fqdn = strHostName;
+
+  WSAEVENT hEvent = WSACreateEvent();
+  XNDNS* pDns = NULL;
+  INT err = XNetDnsLookup(fqdn.c_str(), hEvent, &pDns);
+  WaitForSingleObject( (HANDLE)hEvent, INFINITE);
+  if ( pDns && pDns->iStatus == 0 )
+  {
+    //DNS lookup succeeded
+
+    unsigned long ulHostIp;
+    memcpy(&ulHostIp, &(pDns->aina[0].s_addr), 4);
+
+    strIpAdres.Format("%d.%d.%d.%d", (ulHostIp & 0xFF), (ulHostIp & 0xFF00) >> 8, (ulHostIp & 0xFF0000) >> 16, (ulHostIp & 0xFF000000) >> 24 );
+
+    g_DNSCache.Add(fqdn, strIpAdres);
+
+    XNetDnsRelease(pDns);
+    WSACloseEvent(hEvent);
+    return true;
+  }
+  if (pDns)
+  {
+    CLog::Log(LOGERROR, "DNS lookup for %s failed: %u", strHostName.c_str(), pDns->iStatus);
+    XNetDnsRelease(pDns);
+  }
+  else
+    CLog::Log(LOGERROR, "DNS lookup for %s failed: %u", strHostName.c_str(), err);
+  WSACloseEvent(hEvent);
 #endif
-
-  // perform dns lookup
-  struct hostent *host = gethostbyname(strHostName.c_str());
-  if (host && host->h_addr_list[0])
-  {
-    strIpAddress.Format("%d.%d.%d.%d", (unsigned char)host->h_addr_list[0][0], (unsigned char)host->h_addr_list[0][1], (unsigned char)host->h_addr_list[0][2], (unsigned char)host->h_addr_list[0][3]);
-    g_DNSCache.Add(strHostName, strIpAddress);
-    return true;
-  }
-
-  CLog::Log(LOGERROR, "Unable to lookup host: '%s'", strHostName.c_str());
   return false;
 }
 
-bool CDNSNameCache::GetCached(const CStdString& strHostName, CStdString& strIpAddress)
+bool CDNSNameCache::GetCached(const CStdString& strHostName, CStdString& strIpAdres)
 {
   CSingleLock lock(m_critical);
 
@@ -98,7 +174,7 @@ bool CDNSNameCache::GetCached(const CStdString& strHostName, CStdString& strIpAd
     CDNSName& DNSname = g_DNSCache.m_vecDNSNames[i];
     if ( DNSname.m_strHostName == strHostName )
     {
-      strIpAddress = DNSname.m_strIpAddress;
+      strIpAdres = DNSname.m_strIpAdres;
       return true;
     }
   }
@@ -112,9 +188,8 @@ void CDNSNameCache::Add(const CStdString &strHostName, const CStdString &strIpAd
   CDNSName dnsName;
 
   dnsName.m_strHostName = strHostName;
-  dnsName.m_strIpAddress  = strIpAddress;
+  dnsName.m_strIpAdres  = strIpAddress;
 
   CSingleLock lock(m_critical);
   g_DNSCache.m_vecDNSNames.push_back(dnsName);
 }
-

@@ -1,6 +1,6 @@
 /*!
 \file GUIListLabel.h
-\brief
+\brief 
 */
 
 #pragma once
@@ -27,17 +27,17 @@
  */
 
 #include "GUIControl.h"
-#include "GUILabel.h"
+#include "GUITextLayout.h"
 
 /*!
  \ingroup controls
- \brief
+ \brief 
  */
 class CGUIListLabel :
       public CGUIControl
 {
 public:
-  CGUIListLabel(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoLabel &label, bool alwaysScroll);
+  CGUIListLabel(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, const CGUIInfoLabel &label, bool alwaysScroll, int scrollSpeed);
   virtual ~CGUIListLabel(void);
   virtual CGUIListLabel *Clone() const { return new CGUIListLabel(*this); };
 
@@ -45,21 +45,26 @@ public:
   virtual bool CanFocus() const { return false; };
   virtual void UpdateInfo(const CGUIListItem *item = NULL);
   virtual void SetFocus(bool focus);
-  virtual void SetInvalid();
 
+  const CRect &GetRenderRect() const { return m_renderRect; };
+  void SetRenderRect(const CRect &rect) { m_renderRect = rect; };
   void SetLabel(const CStdString &label);
   void SetSelected(bool selected);
   void SetScrolling(bool scrolling);
 
-  static void CheckAndCorrectOverlap(CGUIListLabel &label1, CGUIListLabel &label2)
-  {
-    CGUILabel::CheckAndCorrectOverlap(label1.m_label, label2.m_label);
-  }
-  
+  const CLabelInfo& GetLabelInfo() const { return m_label; };
+
 protected:
   virtual void UpdateColors();
 
-  CGUILabel     m_label;
-  CGUIInfoLabel m_info;
-  bool          m_alwaysScroll;
+  CLabelInfo  m_label;
+  CGUITextLayout m_textLayout;
+  CGUIInfoLabel  m_info;
+  float       m_textWidth;
+
+  bool        m_scrolling;
+  bool        m_alwaysScroll;
+  bool        m_selected;
+  CScrollInfo m_scrollInfo;
+  CRect       m_renderRect;   // render location
 };

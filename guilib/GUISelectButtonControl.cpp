@@ -19,11 +19,10 @@
  *
  */
 
+#include "include.h"
 #include "GUISelectButtonControl.h"
 #include "GUIWindowManager.h"
 #include "utils/CharsetConverter.h"
-#include "utils/TimeUtils.h"
-#include "Key.h"
 
 CGUISelectButtonControl::CGUISelectButtonControl(int parentID, int controlID,
     float posX, float posY,
@@ -52,8 +51,7 @@ CGUISelectButtonControl::CGUISelectButtonControl(int parentID, int controlID,
   m_bRightSelected = false;
   m_bMovedLeft = false;
   m_bMovedRight = false;
-  m_ticks = 0;
-  m_label.SetAlign(m_label.GetLabelInfo().align | XBFONT_CENTER_X);
+  m_dwTicks = 0;
   ControlType = GUICONTROL_SELECTBUTTON;
 }
 
@@ -73,7 +71,7 @@ void CGUISelectButtonControl::Render()
     // render background, left and right arrow
     m_imgBackground.Render();
 
-    CGUILabel::COLOR color = CGUILabel::COLOR_TEXT;
+    color_t textColor = m_label.textColor;
 
     // User has moved left...
     if (m_bMovedLeft)
@@ -86,7 +84,7 @@ void CGUISelectButtonControl::Render()
       }
       // If we are moving left
       // render item text as disabled
-      color = CGUILabel::COLOR_DISABLED;
+      textColor = m_label.disabledColor;
     }
 
     // Render arrow
@@ -106,7 +104,7 @@ void CGUISelectButtonControl::Render()
       }
       // If we are moving right
       // render item text as disabled
-      color = CGUILabel::COLOR_DISABLED;
+      textColor = m_label.disabledColor;
     }
 
     // Render arrow
@@ -118,16 +116,18 @@ void CGUISelectButtonControl::Render()
     // Render text if a current item is available
     if (m_iCurrentItem >= 0 && (unsigned)m_iCurrentItem < m_vecItems.size())
     {
-      m_label.SetMaxRect(m_posX, m_posY, m_width, m_height);
-      m_label.SetText(m_vecItems[m_iCurrentItem]);
-      m_label.SetColor(color);
-      m_label.Render();
+      m_textLayout.Update(m_vecItems[m_iCurrentItem]);
+      uint32_t align = m_label.align | XBFONT_CENTER_X;
+      float fPosY = m_posY + m_label.offsetY;
+      if (m_label.align & XBFONT_CENTER_Y)
+        fPosY = m_posY + m_imgBackground.GetHeight()*0.5f;
+      m_textLayout.Render(m_posX + GetWidth()*0.5f, fPosY, 0, textColor, m_label.shadowColor, align, m_label.width);
     }
 
     // Select current item, if user doesn't
     // move left or right for 1.5 sec.
-    unsigned int ticksSpan = CTimeUtils::GetFrameTime() - m_ticks;
-    if (ticksSpan > 1500)
+    DWORD dwTicksSpan = timeGetTime() - m_dwTicks;
+    if (dwTicksSpan > 1500)
     {
       // User hasn't moved disable selection mode...
       m_bShowSelect = false;
@@ -189,7 +189,7 @@ bool CGUISelectButtonControl::OnAction(const CAction &action)
 {
   if (!m_bShowSelect)
   {
-    if (action.GetID() == ACTION_SELECT_ITEM)
+    if (action.id == ACTION_SELECT_ITEM)
     {
       // Enter selection mode
       m_bShowSelect = true;
@@ -197,7 +197,7 @@ bool CGUISelectButtonControl::OnAction(const CAction &action)
       // Start timer, if user doesn't select an item
       // or moves left/right. The control will
       // automatically select the current item.
-      m_ticks = CTimeUtils::GetFrameTime();
+      m_dwTicks = timeGetTime();
       return true;
     }
     else
@@ -205,7 +205,7 @@ bool CGUISelectButtonControl::OnAction(const CAction &action)
   }
   else
   {
-    if (action.GetID() == ACTION_SELECT_ITEM)
+    if (action.id == ACTION_SELECT_ITEM)
     {
       // User has selected an item, disable selection mode...
       m_bShowSelect = false;
@@ -215,7 +215,7 @@ bool CGUISelectButtonControl::OnAction(const CAction &action)
       SendWindowMessage(message);
       return true;
     }
-    if (action.GetID() == ACTION_MOVE_UP || action.GetID() == ACTION_MOVE_DOWN )
+    if (action.id == ACTION_MOVE_UP || action.id == ACTION_MOVE_DOWN )
     {
       // Disable selection mode when moving up or down
       m_bShowSelect = false;
@@ -226,17 +226,17 @@ bool CGUISelectButtonControl::OnAction(const CAction &action)
   }
 }
 
-void CGUISelectButtonControl::FreeResources(bool immediately)
+void CGUISelectButtonControl::FreeResources()
 {
-  CGUIButtonControl::FreeResources(immediately);
+  CGUIButtonControl::FreeResources();
 
-  m_imgBackground.FreeResources(immediately);
+  m_imgBackground.FreeResources();
 
-  m_imgLeft.FreeResources(immediately);
-  m_imgLeftFocus.FreeResources(immediately);
+  m_imgLeft.FreeResources();
+  m_imgLeftFocus.FreeResources();
 
-  m_imgRight.FreeResources(immediately);
-  m_imgRightFocus.FreeResources(immediately);
+  m_imgRight.FreeResources();
+  m_imgRightFocus.FreeResources();
 
   m_bShowSelect = false;
 }
@@ -252,6 +252,19 @@ void CGUISelectButtonControl::DynamicResourceAlloc(bool bOnOff)
 
   m_imgRight.DynamicResourceAlloc(bOnOff);
   m_imgRightFocus.DynamicResourceAlloc(bOnOff);
+}
+
+void CGUISelectButtonControl::PreAllocResources()
+{
+  CGUIButtonControl::PreAllocResources();
+
+  m_imgBackground.PreAllocResources();
+
+  m_imgLeft.PreAllocResources();
+  m_imgLeftFocus.PreAllocResources();
+
+  m_imgRight.PreAllocResources();
+  m_imgRightFocus.PreAllocResources();
 }
 
 void CGUISelectButtonControl::AllocResources()
@@ -278,16 +291,6 @@ void CGUISelectButtonControl::AllocResources()
   m_imgLeftFocus.SetPosition(posX, posY);
 }
 
-void CGUISelectButtonControl::SetInvalid()
-{
-  CGUIButtonControl::SetInvalid();
-  m_imgBackground.SetInvalid();
-  m_imgLeft.SetInvalid();
-  m_imgLeftFocus.SetInvalid();
-  m_imgRight.SetInvalid();
-  m_imgRightFocus.SetInvalid();
-}
-
 void CGUISelectButtonControl::OnLeft()
 {
   if (m_bShowSelect)
@@ -298,7 +301,7 @@ void CGUISelectButtonControl::OnLeft()
 
     // Reset timer for automatically selecting
     // the current item.
-    m_ticks = CTimeUtils::GetFrameTime();
+    m_dwTicks = timeGetTime();
 
     // Switch to previous item
     if (m_vecItems.size() > 0)
@@ -324,7 +327,7 @@ void CGUISelectButtonControl::OnRight()
 
     // Reset timer for automatically selecting
     // the current item.
-    m_ticks = CTimeUtils::GetFrameTime();
+    m_dwTicks = timeGetTime();
 
     // Switch to next item
     if (m_vecItems.size() > 0)
@@ -354,33 +357,35 @@ bool CGUISelectButtonControl::OnMouseOver(const CPoint &point)
     m_bRightSelected = true;
   }
   // reset ticks
-  m_ticks = CTimeUtils::GetFrameTime();
+  m_dwTicks = timeGetTime();
   return ret;
 }
 
-EVENT_RESULT CGUISelectButtonControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
-{
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  {
-    if (m_bShowSelect && m_imgLeft.HitTest(point))
-      OnLeft();
-    else if (m_bShowSelect && m_imgRight.HitTest(point))
-      OnRight();
-    else // normal select
-      CGUIButtonControl::OnMouseEvent(point, event);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
+bool CGUISelectButtonControl::OnMouseClick(int button, const CPoint &point)
+{ // only left click handled
+  if (button != MOUSE_LEFT_BUTTON) return false;
+  if (m_bShowSelect && m_imgLeft.HitTest(point))
+  { // move left
     OnLeft();
-    return EVENT_RESULT_HANDLED;
   }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
+  else if (m_bShowSelect && m_imgRight.HitTest(point))
+  { // move right
     OnRight();
-    return EVENT_RESULT_HANDLED;
   }
-  return EVENT_RESULT_UNHANDLED;
+  else
+  { // normal select
+    CGUIButtonControl::OnMouseClick(button, point);
+  }
+  return true;
+}
+
+bool CGUISelectButtonControl::OnMouseWheel(char wheel, const CPoint &point)
+{
+  if (wheel > 0)
+    OnLeft();
+  else
+    OnRight();
+  return true;
 }
 
 void CGUISelectButtonControl::SetPosition(float posX, float posY)

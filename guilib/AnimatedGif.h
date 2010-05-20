@@ -1,6 +1,6 @@
 /*!
 \file AnimatedGif.h
-\brief
+\brief 
 */
 
 
@@ -18,7 +18,7 @@
 //
 //  --------------------------------------------------------------------------
 //
-// Copyright (c) 2000, Juan Soulie <jsoulie@cplusplus.com>
+// Copyright © 2000, Juan Soulie <jsoulie@cplusplus.com>
 //
 // Permission to use, copy, modify, distribute and sell this software or any
 // part thereof and/or its documentation for any purpose is granted without fee
@@ -33,16 +33,16 @@
 // ****************************************************************************
 
 
-#include "Texture.h" // for COLOR
+
 
 #pragma pack(1)
 
-#undef ALIGN
+struct COLOR {unsigned char b,g,r,x;};	// Windows GDI expects 4bytes per color
 #define ALIGN sizeof(int)         ///< Windows GDI expects all int-aligned
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
 typedef struct tagGUIRGBQUAD
 {
@@ -55,7 +55,7 @@ GUIRGBQUAD;
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
 typedef struct tagGUIBITMAPINFOHEADER
 {
@@ -75,9 +75,9 @@ GUIBITMAPINFOHEADER;
 
 /*!
  \ingroup textures
- \brief
+ \brief 
  */
-typedef struct tagGUIBITMAPINFO
+typedef struct tagGUIBITMAPINFO 
 {
     GUIBITMAPINFOHEADER    bmiHeader;
     GUIRGBQUAD						 bmiColors[1];
@@ -126,6 +126,11 @@ public:
 
   inline char& Pixel (int x, int y) { return Raster[y*BytesPerRow + x];}
 
+#ifndef _XBOX
+  // Windows GDI Specific function to paint the image on a DC:
+  int GDIPaint (HDC hdc, int xDest, int yDest);
+#endif
+
 };
 
 // ****************************************************************************
@@ -160,3 +165,4 @@ protected:
   unsigned char getbyte(FILE *fd);
 };
 
+#pragma pack()

@@ -21,29 +21,8 @@
  *
  */
 
-#include "StdString.h"
-#include "system.h"
-
 class CDVDInputStream;
-
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
-#ifndef _LINUX
 enum CodecID;
-#else
-extern "C" {
-#if (defined USE_EXTERNAL_FFMPEG)
-  #if (defined HAVE_LIBAVCODEC_AVCODEC_H)
-    #include <libavcodec/avcodec.h>
-  #elif (defined HAVE_FFMPEG_AVCODEC_H)
-    #include <ffmpeg/avcodec.h>
-  #endif
-#else
-  #include "libavcodec/avcodec.h"
-#endif
-}
-#endif
 enum AVDiscard;
 
 enum StreamType
@@ -52,13 +31,12 @@ enum StreamType
   STREAM_AUDIO,   // audio stream
   STREAM_VIDEO,   // video stream
   STREAM_DATA,    // data stream
-  STREAM_SUBTITLE,// subtitle stream
-  STREAM_TELETEXT // Teletext data stream
+  STREAM_SUBTITLE // subtitle stream
 };
 
 enum StreamSource {
   STREAM_SOURCE_NONE          = 0x000,
-  STREAM_SOURCE_DEMUX         = 0x100,
+  STREAM_SOURCE_DEMUX         = 0x100, 
   STREAM_SOURCE_NAV           = 0x200,
   STREAM_SOURCE_DEMUX_SUB     = 0x300,
   STREAM_SOURCE_TEXT          = 0x400
@@ -128,8 +106,6 @@ public:
     iWidth = 0;
     fAspect = 0.0;
     bVFR = false;
-    iLevel = 0;
-    iProfile = 0;
     type = STREAM_VIDEO;
   }
 
@@ -140,9 +116,6 @@ public:
   int iWidth; // width of the stream reported by the demuxer
   float fAspect; // display aspect of stream
   bool bVFR;  // variable framerate
-  int iLevel; // encoder level of the stream reported by the decoder. used to qualify hw decoders.
-  int iProfile; // encoder profile of the stream reported by the decoder. used to qualify hw decoders.
-  
 };
 
 class CDemuxStreamAudio : public CDemuxStream
@@ -181,23 +154,13 @@ public:
   int identifier;
 };
 
-class CDemuxStreamTeletext : public CDemuxStream
-{
-public:
-  CDemuxStreamTeletext() : CDemuxStream()
-  {
-    type = STREAM_TELETEXT;
-  }
-  virtual void GetStreamInfo(std::string& strInfo);
-};
-
 typedef struct DemuxPacket
 {
   BYTE* pData;   // data
   int iSize;     // data size
   int iStreamId; // integer representing the stream index
   int iGroupId;  // the group this data belongs to, used to group data from different streams together
-
+  
   double pts; // pts in DVD_TIME_BASE
   double dts; // dts in DVD_TIME_BASE
   double duration; // duration in DVD_TIME_BASE if available
@@ -210,13 +173,13 @@ public:
 
   CDVDDemux() {}
   virtual ~CDVDDemux() {}
-
-
+  
+  
   /*
    * Reset the entire demuxer (same result as closing and opening it)
    */
   virtual void Reset() = 0;
-
+  
   /*
    * Aborts any internal reading that might be stalling main thread
    * NOTICE - this can be called from another thread
@@ -227,13 +190,13 @@ public:
    * Flush the demuxer, if any data is kept in buffers, this should be freed now
    */
   virtual void Flush() = 0;
-
+  
   /*
    * Read a packet, returns NULL on error
-   *
+   * 
    */
   virtual DemuxPacket* Read() = 0;
-
+  
   /*
    * Seek, time in msec calculated from stream start
    */
@@ -241,7 +204,7 @@ public:
 
   /*
    * Seek to a specified chapter.
-   * startpts can be updated to the point where display should start
+   * startpts can be updated to the point where display should start 
    */
   virtual bool SeekChapter(int chapter, double* startpts = NULL) { return false; }
 
@@ -251,7 +214,7 @@ public:
   virtual int GetChapterCount() { return 0; }
 
   /*
-   * Get current chapter
+   * Get current chapter 
    */
   virtual int GetChapter() { return 0; }
 
@@ -270,17 +233,17 @@ public:
    * returns the total time in msec
    */
   virtual int GetStreamLength() = 0;
-
+  
   /*
    * returns the stream or NULL on error, starting from 0
    */
   virtual CDemuxStream* GetStream(int iStreamId) = 0;
-
+  
   /*
    * return nr of streams, 0 if none
    */
   virtual int GetNrOfStreams() = 0;
-
+  
   /*
    * returns opened filename
    */
@@ -289,21 +252,16 @@ public:
    * return nr of audio streams, 0 if none
    */
   int GetNrOfAudioStreams();
-
+  
   /*
    * return nr of video streams, 0 if none
    */
   int GetNrOfVideoStreams();
-
+  
   /*
    * return nr of subtitle streams, 0 if none
    */
   int GetNrOfSubtitleStreams();
-
-  /*
-   * return nr of teletext streams, 0 if none
-   */
-  int GetNrOfTeletextStreams();
 
   /*
    * return the audio stream, or NULL if it does not exist
@@ -314,17 +272,12 @@ public:
    * return the video stream, or NULL if it does not exist
    */
   CDemuxStreamVideo* GetStreamFromVideoId(int iVideoIndex);
-
+  
   /*
    * return the subtitle stream, or NULL if it does not exist
    */
   CDemuxStreamSubtitle* GetStreamFromSubtitleId(int iSubtitleIndex);
-
-  /*
-   * return the teletext stream, or NULL if it does not exist
-   */
-  CDemuxStreamTeletext* GetStreamFromTeletextId(int iTeletextIndex);
-
+  
   /*
    * return a user-presentable codec name of the given stream
    */

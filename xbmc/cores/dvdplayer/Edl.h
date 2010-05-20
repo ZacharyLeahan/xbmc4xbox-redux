@@ -23,9 +23,9 @@
 
 
 #include <vector>
-#include <stdint.h>
 #include "StdString.h"
 #include "URL.h"
+#include "xbox/PlatformDefs.h"
 
 class CEdl
 {
@@ -33,13 +33,13 @@ public:
   CEdl();
   virtual ~CEdl(void);
 
-  typedef enum
+  typedef enum 
   {
     CUT = 0,
     MUTE = 1,
     // SCENE = 2,
     COMM_BREAK = 3
-  } Action;
+  } Action;  
 
   struct Cut
   {
@@ -50,7 +50,7 @@ public:
 
   bool ReadEditDecisionLists(const CStdString& strMovie, const float fFramesPerSecond, const int iHeight);
   void Clear();
-
+  
   bool HasCut();
   bool HasSceneMarker();
   CStdString GetInfo();

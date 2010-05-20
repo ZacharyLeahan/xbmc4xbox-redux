@@ -18,10 +18,11 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
+ 
+#include "stdafx.h"
 #include <stdlib.h>
 #include <string.h>
-#include "coff.h"
+#include "coff.h" 
 #include "coffldr.h"
 
 //#define DUMPING_DATA 1
@@ -77,11 +78,7 @@ CoffLoader::~CoffLoader()
 {
   if ( hModule )
   {
-#ifdef _LINUX
-    free(hModule);
-#else
     VirtualFree(hModule, 0, MEM_RELEASE);
-#endif
     hModule = NULL;
   }
   if ( SymTable )
@@ -102,7 +99,7 @@ CoffLoader::~CoffLoader()
 }
 
 // Has nothing to do with the coff loader itself
-// it can be used to parse the headers of a dll
+// it can be used to parse the headers of a dll 
 // already loaded into memory
 int CoffLoader::ParseHeaders(void* hModule)
 {
@@ -179,17 +176,20 @@ int CoffLoader::LoadCoffHModule(FILE *fp)
   char Sig[4];
   rewind(fp);
   memset(Sig, 0, sizeof(Sig));
-  if (!fread(Sig, 1, 2, fp) || strncmp(Sig, "MZ", 2) != 0)
+  fread(Sig, 1, 2, fp);
+  if (strncmp(Sig, "MZ", 2) != 0)
     return 0;
 
   int Offset = 0;
   fseek(fp, 0x3c, SEEK_SET);
-  if (!fread(&Offset, sizeof(int), 1, fp) || (Offset <= 0))
+  fread(&Offset, sizeof(int), 1, fp);
+  if (Offset <= 0)
     return 0;
 
   fseek(fp, Offset, SEEK_SET);
   memset(Sig, 0, sizeof(Sig));
-  if (!fread(Sig, 1, 4, fp) || strncmp(Sig, "PE\0\0", 4) != 0)
+  fread(Sig, 1, 4, fp);
+  if (strncmp(Sig, "PE\0\0", 4) != 0)
     return 0;
 
   Offset += 4;
@@ -205,13 +205,9 @@ int CoffLoader::LoadCoffHModule(FILE *fp)
     return 0;
 
   // alloc aligned memory
-#ifdef _LINUX
-  hModule = malloc(tempWindowsHeader.SizeOfImage);
-#else
   hModule = VirtualAllocEx(0, (PVOID)tempWindowsHeader.ImageBase, tempWindowsHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
   if (hModule == NULL)
     hModule = VirtualAlloc(0, tempWindowsHeader.SizeOfImage, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-#endif
   if (hModule == NULL)
     return 0;   //memory allocation fails
 
@@ -289,8 +285,7 @@ int CoffLoader::LoadSymTable(FILE *fp)
     printf("Could not allocate memory for symbol table!\n");
     return 0;
   }
-  if (!fread((void *)tmp, CoffFileHeader->NumberOfSymbols, sizeof(SymbolTable_t), fp))
-    return 0;
+  fread((void *)tmp, CoffFileHeader->NumberOfSymbols, sizeof(SymbolTable_t), fp);
   NumberOfSymbols = CoffFileHeader->NumberOfSymbols;
   SymTable = tmp;
   fseek(fp, Offset, SEEK_SET);
@@ -310,8 +305,7 @@ int CoffLoader::LoadStringTable(FILE *fp)
         CoffFileHeader->NumberOfSymbols * sizeof(SymbolTable_t),
         SEEK_SET);
 
-  if (!fread(&StringTableSize, 1, sizeof(int), fp))
-    return 0;
+  fread(&StringTableSize, 1, sizeof(int), fp);
   StringTableSize -= 4;
   if (StringTableSize != 0)
   {
@@ -321,8 +315,7 @@ int CoffLoader::LoadStringTable(FILE *fp)
       printf("Could not allocate memory for string table\n");
       return 0;
     }
-    if (!fread((void *)tmp, StringTableSize, sizeof(char), fp))
-      return 0;
+    fread((void *)tmp, StringTableSize, sizeof(char), fp);
   }
   SizeOfStringTable = StringTableSize;
   StringTable = tmp;
@@ -358,8 +351,7 @@ int CoffLoader::LoadSections(FILE *fp)
     SectionData[SctnCnt] = ((char*)hModule + ScnHdr->VirtualAddress);
 
     fseek(fp, ScnHdr->PtrToRawData, SEEK_SET);
-    if (!fread(SectionData[SctnCnt], 1, ScnHdr->SizeOfRawData, fp))
-      return 0;
+    fread(SectionData[SctnCnt], 1, ScnHdr->SizeOfRawData, fp);
 
 #ifdef DUMPING_DATA
     //debug blocks
@@ -427,7 +419,7 @@ void* CoffLoader::RVA2Data(unsigned long RVA)
 {
   int Sctn = RVA2Section(RVA);
 
-  if( RVA < SectionHeader[Sctn].VirtualAddress
+  if( RVA < SectionHeader[Sctn].VirtualAddress 
    || RVA >= SectionHeader[Sctn].VirtualAddress + SectionHeader[Sctn].VirtualSize)
   {
     // RVA2Section is lying, let's use base address of dll instead, only works if
@@ -809,7 +801,7 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   /*
   #if 0
   if (ScnHdr->NumRelocations > 0)
-  {
+  {                       
   // Print Section Relocations
   ObjReloc_t ObjReloc;
 
@@ -819,7 +811,7 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   printf(" Offset    Type      Index     Name\n");
   printf(" --------  --------  --------  ------\n");
   for (int i = 0; i < ScnHdr->NumRelocations; i++)
-  {
+  {          
   fread(&ObjReloc, 1, sizeof(ObjReloc_t), fp);
   printf(" %08X  ", ObjReloc.VirtualAddress);
 
@@ -862,7 +854,7 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
 
   fread(&LineNumber, 1, sizeof(LineNumbers_t), fp);
   if (LineNumber.LineNum == 0)
-  {
+  {                                    
   SymbolTable_t *Sym;
   int SymIndex;
 

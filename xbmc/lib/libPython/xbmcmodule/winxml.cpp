@@ -19,32 +19,17 @@
  *
  */
 
-#if (defined HAVE_CONFIG_H) && (!defined WIN32)
-  #include "config.h"
-#endif
+#include "stdafx.h"
 #include "winxml.h"
-#if (defined USE_EXTERNAL_PYTHON)
-  #if (defined HAVE_LIBPYTHON2_6)
-    #include <python2.6/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_5)
-    #include <python2.5/Python.h>
-  #elif (defined HAVE_LIBPYTHON2_4)
-    #include <python2.4/Python.h>
-  #else
-    #error "Could not determine version of Python to use."
-  #endif
-#else
-  #include "lib/libPython/Python/Include/Python.h"
-#endif
+#include "lib/libPython/python/Python.h"
 #include "../XBPythonDll.h"
 #include "pyutil.h"
 #include "GUIPythonWindowXML.h"
-#include "addons/Skin.h"
+#include "SkinInfo.h"
 #include "Util.h"
 #include "FileSystem/File.h"
 
 using namespace std;
-using namespace ADDON;
 
 #define ACTIVE_WINDOW g_windowManager.GetActiveWindow()
 
@@ -65,13 +50,8 @@ namespace PYXBMC
   {
     WindowXML *self;
 
-    self = (WindowXML*)type->tp_alloc(type, 0);
+    self = (WindowXML*)type->tp_alloc(type, 0);    
     if (!self) return NULL;
-
-    new(&self->sXMLFileName) string();
-    new(&self->sFallBackPath) string();
-    new(&self->vecControls) std::vector<Control*>();
-
     self->iWindowId = -1;
     PyObject* pyOXMLname = NULL;
     PyObject* pyOname = NULL;
@@ -92,16 +72,16 @@ namespace PYXBMC
     if (!bForceDefaultSkin)
     {
       // Check to see if the XML file exists in current skin. If not use fallback path to find a skin for the script
-      strSkinPath = g_SkinInfo->GetSkinPath(strXMLname, &res);
-
+      strSkinPath = g_SkinInfo.GetSkinPath(strXMLname, &res);
+      
       if (!XFILE::CFile::Exists(strSkinPath))
       {
         // Check for the matching folder for the skin in the fallback skins folder
         CStdString basePath;
         CUtil::AddFileToFolder(strFallbackPath, "resources", basePath);
         CUtil::AddFileToFolder(basePath, "skins", basePath);
-        CUtil::AddFileToFolder(basePath, CUtil::GetFileName(g_SkinInfo->Path()), basePath);
-        strSkinPath = g_SkinInfo->GetSkinPath(strXMLname, &res, basePath);
+        CUtil::AddFileToFolder(basePath, CUtil::GetFileName(g_SkinInfo.GetBaseDir()), basePath);
+        strSkinPath = g_SkinInfo.GetSkinPath(strXMLname, &res, basePath);
         if (!XFILE::CFile::Exists(strSkinPath))
         {
           // Finally fallback to the DefaultSkin as it didn't exist in either the XBMC Skin folder or the fallback skin folder
@@ -112,16 +92,16 @@ namespace PYXBMC
 
     if (bForceDefaultSkin)
     {
-      //FIXME make this static method of current skin?
-      CStdString str("none");
-      AddonProps props(str, ADDON_SKIN, str);
-      CSkinInfo skinInfo(props);
+      CSkinInfo skinInfo;
       CStdString basePath;
       CUtil::AddFileToFolder(strFallbackPath, "resources", basePath);
       CUtil::AddFileToFolder(basePath, "skins", basePath);
       CUtil::AddFileToFolder(basePath, strDefault, basePath);
 
-      skinInfo.Start(basePath);
+      skinInfo.Load(basePath);
+      // if no skin.xml file exists default to PAL_4x3 and PAL_16x9
+      if (skinInfo.GetDefaultResolution() == INVALID)
+        skinInfo.SetDefaults();
       strSkinPath = skinInfo.GetSkinPath(strXMLname, &res, basePath);
 
       if (!XFILE::CFile::Exists(strSkinPath))
@@ -139,10 +119,6 @@ namespace PYXBMC
     if (!Window_CreateNewWindow((Window*)self, false))
     {
       // error is already set by Window_CreateNewWindow, just release the memory
-      self->vecControls.clear();
-      self->vecControls.~vector();
-      self->sFallBackPath.~string();
-      self->sXMLFileName.~string();
       self->ob_type->tp_free((PyObject*)self);
       return NULL;
     }

@@ -19,6 +19,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "PlayList.h"
 #include "Util.h"
 #include "PlayListFactory.h"
@@ -26,9 +27,8 @@
 #include "VideoInfoTag.h"
 #include "MusicInfoTag.h"
 #include "FileSystem/File.h"
-#include "utils/log.h"
 
-//using namespace std;
+using namespace std;
 using namespace MUSIC_INFO;
 using namespace XFILE;
 using namespace PLAYLIST;
@@ -289,7 +289,7 @@ void CPlayList::Remove(int position)
 
 int CPlayList::RemoveDVDItems()
 {
-  std::vector <CStdString> vecFilenames;
+  vector <CStdString> vecFilenames;
 
   // Collect playlist items from DVD share
   ivecItems it;
@@ -308,7 +308,7 @@ int CPlayList::RemoveDVDItems()
   int nFileCount = vecFilenames.size();
   if ( nFileCount )
   {
-    std::vector <CStdString>::iterator it;
+    vector <CStdString>::iterator it;
     it = vecFilenames.begin();
     while (it != vecFilenames.end() )
     {
@@ -380,16 +380,11 @@ bool CPlayList::Load(const CStdString& strFileName)
   return LoadData(file);
 }
 
-bool CPlayList::LoadData(std::istream &stream)
+bool CPlayList::LoadData(istream &stream)
 {
   // try to read as a string
   CStdString data;
-#if _MSC_VER > 1500
-  std::stringstream _stream(data);
-  _stream << stream;
-#else
-  std::stringstream(data) << stream;
-#endif
+  stringstream(data) << stream;
   return LoadData(data);
 }
 
@@ -402,7 +397,7 @@ bool CPlayList::LoadData(const CStdString& strData)
 bool CPlayList::Expand(int position)
 {
   CFileItemPtr item = m_vecItems[position];
-  std::auto_ptr<CPlayList> playlist (CPlayListFactory::Create(*item.get()));
+  auto_ptr<CPlayList> playlist (CPlayListFactory::Create(*item.get()));
   if ( NULL == playlist.get())
     return false;
 

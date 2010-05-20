@@ -19,17 +19,17 @@
  *
  */
 
+#include "stdafx.h"
 #include "DVDInputStreamNavigator.h"
-#include "Util.h"
 #include "LangCodeExpander.h"
 #include "DVDDemuxSPU.h"
 #include "DVDStateSerializer.h"
 #include "GUISettings.h"
-#include "LangInfo.h"
-#include "utils/log.h"
-#include "Geometry.h"
-#ifdef __APPLE__
-#include "CocoaInterface.h"
+
+#ifndef PRId64
+#ifdef _MSC_VER
+#define PRId64 "I64d"
+#endif
 #endif
 
 #define HOLDMODE_NONE 0
@@ -62,32 +62,23 @@ bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& cont
 {
   char* strDVDFile;
   m_icurrentGroupId = 0;
-  if (!CDVDInputStream::Open(strFile, "video/x-dvd-mpeg"))
+  if (!CDVDInputStream::Open(strFile, "video/x-dvd-mpeg")) 
     return false;
-
+  
   // load libdvdnav.dll
   if (!m_dll.Load())
     return false;
-
+  
   // load the dvd language codes
   // g_LangCodeExpander.LoadStandardCodes();
 
   // since libdvdnav automaticly play's the dvd if the directory contains VIDEO_TS.IFO
   // we strip it here.
   strDVDFile = strdup(strFile);
-#ifndef _LINUX
   if (strnicmp(strDVDFile + strlen(strDVDFile) - 12, "VIDEO_TS.IFO", 12) == 0)
-#else
-  if (strncasecmp(strDVDFile + strlen(strDVDFile) - 12, "VIDEO_TS.IFO", 12) == 0)
-#endif
   {
     strDVDFile[strlen(strDVDFile) - 13] = '\0';
   }
-#if defined(__APPLE__)
-  // if physical DVDs, libdvdnav wants "/dev/rdiskN" device name for OSX,
-  // strDVDFile will get realloc'ed and replaced IF this is a physical DVD.
-  Cocoa_MountPoint2DeviceName(strDVDFile);
-#endif
 
   // open up the DVD device
   if (m_dll.dvdnav_open(&m_dvdnav, strDVDFile) != DVDNAV_STATUS_OK)
@@ -111,7 +102,7 @@ bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& cont
     if (vm && vm->vmgi && vm->vmgi->vmgi_mat)
       mask = ((vm->vmgi->vmgi_mat->vmg_category >> 16) & 0xff) ^ 0xff;
   }
-  if(!mask)
+  if(!mask) 
     mask = 0xff;
 
   CLog::Log(LOGDEBUG, "%s - Setting region mask %02x", __FUNCTION__, mask);
@@ -134,7 +125,7 @@ bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& cont
   if (language_menu[0] == '\0') strcpy(language_menu, "en");
   if (language_audio[0] == '\0') strcpy(language_audio, "en");
   if (language_subtitle[0] == '\0') strcpy(language_subtitle, "en");
-
+  
   // set default language settings
   if (m_dll.dvdnav_menu_language_select(m_dvdnav, (char*)language_menu) != DVDNAV_STATUS_OK)
   {
@@ -149,7 +140,7 @@ bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& cont
     CLog::Log(LOGERROR, "Defaulting to \"en\"");
     m_dll.dvdnav_audio_language_select(m_dvdnav, (char*)"en");
   }
-
+  
   if (m_dll.dvdnav_spu_language_select(m_dvdnav, (char*)language_subtitle) != DVDNAV_STATUS_OK)
   {
     CLog::Log(LOGERROR, "Error on setting default subtitle language: %s\n", m_dll.dvdnav_err_to_string(m_dvdnav));
@@ -228,7 +219,7 @@ int CDVDInputStreamNavigator::Read(BYTE* buf, int buf_size)
     CLog::Log(LOGERROR, "CDVDInputStreamNavigator: buffer size is to small, %d bytes, should be 2048 bytes", buf_size);
     return -1;
   }
-
+  
   int navresult;
   int iBytesRead;
 
@@ -244,8 +235,8 @@ int CDVDInputStreamNavigator::Read(BYTE* buf, int buf_size)
 
 // not working yet, but it is the recommanded way for seeking
 __int64 CDVDInputStreamNavigator::Seek(__int64 offset, int whence)
-{
-  if (!m_dvdnav) return -1;
+{  
+  if (!m_dvdnav) return -1;  
   uint32_t pos=0, len=1;
   if (m_dll.dvdnav_sector_search(m_dvdnav, (uint64_t)(offset / DVD_VIDEO_LB_LEN), (int32_t)whence) != DVDNAV_STATUS_ERR)
   {
@@ -256,7 +247,7 @@ __int64 CDVDInputStreamNavigator::Seek(__int64 offset, int whence)
     CLog::Log(LOGDEBUG, "dvdnav: %s", m_dll.dvdnav_err_to_string(m_dvdnav));
     return -1;
   }
-
+  
   return (int)(pos * DVD_VIDEO_LB_LEN);
 }
 
@@ -271,7 +262,7 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
   // m_tempbuffer will be used for anything that isn't a normal data block
   uint8_t* buf = m_lastblock;
   iNavresult = -1;
-
+  
   if(m_holdmode == HOLDMODE_HELD)
     return NAVRESULT_HOLD;
 
@@ -284,8 +275,8 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
       result = DVDNAV_STATUS_OK;
     }
     else
-      result = m_dll.dvdnav_get_next_cache_block(m_dvdnav, &buf, &m_lastevent, &len);
-
+      result = m_dll.dvdnav_get_next_cache_block(m_dvdnav, &buf, &m_lastevent, &len);    
+      
   }
   catch (...)
   {
@@ -372,7 +363,7 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
       // Player applications should inform their SPU decoder to switch channels
       {
         dvdnav_spu_stream_change_event_t* event = (dvdnav_spu_stream_change_event_t*)buf;
-
+        
         //libdvdnav never sets logical, why.. don't know..
         event->logical = GetActiveSubtitleStream();
 
@@ -384,13 +375,13 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
     case DVDNAV_AUDIO_STREAM_CHANGE:
       // Player applications should inform their audio decoder to switch channels
       {
-
-        //dvdnav_get_audio_logical_stream actually does the oposite to the docs..
+        
+        //dvdnav_get_audio_logical_stream actually does the oposite to the docs.. 
         //taking a audiostream as given on dvd, it gives the physical stream that
         //refers to in the mpeg file
 
         dvdnav_audio_stream_change_event_t* event = (dvdnav_audio_stream_change_event_t*)buf;
-
+        
         //wroong... stupid docs..
         //event->logical = dvdnav_get_audio_logical_stream(m_dvdnav, event->physical);
         //logical should actually be set to the (vm->state).AST_REG
@@ -419,7 +410,7 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
       // not change inside a VTS. Therefore this event can be used to query such
       // information only when necessary and update the decoding/displaying
       // accordingly.
-      {
+      {        
         if(m_holdmode == HOLDMODE_NONE)
         {
           CLog::Log(LOGDEBUG, " - DVDNAV_VTS_CHANGE (HOLDING)");
@@ -439,7 +430,7 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
         // change inside a cell. Therefore this event can be used to query such
         // information only when necessary and update the decoding/displaying
         // accordingly.
-
+        
         // this may lead to a discontinuity, but it's also the end of the
         // vobunit, so make sure everything in demuxer is output
         if(m_holdmode == HOLDMODE_NONE)
@@ -449,26 +440,26 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
           iNavresult = NAVRESULT_HOLD;
           break;
         }
-
+        
         uint32_t pos, len;
 
         m_dll.dvdnav_current_title_info(m_dvdnav, &m_iTitle, &m_iPart);
         m_dll.dvdnav_get_number_of_titles(m_dvdnav, &m_iTitleCount);
         if(m_iTitle > 0)
-          m_dll.dvdnav_get_number_of_parts(m_dvdnav, m_iTitle, &m_iPartCount);
+          m_dll.dvdnav_get_number_of_parts(m_dvdnav, m_iTitle, &m_iPartCount);        
         else
           m_iPartCount = 0;
         m_dll.dvdnav_get_position(m_dvdnav, &pos, &len);
 
         CLog::Log(LOGDEBUG, "%s - Cell change: Title %d, Chapter %d\n", __FUNCTION__, m_iTitle, m_iPart);
         CLog::Log(LOGDEBUG, "%s - At position %.0f%% inside the feature\n", __FUNCTION__, 100 * (double)pos / (double)len);
-        //Get total segment time
+        //Get total segment time        
 
         dvdnav_cell_change_event_t* cell_change_event = (dvdnav_cell_change_event_t*)buf;
         m_iCellStart = cell_change_event->cell_start; // store cell time as we need that for time later
         m_iTotalTime = (int) (cell_change_event->pgc_length / 90);
         m_icurrentGroupId = cell_change_event->pgN * 1000 + cell_change_event->cellN;
-
+        
         iNavresult = m_pDVDPlayer->OnDVDNavResult(buf, DVDNAV_CELL_CHANGE);
       }
       break;
@@ -499,12 +490,12 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
           iNavresult = NAVRESULT_NOP;
           break;
         }
-
+        
         /* if we have any buttons or are not in vts domain we assume we are in meny */
         m_bInMenu = pci->hli.hl_gi.hli_ss || (0 == m_dll.dvdnav_is_domain_vts(m_dvdnav));
 
         /* check for any gap in the stream, this is likely a discontinuity */
-        __int64 gap = (__int64)pci->pci_gi.vobu_s_ptm - m_iVobUnitStop;
+        __int64 gap = (__int64)pci->pci_gi.vobu_s_ptm - m_iVobUnitStop;        
         if(gap)
         {
           /* make sure demuxer is flushed before we change any correction */
@@ -539,18 +530,18 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
       // This event is issued whenever a non-seamless operation has been executed.
       // Applications with fifos should drop the fifos content to speed up responsiveness.
       {
-        iNavresult = m_pDVDPlayer->OnDVDNavResult(NULL, DVDNAV_HOP_CHANNEL);
+        iNavresult = m_pDVDPlayer->OnDVDNavResult(NULL, DVDNAV_HOP_CHANNEL);                
       }
       break;
 
     case DVDNAV_STOP:
       {
         // Playback should end here.
-
+        
         // don't read any further, it could be libdvdnav had some problems reading
         // the disc. reading further results in a crash
         m_bEOF = true;
-
+        
         m_pDVDPlayer->OnDVDNavResult(NULL, DVDNAV_STOP);
         iNavresult = NAVRESULT_ERROR;
       }
@@ -563,13 +554,13 @@ int CDVDInputStreamNavigator::ProcessBlock(BYTE* dest_buffer, int* read)
       break;
 
     }
-
+    
     // check if libdvdnav gave us some other buffer to work with
     // probably not needed since function will check if buf
     // is part of the internal cache, but do it for good measure
     if( buf != m_lastblock )
       m_dll.dvdnav_free_cache_block(m_dvdnav, buf);
-
+  
   return iNavresult;
 }
 
@@ -657,8 +648,8 @@ int CDVDInputStreamNavigator::GetCurrentButton()
 void CDVDInputStreamNavigator::CheckButtons()
 {
   if (m_dvdnav)
-  {
-
+  {    
+    
     pci_t* pci = m_dll.dvdnav_get_current_nav_pci(m_dvdnav);
     int iCurrentButton = GetCurrentButton();
 
@@ -677,7 +668,7 @@ void CDVDInputStreamNavigator::CheckButtons()
 
     // select first valid button.
     for (int i = 0; i < 36; i++)
-    {
+    {      
       if (pci->hli.btnit[i].x_start ||
           pci->hli.btnit[i].x_end ||
           pci->hli.btnit[i].y_start ||
@@ -695,9 +686,9 @@ void CDVDInputStreamNavigator::CheckButtons()
 int CDVDInputStreamNavigator::GetTotalButtons()
 {
   if (!m_dvdnav) return 0;
-
+  
   pci_t* pci = m_dll.dvdnav_get_current_nav_pci(m_dvdnav);
-
+  
   int counter = 0;
   for (int i = 0; i < 36; i++)
   {
@@ -714,7 +705,7 @@ int CDVDInputStreamNavigator::GetTotalButtons()
 
 void CDVDInputStreamNavigator::OnUp()
 {
-  if (m_dvdnav) m_dll.dvdnav_upper_button_select(m_dvdnav, m_dll.dvdnav_get_current_nav_pci(m_dvdnav));
+  if (m_dvdnav) m_dll.dvdnav_upper_button_select(m_dvdnav, m_dll.dvdnav_get_current_nav_pci(m_dvdnav));    
 }
 
 void CDVDInputStreamNavigator::OnDown()
@@ -806,7 +797,7 @@ bool CDVDInputStreamNavigator::IsHeld()
 int CDVDInputStreamNavigator::GetActiveSubtitleStream()
 {
   int activeStream = 0;
-
+  
   if (m_dvdnav)
   {
     vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
@@ -817,18 +808,18 @@ int CDVDInputStreamNavigator::GetActiveSubtitleStream()
       if (vm->state.domain == VTS_DOMAIN)
       {
         subpN = vm->state.SPST_REG & ~0x40;
-
+        
         /* make sure stream is valid, if not don't allow it */
         if (subpN < 0 || subpN >= 32)
           subpN = -1;
         else if ( !(vm->state.pgc->subp_control[subpN] & (1<<31)) )
           subpN = -1;
       }
-
+      
       activeStream = ConvertSubtitleStreamId_ExternalToXBMC(subpN);
     }
   }
-
+  
   return activeStream;
 }
 
@@ -836,13 +827,13 @@ std::string CDVDInputStreamNavigator::GetSubtitleStreamLanguage(int iId)
 {
   if (!m_dvdnav) return NULL;
 
-  CStdString strLanguage;
+  CStdString strLanguage;  
 
   subp_attr_t subp_attributes;
   int streamId = ConvertSubtitleStreamId_XBMCToExternal(iId);
   if( m_dll.dvdnav_get_stitle_info(m_dvdnav, streamId, &subp_attributes) == DVDNAV_STATUS_OK )
   {
-
+    
     if (subp_attributes.type == DVD_SUBPICTURE_TYPE_Language ||
         subp_attributes.type == DVD_SUBPICTURE_TYPE_NotSpecified)
     {
@@ -883,7 +874,7 @@ std::string CDVDInputStreamNavigator::GetSubtitleStreamLanguage(int iId)
 int CDVDInputStreamNavigator::GetSubTitleStreamCount()
 {
   if (!m_dvdnav) return 0;
-
+  
   vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
 
   if (!vm) return 0;
@@ -894,7 +885,7 @@ int CDVDInputStreamNavigator::GetSubTitleStreamCount()
     int streamN = 0;
     for (int i = 0; i < 32; i++)
     {
-      if (vm->state.pgc->subp_control[i] & (1<<31))
+      if (vm->state.pgc->subp_control[i] & (1<<31)) 
         streamN++;
     }
     return streamN;
@@ -903,13 +894,13 @@ int CDVDInputStreamNavigator::GetSubTitleStreamCount()
   {
     /* just for good measure say that non vts domain always has one */
     return 1;
-  }
+  }  
 }
 
 int CDVDInputStreamNavigator::GetActiveAudioStream()
 {
   int activeStream = -1;
-
+  
   if (m_dvdnav)
   {
     vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
@@ -920,25 +911,25 @@ int CDVDInputStreamNavigator::GetActiveAudioStream()
       if (vm->state.domain == VTS_DOMAIN)
       {
         audioN = vm->state.AST_REG;
-
+        
         /* make sure stream is valid, if not don't allow it */
         if (audioN < 0 || audioN >= 8)
           audioN = -1;
         else if ( !(vm->state.pgc->audio_control[audioN] & (1<<15)) )
           audioN = -1;
       }
-
+  
       activeStream = ConvertAudioStreamId_ExternalToXBMC(audioN);
     }
   }
-
+  
   return activeStream;
 }
 
 std::string CDVDInputStreamNavigator::GetAudioStreamLanguage(int iId)
 {
   if (!m_dvdnav) return NULL;
-
+  
   CStdString strLanguage;
 
   audio_attr_t audio_attributes;
@@ -971,7 +962,7 @@ std::string CDVDInputStreamNavigator::GetAudioStreamLanguage(int iId)
 int CDVDInputStreamNavigator::GetAudioStreamCount()
 {
   if (!m_dvdnav) return 0;
-
+  
   vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
 
   if (!vm) return 0;
@@ -982,7 +973,7 @@ int CDVDInputStreamNavigator::GetAudioStreamCount()
     int streamN = 0;
     for (int i = 0; i < 8; i++)
     {
-      if (vm->state.pgc->audio_control[i] & (1<<15))
+      if (vm->state.pgc->audio_control[i] & (1<<15)) 
         streamN++;
     }
     return streamN;
@@ -991,7 +982,7 @@ int CDVDInputStreamNavigator::GetAudioStreamCount()
   {
     /* just for good measure say that non vts domain always has one */
     return 1;
-  }
+  }  
 }
 
 bool CDVDInputStreamNavigator::GetCurrentButtonInfo(CDVDOverlaySpu* pOverlayPicture, CDVDDemuxSPU* pSPU, int iButtonType)
@@ -999,9 +990,9 @@ bool CDVDInputStreamNavigator::GetCurrentButtonInfo(CDVDOverlaySpu* pOverlayPict
   int alpha[2][4];
   int color[2][4];
   dvdnav_highlight_area_t hl;
-
+  
   if (!m_dvdnav) return false;
-
+  
   int iButton = GetCurrentButton();
 
   if (m_dll.dvdnav_get_button_info(m_dvdnav, alpha, color) == 0)
@@ -1010,7 +1001,7 @@ bool CDVDInputStreamNavigator::GetCurrentButtonInfo(CDVDOverlaySpu* pOverlayPict
     pOverlayPicture->highlight_alpha[1] = alpha[iButtonType][1];
     pOverlayPicture->highlight_alpha[2] = alpha[iButtonType][2];
     pOverlayPicture->highlight_alpha[3] = alpha[iButtonType][3];
-
+    
     if (pSPU->m_bHasClut)
     {
       for (int i = 0; i < 4; i++)
@@ -1018,7 +1009,7 @@ bool CDVDInputStreamNavigator::GetCurrentButtonInfo(CDVDOverlaySpu* pOverlayPict
           pOverlayPicture->highlight_color[i][j] = pSPU->m_clut[color[iButtonType][i]][j];
     }
   }
-
+  
   if (DVDNAV_STATUS_OK == m_dll.dvdnav_get_highlight_area(m_dll.dvdnav_get_current_nav_pci(m_dvdnav), iButton, iButtonType, &hl))
   {
     // button cropping information
@@ -1064,7 +1055,7 @@ bool CDVDInputStreamNavigator::SeekChapter(int iChapter)
     CLog::Log(LOGERROR, "dvdnav: dvdnav_part_play failed( %s )", m_dll.dvdnav_err_to_string(m_dvdnav));
     return false;
   }
-
+  
   SetActiveSubtitleStream(subtitle);
   SetActiveAudioStream(audio);
   EnableSubtitleStream(enabled);
@@ -1087,11 +1078,11 @@ float CDVDInputStreamNavigator::GetVideoAspectRatio()
       return 4.0f / 3.0f;
     case 3: //16:9
       return 16.0f / 9.0f;
-    case 4:
+    case 4: 
       return 2.11f / 1.0f;
     default: //Unknown, use libmpeg2
       return 0.0f;
-  }
+  }    
 }
 
 void CDVDInputStreamNavigator::EnableSubtitleStream(bool bEnable)
@@ -1103,7 +1094,7 @@ void CDVDInputStreamNavigator::EnableSubtitleStream(bool bEnable)
   if (!vm)
     return;
 
-  if(bEnable)
+  if(bEnable)  
     vm->state.SPST_REG |= 0x40;
   else
     vm->state.SPST_REG &= ~0x40;
@@ -1118,7 +1109,7 @@ bool CDVDInputStreamNavigator::IsSubtitleStreamEnabled()
   if (!vm)
     return false;
 
-
+  
   if(vm->state.SPST_REG & 0x40)
     return true;
   else
@@ -1127,7 +1118,7 @@ bool CDVDInputStreamNavigator::IsSubtitleStreamEnabled()
 
 bool CDVDInputStreamNavigator::GetNavigatorState(std::string &xmlstate)
 {
-  if( !m_dvdnav )
+  if( !m_dvdnav ) 
     return false;
 
   dvd_state_t save_state;
@@ -1148,7 +1139,7 @@ bool CDVDInputStreamNavigator::GetNavigatorState(std::string &xmlstate)
 
 bool CDVDInputStreamNavigator::SetNavigatorState(std::string &xmlstate)
 {
-  if( !m_dvdnav )
+  if( !m_dvdnav ) 
     return false;
 
   dvd_state_t save_state;
@@ -1163,7 +1154,7 @@ bool CDVDInputStreamNavigator::SetNavigatorState(std::string &xmlstate)
   if( DVDNAV_STATUS_ERR == m_dll.dvdnav_set_state(m_dvdnav, &save_state) )
   {
     CLog::Log(LOGWARNING, "CDVDInputStreamNavigator::SetNavigatorState - Failed to set state (%s), retrying after read", m_dll.dvdnav_err_to_string(m_dvdnav));
-
+    
     /* vm won't be started until after first read, this should really be handled internally */
     BYTE buffer[DVD_VIDEO_BLOCKSIZE];
     Read(buffer,DVD_VIDEO_BLOCKSIZE);
@@ -1200,7 +1191,7 @@ int CDVDInputStreamNavigator::ConvertAudioStreamId_XBMCToExternal(int id)
   }
   else if(id == 0)
     return 0;
-
+  
   return -1;
 }
 
@@ -1246,7 +1237,7 @@ int CDVDInputStreamNavigator::ConvertAudioStreamId_ExternalToXBMC(int id)
     // non VTS_DOMAIN, only one stream is available
     return 0;
   }
-
+  
   CLog::Log(LOGWARNING, "%s - no stream found %d", __FUNCTION__, id);
   return -1;
 }
@@ -1274,7 +1265,7 @@ int CDVDInputStreamNavigator::ConvertSubtitleStreamId_XBMCToExternal(int id)
   }
   else if(id == 0)
     return 0;
-
+  
   return -1;
 }
 
@@ -1320,7 +1311,7 @@ int CDVDInputStreamNavigator::ConvertSubtitleStreamId_ExternalToXBMC(int id)
     // non VTS_DOMAIN, only one stream is available
     return 0;
   }
-
+  
   CLog::Log(LOGWARNING, "%s - no stream found %d", __FUNCTION__, id);
   return -1;
 }

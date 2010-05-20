@@ -18,19 +18,16 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
-
-#include "DVDAudioCodecLiba52.h"
-#ifdef USE_LIBA52_DECODER
-
+ 
+#include "stdafx.h"
 #include "AdvancedSettings.h"
 #include "GUISettings.h"
+#include "DVDAudioCodecLiba52.h"
 #include "DVDStreamInfo.h"
-#include "utils/log.h"
 
-#ifndef _LINUX
+
 typedef __int16 int16_t;
 typedef __int32 int32_t;
-#endif
 
 #define HEADER_SIZE 7
 
@@ -49,21 +46,23 @@ static inline int16_t convert(int32_t i)
  * into the interleaved int16 format used by us.
  * \param in the input buffer containing the planar samples.
  * \param out the output buffer where the interleaved result is stored.
- * \param channels the total number of channels in the decoded data
  */
-static int resample_int16(sample_t * in, int16_t *out, unsigned int channels)
+static int resample_int16(sample_t * in, int16_t *out, int32_t channel_map)
 {
-    unsigned int i, ch;
+    unsigned long i;
     int16_t *p = out;
-    for(i = 0; i < 256; ++i)
-    {
-      for(ch = 0; ch < channels; ++ch)
-      {
-        *p = convert( ((int32_t*)in)[i + (ch << 8)] );
-        ++p;
-      }
+    for (i = 0; i != 256; i++) {
+	unsigned long map = channel_map;
+	do {
+	    unsigned long ch = map & 15;
+	    if (ch == 15)
+		*p = 0;
+	    else
+		*p = convert( ((int32_t*)in)[i + ((ch-1)<<8)] );
+	    p++;
+	} while ((map >>= 4));
     }
-    return p - out; 
+    return (int16_t*) p - out;
 }
 
 
@@ -84,8 +83,8 @@ bool CDVDAudioCodecLiba52::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
     return false;
 
   SetDefault();
-
-  m_pState = m_dll.a52_init(MM_ACCEL_X86_MMX |MM_ACCEL_X86_MMXEXT);
+  
+  m_pState = m_dll.a52_init(MM_ACCEL_X86_MMX);
   if (!m_pState)
   {
     Dispose();
@@ -109,55 +108,77 @@ void CDVDAudioCodecLiba52::Dispose()
 
 void CDVDAudioCodecLiba52::SetupChannels(int flags)
 {
-  /* These are channel mappings that liba52 outputs */
-  static enum PCMChannels channelMaps[14][6] =
-  {
-    /* Without LFE */
-    {/* A52_MONO    */ PCM_FRONT_CENTER                                                                                          },
-    {/* A52_STEREO  */ PCM_FRONT_LEFT  , PCM_FRONT_RIGHT                                                                         },
-    {/* A52_3F      */ PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT                                                      },
-    {/* A52_2F1R    */ PCM_FRONT_LEFT  , PCM_FRONT_RIGHT  , PCM_BACK_CENTER                                                      },
-    {/* A52_3F1R    */ PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT, PCM_BACK_CENTER                                     },
-    {/* A52_2F2R    */ PCM_FRONT_LEFT  , PCM_FRONT_RIGHT  , PCM_SIDE_LEFT  , PCM_SIDE_RIGHT                                      },
-    {/* A52_3F2R    */ PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT, PCM_SIDE_LEFT  , PCM_SIDE_RIGHT                     },
-    /* With LFE */
-    {/* A52_MONO    */ PCM_LOW_FREQUENCY, PCM_FRONT_CENTER                                                                       },
-    {/* A52_STEREO  */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_RIGHT                                                      },
-    {/* A52_3F      */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT                                   },
-    {/* A52_2F1R    */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_RIGHT  , PCM_BACK_CENTER                                   },
-    {/* A52_3F1R    */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT, PCM_BACK_CENTER                  },
-    {/* A52_2F2R    */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_RIGHT  , PCM_SIDE_LEFT  , PCM_SIDE_RIGHT                   },
-    {/* A52_3F2R    */ PCM_LOW_FREQUENCY, PCM_FRONT_LEFT  , PCM_FRONT_CENTER , PCM_FRONT_RIGHT, PCM_SIDE_LEFT  , PCM_SIDE_RIGHT  }
-  };
+/* Internal AC3 ordering for different configs
+ * A52_CHANNEL: 1+1 2 Ch1, Ch2
+ * A52_MONO   : 1/0 1 C
+ * A52_STEREO : 2/0 2 L, R
+ * A52_3F     : 3/0 3 L, C, R
+ * A52_2F1R   : 2/1 3 L, R, S
+ * A52_3F1R   : 3/1 4 L, C, R, S
+ * A52_2F2R   : 2/2 4 L, R, SL, SR
+ * A52_3F2R   : 3/2 5 L, C, R, SL, SR
+*/
 
   m_iSourceFlags = flags;
-
-  // setup channel map
-  int channels = 0;
-  int chOffset = (flags & A52_LFE) ? 7 : 0;
-  switch (m_iSourceFlags &~ A52_LFE)
+  // setup channel map for how to translate to linear format
+  // standard windows format
+  if(m_iSourceFlags & A52_LFE)
   {
-    case A52_MONO   : m_pChannelMap = channelMaps[chOffset + 0]; channels = 1; break;
-    case A52_CHANNEL:
-    case A52_DOLBY  :
-    case A52_STEREO : m_pChannelMap = channelMaps[chOffset + 1]; channels = 2; break;
-    case A52_3F     : m_pChannelMap = channelMaps[chOffset + 2]; channels = 3; break;
-    case A52_2F1R   : m_pChannelMap = channelMaps[chOffset + 3]; channels = 3; break;
-    case A52_3F1R   : m_pChannelMap = channelMaps[chOffset + 4]; channels = 4; break;
-    case A52_2F2R   : m_pChannelMap = channelMaps[chOffset + 5]; channels = 4; break;
-    case A52_3F2R   : m_pChannelMap = channelMaps[chOffset + 6]; channels = 5; break;
-    default         : m_pChannelMap = NULL;                                    break;
+    switch (m_iSourceFlags&~A52_LFE) {
+      case A52_MONO   : m_iOutputMapping = 0x12ffff; break;
+      case A52_CHANNEL:
+      case A52_STEREO :
+      case A52_DOLBY  : m_iOutputMapping = 0x1fff32; break;
+      case A52_2F1R   : m_iOutputMapping = 0x1f5542; break;
+      case A52_2F2R   : m_iOutputMapping = 0x1f5432; break;
+      case A52_3F     : m_iOutputMapping = 0x13ff42; break;
+      case A52_3F1R   : m_iOutputMapping = 0x135542; break;
+      case A52_3F2R   : m_iOutputMapping = 0x136542; break;
+      default         : m_iOutputMapping = 0x000000; break;
+    }
+  }
+  else
+  {
+    switch (m_iSourceFlags) {
+      case A52_MONO   : m_iOutputMapping =     0x1; break;
+      case A52_CHANNEL:
+      case A52_STEREO :
+      case A52_DOLBY  : m_iOutputMapping =    0x21; break;
+      case A52_2F1R   : m_iOutputMapping =  0x2231; break;
+      case A52_2F2R   : m_iOutputMapping =  0x4321; break;
+      case A52_3F     : m_iOutputMapping = 0x2ff31; break;
+      case A52_3F1R   : m_iOutputMapping = 0x24431; break;
+      case A52_3F2R   : m_iOutputMapping = 0x25431; break;
+      default         : m_iOutputMapping =     0x0; break;
+    }
   }
 
-  if(flags & A52_LFE) ++channels;
-
-  if(m_pChannelMap == NULL)
+  if(m_iOutputMapping == 0x0)
     CLog::Log(LOGERROR, "CDVDAudioCodecLiba52::SetupChannels - Invalid channel mapping");
+
+  int channels = 0;
+  unsigned int m = m_iOutputMapping<<4;
+  while(m>>=4) channels++;  
+
+  // xbox can't handle these
+  if(channels == 5 || channels == 3)
+    channels = 6;
 
   if(m_iSourceChannels > 0 && m_iSourceChannels != channels)
     CLog::Log(LOGINFO, "%s - Number of channels changed in stream from %d to %d, data might be truncated", __FUNCTION__, m_iOutputChannels, channels);
 
   m_iSourceChannels = channels;
+
+  // make sure map contains enough channels
+  for(int i=0;i<m_iSourceChannels;i++)
+  {
+    if((m_iOutputMapping & (0xf<<(i*4))) == 0)
+      m_iOutputMapping |= 0xf<<(i*4);
+  }
+  // and nothing more
+  m_iOutputMapping &= ~(0xffffffff<<(m_iSourceChannels*4));
+
+
   m_iOutputChannels = m_iSourceChannels;
   m_iOutputFlags    = m_iSourceFlags;
 
@@ -165,10 +186,10 @@ void CDVDAudioCodecLiba52::SetupChannels(int flags)
   if (g_guiSettings.GetBool("audiooutput.downmixmultichannel"))
   {
     m_iOutputChannels = 2;
-    m_pChannelMap     = channelMaps[1];
-    m_iOutputFlags    = A52_STEREO;
+    m_iOutputMapping = 0x21;
+    m_iOutputFlags = A52_STEREO;
     if (m_iSourceChannels > 2)
-      m_Gain = pow(2.0f, g_advancedSettings.m_ac3Gain / 6.0f); // Hack for downmix attenuation
+      m_Gain = pow(2.0f, g_advancedSettings.m_ac3Gain/6.0f); // Hack for downmix attenuation
   }
 
   /* adjust level should always be set, to keep samples in proper range */
@@ -211,7 +232,7 @@ int CDVDAudioCodecLiba52::ParseFrame(BYTE* data, int size, BYTE** frame, int* fr
   }
 
   // attempt to fill up to 7 bytes
-  if(m_inputSize < HEADER_SIZE)
+  if(m_inputSize < HEADER_SIZE) 
   {
     len = HEADER_SIZE-m_inputSize;
     if(len > size)
@@ -222,7 +243,7 @@ int CDVDAudioCodecLiba52::ParseFrame(BYTE* data, int size, BYTE** frame, int* fr
     size        -= len;
   }
 
-  if(m_inputSize < HEADER_SIZE)
+  if(m_inputSize < HEADER_SIZE) 
     return data - orig;
 
   // attempt to sync by shifting bytes
@@ -274,11 +295,7 @@ int CDVDAudioCodecLiba52::Decode(BYTE* pData, int iSize)
   if(!frame)
     return len;
 
-  #if (defined USE_EXTERNAL_LIBA52)
-  sample_t level = 1.0f;
-  #else
   level_t level = 1.0f;
-  #endif
   sample_t bias = 384;
   int     flags = m_iOutputFlags;
 
@@ -288,7 +305,7 @@ int CDVDAudioCodecLiba52::Decode(BYTE* pData, int iSize)
 
   if (!g_advancedSettings.m_audioApplyDrc)
     m_dll.a52_dynrng(m_pState, NULL, NULL);
-
+  
   for (int i = 0; i < 6; i++)
   {
     if (m_dll.a52_block(m_pState) != 0)
@@ -296,7 +313,7 @@ int CDVDAudioCodecLiba52::Decode(BYTE* pData, int iSize)
       CLog::Log(LOGERROR, "CDVDAudioCodecLiba52::Decode - a52_block failed");
       break;
     }
-    m_decodedSize += 2*resample_int16(m_fSamples, (int16_t*)(m_decodedData + m_decodedSize), m_iOutputChannels);
+    m_decodedSize += 2*resample_int16(m_fSamples, (int16_t*)(m_decodedData + m_decodedSize), m_iOutputMapping);
   }
   return len;
 }
@@ -332,4 +349,3 @@ void CDVDAudioCodecLiba52::Reset()
   m_fSamples = m_dll.a52_samples(m_pState);
 }
 
-#endif /* USE_LIBA52_DECODER */

@@ -19,11 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "GUIDialogPictureInfo.h"
 #include "utils/GUIInfoManager.h"
 #include "GUIWindowManager.h"
 #include "FileItem.h"
-#include "LocalizeStrings.h"
 
 #define CONTROL_PICTURE_INFO 5
 
@@ -53,7 +53,7 @@ void CGUIDialogPictureInfo::OnInitWindow()
 
 bool CGUIDialogPictureInfo::OnAction(const CAction& action)
 {
-  switch (action.GetID())
+  switch (action.id)
   {
     // if we're running from slideshow mode, drop the "next picture" and "previous picture" actions through.
     case ACTION_NEXT_PICTURE:
@@ -70,14 +70,14 @@ bool CGUIDialogPictureInfo::OnAction(const CAction& action)
   return CGUIDialog::OnAction(action);
 }
 
-void CGUIDialogPictureInfo::FrameMove()
+void CGUIDialogPictureInfo::Render()
 {
   if (g_infoManager.GetCurrentSlide().m_strPath != m_currentPicture)
   {
     UpdatePictureInfo();
     m_currentPicture = g_infoManager.GetCurrentSlide().m_strPath;
   }
-  CGUIDialog::FrameMove();
+  CGUIDialog::Render();
 }
 
 void CGUIDialogPictureInfo::UpdatePictureInfo()

@@ -1,32 +1,24 @@
 #ifndef __XBMC_SOCKET_H__
 #define __XBMC_SOCKET_H__
 
-/*
-* XBMC
-* Socket classes
-* Copyright (c) 2008 d4rk
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
-
 #include <string.h>
 #include <map>
-#include <vector>
+#ifdef _XBOX
+#include <xtl.h>
+#include "xbox/Network.h"
+#endif
 
 namespace SOCKETS
 {
+  
+#ifdef _XBOX
+static char* inet_ntoa (struct in_addr in)
+{
+  static char _inetaddress[32];
+  sprintf(_inetaddress, "%d.%d.%d.%d", in.S_un.S_un_b.s_b1, in.S_un.S_un_b.s_b2, in.S_un.S_un_b.s_b3, in.S_un.S_un_b.s_b4);
+  return _inetaddress;
+}
+#endif
 
 #ifdef _LINUX
 #include <sys/socket.h>
@@ -38,7 +30,7 @@ typedef int SOCKET;
 #else
 typedef int socklen_t;
 #endif
-
+  
   // types of sockets
   enum SocketType
   {
@@ -58,8 +50,8 @@ typedef int socklen_t;
 
   public:
     CAddress()
-    {
-      memset(&saddr, 0, sizeof(saddr));
+    { 
+      memset(&saddr, 0, sizeof(saddr)); 
       saddr.sin_family = AF_INET;
       saddr.sin_addr.s_addr = htonl(INADDR_ANY);
       size = sizeof(saddr);
@@ -69,7 +61,7 @@ typedef int socklen_t;
     {
       SetAddress(address);
     }
-
+    
     void SetAddress(const char *address)
     {
       memset(&saddr, 0, sizeof(saddr));
@@ -83,7 +75,7 @@ typedef int socklen_t;
     {
       return inet_ntoa(saddr.sin_addr);
     }
-
+    
     unsigned long ULong()
     {
       return (unsigned long)saddr.sin_addr.s_addr;
@@ -139,15 +131,15 @@ typedef int socklen_t;
         m_Type = ST_UDP;
       }
     // I/O functions
-    virtual int SendTo(const CAddress& addr, const int bufferlength,
+    virtual int SendTo(const CAddress& addr, const int bufferlength, 
                        const void* buffer) = 0;
 
     // read datagrams, return no. of bytes read or -1 or error
     virtual int  Read(CAddress& addr, const int buffersize, void *buffer) = 0;
-    virtual bool Broadcast(const CAddress& addr, const int datasize,
+    virtual bool Broadcast(const CAddress& addr, const int datasize, 
                            const void* data) = 0;
   };
-
+  
   // Implementation specific classes
 
   /**********************************************************************/
@@ -185,16 +177,12 @@ typedef int socklen_t;
   class CSocketFactory
   {
   public:
-    static CUDPSocket* CreateUDPSocket();
+    static CUDPSocket* CreateUDPSocket();   
   };
 
   /**********************************************************************/
   /* Listens on multiple sockets for reads                              */
   /**********************************************************************/
-
-#define LISTENERROR 1
-#define LISTENEMPTY 2
-
   class CSocketListener
   {
   public:

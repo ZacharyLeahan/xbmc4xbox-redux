@@ -23,7 +23,6 @@
 
 #include "CachingCodec.h"
 #include "DllVorbisfile.h"
-#include "OggCallback.h"
 
 class OGGCodec : public CachingCodec
 {
@@ -38,7 +37,12 @@ public:
   virtual bool CanInit();
 
 private:
-  COggCallback m_callback;
+  static size_t ReadCallback(void *ptr, size_t size, size_t nmemb, void *datasource);
+  static int SeekCallback(void *datasource, ogg_int64_t offset, int whence);
+  static int NoSeekCallback(void *datasource, ogg_int64_t offset, int whence);
+  static int CloseCallback(void *datasource);
+  static long TellCallback(void *datasource);
+
   void RemapChannels(short *SampleBuffer, int samples);
 
   DllVorbisfile m_dll;

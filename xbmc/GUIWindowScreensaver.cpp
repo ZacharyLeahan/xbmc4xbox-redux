@@ -19,21 +19,23 @@
  *
  */
 
-#include "system.h"
+#include "stdafx.h"
 #include "GUIWindowScreensaver.h"
-#include "addons/AddonManager.h"
+#ifdef HAS_SCREENSAVER
+#include "screensavers/ScreenSaverFactory.h"
+#endif
 #include "Application.h"
 #include "GUIPassword.h"
 #include "GUISettings.h"
-#include "GUIUserMessages.h"
 #include "GUIWindowManager.h"
 #include "utils/SingleLock.h"
-
-using namespace ADDON;
 
 CGUIWindowScreensaver::CGUIWindowScreensaver(void)
     : CGUIWindow(WINDOW_SCREENSAVER, "")
 {
+#ifdef HAS_SCREENSAVER
+  m_pScreenSaver = NULL;
+#endif
 }
 
 CGUIWindowScreensaver::~CGUIWindowScreensaver(void)
@@ -45,21 +47,21 @@ void CGUIWindowScreensaver::Render()
   CSingleLock lock (m_critSection);
 
 #ifdef HAS_SCREENSAVER
-  if (m_addon)
+  if (m_pScreenSaver)
   {
     if (m_bInitialized)
     {
       try
       {
         //some screensavers seem to be depending on xbmc clearing the screen
-        //       g_Windowing.Get3DDevice()->Clear( 0L, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, 0x00010001, 1.0f, 0L );
-        g_graphicsContext.CaptureStateBlock();
-        m_addon->Render();
+        //       g_graphicsContext.Get3DDevice()->Clear( 0L, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER, 0x00010001, 1.0f, 0L );
+        g_graphicsContext.ApplyStateBlock();
+        m_pScreenSaver->Render();
         g_graphicsContext.ApplyStateBlock();
       }
       catch (...)
       {
-        CLog::Log(LOGERROR, "SCREENSAVER: - Exception in Render() - %s", m_addon->Name().c_str());
+        OutputDebugString("Screensaver Render - ohoh!\n");
       }
       return ;
     }
@@ -67,12 +69,12 @@ void CGUIWindowScreensaver::Render()
     {
       try
       {
-        m_addon->Start();
+        m_pScreenSaver->Start();
         m_bInitialized = true;
       }
       catch (...)
       {
-        CLog::Log(LOGERROR, "SCREENSAVER: - Exception in Start() - %s", m_addon->Name().c_str());
+        OutputDebugString("Screensaver Start - ohoh!\n");
       }
       return ;
     }
@@ -88,10 +90,10 @@ bool CGUIWindowScreensaver::OnAction(const CAction &action)
 }
 
 // called when the mouse is moved/clicked etc. etc.
-EVENT_RESULT CGUIWindowScreensaver::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+bool CGUIWindowScreensaver::OnMouse(const CPoint &point)
 {
   g_windowManager.PreviousWindow();
-  return EVENT_RESULT_HANDLED;
+  return true;
 }
 
 bool CGUIWindowScreensaver::OnMessage(CGUIMessage& message)
@@ -102,13 +104,17 @@ bool CGUIWindowScreensaver::OnMessage(CGUIMessage& message)
     {
       CSingleLock lock (m_critSection);
 #ifdef HAS_SCREENSAVER
-      if (m_addon)
+      if (m_pScreenSaver)
       {
-        m_addon->Stop();
+        OutputDebugString("ScreenSaver::Stop()\n");
+        m_pScreenSaver->Stop();
+
+        OutputDebugString("delete ScreenSaver()\n");
+        delete m_pScreenSaver;
+
         g_graphicsContext.ApplyStateBlock();
-        m_addon->Destroy();
-        m_addon.reset();
       }
+      m_pScreenSaver = NULL;
 #endif
       m_bInitialized = false;
 
@@ -127,22 +133,27 @@ bool CGUIWindowScreensaver::OnMessage(CGUIMessage& message)
       CSingleLock lock (m_critSection);
 
 #ifdef HAS_SCREENSAVER
-      assert(!m_addon);
+      if (m_pScreenSaver)
+      {
+        m_pScreenSaver->Stop();
+        delete m_pScreenSaver;
+        g_graphicsContext.ApplyStateBlock();
+      }
+      m_pScreenSaver = NULL;
       m_bInitialized = false;
 
-      m_addon.reset();
       // Setup new screensaver instance
-      AddonPtr addon;
-      if (!CAddonMgr::Get().GetAddon(g_guiSettings.GetString("screensaver.mode"), addon, ADDON_SCREENSAVER))
-        return false;
-
-      m_addon = boost::dynamic_pointer_cast<CScreenSaver>(addon);
-
-      if (!m_addon)
-        return false;
-
-      g_graphicsContext.CaptureStateBlock();
-      m_addon->CreateScreenSaver();
+      CScreenSaverFactory factory;
+      CStdString strScr;
+      OutputDebugString("Load Screensaver\n");
+      strScr.Format("special://xbmc/screensavers/%s", g_guiSettings.GetString("screensaver.mode").c_str());
+      m_pScreenSaver = factory.LoadScreenSaver(strScr.c_str());
+      if (m_pScreenSaver)
+      {
+        OutputDebugString("ScreenSaver::Create()\n");
+		g_graphicsContext.ApplyStateBlock();
+        m_pScreenSaver->Create();
+      }
 #endif
       // setup a z-buffer
 //      RESOLUTION res = g_graphicsContext.GetVideoResolution();

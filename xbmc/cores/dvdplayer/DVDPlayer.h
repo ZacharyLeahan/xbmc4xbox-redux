@@ -31,7 +31,6 @@
 #include "DVDPlayerAudio.h"
 #include "DVDPlayerVideo.h"
 #include "DVDPlayerSubtitle.h"
-#include "DVDPlayerTeletext.h"
 
 //#include "DVDChapterReader.h"
 #include "DVDSubtitles/DVDFactorySubtitle.h"
@@ -90,20 +89,20 @@ public:
   }
 };
 
-typedef struct
+typedef struct 
 {
   StreamType   type;
   std::string  filename;
   std::string  language;
   std::string  name;
   int          source;
-  int          id;
+  int          id;  
 } SelectionStream;
 
 class CSelectionStreams
 {
   CCriticalSection m_section;
-  SelectionStream  m_invalid;
+  SelectionStream  m_invalid;  
 public:
   CSelectionStreams()
   {
@@ -117,7 +116,7 @@ public:
   int              IndexOf (StreamType type, CDVDPlayer& p);
   int              Count   (StreamType type) { return IndexOf(type, STREAM_SOURCE_NONE, -1) + 1; }
   SelectionStream& Get     (StreamType type, int index);
-
+  
   void             Clear   (StreamType type, StreamSource source);
   int              Source  (StreamSource source, std::string filename);
 
@@ -129,7 +128,6 @@ public:
 #define DVDPLAYER_AUDIO    1
 #define DVDPLAYER_VIDEO    2
 #define DVDPLAYER_SUBTITLE 3
-#define DVDPLAYER_TELETEXT 4
 
 class CDVDPlayer : public IPlayer, public CThread, public IDVDPlayer
 {
@@ -145,7 +143,7 @@ public:
   virtual bool IsPaused() const;
   virtual bool HasVideo() const;
   virtual bool HasAudio() const;
-  virtual bool IsPassthrough() const;
+  virtual void ToggleFrameDrop();
   virtual bool CanSeek();
   virtual void Seek(bool bPlus, bool bLargeStep);
   virtual bool SeekScene(bool bPlus = true);
@@ -157,7 +155,7 @@ public:
   virtual void GetVideoInfo(CStdString& strVideoInfo);
   virtual void GetGeneralInfo( CStdString& strVideoInfo);
   virtual void Update(bool bPauseDrawing)                       { m_dvdPlayerVideo.Update(bPauseDrawing); }
-  virtual void GetVideoRect(CRect& SrcRect, CRect& DestRect)    { m_dvdPlayerVideo.GetVideoRect(SrcRect, DestRect); }
+  virtual void GetVideoRect(RECT& SrcRect, RECT& DestRect)      { m_dvdPlayerVideo.GetVideoRect(SrcRect, DestRect); }
   virtual void GetVideoAspectRatio(float& fAR)                  { fAR = m_dvdPlayerVideo.GetAspectRatio(); }
   virtual bool CanRecord();
   virtual bool IsRecording();
@@ -174,15 +172,12 @@ public:
   virtual bool GetSubtitleVisible();
   virtual void SetSubtitleVisible(bool bVisible);
   virtual bool GetSubtitleExtension(CStdString &strSubtitleExtension) { return false; }
-  virtual int  AddSubtitle(const CStdString& strSubPath);
+  virtual bool AddSubtitle(const CStdString& strSubPath);
 
   virtual int GetAudioStreamCount();
   virtual int GetAudioStream();
   virtual void GetAudioStreamName(int iStream, CStdString &strStreamName);
   virtual void SetAudioStream(int iStream);
-
-  virtual TextCacheStruct_t* GetTeletextCache();
-  virtual void LoadPage(int p, int sp, unsigned char* buffer);
 
   virtual int  GetChapterCount();
   virtual int  GetChapter();
@@ -205,11 +200,9 @@ public:
   virtual bool GetStreamDetails(CStreamDetails &details);
 
   virtual bool GetCurrentSubtitle(CStdString& strSubtitle);
-
+  
   virtual CStdString GetPlayerState();
   virtual bool SetPlayerState(CStdString state);
-
-  virtual CStdString GetPlayingTitle();
 
   enum ECacheState
   { CACHESTATE_DONE = 0
@@ -219,14 +212,14 @@ public:
   };
 
   virtual bool IsCaching() const { return m_caching == CACHESTATE_FULL; }
-  virtual int GetCacheLevel() const ;
+  virtual int GetCacheLevel() const ; 
 
-  virtual int OnDVDNavResult(void* pData, int iMessage);
-protected:
+  virtual int OnDVDNavResult(void* pData, int iMessage);    
+protected:  
   friend class CSelectionStreams;
   void LockStreams()                                            { EnterCriticalSection(&m_critStreamSection); }
   void UnlockStreams()                                          { LeaveCriticalSection(&m_critStreamSection); }
-
+  
   virtual void OnStartup();
   virtual void OnExit();
   virtual void Process();
@@ -234,19 +227,16 @@ protected:
   bool OpenAudioStream(int iStream, int source);
   bool OpenVideoStream(int iStream, int source);
   bool OpenSubtitleStream(int iStream, int source);
-  bool OpenTeletextStream(int iStream, int source);
   bool CloseAudioStream(bool bWaitForBuffers);
   bool CloseVideoStream(bool bWaitForBuffers);
   bool CloseSubtitleStream(bool bKeepOverlays);
-  bool CloseTeletextStream(bool bWaitForBuffers);
 
   void ProcessPacket(CDemuxStream* pStream, DemuxPacket* pPacket);
   void ProcessAudioData(CDemuxStream* pStream, DemuxPacket* pPacket);
   void ProcessVideoData(CDemuxStream* pStream, DemuxPacket* pPacket);
   void ProcessSubData(CDemuxStream* pStream, DemuxPacket* pPacket);
-  void ProcessTeletextData(CDemuxStream* pStream, DemuxPacket* pPacket);
-
-  int  AddSubtitleFile(const std::string& filename);
+  
+  bool AddSubtitleFile(const std::string& filename);
   /**
    * one of the DVD_PLAYSPEED defines
    */
@@ -255,13 +245,13 @@ protected:
   void SetCaching(ECacheState state);
 
   __int64 GetTotalTimeInMsec();
-  void FlushBuffers(bool queued, double startpts = DVD_NOPTS_VALUE);
+  void FlushBuffers(bool queued);
 
   void HandleMessages();
   void HandlePlaySpeed();
   bool IsInMenu() const;
 
-  void SynchronizePlayers(DWORD sources);
+  void SynchronizePlayers(DWORD sources, double pts = DVD_NOPTS_VALUE);
   void SynchronizeDemuxer(DWORD timeout);
   void CheckAutoSceneSkip();
   void CheckContinuity(CCurrentStream& current, DemuxPacket* pPacket);
@@ -292,7 +282,6 @@ protected:
   CCurrentStream m_CurrentAudio;
   CCurrentStream m_CurrentVideo;
   CCurrentStream m_CurrentSubtitle;
-  CCurrentStream m_CurrentTeletext;
 
   CSelectionStreams m_SelectionStreams;
 
@@ -300,7 +289,7 @@ protected:
   struct SSpeedState
   {
     double lastpts;  // holds last display pts during ff/rw operations
-    double lasttime;
+    double lasttime; 
   } m_SpeedState;
 
   int m_errorCount;
@@ -310,11 +299,10 @@ protected:
   CDVDPlayerVideo m_dvdPlayerVideo; // video part
   CDVDPlayerAudio m_dvdPlayerAudio; // audio part
   CDVDPlayerSubtitle m_dvdPlayerSubtitle; // subtitle part
-  CDVDTeletextData m_dvdPlayerTeletext; // teletext part
 
-  CDVDClock m_clock;                // master clock
+  CDVDClock m_clock;                // master clock  
   CDVDOverlayContainer m_overlayContainer;
-
+  
   CDVDInputStream* m_pInputStream;  // input stream for current playing file
   CDVDDemux* m_pDemuxer;            // demuxer for current playing file
   CDVDDemux* m_pSubtitleDemuxer;
@@ -372,7 +360,7 @@ protected:
   } m_State;
   CCriticalSection m_StateSection;
 
-  CEvent m_ready;
+  HANDLE m_hReadyEvent;
   CRITICAL_SECTION m_critStreamSection; // need to have this lock when switching streams (audio / video)
 
   CEdl m_Edl;

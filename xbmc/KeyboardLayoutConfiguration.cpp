@@ -19,9 +19,12 @@
  *
  */
 
+#include "stdafx.h"
 #include "KeyboardLayoutConfiguration.h"
 #include "utils/CharsetConverter.h"
-#include "tinyXML/tinyxml.h"
+
+// Comment OUT, if not really debugging!!!
+//#define DEBUG_KEYBOARD_GETCHAR
 
 using namespace std;
 CKeyboardLayoutConfiguration g_keyboardLayoutConfiguration;

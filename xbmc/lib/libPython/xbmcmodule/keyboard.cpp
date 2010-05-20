@@ -19,11 +19,11 @@
  *
  */
 
+#include "stdafx.h"
 #include "keyboard.h"
 #include "pyutil.h"
 #include "GUIWindowManager.h"
 #include "GUIDialogKeyboard.h"
-#include "Application.h"
 
 using namespace std;
 
@@ -46,8 +46,6 @@ namespace PYXBMC
 
     self = (Keyboard*)type->tp_alloc(type, 0);
     if (!self) return NULL;
-    new(&self->strDefault) string();
-    new(&self->strHeading) string();
 
     PyObject *line = NULL;
     PyObject *heading = NULL;
@@ -68,8 +66,6 @@ namespace PYXBMC
 
   void Keyboard_Dealloc(Keyboard* self)
   {
-    self->strDefault.~string();
-    self->strHeading.~string();
     self->ob_type->tp_free((PyObject*)self);
   }
 
@@ -98,7 +94,7 @@ namespace PYXBMC
 
     // do modal of dialog
     ThreadMessage tMsg = {TMSG_DIALOG_DOMODAL, WINDOW_DIALOG_KEYBOARD, g_windowManager.GetActiveWindow()};
-    g_application.getApplicationMessenger().SendMessage(tMsg, true);
+    g_applicationMessenger.SendMessage(tMsg, true);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -116,7 +112,7 @@ namespace PYXBMC
   PyObject* Keyboard_SetDefault(Keyboard *self, PyObject *args)
   {
     PyObject *line = NULL;
-    if (!PyArg_ParseTuple(args, (char*)"|O", &line)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"|O", &line))	return NULL;
 
     string utf8Line;
     if (line && !PyXBMCGetUnicodeString(utf8Line, line, 1)) return NULL;
@@ -147,7 +143,7 @@ namespace PYXBMC
   PyObject* Keyboard_SetHiddenInput(Keyboard *self, PyObject *args)
   {
     char bHidden = false;
-    if (!PyArg_ParseTuple(args, (char*)"|b", &bHidden)) return NULL;
+    if (!PyArg_ParseTuple(args, (char*)"|b", &bHidden))	return NULL;
     self->bHidden = (0 != bHidden);
 
     CGUIDialogKeyboard *pKeyboard = (CGUIDialogKeyboard*)g_windowManager.GetWindow(WINDOW_DIALOG_KEYBOARD);
