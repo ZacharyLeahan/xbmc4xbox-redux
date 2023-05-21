@@ -782,12 +782,6 @@ void CGUIBaseContainer::UpdateListProvider(bool refreshItems)
   }
 }
 
-void CGUIBaseContainer::SetInitialVisibility()
-{
-  UpdateStaticItems(true);
-  CGUIControl::SetInitialVisibility();
-}
-
 void CGUIBaseContainer::CalculateLayout()
 {
   CGUIListItemLayout *oldFocusedLayout = m_focusedLayout;
