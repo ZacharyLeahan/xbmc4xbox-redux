@@ -736,6 +736,7 @@ HRESULT CApplication::Create(HWND hWnd)
       wrmsr
     }
     m_128MBHack = true;
+    g_advancedSettings.m_guiKeepInMemory = true;
   }
 #endif
 
@@ -2134,6 +2135,7 @@ bool CApplication::LoadUserWindows()
         continue;
       }
       pWindow->SetVisibleCondition(visibleCondition, false);
+      pWindow->SetLoadType(CGUIWindow::KEEP_IN_MEMORY);
       g_windowManager.AddCustomWindow(pWindow);
     }
     CloseHandle(hFind);

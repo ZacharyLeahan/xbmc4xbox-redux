@@ -52,7 +52,7 @@ CGUIWindow::CGUIWindow(int id, const CStdString &xmlFile)
   m_isDialog = false;
   m_needsScaling = true;
   m_windowLoaded = false;
-  m_loadOnDemand = true;
+  m_loadType = LOAD_EVERY_TIME;
   m_renderOrder = 0;
   m_dynamicResourceAlloc = true;
   m_previousWindow = WINDOW_INVALID;
@@ -60,10 +60,13 @@ CGUIWindow::CGUIWindow(int id, const CStdString &xmlFile)
   m_manualRunActions = false;
   m_exclusiveMouseControl = 0;
   m_clearBackground = 0xff000000; // opaque black -> always clear
+  m_windowXMLRootElement = NULL;
 }
 
 CGUIWindow::~CGUIWindow(void)
-{}
+{
+  delete m_windowXMLRootElement;
+}
 
 bool CGUIWindow::Load(const CStdString& strFileName, bool bContainsPath)
 {
@@ -75,7 +78,21 @@ bool CGUIWindow::Load(const CStdString& strFileName, bool bContainsPath)
   start = CurrentHostCounter();
 #endif
   RESOLUTION resToUse = INVALID;
-  CLog::Log(LOGINFO, "Loading skin file: %s", strFileName.c_str());
+  const char* strLoadType;
+  switch (m_loadType)
+  {
+  case LOAD_ON_GUI_INIT:
+    strLoadType = "LOAD_ON_GUI_INIT";
+    break;
+  case KEEP_IN_MEMORY:
+    strLoadType = "KEEP_IN_MEMORY";
+    break;
+  case LOAD_EVERY_TIME:
+  default:
+    strLoadType = "LOAD_EVERY_TIME";
+    break;
+  }
+  CLog::Log(LOGINFO, "Loading skin file: %s, load type: %s", strFileName.c_str(), strLoadType);
   TiXmlDocument xmlDoc;
   // Find appropriate skin folder + resolution to load from
   CStdString strPath;
@@ -101,20 +118,29 @@ bool CGUIWindow::Load(const CStdString& strFileName, bool bContainsPath)
 
 bool CGUIWindow::LoadXML(const CStdString &strPath, const CStdString &strLowerPath)
 {
-  TiXmlDocument xmlDoc;
-  if ( !xmlDoc.LoadFile(strPath) && !xmlDoc.LoadFile(CStdString(strPath).ToLower()) && !xmlDoc.LoadFile(strLowerPath))
+  // load window xml if we don't have it stored yet
+  if (!m_windowXMLRootElement)
   {
-    CLog::Log(LOGERROR, "unable to load:%s, Line %d\n%s", strPath.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
-    SetID(WINDOW_INVALID);
-    return false;
+    TiXmlDocument xmlDoc;
+    if ( !xmlDoc.LoadFile(strPath) && !xmlDoc.LoadFile(CStdString(strPath).ToLower()) && !xmlDoc.LoadFile(strLowerPath))
+    {
+      CLog::Log(LOGERROR, "unable to load:%s, Line %d\n%s", strPath.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+      SetID(WINDOW_INVALID);
+      return false;
+    }
+    m_windowXMLRootElement = (TiXmlElement*)xmlDoc.RootElement()->Clone();
   }
+  else
+    CLog::Log(LOGDEBUG, "Using already stored xml root node for %s", strPath.c_str());
 
-  return Load(xmlDoc);
+  return Load(m_windowXMLRootElement);
 }
 
-bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
+bool CGUIWindow::Load(TiXmlElement* pRootElement)
 {
-  TiXmlElement* pRootElement = xmlDoc.RootElement();
+  if (!pRootElement)
+    return false;
+
   if (strcmpi(pRootElement->Value(), "window"))
   {
     CLog::Log(LOGERROR, "file : XML file doesnt contain <window>");
@@ -125,8 +151,8 @@ bool CGUIWindow::Load(TiXmlDocument &xmlDoc)
   // be done with respect to the correct aspect ratio
   g_graphicsContext.SetScalingResolution(m_coordsRes, m_needsScaling);
 
-  // Resolve any includes that may be present
-  g_SkinInfo.ResolveIncludes(pRootElement);
+  // Resolve any includes that may be present and save conditions used to do it
+  g_SkinInfo.ResolveIncludes(pRootElement, &m_xmlIncludeConditions);
   // now load in the skin file
   SetDefaults();
 
@@ -585,13 +611,29 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
   LARGE_INTEGER start;
   QueryPerformanceCounter(&start);
 #endif
-  // load skin xml fil
-  CStdString xmlFile = GetProperty("xmlfile");
-  bool bHasPath=false;
-  if (xmlFile.Find("\\") > -1 || xmlFile.Find("/") > -1 )
-    bHasPath = true;
-  if (xmlFile.size() && (forceLoad || m_loadOnDemand || !m_windowLoaded))
-    Load(xmlFile,bHasPath);
+  // use forceLoad to determine if xml file needs loading
+  forceLoad |= (m_loadType == LOAD_EVERY_TIME);
+
+  // if window is loaded (not cleared before) and we aren't forced to load
+  // we will have to load it only if include conditions values were changed
+  if (m_windowLoaded && !forceLoad)
+    forceLoad = g_infoManager.ConditionsChangedValues(m_xmlIncludeConditions);
+
+  // if window is loaded and load is forced we have to free window resources first
+  if (m_windowLoaded && forceLoad)
+    FreeResources(true);
+
+  // load skin xml file only if we are forced to load or window isn't loaded yet
+  forceLoad |= !m_windowLoaded;
+  if (forceLoad)
+  {
+    CStdString xmlFile = GetProperty("xmlfile");
+    if (xmlFile.size())
+    {
+      bool bHasPath = xmlFile.Find("\\") > -1 || xmlFile.Find("/") > -1;
+      Load(xmlFile,bHasPath);
+    }
+  }
 
   LARGE_INTEGER slend;
   QueryPerformanceCounter(&slend);
@@ -611,18 +653,32 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
   LARGE_INTEGER end, freq;
   QueryPerformanceCounter(&end);
   QueryPerformanceFrequency(&freq);
-  CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load, %.2f ms preload)", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (slend.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (plend.QuadPart - slend.QuadPart) / freq.QuadPart);
+  if (forceLoad)
+    CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load, %.2f ms preload)", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (slend.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (plend.QuadPart - slend.QuadPart) / freq.QuadPart);
+  else
+  {
+    CLog::Log(LOGDEBUG,"Window %s was already loaded", GetProperty("xmlfile").c_str());
+    CLog::Log(LOGDEBUG,"Alloc resources: %.2fm", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart);
+  }
 #endif
   m_bAllocated = true;
 }
 
 void CGUIWindow::FreeResources(bool forceUnload /*= FALSE */)
 {
+  if (!g_advancedSettings.m_guiKeepInMemory && !forceUnload)
+    forceUnload = true;
+
   m_bAllocated = false;
   CGUIControlGroup::FreeResources();
   //g_TextureManager.Dump();
   // unload the skin
-  if (m_loadOnDemand || forceUnload) ClearAll();
+  if (m_loadType == LOAD_EVERY_TIME || forceUnload) ClearAll();
+  if (forceUnload)
+  {
+    delete m_windowXMLRootElement;
+    m_windowXMLRootElement = NULL;
+  }
 }
 
 void CGUIWindow::DynamicResourceAlloc(bool bOnOff)

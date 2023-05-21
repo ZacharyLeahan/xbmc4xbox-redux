@@ -52,7 +52,7 @@ CGUIPythonWindowXML::CGUIPythonWindowXML(int id, CStdString strXML, CStdString s
 {
   pCallbackWindow = NULL;
   m_actionEvent = CreateEvent(NULL, true, false, NULL);
-  m_loadOnDemand = false;
+  m_loadType = LOAD_ON_GUI_INIT;
   m_coordsRes = PAL_4x3;
   m_scriptPath = strFallBackPath;
 }
@@ -351,7 +351,7 @@ bool CGUIPythonWindowXML::LoadXML(const CStdString &strPath, const CStdString &s
   if (xmlDoc.Error())
     return false;
 
-  return Load(xmlDoc);
+  return Load(xmlDoc.RootElement());
 }
 
 void CGUIPythonWindowXML::FreeResources(bool forceUnLoad /*= FALSE */)
