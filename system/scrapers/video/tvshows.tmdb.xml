@@ -203,7 +203,7 @@
 			<RegExp input="$$3" output="&lt;episodeguide&gt;&lt;url cache=&quot;tmdb-$$10-$INFO[language].json&quot;&gt;\1&lt;/url&gt;$$12&lt;/episodeguide&gt;" dest="5+">
 				<expression/>
 			</RegExp>
-            <RegExp conditional="trailer" input="$$2" output="&lt;url function=&quot;ParseTMDBTrailer&quot; cache=&quot;tmdb-videos-$INFO[language]-$$2.json&quot;&gt;http://api.tmdb.org/3/tv/$$2/videos?api_key=112978b163bca3ca7982bbdb9732827b&amp;amp;language=$INFO[language]&lt;/url&gt;" dest="5+">
+      <RegExp conditional="trailer" input="$$2" output="&lt;url function=&quot;ParseTMDBTrailer&quot; cache=&quot;tmdb-videos-$INFO[language]-$$2.json&quot;&gt;http://api.tmdb.org/3/tv/$$2/videos?api_key=112978b163bca3ca7982bbdb9732827b&amp;amp;language=$INFO[language]&lt;/url&gt;" dest="5+">
 				<expression />
 			</RegExp>
 			<expression noclean="1" />
@@ -322,6 +322,58 @@
 			<expression noclean="1"/>
 		</RegExp>
 	</GetEpisodeDetails>
+
+	<ParseTMDBTrailer dest="5">
+		<RegExp input="$$2" output="&lt;details&gt;\1&lt;/details&gt;" dest="5">
+			<RegExp input="$$1" output="\1" dest="8">
+				<expression noclean="1">&quot;id&quot;:([0-9]*),</expression>
+			</RegExp>
+			<RegExp input="$$1" output="\1" dest="7">
+				<expression clear="yes" noclean="1">("key":"[^"]*","site":"YouTube","size":[0-9]+,"type":"Trailer","official":true)</expression>
+			</RegExp>
+			<RegExp input="$$7" output="&lt;trailer&gt;https://vid.puffyan.us/latest_version?id=\1&amp;amp;itag=18&lt;/trailer&gt;" dest="9">
+				<expression noclean="1">"key":"([^"]*)"</expression>
+			</RegExp>
+			<RegExp input="$$9" output="&lt;url function=&quot;ParseTMDBEnTrailer&quot; cache=&quot;tmdb-trailer-en-$$8.json&quot;&gt;http://api.themoviedb.org/3/tv/$$8/videos?api_key=112978b163bca3ca7982bbdb9732827b&amp;amp;language=en&lt;/url&gt;" dest="2">
+				<expression>^$</expression>
+			</RegExp>
+			<RegExp input="$$9" output="$$9" dest="2">
+				<expression>(.+)</expression>
+			</RegExp>
+			<expression noclean="1">(.+)</expression>
+		</RegExp>
+	</ParseTMDBTrailer>
+	<ParseTMDBEnTrailer dest="5">
+		<RegExp input="$$2" output="&lt;details&gt;\1&lt;/details&gt;" dest="5">
+			<RegExp input="$$1" output="\1" dest="8">
+				<expression noclean="1">&quot;id&quot;:([0-9]*),</expression>
+			</RegExp>
+			<RegExp input="$$1" output="\1" dest="7">
+				<expression clear="yes" noclean="1">("key":"[^"]*","site":"YouTube","size":[0-9]+,"type":"Trailer","official":true)</expression>
+			</RegExp>
+			<RegExp input="$$7" output="&lt;trailer&gt;https://vid.puffyan.us/latest_version?id=\1&amp;amp;itag=18&lt;/trailer&gt;" dest="9">
+				<expression noclean="1">"key":"([^"]*)"</expression>
+			</RegExp>
+			<RegExp input="$$9" output="&lt;url function=&quot;ParseTMDBAllTrailer&quot; cache=&quot;tmdb-trailer-$$8.json&quot;&gt;http://api.themoviedb.org/3/tv/$$8/videos?api_key=112978b163bca3ca7982bbdb9732827b&lt;/url&gt;" dest="5">
+				<expression>^$</expression>
+			</RegExp>
+			<RegExp input="$$9" output="$$9" dest="2">
+				<expression>(.+)</expression>
+			</RegExp>
+			<expression noclean="1">(.+)</expression>
+		</RegExp>
+	</ParseTMDBEnTrailer>
+	<ParseTMDBAllTrailer dest="5">
+		<RegExp input="$$2" output="&lt;details&gt;\1&lt;/details&gt;" dest="5">
+			<RegExp input="$$1" output="\1" dest="7">
+				<expression clear="yes" noclean="1">("key":"[^"]*","site":"YouTube","size":[0-9]+,"type":"Trailer","official":true)</expression>
+			</RegExp>
+			<RegExp input="$$7" output="&lt;trailer&gt;https://vid.puffyan.us/latest_version?id=\1&amp;amp;itag=18&lt;/trailer&gt;" dest="2">
+				<expression noclean="1">"key":"([^"]*)"</expression>
+			</RegExp>
+			<expression noclean="1">(.+)</expression>
+		</RegExp>
+	</ParseTMDBAllTrailer>
 
 	<ParseFallbackTMDBPlot dest="4">
 		<RegExp input="$$5" output="&lt;details&gt;\1&lt;/details&gt;" dest="4">

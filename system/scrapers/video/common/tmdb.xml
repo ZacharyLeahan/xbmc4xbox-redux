@@ -220,7 +220,7 @@
 			<RegExp input="$$1" output="\1" dest="7">
 				<expression clear="yes" noclean="1">&quot;youtube&quot;:\[\{([^\}]*)</expression>
 			</RegExp>
-			<RegExp input="$$7" output="&lt;trailer&gt;plugin://plugin.video.youtube/?action=play_video&amp;amp;videoid=\1&lt;/trailer&gt;" dest="2">
+			<RegExp input="$$7" output="&lt;trailer&gt;https://vid.puffyan.us/latest_version?id=\1&amp;amp;itag=18&lt;/trailer&gt;" dest="2">
 				<expression noclean="1">&quot;source&quot;:&quot;([^&quot;]*)</expression>
 			</RegExp>
 			<expression noclean="1">(.+)</expression>
