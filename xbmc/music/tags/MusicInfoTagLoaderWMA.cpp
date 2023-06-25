@@ -27,6 +27,7 @@
 #include "AutoPtrHandle.h"
 #include "utils/CharsetConverter.h"
 #include "utils/log.h"
+#include "utils/StringUtils.h"
 
 using namespace AUTOPTR;
 using namespace XFILE;
@@ -396,16 +397,13 @@ void CMusicInfoTagLoaderWMA::SetTagValueString(const CStdString& strFrameName, c
   }
   else if (strFrameName == "WM/AlbumArtist")
   {
-    if (tag.GetAlbumArtist().IsEmpty()) tag.SetAlbumArtist(strValue);
+    if (tag.GetAlbumArtist().empty()) tag.SetAlbumArtist(strValue);
   }
   else if (strFrameName == "Author")
   {
     // Multiple artists are stored in multiple "Author" tags we have get them
     // separatly and merge them to our system
-    if (tag.GetArtist().IsEmpty())
-      tag.SetArtist(strValue);
-    else
-      tag.SetArtist(tag.GetArtist() + g_advancedSettings.m_musicItemSeparator + strValue);
+    tag.AppendArtist(strValue);
   }
   else if (strFrameName == "WM/TrackNumber")
   {
@@ -426,10 +424,14 @@ void CMusicInfoTagLoaderWMA::SetTagValueString(const CStdString& strFrameName, c
   {
     // Multiple genres are stared in multiple "WM/Genre" tags we have to get them
     // separatly and merge them to our system
-    if (tag.GetGenre().IsEmpty())
+    if (tag.GetGenre().empty())
       tag.SetGenre(strValue);
     else
-      tag.SetGenre(tag.GetGenre() + g_advancedSettings.m_musicItemSeparator + strValue);
+    {
+      std::vector<std::string> genres = StringUtils::Split(strValue, g_advancedSettings.m_musicItemSeparator);
+      for (unsigned int index = 0; index < genres.size(); index++)
+        tag.AppendGenre(genres.at(index));
+    }
   }
   else if (strFrameName == "WM/Lyrics")
   {
@@ -503,8 +505,8 @@ void CMusicInfoTagLoaderWMA::SetTagValueBinary(const CStdString& strFrameName, c
       // if we don't have an album tag, cache with the full file path so that
       // other non-tagged files don't get this album image
       CStdString strCoverArt;
-      if (!tag.GetAlbum().IsEmpty() && (!tag.GetAlbumArtist().IsEmpty() || !tag.GetArtist().IsEmpty()))
-        strCoverArt = CUtil::GetCachedAlbumThumb(tag.GetAlbum(), tag.GetAlbumArtist().IsEmpty() ? tag.GetArtist() : tag.GetAlbumArtist());
+      if (!tag.GetAlbum().IsEmpty() && (!tag.GetAlbumArtist().empty() || !tag.GetArtist().empty()))
+        strCoverArt = CUtil::GetCachedAlbumThumb(tag.GetAlbum(), StringUtils::Join(!tag.GetAlbumArtist().empty() ? tag.GetAlbumArtist() : tag.GetArtist(), g_advancedSettings.m_musicItemSeparator));
       else
         strCoverArt = CUtil::GetCachedMusicThumb(tag.GetURL());
       if (!CUtil::ThumbExists(strCoverArt))

@@ -25,6 +25,11 @@
 using namespace std;
 using namespace MUSIC_INFO;
 
+bool CAlbum::operator<(const CAlbum &a) const
+{
+  return strAlbum +StringUtils::Join(artist, g_advancedSettings.m_musicItemSeparator) < a.strAlbum + StringUtils::Join(a.artist, g_advancedSettings.m_musicItemSeparator);
+}
+
 bool CAlbum::Load(const TiXmlElement *album, bool chained)
 {
   if (!album) return false;
@@ -33,11 +38,11 @@ bool CAlbum::Load(const TiXmlElement *album, bool chained)
 
   XMLUtils::GetString(album,"title",strAlbum);
   
-  XMLUtils::GetAdditiveString(album,"artist",g_advancedSettings.m_musicItemSeparator,strArtist);
-  XMLUtils::GetAdditiveString(album,"genre",g_advancedSettings.m_musicItemSeparator,strGenre);
-  XMLUtils::GetAdditiveString(album,"style",g_advancedSettings.m_musicItemSeparator,strStyles);
-  XMLUtils::GetAdditiveString(album,"mood",g_advancedSettings.m_musicItemSeparator,strMoods);
-  XMLUtils::GetAdditiveString(album,"theme",g_advancedSettings.m_musicItemSeparator,strThemes);
+  XMLUtils::GetStringArray(album, "artist", artist);
+  XMLUtils::GetStringArray(album, "genre", genre);
+  XMLUtils::GetStringArray(album, "style", styles);
+  XMLUtils::GetStringArray(album, "mood", moods);
+  XMLUtils::GetStringArray(album, "theme", themes);
 
   XMLUtils::GetString(album,"review",strReview);
   XMLUtils::GetString(album,"releasedate",m_strDateOfRelease);
@@ -97,16 +102,11 @@ bool CAlbum::Save(TiXmlNode *node, const CStdString &tag, const CStdString& strP
   if (!album) return false;
 
   XMLUtils::SetString(album,  "title", strAlbum);
-  XMLUtils::SetAdditiveString(album, "artist",
-                           g_advancedSettings.m_musicItemSeparator, strArtist);
-  XMLUtils::SetAdditiveString(album,  "genre",
-                           g_advancedSettings.m_musicItemSeparator, strGenre);
-  XMLUtils::SetAdditiveString(album, "style",
-                           g_advancedSettings.m_musicItemSeparator, strStyles);
-  XMLUtils::SetAdditiveString(album,  "mood",
-                           g_advancedSettings.m_musicItemSeparator, strMoods);
-  XMLUtils::SetAdditiveString(album,  "theme",
-                           g_advancedSettings.m_musicItemSeparator, strThemes);
+  XMLUtils::SetStringArray(album, "artist", artist);
+  XMLUtils::SetStringArray(album,  "genre", genre);
+  XMLUtils::SetStringArray(album,  "style", styles);
+  XMLUtils::SetStringArray(album,   "mood", moods);
+  XMLUtils::SetStringArray(album,  "theme", themes);
 
   XMLUtils::SetString(album,      "review", strReview);
   XMLUtils::SetString(album,        "type", strType);

@@ -24,6 +24,7 @@
 #pragma once
 
 #include "utils/StdString.h"
+#include "XBDateTime.h"
 
 #include <map>
 #include <vector>
@@ -69,10 +70,10 @@ public:
   long idSong;
   CStdString strFileName;
   CStdString strTitle;
-  CStdString strArtist;
+  std::vector<std::string> artist;
   CStdString strAlbum;
-  CStdString strAlbumArtist;
-  CStdString strGenre;
+  std::vector<std::string> albumArtist;
+  std::vector<std::string> genre;
   CStdString strThumb;
   CStdString strMusicBrainzTrackID;
   CStdString strMusicBrainzArtistID;
@@ -85,9 +86,11 @@ public:
   int iDuration;
   int iYear;
   int iTimesPlayed;
-  CStdString lastPlayed;
+  CDateTime lastPlayed;
   int iStartOffset;
   int iEndOffset;
+  int iArtistId;
+  int iAlbumId;
 };
 
 /*!

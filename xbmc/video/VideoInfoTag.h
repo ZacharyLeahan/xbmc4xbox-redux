@@ -24,6 +24,7 @@
 #include "utils/Fanart.h"
 #include "utils/StreamDetails.h"
 #include "video/Bookmark.h"
+#include "XBDateTime.h"
 
 #include <vector>
 
@@ -47,10 +48,10 @@ public:
   bool HasStreamDetails() const;
   bool IsEmpty() const;
 
-  CStdString m_strDirector;
-  CStdString m_strWritingCredits;
-  CStdString m_strGenre;
-  CStdString m_strCountry;
+  std::vector<std::string> m_director;
+  std::vector<std::string> m_writingCredits;
+  std::vector<std::string> m_genre;
+  std::vector<std::string> m_country;
   CStdString m_strTagLine;
   CStdString m_strPlotOutline;
   CStdString m_strTrailer;
@@ -62,7 +63,8 @@ public:
   CStdString m_strArtist;
   std::vector< SActorInfo > m_cast;
   typedef std::vector< SActorInfo >::const_iterator iCast;
-  CStdString m_strSet;
+  std::vector<std::string> m_set;
+  std::vector<int> m_setId;
   CStdString m_strRuntime;
   CStdString m_strFile;
   CStdString m_strPath;
@@ -71,15 +73,15 @@ public:
   CStdString m_strFileNameAndPath;
   CStdString m_strOriginalTitle;
   CStdString m_strEpisodeGuide;
-  CStdString m_strPremiered;
+  CDateTime m_premiered;
   CStdString m_strStatus;
   CStdString m_strProductionCode;
-  CStdString m_strFirstAired;
+  CDateTime m_firstAired;
   CStdString m_strShowTitle;
-  CStdString m_strStudio;
+  std::vector<std::string> m_studio;
   CStdString m_strAlbum;
-  CStdString m_lastPlayed;
-  CStdString m_strShowLink;
+  CDateTime m_lastPlayed;
+  std::vector<std::string> m_showLink;
   int m_playCount;
   int m_iTop250;
   int m_iYear;
@@ -93,6 +95,7 @@ public:
   float m_fRating;
   float m_fEpBookmark;
   int m_iBookmarkId;
+  int m_iIdShow;
   CFanart m_fanart;
   CStreamDetails m_streamDetails;
   CBookmark m_resumePoint;
@@ -100,7 +103,6 @@ public:
 
 private:
   void ParseNative(const TiXmlElement* movie);
-  void ParseMyMovies(const TiXmlElement* movie);
 };
 
 typedef std::vector<CVideoInfoTag> VECMOVIES;

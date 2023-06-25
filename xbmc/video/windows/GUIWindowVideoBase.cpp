@@ -1089,7 +1089,7 @@ void CGUIWindowVideoBase::GetContextButtons(int itemNumber, CContextButtons &but
     item = m_vecItems->Get(itemNumber);
 
   // contextual buttons
-  if (item && !item->GetPropertyBOOL("pluginreplacecontextitems"))
+  if (item && !item->GetProperty("pluginreplacecontextitems").asBoolean())
   {
     if (!item->IsParentFolder())
     {
@@ -1796,7 +1796,7 @@ void CGUIWindowVideoBase::AddToDatabase(int iItem)
 
     // set movie info
     movie.m_strTitle = strTitle;
-    movie.m_strGenre = strGenre;
+    movie.m_genre = StringUtils::Split(strGenre, g_advancedSettings.m_videoItemSeparator);
   }
 
   // everything is ok, so add to database
@@ -1807,7 +1807,7 @@ void CGUIWindowVideoBase::AddToDatabase(int iItem)
   m_database.Close();
 
   // done...
-  CGUIDialogOK::ShowAndGetInput(20177, movie.m_strTitle, movie.m_strGenre, movie.m_strIMDBNumber);
+  CGUIDialogOK::ShowAndGetInput(20177, movie.m_strTitle, StringUtils::Join(movie.m_genre, g_advancedSettings.m_videoItemSeparator), movie.m_strIMDBNumber);
 
   // library view cache needs to be cleared
   CUtil::DeleteVideoDatabaseDirectoryCache();

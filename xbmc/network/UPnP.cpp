@@ -47,6 +47,7 @@
 #include "FileSystem/Directory.h"
 #include "URL.h"
 #include "settings/Settings.h"
+#include "settings/AdvancedSettings.h"
 #include "FileItem.h"
 #include "GUIWindowManager.h"
 #include "GUIUserMessages.h"
@@ -524,20 +525,21 @@ CUPnPServer::PopulateObjectFromTag(CMusicInfoTag&         tag,
     if (!tag.GetURL().IsEmpty() && file_path)
       *file_path = tag.GetURL();
 
-    StringUtils::SplitString(tag.GetGenre(), " / ", strings);
-    for(CStdStringArray::iterator it = strings.begin(); it != strings.end(); it++) {
-        object.m_Affiliation.genre.Add((*it).c_str());
-    }
-
+    std::vector<std::string> genres = tag.GetGenre();
+    for (unsigned int index = 0; index < genres.size(); index++)
+      object.m_Affiliation.genre.Add(genres.at(index).c_str());
     object.m_Title = tag.GetTitle();
     object.m_Affiliation.album = tag.GetAlbum();
-    object.m_People.artists.Add(tag.GetArtist().c_str());
-    object.m_People.artists.Add(tag.GetArtist().c_str(), "Performer");
-    object.m_People.artists.Add(!tag.GetAlbumArtist().empty()?tag.GetAlbumArtist().c_str():tag.GetArtist().c_str(), "AlbumArtist");
-    if(tag.GetAlbumArtist().IsEmpty())
-        object.m_Creator = tag.GetArtist();
+    for (unsigned int index = 0; index < tag.GetArtist().size(); index++)
+    {
+      object.m_People.artists.Add(tag.GetArtist().at(index).c_str());
+      object.m_People.artists.Add(tag.GetArtist().at(index).c_str(), "Performer");
+    }
+    object.m_People.artists.Add(StringUtils::Join(!tag.GetAlbumArtist().empty() ? tag.GetAlbumArtist() : tag.GetArtist(), g_advancedSettings.m_musicItemSeparator).c_str(), "AlbumArtist");
+    if(tag.GetAlbumArtist().empty())
+        object.m_Creator = StringUtils::Join(tag.GetArtist(), g_advancedSettings.m_musicItemSeparator);
     else
-        object.m_Creator = tag.GetAlbumArtist();
+        object.m_Creator = StringUtils::Join(tag.GetAlbumArtist(), g_advancedSettings.m_musicItemSeparator);
     object.m_MiscInfo.original_track_number = tag.GetTrackNumber();
     if(tag.GetDatabaseId() >= 0) {
       object.m_ReferenceID = NPT_String::Format("musicdb://4/%i%s", tag.GetDatabaseId(), URIUtils::GetExtension(tag.GetURL()).c_str());
@@ -595,17 +597,16 @@ CUPnPServer::PopulateObjectFromTag(CVideoInfoTag&         tag,
     if(object.m_ReferenceID == object.m_ObjectID)
         object.m_ReferenceID = "";
 
-    StringUtils::SplitString(tag.m_strGenre, " / ", strings);
-    for(CStdStringArray::iterator it = strings.begin(); it != strings.end(); it++) {
-        object.m_Affiliation.genre.Add((*it).c_str());
-    }
+    for (unsigned int index = 0; index < tag.m_genre.size(); index++)
+      object.m_Affiliation.genre.Add(tag.m_genre.at(index).c_str());
 
     for(CVideoInfoTag::iCast it = tag.m_cast.begin();it != tag.m_cast.end();it++) {
         object.m_People.actors.Add(it->strName.c_str(), it->strRole.c_str());
     }
 
-    object.m_People.director = tag.m_strDirector;
-    object.m_People.authors.Add(tag.m_strWritingCredits.c_str());
+    object.m_People.director = StringUtils::Join(tag.m_director, g_advancedSettings.m_videoItemSeparator);
+    for (unsigned int index = 0; index < tag.m_writingCredits.size(); index++)
+      object.m_People.authors.Add(tag.m_writingCredits[index].c_str());
 
     object.m_Description.description = tag.m_strTagLine;
     object.m_Description.long_description = tag.m_strPlot;
@@ -753,9 +754,9 @@ CUPnPServer::BuildObject(const CFileItem&              item,
                       CMusicInfoTag *tag = (CMusicInfoTag*)item.GetMusicInfoTag();
                       if (tag) {
                           container->m_People.artists.Add(
-                              CorrectAllItemsSortHack(tag->GetArtist()).c_str(), "Performer");
+                              CorrectAllItemsSortHack(StringUtils::Join(tag->GetArtist(), g_advancedSettings.m_musicItemSeparator)).c_str(), "Performer");
                           container->m_People.artists.Add(
-                              CorrectAllItemsSortHack(!tag->GetAlbumArtist().empty()?tag->GetAlbumArtist():tag->GetArtist()).c_str(), "AlbumArtist");
+                              CorrectAllItemsSortHack(StringUtils::Join(!tag->GetAlbumArtist().empty() ? tag->GetAlbumArtist() : tag->GetArtist(), g_advancedSettings.m_musicItemSeparator)).c_str(), "AlbumArtist");
                       }
 #ifdef WMP_ID_MAPPING
                       // Some upnp clients expect all artists to have parent root id 107
@@ -772,9 +773,9 @@ CUPnPServer::BuildObject(const CFileItem&              item,
                       CMusicInfoTag *tag = (CMusicInfoTag*)item.GetMusicInfoTag();
                       if (tag) {
                           container->m_People.artists.Add(
-                              CorrectAllItemsSortHack(tag->GetArtist()).c_str(), "Performer");
+                              CorrectAllItemsSortHack(StringUtils::Join(tag->GetArtist(), g_advancedSettings.m_musicItemSeparator)).c_str(), "Performer");
                           container->m_People.artists.Add(
-                              CorrectAllItemsSortHack(!tag->GetAlbumArtist().empty()?tag->GetAlbumArtist():tag->GetArtist()).c_str(), "AlbumArtist");
+                              CorrectAllItemsSortHack(StringUtils::Join(!tag->GetAlbumArtist().empty() ? tag->GetAlbumArtist() : tag->GetArtist(), g_advancedSettings.m_musicItemSeparator)).c_str(), "AlbumArtist");
                           container->m_Affiliation.album = CorrectAllItemsSortHack(tag->GetAlbum()).c_str();
                       }
 #ifdef WMP_ID_MAPPING
@@ -2411,8 +2412,9 @@ int CUPnP::PopulateTagFromObject(CVideoInfoTag&         tag,
     }
     else
         tag.m_strTitle = object.m_Title;
-    tag.m_strGenre    = JoinString(object.m_Affiliation.genre, " / ");
-    tag.m_strDirector = object.m_People.director;
+    for (unsigned int index = 0; index < object.m_Affiliation.genre.GetItemCount(); index++)
+      tag.m_genre.push_back(object.m_Affiliation.genre.GetItem(index)->GetChars());
+    tag.m_director = StringUtils::Split((CStdString)object.m_People.director, g_advancedSettings.m_videoItemSeparator);
     tag.m_strTagLine  = object.m_Description.description;
     tag.m_strPlot     = object.m_Description.long_description;
     tag.m_strShowTitle = object.m_Recorded.series_title;

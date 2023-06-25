@@ -82,7 +82,7 @@ CFileItem::CFileItem(const CStdString &path, const CAlbum& album)
   SetLabel(album.strAlbum);
   m_strPath = path;
   m_bIsFolder = true;
-  m_strLabel2 = album.strArtist;
+  m_strLabel2 = StringUtils::Join(album.artist, g_advancedSettings.m_musicItemSeparator);
   URIUtils::AddSlashAtEnd(m_strPath);
   GetMusicInfoTag()->SetAlbum(album);
   if (album.thumbURL.m_url.size() > 0)
@@ -92,9 +92,9 @@ CFileItem::CFileItem(const CStdString &path, const CAlbum& album)
 
   /* TODO: remove when we remove old properties */
   SetProperty("description", album.strReview);
-  SetProperty("theme", album.strThemes);
-  SetProperty("mood", album.strMoods);
-  SetProperty("style", album.strStyles);
+  SetProperty("theme", StringUtils::Join(album.themes, g_advancedSettings.m_musicItemSeparator));
+  SetProperty("mood", StringUtils::Join(album.moods, g_advancedSettings.m_musicItemSeparator));
+  SetProperty("style", StringUtils::Join(album.styles, g_advancedSettings.m_musicItemSeparator));
   SetProperty("type", album.strType);
   SetProperty("label", album.strLabel);
   if (album.iRating > 0)
@@ -1887,9 +1887,9 @@ void CFileItemList::FilterCueItems()
                   if (tag.Loaded())
                   {
                     if (song.strAlbum.empty() && !tag.GetAlbum().empty()) song.strAlbum = tag.GetAlbum();
-                    if (song.strAlbumArtist.empty() && !tag.GetAlbumArtist().empty()) song.strAlbumArtist = tag.GetAlbumArtist();
-                    if (song.strGenre.empty() && !tag.GetGenre().empty()) song.strGenre = tag.GetGenre();
-                    if (song.strArtist.empty() && !tag.GetArtist().empty()) song.strArtist = tag.GetArtist();
+                    if (song.albumArtist.empty() && !tag.GetAlbumArtist().empty()) song.albumArtist = tag.GetAlbumArtist();
+                    if (song.genre.empty() && !tag.GetGenre().empty()) song.genre = tag.GetGenre();
+                    if (song.artist.empty() && !tag.GetArtist().empty()) song.artist = tag.GetArtist();
                     if (tag.GetDiscNumber()) song.iTrack |= (tag.GetDiscNumber() << 16); // see CMusicInfoTag::GetDiscNumber()
                     SYSTEMTIME dateTime;
                     tag.GetReleaseDate(dateTime);
@@ -2373,10 +2373,10 @@ CStdString CFileItem::GetPreviouslyCachedMusicThumb() const
   if (HasMusicInfoTag() && m_musicInfoTag->Loaded())
   {
     strAlbum = m_musicInfoTag->GetAlbum();
-    if (!m_musicInfoTag->GetAlbumArtist().IsEmpty())
-      strArtist = m_musicInfoTag->GetAlbumArtist();
+    if (!m_musicInfoTag->GetAlbumArtist().empty())
+      strArtist = StringUtils::Join(m_musicInfoTag->GetAlbumArtist(), g_advancedSettings.m_musicItemSeparator);
     else
-      strArtist = m_musicInfoTag->GetArtist();
+      strArtist = StringUtils::Join(m_musicInfoTag->GetArtist(), g_advancedSettings.m_musicItemSeparator);
   }
   if (!strAlbum.IsEmpty() && !strArtist.IsEmpty())
   {
@@ -2808,7 +2808,7 @@ CStdString CFileItem::GetCachedFanart() const
     return GetCachedThumb(m_bIsFolder ? GetVideoInfoTag()->m_strPath : GetVideoInfoTag()->m_strFileNameAndPath,g_settings.GetVideoFanartFolder());
   }
   if (HasMusicInfoTag())
-    return GetCachedThumb(GetMusicInfoTag()->GetArtist(),g_settings.GetMusicFanartFolder());
+    return GetCachedThumb(StringUtils::Join(GetMusicInfoTag()->GetArtist(), g_advancedSettings.m_musicItemSeparator),g_settings.GetMusicFanartFolder());
 
   return GetCachedThumb(m_strPath,g_settings.GetVideoFanartFolder());
 }

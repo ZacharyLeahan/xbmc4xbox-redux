@@ -77,6 +77,7 @@ using namespace XFILE;
 #define CONTROL_BTN_GET_THUMB       10
 #define CONTROL_BTN_PLAY_TRAILER    11
 #define CONTROL_BTN_GET_FANART      12
+#define CONTROL_BTN_DIRECTOR        13
 
 #define CONTROL_LIST                50
 
@@ -197,6 +198,11 @@ bool CGUIWindowVideoInfo::OnMessage(CGUIMessage& message)
       {
         OnGetFanart();
       }
+      else if (iControl == CONTROL_BTN_DIRECTOR)
+      {
+        CStdString strDirector = StringUtils::Join(m_movieItem->GetVideoInfoTag()->m_director, g_advancedSettings.m_videoItemSeparator);
+        OnSearch(strDirector);
+      }
 /*      else if (iControl == CONTROL_DISC)
       {
         int iItem = 0;
@@ -309,7 +315,7 @@ void CGUIWindowVideoInfo::SetMovie(const CFileItem *item)
     {
       m_castList->SetContent("tvshows");
       // special case stuff for shows (not currently retrieved from the library in filemode (ref: GetTvShowInfo vs GetTVShowsByWhere)
-      m_movieItem->m_dateTime.SetFromDateString(m_movieItem->GetVideoInfoTag()->m_strPremiered);
+      m_movieItem->m_dateTime = m_movieItem->GetVideoInfoTag()->m_premiered;
       if(m_movieItem->GetVideoInfoTag()->m_iYear == 0 && m_movieItem->m_dateTime.IsValid())
         m_movieItem->GetVideoInfoTag()->m_iYear = m_movieItem->m_dateTime.GetYear();
       m_movieItem->SetProperty("totalepisodes", m_movieItem->GetVideoInfoTag()->m_iEpisode);
@@ -322,7 +328,7 @@ void CGUIWindowVideoInfo::SetMovie(const CFileItem *item)
     {
       m_castList->SetContent("episodes");
       // special case stuff for episodes (not currently retrieved from the library in filemode (ref: GetEpisodeInfo vs GetEpisodesByWhere)
-      m_movieItem->m_dateTime.SetFromDateString(m_movieItem->GetVideoInfoTag()->m_strFirstAired);
+      m_movieItem->m_dateTime = m_movieItem->GetVideoInfoTag()->m_firstAired;
       if(m_movieItem->GetVideoInfoTag()->m_iYear == 0 && m_movieItem->m_dateTime.IsValid())
         m_movieItem->GetVideoInfoTag()->m_iYear = m_movieItem->m_dateTime.GetYear();
       if (CFile::Exists(m_movieItem->GetCachedEpisodeThumb()))
@@ -384,16 +390,16 @@ void CGUIWindowVideoInfo::Update()
   strTmp = m_movieItem->GetVideoInfoTag()->m_strTitle; strTmp.Trim();
   SetLabel(CONTROL_TITLE, strTmp);
 
-  strTmp = m_movieItem->GetVideoInfoTag()->m_strDirector; strTmp.Trim();
+  strTmp = StringUtils::Join(m_movieItem->GetVideoInfoTag()->m_director, g_advancedSettings.m_videoItemSeparator); strTmp.Trim();
   SetLabel(CONTROL_DIRECTOR, strTmp);
 
-  strTmp = m_movieItem->GetVideoInfoTag()->m_strStudio; strTmp.Trim();
+  strTmp = StringUtils::Join(m_movieItem->GetVideoInfoTag()->m_studio, g_advancedSettings.m_videoItemSeparator); strTmp.Trim();
   SetLabel(CONTROL_STUDIO, strTmp);
 
-  strTmp = m_movieItem->GetVideoInfoTag()->m_strWritingCredits; strTmp.Trim();
+  strTmp = StringUtils::Join(m_movieItem->GetVideoInfoTag()->m_writingCredits, g_advancedSettings.m_videoItemSeparator); strTmp.Trim();
   SetLabel(CONTROL_CREDITS, strTmp);
 
-  strTmp = m_movieItem->GetVideoInfoTag()->m_strGenre; strTmp.Trim();
+  strTmp = StringUtils::Join(m_movieItem->GetVideoInfoTag()->m_genre, g_advancedSettings.m_videoItemSeparator); strTmp.Trim();
   SetLabel(CONTROL_GENRE, strTmp);
 
   strTmp = m_movieItem->GetVideoInfoTag()->m_strTagLine; strTmp.Trim();
@@ -501,7 +507,7 @@ void CGUIWindowVideoInfo::Refresh()
     if (thumbImage.IsEmpty())
       thumbImage = m_movieItem->GetCachedVideoThumb();
 
-    if (!CFile::Exists(thumbImage) || m_movieItem->GetProperty("HasAutoThumb") == "1")
+    if (!CFile::Exists(thumbImage) || m_movieItem->GetProperty("HasAutoThumb").asString() == "1")
     { // don't have a thumb already, try and grab one
       m_movieItem->SetUserVideoThumb();
       if (m_movieItem->GetThumbnailImage() != thumbImage)
@@ -512,7 +518,7 @@ void CGUIWindowVideoInfo::Refresh()
       if (CFile::Exists(thumbImage))
       {
         if (m_movieItem->HasProperty("set_folder_thumb"))
-          VIDEO::CVideoInfoScanner::ApplyIMDBThumbToFolder(m_movieItem->GetProperty("set_folder_thumb"), thumbImage);
+          VIDEO::CVideoInfoScanner::ApplyIMDBThumbToFolder(m_movieItem->GetProperty("set_folder_thumb").asString(), thumbImage);
         hasUpdatedThumb = true;
       }
     }
@@ -826,7 +832,7 @@ void CGUIWindowVideoInfo::OnGetThumb()
   m_movieItem->SetThumbnailImage(cachedThumb);
   if (m_movieItem->HasProperty("set_folder_thumb"))
   { // have a folder thumb to set as well
-    VIDEO::CVideoInfoScanner::ApplyIMDBThumbToFolder(m_movieItem->GetProperty("set_folder_thumb"), cachedThumb);
+    VIDEO::CVideoInfoScanner::ApplyIMDBThumbToFolder(m_movieItem->GetProperty("set_folder_thumb").asString(), cachedThumb);
   }
   m_hasUpdatedThumb = true;
 

@@ -34,27 +34,24 @@ class CAlbum
 {
 public:
   CAlbum() { idAlbum = 0; iRating = 0; iYear = 0; };
-  bool operator<(const CAlbum &a) const
-  {
-    return strAlbum + strArtist < a.strAlbum + a.strArtist;
-  }
+  bool operator<(const CAlbum &a) const;
 
   void Reset()
   {
     idAlbum = -1;
     strAlbum.Empty();
-    strArtist.Empty();
-    strGenre.Empty();
+    artist.clear();
+    genre.clear();
     thumbURL.Clear();
-    strMoods.Empty();
-    strStyles.Empty();
-    strThemes.Empty();
+    moods.clear();
+    styles.clear();
+    themes.clear();
     strReview.Empty();
     strLabel.Empty();
     strType.Empty();
     m_strDateOfRelease.Empty();
     iRating=-1;
-    iYear=-1;
+    idArtist = -1;
     songs.clear();
   }
 
@@ -63,18 +60,19 @@ public:
 
   long idAlbum;
   CStdString strAlbum;
-  CStdString strArtist;
-  CStdString strGenre;
+  std::vector<std::string> artist;
+  std::vector<std::string> genre;
   CScraperUrl thumbURL;  
-  CStdString strMoods;
-  CStdString strStyles;
-  CStdString strThemes;
+  std::vector<std::string> moods;
+  std::vector<std::string> styles;
+  std::vector<std::string> themes;
   CStdString strReview;
   CStdString strLabel;
   CStdString strType;
   CStdString m_strDateOfRelease;
   int iRating;
   int iYear;
+  int idArtist;
   VECSONGS songs;
 };
 

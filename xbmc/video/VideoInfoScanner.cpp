@@ -477,7 +477,7 @@ namespace VIDEO
           if (OnProcessSeriesFolder(episodes, files, ignoreNfo, idTvShow, showDetails.m_strTitle, pDlgProgress))
           {
             Return = true;
-            m_database.SetPathHash(pItem->GetPath(),pItem->GetProperty("hash"));
+            m_database.SetPathHash(pItem->GetPath(), pItem->GetProperty("hash").asString());
           }
           continue;
         }
@@ -602,7 +602,7 @@ namespace VIDEO
                       continue;
                   }
                   if (OnProcessSeriesFolder(episodes, files, ignoreNfo, lResult, details.m_strTitle, pDlgProgress))
-                    m_database.SetPathHash(pItem->GetPath(),pItem->GetProperty("hash"));
+                    m_database.SetPathHash(pItem->GetPath(), pItem->GetProperty("hash").asString());
                 }
                 else
                   if (g_guiSettings.GetBool("videolibrary.seasonthumbs"))
@@ -935,20 +935,14 @@ namespace VIDEO
       int idMovie=m_database.SetDetailsForMovie(pItem->GetPath(), movieDetails);
 
       // setup links to shows if the linked shows are in the db
-      if (!movieDetails.m_strShowLink.IsEmpty())
+      for (unsigned int i=0; i < movieDetails.m_showLink.size(); ++i)
       {
-        CStdStringArray list;
-        StringUtils::SplitString(movieDetails.m_strShowLink,
-                                 g_advancedSettings.m_videoItemSeparator,list);
-        for (unsigned int i=0;i<list.size();++i)
-        {
-          CFileItemList items;
-          m_database.GetTvShowsByName(list[i],items);
-          if (items.Size())
-            m_database.LinkMovieToTvshow(idMovie,items[0]->GetVideoInfoTag()->m_iDbId,false);
-          else
-            CLog::Log(LOGDEBUG, "VideoInfoScanner: Failed to link movie %s to show %s", movieDetails.m_strTitle.c_str(), list[i].c_str());
-        }
+        CFileItemList items;
+        m_database.GetTvShowsByName(movieDetails.m_showLink[i], items);
+        if (items.Size())
+          m_database.LinkMovieToTvshow(lResult, items[0]->GetVideoInfoTag()->m_iDbId, false);
+        else
+          CLog::Log(LOGDEBUG, "VideoInfoScanner: Failed to link movie %s to show %s", movieDetails.m_strTitle.c_str(), movieDetails.m_showLink[i].c_str());
       }
     }
     else if (content.Equals("tvshows"))
@@ -1223,11 +1217,8 @@ namespace VIDEO
       URIUtils::GetDirectory(item->GetPath(), strPath);
 
       if (bGrabAny)
-      { // looking up by folder name - movie.nfo and mymovies.xml take priority
+      { // looking up by folder name - movie.nfo takes priority
         nfoFile = URIUtils::AddFileToFolder(strPath, "movie.nfo");
-        if (CFile::Exists(nfoFile))
-          return nfoFile;
-        nfoFile = URIUtils::AddFileToFolder(strPath, "mymovies.xml");
         if (CFile::Exists(nfoFile))
           return nfoFile;
       }

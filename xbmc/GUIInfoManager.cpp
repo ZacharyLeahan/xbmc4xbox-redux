@@ -1203,7 +1203,7 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow)
       return "";
 
     CStdString property = m_listitemProperties[info - LISTITEM_PROPERTY_START-MUSICPLAYER_PROPERTY_OFFSET];
-    return m_currentFile->GetProperty(property);
+    return m_currentFile->GetProperty(property).asString();
   }
 
   if (info >= LISTITEM_START && info <= LISTITEM_END)
@@ -1575,7 +1575,7 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow)
     {
       CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
       if (window)
-        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("showplot");
+        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("showplot").asString();
     }
     break;
   case CONTAINER_TOTALTIME:
@@ -1829,28 +1829,28 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow)
     {
       CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
       if (window)
-        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color1");
+        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color1").asString();
     }
     break;
   case FANART_COLOR2:
     {
       CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
       if (window)
-        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color2");
+        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color2").asString();
     }
     break;
   case FANART_COLOR3:
     {
       CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
       if (window)
-        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color3");
+        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_color3").asString();
     }
     break;
   case FANART_IMAGE:
     {
       CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
       if (window)
-        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_image");
+        return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("fanart_image").asString();
     }
     break;
   }
@@ -2621,7 +2621,7 @@ bool CGUIInfoManager::GetMultiInfoBool(const GUIInfo &info, int contextWindow, c
         else
         {
           CGUIWindow *window = g_windowManager.GetWindow(m_nextWindowID);
-          if (window && URIUtils::GetFileName(window->GetProperty("xmlfile")).Equals(m_stringParameters[info.GetData2()]))
+          if (window && URIUtils::GetFileName(window->GetProperty("xmlfile").asString()).Equals(m_stringParameters[info.GetData2()]))
             bReturn = true;
         }
         break;
@@ -2631,7 +2631,7 @@ bool CGUIInfoManager::GetMultiInfoBool(const GUIInfo &info, int contextWindow, c
         else
         {
           CGUIWindow *window = g_windowManager.GetWindow(m_prevWindowID);
-          if (window && URIUtils::GetFileName(window->GetProperty("xmlfile")).Equals(m_stringParameters[info.GetData2()]))
+          if (window && URIUtils::GetFileName(window->GetProperty("xmlfile").asString()).Equals(m_stringParameters[info.GetData2()]))
             bReturn = true;
         }
         break;
@@ -2988,7 +2988,7 @@ CStdString CGUIInfoManager::GetMultiInfoLabel(const GUIInfo &info, int contextWi
       window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
     }
     if (window)
-      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty(m_stringParameters[info.GetData2()]);
+      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty(m_stringParameters[info.GetData2()]).asString();
   }
   else if (info.m_info == CONTROL_GET_LABEL)
   {
@@ -3013,7 +3013,7 @@ CStdString CGUIInfoManager::GetMultiInfoLabel(const GUIInfo &info, int contextWi
     }
 
     if (window)
-      return window->GetProperty(m_stringParameters[info.GetData2()]);
+      return window->GetProperty(m_stringParameters[info.GetData2()]).asString();
   }
 
   return StringUtils::EmptyString;
@@ -3070,13 +3070,13 @@ CStdString CGUIInfoManager::GetImage(int info, int contextWindow)
   {
     CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
     if (window)
-      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("tvshowthumb");
+      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("tvshowthumb").asString();
   }
   else if (info == CONTAINER_SEASONTHUMB)
   {
     CGUIWindow *window = GetWindowWithCondition(contextWindow, WINDOW_CONDITION_IS_MEDIA_WINDOW);
     if (window)
-      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("seasonthumb");
+      return ((CGUIMediaWindow *)window)->CurrentDirectory().GetProperty("seasonthumb").asString();
   }
   else if (info == LISTITEM_THUMB || info == LISTITEM_ICON || info == LISTITEM_ACTUAL_ICON ||
           info == LISTITEM_OVERLAY || info == LISTITEM_RATING || info == LISTITEM_STAR_RATING)
@@ -3436,16 +3436,16 @@ CStdString CGUIInfoManager::GetMusicTagLabel(int info, const CFileItem *item)
     if (tag.GetAlbum().size()) { return tag.GetAlbum(); }
     break;
   case MUSICPLAYER_ARTIST:
-    if (tag.GetArtist().size()) { return tag.GetArtist(); }
+    if (tag.GetArtist().size()) { return StringUtils::Join(tag.GetArtist(), g_advancedSettings.m_musicItemSeparator); }
     break;
   case MUSICPLAYER_ALBUM_ARTIST:
-    if (tag.GetAlbumArtist().size()) { return tag.GetAlbumArtist(); }
+    if (tag.GetAlbumArtist().size()) { return StringUtils::Join(tag.GetAlbumArtist(), g_advancedSettings.m_musicItemSeparator); }
     break;
   case MUSICPLAYER_YEAR:
     if (tag.GetYear()) { return tag.GetYearString(); }
     break;
   case MUSICPLAYER_GENRE:
-    if (tag.GetGenre().size()) { return tag.GetGenre(); }
+    if (tag.GetGenre().size()) { return StringUtils::Join(tag.GetGenre(), g_advancedSettings.m_musicItemSeparator); }
     break;
   case MUSICPLAYER_TRACK_NUMBER:
     {
@@ -3505,10 +3505,10 @@ CStdString CGUIInfoManager::GetVideoLabel(int item)
       return m_currentFile->GetVideoInfoTag()->m_strOriginalTitle;
       break;
     case VIDEOPLAYER_GENRE:
-      return m_currentFile->GetVideoInfoTag()->m_strGenre;
+      return StringUtils::Join(m_currentFile->GetVideoInfoTag()->m_genre, g_advancedSettings.m_videoItemSeparator);
       break;
     case VIDEOPLAYER_DIRECTOR:
-      return m_currentFile->GetVideoInfoTag()->m_strDirector;
+      return StringUtils::Join(m_currentFile->GetVideoInfoTag()->m_director, g_advancedSettings.m_videoItemSeparator);
       break;
     case VIDEOPLAYER_RATING:
       {
@@ -3541,10 +3541,10 @@ CStdString CGUIInfoManager::GetVideoLabel(int item)
       break;
     case VIDEOPLAYER_PREMIERED:
       {
-        if (!m_currentFile->GetVideoInfoTag()->m_strFirstAired.IsEmpty())
-          return m_currentFile->GetVideoInfoTag()->m_strFirstAired;
-        if (!m_currentFile->GetVideoInfoTag()->m_strPremiered.IsEmpty())
-          return m_currentFile->GetVideoInfoTag()->m_strPremiered;
+        if (m_currentFile->GetVideoInfoTag()->m_firstAired.IsValid())
+          return m_currentFile->GetVideoInfoTag()->m_firstAired.GetAsLocalizedDate();
+        if (m_currentFile->GetVideoInfoTag()->m_premiered.IsValid())
+          return m_currentFile->GetVideoInfoTag()->m_premiered.GetAsLocalizedDate();
       }
       break;
     case VIDEOPLAYER_PLOT:
@@ -3577,9 +3577,9 @@ CStdString CGUIInfoManager::GetVideoLabel(int item)
       return m_currentFile->GetVideoInfoTag()->m_strShowTitle;
 
     case VIDEOPLAYER_STUDIO:
-      return m_currentFile->GetVideoInfoTag()->m_strStudio;
+      return StringUtils::Join(m_currentFile->GetVideoInfoTag()->m_studio, g_advancedSettings.m_videoItemSeparator);
     case VIDEOPLAYER_COUNTRY:
-      return m_currentFile->GetVideoInfoTag()->m_strCountry;
+      return StringUtils::Join(m_currentFile->GetVideoInfoTag()->m_country, g_advancedSettings.m_videoItemSeparator);
     case VIDEOPLAYER_MPAA:
       return m_currentFile->GetVideoInfoTag()->m_strMPAARating;
     case VIDEOPLAYER_TOP250:
@@ -3599,11 +3599,11 @@ CStdString CGUIInfoManager::GetVideoLabel(int item)
     case VIDEOPLAYER_ALBUM:
       return m_currentFile->GetVideoInfoTag()->m_strAlbum;
     case VIDEOPLAYER_WRITER:
-      return m_currentFile->GetVideoInfoTag()->m_strWritingCredits;
+      return StringUtils::Join(m_currentFile->GetVideoInfoTag()->m_writingCredits, g_advancedSettings.m_videoItemSeparator);
     case VIDEOPLAYER_TAGLINE:
       return m_currentFile->GetVideoInfoTag()->m_strTagLine;
     case VIDEOPLAYER_LASTPLAYED:
-      return m_currentFile->GetVideoInfoTag()->m_lastPlayed;
+      return m_currentFile->GetVideoInfoTag()->m_lastPlayed.GetAsLocalizedDateTime();
     case VIDEOPLAYER_PLAYCOUNT:
       {
         CStdString strPlayCount;
@@ -3929,7 +3929,7 @@ bool CGUIInfoManager::GetItemInt(int &value, const CGUIListItem *item, int info)
   if (info >= LISTITEM_PROPERTY_START && info - LISTITEM_PROPERTY_START < (int)m_listitemProperties.size())
   { // grab the property
     CStdString property = m_listitemProperties[info - LISTITEM_PROPERTY_START];
-    CStdString val = item->GetProperty(property);
+    CStdString val = item->GetProperty(property).asString();
     value = atoi(val);
     return true;
   }
@@ -3955,7 +3955,7 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
   if (info >= LISTITEM_PROPERTY_START && info - LISTITEM_PROPERTY_START < (int)m_listitemProperties.size())
   { // grab the property  
     CStdString property = m_listitemProperties[info - LISTITEM_PROPERTY_START];
-    return item->GetProperty(property);
+    return item->GetProperty(property).asString();
   }
 
   switch (info)
@@ -3987,9 +3987,9 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
     {
       CStdString strLastPlayed;
       if (item->HasVideoInfoTag())
-        return item->GetVideoInfoTag()->m_lastPlayed;
+        return item->GetVideoInfoTag()->m_lastPlayed.GetAsLocalizedDate();
       if (item->HasMusicInfoTag())
-        return item->GetMusicInfoTag()->GetLastPlayed();
+        return item->GetMusicInfoTag()->GetLastPlayed().GetAsLocalizedDate();
       break;
     }
   case LISTITEM_TRACKNUMBER:
@@ -4011,15 +4011,15 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
     if (item->HasVideoInfoTag())
       return item->GetVideoInfoTag()->m_strArtist;
     if (item->HasMusicInfoTag())
-      return item->GetMusicInfoTag()->GetArtist();
+      return StringUtils::Join(item->GetMusicInfoTag()->GetArtist(), g_advancedSettings.m_musicItemSeparator);
     break;
   case LISTITEM_ALBUM_ARTIST:
     if (item->HasMusicInfoTag())
-      return item->GetMusicInfoTag()->GetAlbumArtist();
+      return StringUtils::Join(item->GetMusicInfoTag()->GetAlbumArtist(), g_advancedSettings.m_musicItemSeparator);
     break;
   case LISTITEM_DIRECTOR:
     if (item->HasVideoInfoTag())
-      return item->GetVideoInfoTag()->m_strDirector;
+      return StringUtils::Join(item->GetVideoInfoTag()->m_director, g_advancedSettings.m_videoItemSeparator);
   case LISTITEM_ALBUM:
     if (item->HasVideoInfoTag())
       return item->GetVideoInfoTag()->m_strAlbum;
@@ -4040,17 +4040,17 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
   case LISTITEM_PREMIERED:
     if (item->HasVideoInfoTag())
     {
-      if (!item->GetVideoInfoTag()->m_strFirstAired.IsEmpty())
-        return item->GetVideoInfoTag()->m_strFirstAired;
-      if (!item->GetVideoInfoTag()->m_strPremiered.IsEmpty())
-        return item->GetVideoInfoTag()->m_strPremiered;
+      if (item->GetVideoInfoTag()->m_firstAired.IsValid())
+        return item->GetVideoInfoTag()->m_firstAired.GetAsLocalizedDate();
+      if (item->GetVideoInfoTag()->m_premiered.IsValid())
+        return item->GetVideoInfoTag()->m_premiered.GetAsLocalizedDate();
     }
     break;
   case LISTITEM_GENRE:
     if (item->HasVideoInfoTag())
-      return item->GetVideoInfoTag()->m_strGenre;
+      return StringUtils::Join(item->GetVideoInfoTag()->m_genre, g_advancedSettings.m_videoItemSeparator);
     if (item->HasMusicInfoTag())
-      return item->GetMusicInfoTag()->GetGenre();
+      return StringUtils::Join(item->GetMusicInfoTag()->GetGenre(), g_advancedSettings.m_musicItemSeparator);
     break;
   case LISTITEM_FILENAME:
   case LISTITEM_FILE_EXTENSION:
@@ -4241,11 +4241,11 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
     break;
   case LISTITEM_STUDIO:
     if (item->HasVideoInfoTag())
-      return item->GetVideoInfoTag()->m_strStudio;
+      return StringUtils::Join(item->GetVideoInfoTag()->m_studio, g_advancedSettings.m_videoItemSeparator);
     break;
   case LISTITEM_COUNTRY:
     if (item->HasVideoInfoTag())
-      return item->GetVideoInfoTag()->m_strCountry;
+      return StringUtils::Join(item->GetVideoInfoTag()->m_country, g_advancedSettings.m_videoItemSeparator);
     break;
   case LISTITEM_MPAA:
     if (item->HasVideoInfoTag())
@@ -4261,7 +4261,7 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info)
     break;
   case LISTITEM_WRITER:
     if (item->HasVideoInfoTag())
-      return item->GetVideoInfoTag()->m_strWritingCredits;;
+      return StringUtils::Join(item->GetVideoInfoTag()->m_writingCredits, g_advancedSettings.m_videoItemSeparator);
     break;
   case LISTITEM_TAGLINE:
     if (item->HasVideoInfoTag())
@@ -4389,8 +4389,7 @@ bool CGUIInfoManager::GetItemBool(const CGUIListItem *item, int condition) const
   if (condition >= LISTITEM_PROPERTY_START && condition - LISTITEM_PROPERTY_START < (int)m_listitemProperties.size())
   { // grab the property
     CStdString property = m_listitemProperties[condition - LISTITEM_PROPERTY_START];
-    CStdString val = item->GetProperty(property);
-    return (val == "1" || val.CompareNoCase("true") == 0);
+    return item->GetProperty(property).asBoolean();
   }
   else if (condition == LISTITEM_ISPLAYING)
   {
@@ -4449,18 +4448,20 @@ void CGUIInfoManager::UpdateFromTuxBox()
     !g_tuxbox.sCurSrvData.current_event_description.Equals("-") && 
     !g_tuxbox.sCurSrvData.next_event_description.Equals("-"))
   {
-    m_currentFile->GetVideoInfoTag()->m_strGenre.Format("%s %s  -  (%s: %s)",
+    CStdString genre;
+    genre.Format("%s %s  -  (%s: %s)",
       g_localizeStrings.Get(143),
       g_tuxbox.sCurSrvData.current_event_description,
       g_localizeStrings.Get(209),
       g_tuxbox.sCurSrvData.next_event_description);
+   m_currentFile->GetVideoInfoTag()->m_genre = StringUtils::Split(genre, g_advancedSettings.m_videoItemSeparator);
   }
 
-  //Set m_currentMovie.m_strDirector
+  //Set m_currentMovie.m_director
   if (!g_tuxbox.sCurSrvData.current_event_details.Equals("-") &&
     !g_tuxbox.sCurSrvData.current_event_details.IsEmpty())
   {
-    m_currentFile->GetVideoInfoTag()->m_strDirector = g_tuxbox.sCurSrvData.current_event_details;
+    m_currentFile->GetVideoInfoTag()->m_director = StringUtils::Split(g_tuxbox.sCurSrvData.current_event_details, g_advancedSettings.m_videoItemSeparator);
   }
 }
 
