@@ -52,7 +52,7 @@ bool CLibraryDirectory::GetDirectory(const CStdString& strPath, CFileItemList &i
 
   // just a plain node - read the folder for XML nodes and other folders
   CFileItemList nodes;
-  if (!CDirectory::GetDirectory(libNode, nodes, ".xml", DIR_FLAG_NO_FILE_DIRS))
+  if (!CDirectory::GetDirectory(libNode, nodes, ".xml", false))
     return false;
 
   // iterate over our nodes
