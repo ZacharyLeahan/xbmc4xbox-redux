@@ -29,6 +29,7 @@
 #include "MusicDatabaseDirectory.h"
 #include "MusicSearchDirectory.h"
 #include "VideoDatabaseDirectory.h"
+#include "LibraryDirectory.h"
 #include "SourcesDirectory.h"
 #include "LastFMDirectory.h"
 #include "FTPDirectory.h"
@@ -116,6 +117,7 @@ IDirectory* CFactoryDirectory::Create(const CStdString& strPath)
   if (strProtocol == "musicdb") return new CMusicDatabaseDirectory();
   if (strProtocol == "musicsearch") return new CMusicSearchDirectory();
   if (strProtocol == "videodb") return new CVideoDatabaseDirectory();
+  if (strProtocol == "library") return new CLibraryDirectory();
   if (strProtocol == "filereader") 
     return CFactoryDirectory::Create(url.GetFileName());
 #ifdef HAS_XBOX_HARDWARE
