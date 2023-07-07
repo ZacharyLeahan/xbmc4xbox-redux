@@ -111,7 +111,7 @@ namespace XFILE
       CVideoDatabase db;
       db.Open();
       CVideoDatabase::Filter filter;
-      CStdString type=playlist.GetType();
+      CStdString whereOrder;
       if (playlist.GetType().Equals("mixed"))
       {
         CSmartPlaylist mvidPlaylist(playlist);
