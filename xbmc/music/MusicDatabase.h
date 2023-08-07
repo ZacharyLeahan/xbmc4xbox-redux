@@ -114,7 +114,6 @@ class CMusicDatabase : public CDatabase
   {
   public:
     int idAlbum;
-    int idArtist;
   };
 
 public:
@@ -130,6 +129,7 @@ public:
   bool LookupCDDBInfo(bool bRequery=false);
   void DeleteCDDBInfo();
   void AddSong(const CSong& song, bool bCheck = true);
+  int UpdateSong(const CSong& song, int idSong = -1);
   int SetAlbumInfo(int idAlbum, const CAlbum& album, const VECSONGS& songs, bool bTransaction=true);
   bool DeleteAlbumInfo(int idArtist);
   int SetArtistInfo(int idArtist, const CArtist& artist);
@@ -145,6 +145,11 @@ public:
 
   bool GetAlbumFromSong(int idSong, CAlbum &album);
   bool GetAlbumFromSong(const CSong &song, CAlbum &album);
+
+  bool GetAlbumsByArtist(int idArtist, bool includeFeatured, std::vector<long>& albums);
+  bool GetArtistsByAlbum(int idAlbum, bool includeFeatured, std::vector<long>& artists);
+  bool GetSongsByArtist(int idArtist, bool includeFeatured, std::vector<long>& songs);
+  bool GetArtistsBySong(int idSong, bool includeFeatured, std::vector<long>& artists);
 
   bool GetArbitraryQuery(const CStdString& strQuery, const CStdString& strOpenRecordSet, const CStdString& strCloseRecordSet,
                          const CStdString& strOpenRecord, const CStdString& strCloseRecord, const CStdString& strOpenField, const CStdString& strCloseField, CStdString& strResult);
@@ -172,6 +177,7 @@ public:
   bool GetSongsByYear(const CStdString& baseDir, CFileItemList& items, int year);
   bool GetSongsByWhere(const CStdString &baseDir, const CStdString &whereClause, CFileItemList& items, const SortDescription &sortDescription = SortDescription());
   bool GetAlbumsByWhere(const CStdString &baseDir, const CStdString &where, const CStdString &order, CFileItemList &items, const SortDescription &sortDescription = SortDescription());
+  bool GetArtistsByWhere(const CStdString& strBaseDir, const CStdString &where, CFileItemList& items);
   bool GetRandomSong(CFileItem* item, int& idSong, const CStdString& strWhere);
   int GetKaraokeSongsCount();
   int GetSongsCount(const CStdString& strWhere = "");
@@ -192,6 +198,9 @@ public:
   int GetGenreByName(const CStdString& strGenre);
   int GetSongByArtistAndAlbumAndTitle(const CStdString& strArtist, const CStdString& strAlbum, const CStdString& strTitle);
 
+  bool GetCompilationAlbums(const CStdString& strBaseDir, CFileItemList& items);
+  bool GetCompilationSongs(const CStdString& strBaseDir, CFileItemList& items);
+  int  GetCompilationAlbumsCount();
   bool GetVariousArtistsAlbums(const CStdString& strBaseDir, CFileItemList& items);
   bool GetVariousArtistsAlbumsSongs(const CStdString& strBaseDir, CFileItemList& items);
   int GetVariousArtistsAlbumsCount();
@@ -215,14 +224,16 @@ protected:
 
   virtual bool CreateTables();
   virtual int GetMinVersion() const { return 15; };
-  int AddAlbum(const CStdString& strAlbum1, int idArtist, const CStdString &extraArtists, const CStdString &strArtist1, int idThumb, int idGenre, const CStdString &extraGenres, int year);
+  int AddAlbum(const CStdString& strAlbum1, const CStdString &strArtist1, int idThumb, const CStdString& strGenre, int year, bool bCompilation);
   int AddGenre(const CStdString& strGenre);
   int AddArtist(const CStdString& strArtist);
   int AddPath(const CStdString& strPath);
   int AddThumb(const CStdString& strThumb1);
-  void AddExtraAlbumArtists(const std::vector<std::string>& vecArtists, int idAlbum);
-  void AddExtraSongArtists(const std::vector<std::string>& vecArtists, int idSong, bool bCheck = true);
-  void AddExtraGenres(const std::vector<std::string>& vecGenres, int idSong, int idAlbum, bool bCheck = true);
+  bool AddAlbumArtist(int idArtist, int idAlbum, bool featured, int iOrder);
+  bool AddSongArtist(int idArtist, int idSong, bool featured, int iOrder);
+  bool AddSongGenre(int idGenre, int idSong, int iOrder);
+  bool AddAlbumGenre(int idGenre, int idAlbum, int iOrder);
+
   bool SetAlbumInfoSongs(int idAlbumInfo, const VECSONGS& songs);
   bool GetAlbumInfoSongs(int idAlbumInfo, VECSONGS& songs);
 private:
@@ -255,8 +266,8 @@ private:
   enum _SongFields
   {
     song_idSong=0,
-    song_strExtraArtists,
-    song_strExtraGenres,
+    song_strArtists,
+    song_strGenres,
     song_strTitle,
     song_iTrack,
     song_iDuration,
@@ -277,14 +288,11 @@ private:
     song_idAlbum,
     song_strAlbum,
     song_strPath,
-    song_idArtist,
-    song_strArtist,
-    song_idGenre,
-    song_strGenre,
     song_strThumb,
     song_iKarNumber,
     song_iKarDelay,
-    song_strKarEncoding
+    song_strKarEncoding,
+    song_bCompilation
   } SongFields;
 
   // Fields should be ordered as they
@@ -293,12 +301,8 @@ private:
   {
     album_idAlbum=0,
     album_strAlbum,
-    album_strExtraArtists,
-    album_idArtist,
-    album_strExtraGenres,
-    album_idGenre,
-    album_strArtist,
-    album_strGenre,
+    album_strArtists,
+    album_strGenres,
     album_iYear,
     album_strThumb,
     album_idAlbumInfo,
@@ -309,12 +313,14 @@ private:
     album_strLabel,
     album_strType,
     album_strThumbURL,
-    album_iRating
+    album_iRating,
+    album_bCompilation
   } AlbumFields;
 
   enum _ArtistFields
   {
-    artist_idArtist=1, // not a typo - we have the primary key @ 0
+    artist_idArtist=0,
+    artist_strArtist,
     artist_strBorn,
     artist_strFormed,
     artist_strGenres,
