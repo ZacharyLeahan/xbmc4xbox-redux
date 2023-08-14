@@ -26,6 +26,7 @@
 #include "music/Album.h"
 #include "utils/StringUtils.h"
 #include "utils/SortUtils.h"
+#include "MusicDbUrl.h"
 
 struct SScraperInfo;
 
@@ -89,33 +90,6 @@ class CMusicDatabase : public CDatabase
 {
   friend class DatabaseUtils;
 
-  class CArtistCache
-  {
-  public:
-    int idArtist;
-    CStdString strArtist;
-  };
-
-  class CPathCache
-  {
-  public:
-    int idPath;
-    CStdString strPath;
-  };
-
-  class CGenreCache
-  {
-  public:
-    int idGenre;
-    CStdString strGenre;
-  };
-
-  class CAlbumCache : public CAlbum
-  {
-  public:
-    int idAlbum;
-  };
-
 public:
   CMusicDatabase(void);
   virtual ~CMusicDatabase(void);
@@ -171,17 +145,17 @@ public:
   bool GetGenresNav(const CStdString& strBaseDir, CFileItemList& items);
   bool GetYearsNav(const CStdString& strBaseDir, CFileItemList& items);
   bool GetArtistsNav(const CStdString& strBaseDir, CFileItemList& items, int idGenre, bool albumArtistsOnly);
-  bool GetAlbumsNav(const CStdString& strBaseDir, CFileItemList& items, int idGenre, int idArtist, const SortDescription &sortDescription = SortDescription());
+  bool GetAlbumsNav(const CStdString& strBaseDir, CFileItemList& items, int idGenre = -1, int idArtist = -1, const SortDescription &sortDescription = SortDescription());
   bool GetAlbumsByYear(const CStdString &strBaseDir, CFileItemList& items, int year);
   bool GetSongsNav(const CStdString& strBaseDir, CFileItemList& items, int idGenre, int idArtist,int idAlbum, const SortDescription &sortDescription = SortDescription());
   bool GetSongsByYear(const CStdString& baseDir, CFileItemList& items, int year);
-  bool GetSongsByWhere(const CStdString &baseDir, const CStdString &whereClause, CFileItemList& items, const SortDescription &sortDescription = SortDescription());
-  bool GetAlbumsByWhere(const CStdString &baseDir, const CStdString &where, const CStdString &order, CFileItemList &items, const SortDescription &sortDescription = SortDescription());
-  bool GetArtistsByWhere(const CStdString& strBaseDir, const CStdString &where, CFileItemList& items);
-  bool GetRandomSong(CFileItem* item, int& idSong, const CStdString& strWhere);
+  bool GetSongsByWhere(const CStdString &baseDir, const Filter &filter, CFileItemList& items, const SortDescription &sortDescription = SortDescription());
+  bool GetAlbumsByWhere(const CStdString &baseDir, const Filter &filter, CFileItemList &items, const SortDescription &sortDescription = SortDescription());
+  bool GetArtistsByWhere(const CStdString& strBaseDir, const Filter &filter, CFileItemList& items);
+  bool GetRandomSong(CFileItem* item, int& idSong, const Filter &filter);
   int GetKaraokeSongsCount();
-  int GetSongsCount(const CStdString& strWhere = "");
-  unsigned int GetSongIDs(const CStdString& strWhere, std::vector<std::pair<int,int> > &songIDs);
+  int GetSongsCount(const Filter &filter = Filter());
+  unsigned int GetSongIDs(const Filter &filter, std::vector<std::pair<int,int> > &songIDs);
 
   bool GetAlbumPath(int idAlbum, CStdString &path);
   bool SaveAlbumThumb(int idAlbum, const CStdString &thumb);
@@ -214,12 +188,15 @@ public:
   void SetPropertiesForFileItem(CFileItem& item);
   static void SetPropertiesFromArtist(CFileItem& item, const CArtist& artist);
   static void SetPropertiesFromAlbum(CFileItem& item, const CAlbum& album);
+
+  bool GetFilter(const CMusicDbUrl &musicUrl, Filter &filter);
+
 protected:
-  std::map<CStdString, int /*CArtistCache*/> m_artistCache;
-  std::map<CStdString, int /*CGenreCache*/> m_genreCache;
-  std::map<CStdString, int /*CPathCache*/> m_pathCache;
-  std::map<CStdString, int /*CPathCache*/> m_thumbCache;
-  std::map<CStdString, CAlbumCache> m_albumCache;
+  std::map<CStdString, int> m_artistCache;
+  std::map<CStdString, int> m_genreCache;
+  std::map<CStdString, int> m_pathCache;
+  std::map<CStdString, int> m_thumbCache;
+  std::map<CStdString, CAlbum> m_albumCache;
   const char *GetDefaultDBName() const { return "MyMusic7"; };
 
   virtual bool CreateTables();
@@ -337,4 +314,6 @@ private:
 
   void AnnounceRemove(std::string content, int id);
   void AnnounceUpdate(std::string content, int id);
+
+  bool BuildSQL(const CStdString &strBaseDir, const CStdString &strQuery, Filter &filter, CStdString &strSQL, CMusicDbUrl &musicUrl);
 };

@@ -404,6 +404,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				RelativePath=".\xbmc\CueDocument.cpp">
 			</File>
 			<File
+				RelativePath=".\xbmc\DbUrl.cpp">
+			</File>
+			<File
 				RelativePath=".\xbmc\utils\EventClient.cpp">
 			</File>
 			<File
@@ -1178,6 +1181,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\URL.cpp">
 				</File>
 				<File
+					RelativePath=".\xbmc\utils\UrlOptions.cpp">
+				</File>
+				<File
 					RelativePath=".\xbmc\Util.cpp">
 				</File>
 				<File
@@ -1254,6 +1260,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\music\MusicDatabase.h">
 				</File>
 				<File
+					RelativePath=".\xbmc\music\MusicDbUrl.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\music\MusicDbUrl.h">
+				</File>
+				<File
 					RelativePath=".\xbmc\ProgramDatabase.cpp">
 				</File>
 				<File
@@ -1267,6 +1279,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\video\VideoDatabase.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\video\VideoDbUrl.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\video\VideoDbUrl.h">
 				</File>
 				<File
 					RelativePath=".\xbmc\ViewDatabase.cpp">
@@ -2966,6 +2984,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				RelativePath=".\xbmc\utils\DatabaseUtils.h">
 			</File>
 			<File
+				RelativePath=".\xbmc\DbUrl.h">
+			</File>
+			<File
 				RelativePath=".\xbmc\utils\DelayController.h">
 			</File>
 			<File
@@ -3417,6 +3438,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 			</File>
 			<File
 				RelativePath=".\xbmc\URL.h">
+			</File>
+			<File
+				RelativePath=".\xbmc\utils\UrlOptions.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\Util.h">
