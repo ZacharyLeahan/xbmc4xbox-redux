@@ -461,10 +461,10 @@ bool DatabaseUtils::GetSelectFields(const Fields &fields, MediaType mediaType, F
     sortFields.insert(FieldSeason);
     sortFields.insert(FieldEpisodeNumber);
   }
+  else if (mediaType == MediaTypeAlbum)
+    sortFields.insert(FieldAlbum);
   else if (mediaType == MediaTypeSong)
-  {
     sortFields.insert(FieldTrackNumber);
-  }
   else if (mediaType == MediaTypeArtist)
     sortFields.insert(FieldArtist);
 
@@ -603,7 +603,6 @@ bool DatabaseUtils::GetDatabaseResults(MediaType mediaType, const FieldList &fie
     case MediaTypeVideoCollection:
     case MediaTypeTvShow:
     case MediaTypeMusicVideo:
-    case MediaTypeAlbum:
       result[FieldLabel] = result.find(FieldTitle)->second.asString();
       break;
       
@@ -617,8 +616,8 @@ bool DatabaseUtils::GetDatabaseResults(MediaType mediaType, const FieldList &fie
       break;
     }
 
-    case MediaTypeArtist:
-      result[FieldLabel] = result.find(FieldArtist)->second.asString();
+    case MediaTypeAlbum:
+      result[FieldLabel] = result.find(FieldAlbum)->second.asString();
       break;
 
     case MediaTypeSong:
@@ -630,6 +629,10 @@ bool DatabaseUtils::GetDatabaseResults(MediaType mediaType, const FieldList &fie
       result[FieldLabel] = label.str();
       break;
     }
+
+    case MediaTypeArtist:
+      result[FieldLabel] = result.find(FieldArtist)->second.asString();
+      break;
 
     default:
       break;
