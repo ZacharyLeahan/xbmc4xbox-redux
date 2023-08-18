@@ -73,6 +73,7 @@
 #include "utils/ScraperParser.h"
 #include "FileItem.h"
 #include "GUIToggleButtonControl.h"
+#include "IGUIContainer.h"
 #include "FileSystem/SpecialProtocol.h"
 #include "FileSystem/File.h"
 #include "LocalizeStrings.h"
@@ -3177,7 +3178,7 @@ void CGUIWindowSettingsCategory::FillInViewModes(CSetting *pSetting, int windowI
     window->Initialize();
     for (int i = 50; i < 60; i++)
     {
-      CGUIBaseContainer *control = (CGUIBaseContainer *)window->GetControl(i);
+      IGUIContainer *control = (IGUIContainer *)window->GetControl(i);
       if (control)
       {
         int type = (control->GetType() << 16) | i;
