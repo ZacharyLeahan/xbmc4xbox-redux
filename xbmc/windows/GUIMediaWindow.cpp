@@ -27,6 +27,7 @@
 #include "PlayListPlayer.h"
 #include "FileSystem/ZipManager.h"
 #include "FileSystem/PluginDirectory.h"
+#include "FileSystem/MultiPathDirectory.h"
 #include "GUIPassword.h"
 #include "Application.h"
 #include "ApplicationMessenger.h"
@@ -319,7 +320,7 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
         if (m_vecItems->IsVirtualDirectoryRoot() && IsActive())
         {
           int iItem = m_viewControl.GetSelectedItem();
-          Update(m_vecItems->GetPath());
+          Refresh();
           m_viewControl.SetSelectedItem(iItem);
         }
         else if (m_vecItems->IsRemovable())
@@ -342,7 +343,7 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
         if (m_vecItems->IsVirtualDirectoryRoot() && IsActive())
         {
           int iItem = m_viewControl.GetSelectedItem();
-          Update(m_vecItems->GetPath());
+          Refresh();
           m_viewControl.SetSelectedItem(iItem);
         }
         return true;
@@ -359,10 +360,7 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
           Update(message.GetStringParam());
         }
         else
-        { // refresh the listing
-          m_vecItems->RemoveDiscCache(GetID());
-          Update(m_vecItems->GetPath());
-        }
+          Refresh(true); // refresh the listing
       }
       else if (message.GetParam1()==GUI_MSG_UPDATE_ITEM && message.GetItem())
       {
@@ -385,7 +383,12 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
       }
       else if (message.GetParam1()==GUI_MSG_UPDATE_PATH && message.GetStringParam() == m_vecItems->GetPath() && IsActive())
       {
-        Update(m_vecItems->GetPath());
+        if (IsActive())
+        {
+          if((message.GetStringParam() == m_vecItems->GetPath()) ||
+             (m_vecItems->IsMultiPath() && XFILE::CMultiPathDirectory::HasPath(m_vecItems->GetPath(), message.GetStringParam())))
+            Refresh();
+        }
       }
       else if (message.GetParam1() == GUI_MSG_FILTER_ITEMS && IsActive())
       {
@@ -544,10 +547,13 @@ void CGUIMediaWindow::UpdateButtons()
     SET_CONTROL_LABEL2(CONTROL_BTN_FILTER, GetProperty("filter").asString());
 }
 
-void CGUIMediaWindow::ClearFileItems()
+void CGUIMediaWindow::ClearFileItems(bool itemsOnly /* = false */)
 {
   m_viewControl.Clear();
-  m_vecItems->Clear(); // will clean up everything
+  if (itemsOnly)
+    m_vecItems->ClearItems();
+  else
+    m_vecItems->Clear();
   m_unfilteredItems->Clear();
 }
 
@@ -702,8 +708,9 @@ bool CGUIMediaWindow::Update(const CStdString &strDirectory)
     }
   }
 
-  CStdString strCurrentDirectory = m_vecItems->GetPath();
+  bool refresh = strDirectory == m_vecItems->GetPath();
 
+  CStdString strCurrentDirectory = m_vecItems->GetPath();
   m_history.SetSelectedItem(strSelectedItem, strCurrentDirectory);
 
   CFileItemList items;
@@ -728,8 +735,11 @@ bool CGUIMediaWindow::Update(const CStdString &strDirectory)
   if (items.GetLabel().IsEmpty())
     items.SetLabel(CUtil::GetTitleFromPath(items.GetPath(), true));
 
-  ClearFileItems();
-  m_vecItems->Copy(items);
+  ClearFileItems(refresh);
+  if (refresh)
+    m_vecItems->Append(items);
+  else
+    m_vecItems->Copy(items);
 
   // if we're getting the root source listing
   // make sure the path history is clean
@@ -812,6 +822,18 @@ bool CGUIMediaWindow::Update(const CStdString &strDirectory)
   //m_history.DumpPathHistory();
 
   return true;
+}
+
+bool CGUIMediaWindow::Refresh(bool clearCache /* = false */)
+{
+  CStdString strCurrentDirectory = m_vecItems->GetPath();
+  if (strCurrentDirectory.Equals("?"))
+    return false;
+
+  if (clearCache)
+    m_vecItems->RemoveDiscCache(GetID());
+
+  return Update(strCurrentDirectory);
 }
 
 // \brief This function will be called by Update() before the
@@ -899,7 +921,7 @@ bool CGUIMediaWindow::OnClick(int iItem)
       {
         m_vecItems->RemoveDiscCache(GetID());
         if (CGUIDialogSmartPlaylistEditor::EditPlaylist(pItem->GetPath()))
-          Update(m_vecItems->GetPath());
+          Refresh();
         return true;
       }
     }
@@ -940,7 +962,7 @@ bool CGUIMediaWindow::OnClick(int iItem)
     {
       m_vecItems->RemoveDiscCache(GetID());
       if (CGUIDialogSmartPlaylistEditor::NewPlaylist(pItem->GetPath().Mid(19)))
-        Update(m_vecItems->GetPath());
+        Refresh();
       return true;
     }
 
@@ -1260,8 +1282,7 @@ void CGUIMediaWindow::OnDeleteItem(int iItem)
 
   if (!CGUIWindowFileManager::DeleteItem(&item))
     return;
-  m_vecItems->RemoveDiscCache(GetID());
-  Update(m_vecItems->GetPath());
+  Refresh(true);
   m_viewControl.SetSelectedItem(iItem);
 }
 
@@ -1275,14 +1296,13 @@ void CGUIMediaWindow::OnRenameItem(int iItem)
 
   if (!CGUIWindowFileManager::RenameFile(m_vecItems->Get(iItem)->GetPath()))
     return;
-  m_vecItems->RemoveDiscCache(GetID());
-  Update(m_vecItems->GetPath());
+  Refresh(true);
   m_viewControl.SetSelectedItem(iItem);
 }
 
 void CGUIMediaWindow::OnInitWindow()
 {
-  Update(m_vecItems->GetPath());
+  Refresh();
 
   if (m_iSelectedItem > -1)
     m_viewControl.SetSelectedItem(m_iSelectedItem);
@@ -1398,7 +1418,7 @@ bool CGUIMediaWindow::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
     {
       CURL url(m_vecItems->Get(itemNumber)->GetPath());
       if(CGUIDialogPluginSettings::ShowAndGetInput(url))
-        Update(m_vecItems->GetPath());
+        Refresh();
       return true;
     }
   case CONTEXT_BUTTON_DELETE_PLUGIN:
@@ -1408,7 +1428,7 @@ bool CGUIMediaWindow::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
       path.Replace("plugin://","special://home/plugins/");
       CFileItem item2(path,true);
       if (CGUIWindowFileManager::DeleteItem(&item2))
-        Update(m_vecItems->GetPath());
+        Refresh(true);
 
       return true;
     }
