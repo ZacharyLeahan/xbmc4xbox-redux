@@ -25,6 +25,7 @@
 #include <queue>
 
 class CFileItem;
+class CFileItemList;
 class CGUIDialog;
 
 // defines here
@@ -43,6 +44,8 @@ class CGUIDialog;
 #define TMSG_PLAYLISTPLAYER_PREV  212
 // 212-216 reserved
 #define TMSG_PLAYLISTPLAYER_PLAY_SONG_ID 217
+#define TMSG_PLAYLISTPLAYER_INSERT 218
+#define TMSG_PLAYLISTPLAYER_REMOVE 219
 
 #define TMSG_PICTURE_SHOW         220
 #define TMSG_PICTURE_SLIDESHOW    221
@@ -101,6 +104,10 @@ public:
   void PlayListPlayerPlaySongId(int songId);
   void PlayListPlayerNext();
   void PlayListPlayerPrevious();
+  void PlayListPlayerInsert(int playlist, const CFileItem &item, int position); 
+  void PlayListPlayerInsert(int playlist, const CFileItemList &list, int position);
+  void PlayListPlayerRemove(int playlist, int position);
+
   void PlayFile(const CFileItem &item, bool bRestart = false); // thread safe version of g_application.PlayFile()
   void PictureShow(std::string filename);
   void PictureSlideShow(std::string pathname, bool bScreensaver = false);

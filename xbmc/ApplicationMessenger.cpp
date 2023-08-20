@@ -506,6 +506,20 @@ case TMSG_POWERDOWN:
       g_playlistPlayer.PlayPrevious();
       break;
 
+    case TMSG_PLAYLISTPLAYER_INSERT:
+      if (pMsg->lpVoid)
+      {
+        CFileItemList *list = (CFileItemList *)pMsg->lpVoid;
+        g_playlistPlayer.Insert(pMsg->dwParam1, (*list), pMsg->dwParam2);
+        delete list;
+      }
+      break;
+
+    case TMSG_PLAYLISTPLAYER_REMOVE:
+      if (pMsg->dwParam1 != (DWORD) -1)
+        g_playlistPlayer.Remove(pMsg->dwParam1,pMsg->dwParam2);
+      break;
+
     // Window messages below here...
     case TMSG_DIALOG_DOMODAL:  //doModel of window
       {

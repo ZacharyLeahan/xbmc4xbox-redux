@@ -74,7 +74,10 @@ public:
   void Add(int iPlaylist, CPlayList& playlist);
   void Add(int iPlaylist, const CFileItemPtr &pItem);
   void Add(int iPlaylist, CFileItemList& items);
-
+  void Insert(int iPlaylist, CPlayList& playlist, int iIndex);
+  void Insert(int iPlaylist, const CFileItemPtr &pItem, int iIndex);
+  void Insert(int iPlaylist, CFileItemList& items, int iIndex);
+  void Remove(int iPlaylist, int iPosition);
 protected:
   bool Repeated(int iPlaylist) const;
   bool RepeatedOne(int iPlaylist) const;
