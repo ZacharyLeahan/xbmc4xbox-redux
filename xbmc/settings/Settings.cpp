@@ -2064,6 +2064,17 @@ CStdString CSettings::GetDefaultAudioPlayerName() const
   return GetPlayerName(g_guiSettings.GetInt("musicplayer.defaultplayer"));
 }
 
+CStdString CSettings::GetLibraryFolder() const
+{
+  CStdString folder;
+  if (GetCurrentProfile().hasDatabases())
+    URIUtils::AddFileToFolder(GetProfileUserDataFolder(), "library", folder);
+  else
+    URIUtils::AddFileToFolder(GetUserDataFolder(), "library", folder);
+
+  return folder;
+}
+
 CStdString CSettings::GetSourcesFile() const
 {
   CStdString folder;
@@ -2213,6 +2224,7 @@ void CSettings::CreateProfileFolders()
     CDirectory::Create(URIUtils::AddFileToFolder(GetProgramsThumbFolder(), strHex));
   }
   CDirectory::Create("special://profile/visualisations");
+  CDirectory::Create(GetLibraryFolder());
 }
 
 static CProfile emptyProfile;

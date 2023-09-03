@@ -507,6 +507,7 @@ public:
   CStdString GetProgramsThumbFolder() const;
   CStdString GetGameSaveThumbFolder() const;
   CStdString GetProfilesThumbFolder() const;
+  CStdString GetLibraryFolder() const;
   CStdString GetSourcesFile() const;
   CStdString GetSkinFolder() const;
   CStdString GetSkinFolder(const CStdString& skinName) const;
