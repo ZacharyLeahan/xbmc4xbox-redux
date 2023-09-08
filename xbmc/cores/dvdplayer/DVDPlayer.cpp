@@ -343,13 +343,12 @@ CDVDPlayer::CDVDPlayer(IPlayerCallback& callback)
       m_dvdPlayerVideo(&m_clock, &m_overlayContainer, m_messenger),
       m_dvdPlayerAudio(&m_clock, m_messenger),
       m_dvdPlayerSubtitle(&m_overlayContainer),
-      m_DemuxerPausePending(false)
+      m_DemuxerPausePending(false),
+      m_ready(true)
 {
   m_pDemuxer = NULL;
   m_pSubtitleDemuxer = NULL;
   m_pInputStream = NULL;
-
-  m_hReadyEvent = CreateEvent(NULL, true, false, NULL);
 
   InitializeCriticalSection(&m_critStreamSection);
 
@@ -376,7 +375,6 @@ CDVDPlayer::~CDVDPlayer()
 {
   CloseFile();
 
-  CloseHandle(m_hReadyEvent);
   DeleteCriticalSection(&m_critStreamSection);
 #ifdef DVDDEBUG_MESSAGE_TRACKER
   g_dvdMessageTracker.DeInit();
@@ -406,9 +404,16 @@ bool CDVDPlayer::OpenFile(const CFileItem& file, const CPlayerOptions &options)
     m_mimetype  = file.GetMimeType();
     m_filename = file.GetPath();
 
-    ResetEvent(m_hReadyEvent);
+    m_ready.Reset();
     Create();
-    WaitForSingleObject(m_hReadyEvent, INFINITE);
+    if(!m_ready.WaitMSec(100))
+    {
+      CGUIDialogBusy* dialog = (CGUIDialogBusy*)g_windowManager.GetWindow(WINDOW_DIALOG_BUSY);
+      dialog->Show();
+      while(!m_ready.WaitMSec(1))
+        g_windowManager.ProcessRenderLoop(true);
+      dialog->Close();
+    }
 
     // Playback might have been stopped due to some error
     if (m_bStop || m_bAbortRequest)
@@ -908,7 +913,7 @@ void CDVDPlayer::Process()
     m_callback.OnPlayBackStarted();
 
   // we are done initializing now, set the readyevent
-  SetEvent(m_hReadyEvent);
+  m_ready.Set();
 
   SetCaching(CACHESTATE_FLUSH);
 
@@ -1787,7 +1792,7 @@ void CDVDPlayer::OnExit()
   }
 
   // set event to inform openfile something went wrong in case openfile is still waiting for this event
-  SetEvent(m_hReadyEvent);
+  m_ready.Set();
 }
 
 void CDVDPlayer::HandleMessages()
