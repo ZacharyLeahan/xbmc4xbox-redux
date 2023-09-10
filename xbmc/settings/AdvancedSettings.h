@@ -140,10 +140,12 @@ class CAdvancedSettings
     CStdStringArray m_audioExcludeFromScanRegExps;
     CStdStringArray m_pictureExcludeFromListingRegExps;
     CStdStringArray m_videoStackRegExps;
+    CStdStringArray m_folderStackRegExps;
     CStdStringArray m_trailerMatchRegExps;
     SETTINGS_TVSHOWLIST m_tvshowStackRegExps;
     CStdString m_tvshowMultiPartStackRegExp;
-    CStdStringArray m_pathSubstitutions;
+    typedef std::vector< std::pair<CStdString, CStdString> > StringMapping;
+    StringMapping m_pathSubstitutions;
     int m_remoteRepeat;
     float m_controllerDeadzone;
     bool m_FTPShowCache;

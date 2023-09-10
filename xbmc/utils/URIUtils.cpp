@@ -30,6 +30,7 @@
 #include "network/DNSNameCache.h"
 #include "Application.h"
 #include "settings/Settings.h"
+#include "settings/AdvancedSettings.h"
 #include "URL.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
@@ -338,45 +339,34 @@ bool URIUtils::GetParentPath(const CStdString& strPath, CStdString& strParent)
   return true;
 }
 
-CStdString URIUtils::SubstitutePath(const CStdString& strFileName)
+CStdString URIUtils::SubstitutePath(const CStdString& strPath, bool reverse /* = false */)
 {
-  //CLog::Log(LOGDEBUG,"%s checking source filename:[%s]", __FUNCTION__, strFileName.c_str());
-  // substitutes paths to correct issues with remote playlists containing full paths
-  for (unsigned int i = 0; i < g_advancedSettings.m_pathSubstitutions.size(); i++)
+  for (CAdvancedSettings::StringMapping::iterator i = g_advancedSettings.m_pathSubstitutions.begin();
+      i != g_advancedSettings.m_pathSubstitutions.end(); i++)
   {
-    vector<CStdString> vecSplit;
-    StringUtils::SplitString(g_advancedSettings.m_pathSubstitutions[i], " , ", vecSplit);
-
-    // something is wrong, go to next substitution
-    if (vecSplit.size() != 2)
-      continue;
-
-    CStdString strSearch = vecSplit[0];
-    CStdString strReplace = vecSplit[1];
-    strSearch.Replace(",,",",");
-    strReplace.Replace(",,",",");
-
-    AddSlashAtEnd(strSearch);
-    AddSlashAtEnd(strReplace);
-
-    // if left most characters match the search, replace them
-    //CLog::Log(LOGDEBUG,"%s testing for path:[%s]", __FUNCTION__, strSearch.c_str());
-    int iLen = strSearch.size();
-    if (strFileName.Left(iLen).Equals(strSearch))
+    if (!reverse)
     {
-      // fix slashes
-      CStdString strTemp = strFileName.Mid(iLen);
-      strTemp.Replace("\\", strReplace.Right(1));
-      CStdString strFileNameNew = strReplace + strTemp;
-      //CLog::Log(LOGDEBUG,"%s new filename:[%s]", __FUNCTION__, strFileNameNew.c_str());
-      return strFileNameNew;
+      if (strncmp(strPath.c_str(), i->first.c_str(), HasSlashAtEnd(i->first.c_str()) ? i->first.size()-1 : i->first.size()) == 0)
+      {
+        if (strPath.size() > i->first.size())
+          return URIUtils::AddFileToFolder(i->second, strPath.Mid(i->first.size()));
+        else
+          return i->second;
+      }
+    }
+    else
+    {
+      if (strncmp(strPath.c_str(), i->second.c_str(), HasSlashAtEnd(i->second.c_str()) ? i->second.size()-1 : i->second.size()) == 0)
+      {
+        if (strPath.size() > i->second.size())
+          return URIUtils::AddFileToFolder(i->first, strPath.Mid(i->second.size()));
+        else
+          return i->second;
+      }
     }
   }
-  // nothing matches, return original string
-  //CLog::Log(LOGDEBUG,"%s no matches", __FUNCTION__);
-  return strFileName;
+  return strPath;
 }
-
 
 bool URIUtils::IsRemote(const CStdString& strFile)
 {

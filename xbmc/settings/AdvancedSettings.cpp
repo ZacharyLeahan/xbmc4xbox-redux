@@ -113,6 +113,8 @@ CAdvancedSettings::CAdvancedSettings()
   m_moviesExcludeFromScanRegExps.push_back("[-._ \\\\/]sample[-._ \\\\/]");
   m_tvshowExcludeFromScanRegExps.push_back("[-._ \\\\/]sample[-._ \\\\/]");
 
+  m_folderStackRegExps.push_back("((cd|dvd|dis[ck])[0-9]+)$");
+
   m_videoStackRegExps.push_back("(.*?)([ _.-]*(?:cd|dvd|p(?:(?:ar)?t)|dis[ck]|d)[ _.-]*[0-9]+)(.*?)(\\.[^.]+)$");
   m_videoStackRegExps.push_back("(.*?)([ _.-]*(?:cd|dvd|p(?:(?:ar)?t)|dis[ck]|d)[ _.-]*[a-d])(.*?)(\\.[^.]+)$");
   m_videoStackRegExps.push_back("(.*?)([ ._-]*[a-d])(.*?)(\\.[^.]+)$");
@@ -534,10 +536,15 @@ bool CAdvancedSettings::Load()
                                         m_trailerMatchRegExps.begin(),
                                         m_trailerMatchRegExps.end());
 
-  // stacking regexps
+  // video stacking regexps
   TiXmlElement* pVideoStacking = pRootElement->FirstChildElement("moviestacking");
   if (pVideoStacking)
     GetCustomRegexps(pVideoStacking, m_videoStackRegExps);
+
+  // folder stacking regexps
+  TiXmlElement* pFolderStacking = pRootElement->FirstChildElement("folderstacking");
+  if (pFolderStacking)
+    GetCustomRegexps(pFolderStacking, m_folderStackRegExps);
 
   //tv stacking regexps
   TiXmlElement* pTVStacking = pRootElement->FirstChildElement("tvshowmatching");
@@ -566,10 +573,7 @@ bool CAdvancedSettings::Load()
         CLog::Log(LOGDEBUG,"  Registering substition pair:");
         CLog::Log(LOGDEBUG,"    From: [%s]", strFrom.c_str());
         CLog::Log(LOGDEBUG,"    To:   [%s]", strTo.c_str());
-        // keep literal commas since we use comma as a seperator
-        strFrom.Replace(",",",,");
-        strTo.Replace(",",",,");
-        m_pathSubstitutions.push_back(strFrom + " , " + strTo);
+        m_pathSubstitutions.push_back(make_pair(strFrom,strTo));
       }
       else
       {
@@ -731,6 +735,7 @@ void CAdvancedSettings::Clear()
   m_tvshowExcludeFromScanRegExps.clear();
   m_videoExcludeFromListingRegExps.clear();
   m_videoStackRegExps.clear();
+  m_folderStackRegExps.clear();
   m_audioExcludeFromScanRegExps.clear();
   m_audioExcludeFromListingRegExps.clear();
   m_pictureExcludeFromListingRegExps.clear();

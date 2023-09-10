@@ -108,7 +108,9 @@ public:
   bool IsShortCut() const;
   bool IsNFO() const;
   bool IsDVDImage() const;
+  bool IsOpticalMediaFile() const;
   bool IsDVDFile(bool bVobs = true, bool bIfos = true) const;
+  bool IsBDFile() const;
   bool IsRAR() const;
   bool IsZIP() const;
   bool IsCBZ() const;
@@ -259,6 +261,17 @@ public:
   void SetUserVideoThumb();
   void SetUserProgramThumb();
   void SetUserMusicThumb(bool alwaysCheckRemote = false);
+
+  /*! \brief Get the path where we expect local metadata to reside.
+   For a folder, this is just the existing path (eg tvshow folder)
+   For a file, this is the parent path, with exceptions made for VIDEO_TS and BDMV files
+   Three cases are handled:
+     /foo/bar/movie_name/file_name          -> /foo/bar/movie_name/
+     /foo/bar/movie_name/VIDEO_TS/file_name -> /foo/bar/movie_name/
+     /foo/bar/movie_name/BDMV/file_name     -> /foo/bar/movie_name/
+     \sa URIUtils::GetParentPath
+   */
+  CStdString GetLocalMetadataPath() const;
 
   // finds a matching local trailer file
   CStdString FindTrailer() const;
@@ -412,7 +425,14 @@ public:
   void SetFastLookup(bool fastLookup);
   bool Contains(const CStdString& fileName) const;
   bool GetFastLookup() const { return m_fastLookup; };
-  void Stack();
+
+  /*! \brief stack a CFileItemList
+   By default we stack all items (files and folders) in a CFileItemList
+   \param stackFiles whether to stack all items or just collapse folders (defaults to true)
+   \sa StackFiles,StackFolders
+   */
+  void Stack(bool stackFiles = true);
+
   SortOrder GetSortOrder() const { return m_sortOrder; }
   SORT_METHOD GetSortMethod() const { return m_sortMethod; }
   /*! \brief load a CFileItemList out of the cache
@@ -489,6 +509,18 @@ private:
   void Sort(FILEITEMLISTCOMPARISONFUNC func);
   void FillSortFields(FILEITEMFILLFUNC func);
   CStdString GetDiscCacheFile(int windowID) const;
+
+  /*!
+   \brief stack files in a CFileItemList
+   \sa Stack
+   */
+  void StackFiles();
+
+  /*!
+   \brief stack folders in a CFileItemList
+   \sa Stack
+   */
+  void StackFolders();
 
   VECFILEITEMS m_items;
   MAPFILEITEMS m_map;

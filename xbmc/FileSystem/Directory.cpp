@@ -28,9 +28,88 @@
 #include "FileItem.h"
 #include "DirectoryCache.h"
 #include "settings/Settings.h"
+#include "utils/Job.h"
+#include "utils/JobManager.h"
+#include "Application.h"
+#include "guilib/GUIWindowManager.h"
+#include "dialogs/GUIDialogBusy.h"
+#include "utils/SingleLock.h"
+#include "utils/URIUtils.h"
 
 using namespace std;
 using namespace XFILE;
+
+#define TIME_TO_BUSY_DIALOG 500
+
+class CGetDirectory
+{
+private:
+
+  struct CResult
+  {
+    CResult(const CStdString& dir, const CStdString& listDir) : m_event(true), m_dir(dir), m_listDir(listDir), m_result(false) {}
+    CEvent        m_event;
+    CFileItemList m_list;
+    CStdString    m_dir;
+    CStdString    m_listDir;
+    bool          m_result;
+  };
+
+  struct CGetJob
+    : CJob
+  {
+    CGetJob(boost::shared_ptr<IDirectory>& imp
+          , boost::shared_ptr<CResult>& result)
+      : m_result(result)
+      , m_imp(imp)
+    {}
+  public:
+    virtual bool DoWork()
+    {
+      m_result->m_list.SetPath(m_result->m_listDir);
+      m_result->m_result         = m_imp->GetDirectory(m_result->m_dir, m_result->m_list);
+      m_result->m_event.Set();
+      return m_result->m_result;
+    }
+
+    boost::shared_ptr<CResult>    m_result;
+    boost::shared_ptr<IDirectory> m_imp;
+  };
+
+public:
+
+  CGetDirectory(boost::shared_ptr<IDirectory>& imp, const CStdString& dir, const CStdString& listDir)
+    : m_result(new CResult(dir, listDir))
+  {
+    m_id = CJobManager::GetInstance().AddJob(new CGetJob(imp, m_result)
+                                           , NULL
+                                           , CJob::PRIORITY_HIGH);
+  }
+ ~CGetDirectory()
+  {
+    CJobManager::GetInstance().CancelJob(m_id);
+  }
+
+  bool Wait(unsigned int timeout)
+  {
+    return m_result->m_event.WaitMSec(timeout);
+  }
+
+  bool GetDirectory(CFileItemList& list)
+  {
+    /* if it was not finished or failed, return failure */
+    if(!m_result->m_event.WaitMSec(0) || !m_result->m_result)
+    {
+      list.Clear();
+      return false;
+    }
+
+    list.Copy(m_result->m_list);
+    return true;
+  }
+  boost::shared_ptr<CResult> m_result;
+  unsigned int               m_id;
+};
 
 CDirectory::CDirectory()
 {}
@@ -38,11 +117,16 @@ CDirectory::CDirectory()
 CDirectory::~CDirectory()
 {}
 
-bool CDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items, CStdString strMask /*=""*/, bool bUseFileDirectories /* = true */, bool allowPrompting /* = false */, DIR_CACHE_TYPE cacheDirectory /* = DIR_CACHE_ONCE */, bool extFileInfo /* = true */)
+bool CDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items, CStdString strMask /*=""*/, bool bUseFileDirectories /* = true */, bool allowPrompting /* = false */, DIR_CACHE_TYPE cacheDirectory /* = DIR_CACHE_ONCE */, bool extFileInfo /* = true */, bool allowThreads /* = false */)
 {
+#ifdef _XBOX
+  if(URIUtils::IsPlugin(strPath))
+    allowThreads = false;
+#endif
   try
   {
-    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(strPath));
+    CStdString realPath = URIUtils::SubstitutePath(strPath);
+    boost::shared_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(realPath));
     if (!pDirectory.get())
       return false;
 
@@ -61,12 +145,48 @@ bool CDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items, C
       pDirectory->SetUseFileDirectories(bUseFileDirectories);
       pDirectory->SetExtFileInfo(extFileInfo);
 
-      items.SetPath(strPath);
-
-      if (!pDirectory->GetDirectory(strPath, items))
+      bool result = false, cancel = false;
+      while (!result && !cancel)
       {
-        CLog::Log(LOGERROR, "%s - Error getting %s", __FUNCTION__, strPath.c_str());
-        return false;
+        if (g_application.IsCurrentThread() && allowThreads && !URIUtils::IsSpecial(strPath))
+        {
+          CSingleExit ex(g_graphicsContext);
+
+          CGetDirectory get(pDirectory, realPath, strPath);
+          if(!get.Wait(TIME_TO_BUSY_DIALOG))
+          {
+            CGUIDialogBusy* dialog = (CGUIDialogBusy*)g_windowManager.GetWindow(WINDOW_DIALOG_BUSY);
+            dialog->Show();
+
+            while(!get.Wait(10))
+            {
+              CSingleLock lock(g_graphicsContext);
+
+              if(dialog->IsCanceled())
+              {
+                cancel = true;
+                break;
+              }
+              g_windowManager.ProcessRenderLoop(false);
+            }
+            if(dialog)
+              dialog->Close();
+          }
+          result = get.GetDirectory(items);
+        }
+        else
+        {
+          items.SetPath(strPath);
+          result = pDirectory->GetDirectory(realPath, items);
+        }
+
+        if (!result)
+        {
+          if (!cancel && g_application.IsCurrentThread() && pDirectory->ProcessRequirements())
+            continue;
+          CLog::Log(LOGERROR, "%s - Error getting %s", __FUNCTION__, strPath.c_str());
+          return false;
+        }
       }
 
       // cache the directory, if necessary
@@ -92,6 +212,16 @@ bool CDirectory::GetDirectory(const CStdString& strPath, CFileItemList &items, C
     if (bUseFileDirectories && !items.IsMusicDb() && !items.IsVideoDb() && !items.IsSmartPlayList())
       FilterFileDirectories(items, strMask);
 
+    // Correct items for path substitution
+    if (strPath != realPath)
+    {
+      for (int i = 0; i < items.Size(); ++i)
+      {
+        CFileItemPtr item = items[i];
+        item->SetPath(URIUtils::SubstitutePath(item->GetPath(), true));
+      }
+    }
+
     return true;
   }
 #ifndef _LINUX
@@ -112,9 +242,10 @@ bool CDirectory::Create(const CStdString& strPath)
 {
   try
   {
-    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(strPath));
+    CStdString realPath = URIUtils::SubstitutePath(strPath);
+    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(realPath));
     if (pDirectory.get())
-      if(pDirectory->Create(strPath.c_str()))
+      if(pDirectory->Create(realPath.c_str()))
         return true;
   }
 #ifndef _LINUX
@@ -131,13 +262,23 @@ bool CDirectory::Create(const CStdString& strPath)
   return false;
 }
 
-bool CDirectory::Exists(const CStdString& strPath)
+bool CDirectory::Exists(const CStdString& strPath, bool bUseCache /* = true */)
 {
   try
   {
-    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(strPath));
+    CStdString realPath = URIUtils::SubstitutePath(strPath);
+    if (bUseCache)
+    {
+      bool bPathInCache;
+      URIUtils::AddSlashAtEnd(realPath);
+      if (g_directoryCache.FileExists(realPath, bPathInCache))
+        return true;
+      if (bPathInCache)
+        return false;
+    }
+    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(realPath));
     if (pDirectory.get())
-      return pDirectory->Exists(strPath.c_str());
+      return pDirectory->Exists(realPath.c_str());
   }
 #ifndef _LINUX
   catch (const win32_exception &e)
@@ -157,9 +298,10 @@ bool CDirectory::Remove(const CStdString& strPath)
 {
   try
   {
-    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(strPath));
+    CStdString realPath = URIUtils::SubstitutePath(strPath);
+    auto_ptr<IDirectory> pDirectory(CFactoryDirectory::Create(realPath));
     if (pDirectory.get())
-      if(pDirectory->Remove(strPath.c_str()))
+      if(pDirectory->Remove(realPath.c_str()))
         return true;
   }
 #ifndef _LINUX
