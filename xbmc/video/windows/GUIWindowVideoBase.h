@@ -103,7 +103,9 @@ protected:
   int GetScraperForItem(CFileItem *item, SScraperInfo &info, VIDEO::SScanSettings& settings);
 
   static bool OnUnAssignContent(const CStdString &path, int label1, int label2, int label3);
-  
+
+  bool StackingAvailable(const CFileItemList &items) const;
+
   CGUIDialogProgress* m_dlgProgress;
   CVideoDatabase m_database;
 
