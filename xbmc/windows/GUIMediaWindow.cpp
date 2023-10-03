@@ -816,11 +816,15 @@ bool CGUIMediaWindow::Update(const CStdString &strDirectory, bool updateFilterPa
 
   int iWindow = GetID();
   int showLabel = 0;
-  if (strDirectory.IsEmpty() && (iWindow == WINDOW_MUSIC_FILES ||
-                                 iWindow == WINDOW_FILES ||
-                                 iWindow == WINDOW_PICTURES ||
-                                 iWindow == WINDOW_PROGRAMS))
-    showLabel = 1026;
+  if (strDirectory.IsEmpty())
+  {
+    if (iWindow == WINDOW_PICTURES)
+      showLabel = 997;
+    else if (iWindow == WINDOW_MUSIC_FILES)
+      showLabel = 998;
+    else // WINDOW_FILES
+      showLabel = 1026;
+  }
   if (m_vecItems->GetPath().Equals("sources://video/"))
     showLabel = 999;
   else if (m_vecItems->GetPath().Equals("sources://music/"))
