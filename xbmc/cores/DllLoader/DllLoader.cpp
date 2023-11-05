@@ -97,6 +97,7 @@ int finishimageloadOffsets[][2] = {
 // dll checksum, function offset
    {0x000652DE,  0x00016E1B}, // xdk version 5558
    {0x0006BFBE,  0x00016E5A}, // xdk version 5788
+   {0x0006D356,  0x00016E50}, // xdk version 5933
    {0,0}
 };
 
@@ -107,6 +108,7 @@ int dmiOffsets[][2] = {
 // dll checksum, function offset
    {0x000652DE,  0x0005A0E0}, // xdk version 5558
    {0x0006BFBE,  0x0005A4A0}, // xdk version 5788
+   {0x0006D356,  0x0005A520}, // xdk version 5933
    {0,0}
 };
 
