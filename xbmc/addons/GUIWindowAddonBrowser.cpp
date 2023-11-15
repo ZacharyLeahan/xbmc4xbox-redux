@@ -146,10 +146,10 @@ void CGUIWindowAddonBrowser::GetContextButtons(int itemNumber,
     buttons.Add(CONTEXT_BUTTON_SCAN,24034);
   
   AddonPtr addon;
-  if (!CAddonMgr::Get().GetAddon(pItem->GetProperty("Addon.ID").asString(), addon))
+  if (!CAddonMgr::Get().GetAddon(pItem->GetProperty("Addon.ID").asString(), addon, ADDON_UNKNOWN, false)) // allow disabled addons
     return;
 
-  if (addon->Type() == ADDON_REPOSITORY)
+  if (addon->Type() == ADDON_REPOSITORY && pItem->m_bIsFolder)
   {
     buttons.Add(CONTEXT_BUTTON_SCAN,24034);
     buttons.Add(CONTEXT_BUTTON_UPDATE_LIBRARY,24035);
@@ -172,7 +172,7 @@ bool CGUIWindowAddonBrowser::OnContextButton(int itemNumber,
     }
   }
   AddonPtr addon;
-  if (!CAddonMgr::Get().GetAddon(pItem->GetProperty("Addon.ID").asString(), addon))
+  if (!CAddonMgr::Get().GetAddon(pItem->GetProperty("Addon.ID").asString(), addon, ADDON_UNKNOWN, false)) // allow disabled addons
     return false;
 
   if (button == CONTEXT_BUTTON_SETTINGS)
