@@ -64,7 +64,7 @@
 #include "music/dialogs/GUIDialogMusicScan.h"
 #include "video/dialogs/GUIDialogVideoScan.h"
 #include "GUIWindowManager.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "playlists/PlayList.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/URIUtils.h"
@@ -72,7 +72,7 @@
 
 // stuff for current song
 #ifdef HAS_FILESYSTEM
-#include "FileSystem/SndtrkDirectory.h"
+#include "filesystem/SndtrkDirectory.h"
 #endif
 #include "music/tags/MusicInfoTagLoaderFactory.h"
 #include "music/MusicInfoLoader.h"

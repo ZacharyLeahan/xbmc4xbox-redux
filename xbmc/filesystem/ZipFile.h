@@ -26,8 +26,8 @@
 #include "utils/log.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogProgress.h"
-#include "FileSystem/File.h"
-#include "FileSystem/ZipManager.h"
+#include "filesystem/File.h"
+#include "filesystem/ZipManager.h"
 
 namespace XFILE
 {

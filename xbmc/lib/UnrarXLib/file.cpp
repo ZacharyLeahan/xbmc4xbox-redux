@@ -2,7 +2,7 @@
 
 // BE WARNED THIS FILE IS HEAVILY MODIFIED TO BE USED WITH XBMC
 
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "Util.h"
 #include "utils/URIUtils.h"
 

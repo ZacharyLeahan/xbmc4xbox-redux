@@ -25,7 +25,7 @@
 #include "utils/log.h"
 #include "cores/DllLoader/DllLoader.h"
 #include "GUIInfoManager.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 #include "LocalizeStrings.h"
 #ifdef HAS_XBOX_HARDWARE
 #include "xbox/Undocumented.h"
@@ -35,7 +35,7 @@
 #include "xbox/XKRC4.h"
 extern "C" XPP_DEVICE_TYPE XDEVICE_TYPE_IR_REMOTE_TABLE;
 #endif
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 CSysInfo g_sysinfo;
 
 bool CSysInfo::DoWork()

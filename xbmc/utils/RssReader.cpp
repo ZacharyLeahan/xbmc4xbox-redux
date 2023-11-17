@@ -26,8 +26,8 @@
 #include "settings/GUISettings.h"
 #include "URL.h"
 #include "LocalizeStrings.h"
-#include "FileSystem/File.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/File.h"
+#include "filesystem/CurlFile.h"
 #ifdef __APPLE__
 #include "CocoaUtils.h"
 #endif

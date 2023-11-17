@@ -21,7 +21,7 @@
 #include "utils/log.h"
 #include "utils/URIUtils.h"
 #include "ModuleCodec.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 using namespace XFILE;
 

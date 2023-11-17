@@ -20,19 +20,19 @@
  */
 
 #include "FileOperationJob.h"
-#include "FileSystem/File.h"
-#include "FileSystem/Directory.h"
-#include "FileSystem/ZipManager.h"
-#include "FileSystem/FileDirectoryFactory.h"
-#include "FileSystem/MultiPathDirectory.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/File.h"
+#include "filesystem/Directory.h"
+#include "filesystem/ZipManager.h"
+#include "filesystem/FileDirectoryFactory.h"
+#include "filesystem/MultiPathDirectory.h"
+#include "filesystem/SpecialProtocol.h"
 #include "log.h"
 #include "Util.h"
 #include "URIUtils.h"
 #include "settings/AdvancedSettings.h"
 #include "LocalizeStrings.h"
 #ifdef HAS_FILESYSTEM_RAR
-#include "FileSystem/RarManager.h"
+#include "filesystem/RarManager.h"
 #endif
 
 using namespace std;

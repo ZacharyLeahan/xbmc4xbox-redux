@@ -23,7 +23,7 @@
 #include "Util.h"
 #include "utils/URIUtils.h"
 #include "URL.h"
-#include "FileSystem/MultiPathDirectory.h"
+#include "filesystem/MultiPathDirectory.h"
 #include "Utils/MemoryUnitManager.h"
 
 using namespace std;

@@ -23,7 +23,7 @@
 #include "Python/Include/Python.h"
 #include "Python/Include/osdefs.h"
 #include "XBPythonDll.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "LocalizeStrings.h"

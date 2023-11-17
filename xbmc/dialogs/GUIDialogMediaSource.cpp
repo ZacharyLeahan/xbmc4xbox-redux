@@ -27,9 +27,9 @@
 #include "GUIWindowManager.h"
 #include "Util.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/PluginDirectory.h"
+#include "filesystem/PluginDirectory.h"
 #include "dialogs/GUIDialogYesNo.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "LocalizeStrings.h"
 

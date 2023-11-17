@@ -20,7 +20,7 @@
  *
  */
 
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/Thread.h"
 
 class CGUIDialogProgress;

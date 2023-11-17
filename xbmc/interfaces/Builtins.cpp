@@ -53,10 +53,10 @@
 #include "Util.h"
 #include "video/VideoDatabase.h"
 
-#include "FileSystem/PluginDirectory.h"
-#include "FileSystem/RarManager.h"
-#include "FileSystem/VideoDatabaseDirectory.h"
-#include "FileSystem/ZipManager.h"
+#include "filesystem/PluginDirectory.h"
+#include "filesystem/RarManager.h"
+#include "filesystem/VideoDatabaseDirectory.h"
+#include "filesystem/ZipManager.h"
 
 #include "utils/URIUtils.h"
 #include "xbox/xbeheader.h"

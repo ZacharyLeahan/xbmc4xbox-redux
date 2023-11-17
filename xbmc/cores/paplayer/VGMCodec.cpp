@@ -22,7 +22,7 @@
 #include "VGMCodec.h"
 #include "Util.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 
 VGMCodec::VGMCodec()

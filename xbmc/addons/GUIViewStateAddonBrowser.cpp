@@ -25,7 +25,7 @@
 #include "Key.h"
 #include "ViewState.h"
 #include "settings/Settings.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "addons/Addon.h"
 #include "addons/AddonManager.h"
 #include "AddonDatabase.h"

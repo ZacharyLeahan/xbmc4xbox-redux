@@ -32,11 +32,11 @@
 #include <time.h>
 #include <signal.h>
 #include "Util.h"
-#include "FileSystem/IDirectory.h"
-#include "FileSystem/DirectoryFactory.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/IDirectory.h"
+#include "filesystem/DirectoryFactory.h"
+#include "filesystem/SpecialProtocol.h"
 #include "URL.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/GUISettings.h"
 #include "FileItem.h"
 #include "utils/URIUtils.h"

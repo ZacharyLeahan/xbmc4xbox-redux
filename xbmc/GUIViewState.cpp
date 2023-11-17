@@ -39,7 +39,7 @@
 #include "ViewState.h"
 #include "settings/Settings.h"
 #include "FileItem.h"
-#include "FileSystem/AddonsDirectory.h"
+#include "filesystem/AddonsDirectory.h"
 #include "TextureManager.h"
 
 #define PROPERTY_SORT_ORDER         "sort.order"

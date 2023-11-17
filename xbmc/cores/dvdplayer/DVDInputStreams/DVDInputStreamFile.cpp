@@ -21,7 +21,7 @@
 #include "utils/log.h"
 #include "DVDInputStreamFile.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 using namespace XFILE;
 

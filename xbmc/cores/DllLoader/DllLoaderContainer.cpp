@@ -23,7 +23,7 @@
 #include "DllLoaderContainer.h"
 #include "DllLoader.h"
 #include "dll_tracker.h" // for python unload hack
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "Util.h"
 #include "utils/URIUtils.h"
 #include "utils/StringUtils.h"

@@ -24,7 +24,7 @@
 #include "settings/Settings.h"
 #include "SectionLoader.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 using namespace XFILE;
 

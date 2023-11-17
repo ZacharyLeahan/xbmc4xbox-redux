@@ -19,7 +19,7 @@
  */
 
 #include "ASAPFileDirectory.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "music/tags/MusicInfoTagLoaderASAP.h"
 
 using namespace XFILE;

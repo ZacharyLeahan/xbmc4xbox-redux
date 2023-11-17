@@ -21,8 +21,8 @@
 #include <math.h>
 
 #include "SmartPlaylistDirectory.h"
-#include "FileSystem/Directory.h"
-#include "FileSystem/File.h"
+#include "filesystem/Directory.h"
+#include "filesystem/File.h"
 #include "filesystem/FileDirectoryFactory.h"
 #include "music/MusicDatabase.h"
 #include "SmartPlaylist.h"

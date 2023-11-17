@@ -21,7 +21,7 @@
 #include "playlists/PlayListPLS.h"
 #include "playlists/PlayListFactory.h"
 #include "Util.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/AdvancedSettings.h"
 #include "music/tags/MusicInfoTag.h"
 #include "utils/URIUtils.h"

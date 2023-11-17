@@ -28,7 +28,7 @@
 //
 //
 
-#include "FileSystem/DirectoryFactory.h"
+#include "filesystem/DirectoryFactory.h"
 
 namespace MEDIA_DETECT
 {

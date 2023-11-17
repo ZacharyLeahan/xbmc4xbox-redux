@@ -33,7 +33,7 @@
 #include "music/tags/Id3Tag.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/CharsetConverter.h"
 
 using namespace std;
@@ -190,7 +190,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo, int inexact_list_select)
 
   //##########################################################
   // Read the data from cddb
-  Recv(false); //erstmal den Müll abholen
+  Recv(false); //erstmal den Mï¿½ll abholen
   if ( !Send(read_buffer) )
   {
     CLog::Log(LOGERROR, "Xcddb::queryCDinfo_inexaxt_list_select Error sending \"%s\"", read_buffer.c_str());
@@ -284,7 +284,7 @@ bool Xcddb::queryCDinfo(CCdInfo* pInfo, int inexact_list_select)
 //  }
 //  unsigned long complete_length = frames[lead_out] / 75;
 //
-//  // Socket öffnen
+//  // Socket ï¿½ffnen
 //  if ( !openSocket() )
 //  {
 //    //writeLog("openSocket Failed");

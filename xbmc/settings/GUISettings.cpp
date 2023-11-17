@@ -32,7 +32,7 @@
 #include <xfont.h>
 #endif
 #include "storage/MediaManager.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "settings/AdvancedSettings.h"
 #include "LocalizeStrings.h"
 #include "GUIFont.h" // for FONT_STYLE_* definitions

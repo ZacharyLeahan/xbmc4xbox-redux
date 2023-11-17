@@ -21,7 +21,7 @@
 #include "system.h"
 #include "emu_dx8.h"
 #include "GraphicContext.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 
 extern "C"
 {

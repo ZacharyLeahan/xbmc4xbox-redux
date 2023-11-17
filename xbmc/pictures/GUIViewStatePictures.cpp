@@ -24,8 +24,8 @@
 #include "ViewState.h"
 #include "settings/Settings.h"
 #include "settings/AdvancedSettings.h"
-#include "FileSystem/Directory.h"
-#include "FileSystem/PluginDirectory.h"
+#include "filesystem/Directory.h"
+#include "filesystem/PluginDirectory.h"
 #include "Util.h"
 #include "LocalizeStrings.h"
 

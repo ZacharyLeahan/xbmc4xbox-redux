@@ -28,7 +28,7 @@
 #include "utils/URIUtils.h"
 #include "GUIWindowManager.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "TextureManager.h"
 #include "../XBPython.h"
 #include "LocalizeStrings.h"

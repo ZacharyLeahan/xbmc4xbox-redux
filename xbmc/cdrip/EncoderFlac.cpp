@@ -20,7 +20,7 @@
 
 #include "utils/log.h"
 #include "EncoderFlac.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/GUISettings.h"
 
 CEncoderFlac::CEncoderFlac() : m_encoder(0), m_samplesBuf(new FLAC__int32[SAMPLES_BUF_SIZE])

@@ -22,7 +22,7 @@
 #include "XBTF.h"
 #include "Util.h"
 #include <string.h>
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/log.h"
 
 using namespace XFILE;

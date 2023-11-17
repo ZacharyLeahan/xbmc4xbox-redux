@@ -19,7 +19,7 @@
  */
 
 #include "DVDInputStreamTV.h"
-#include "FileSystem/MythFile.h"
+#include "filesystem/MythFile.h"
 #include "Filesystem/SlingboxFile.h"
 #include "URL.h"
 

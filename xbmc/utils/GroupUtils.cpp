@@ -28,7 +28,7 @@
 #include "video/VideoDbUrl.h"
 #include "video/VideoInfoTag.h"
 #ifdef _XBOX
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #endif
 using namespace std;
 

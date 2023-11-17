@@ -22,7 +22,7 @@
 #include "GUISound.h"
 #include "AudioContext.h"
 #include "settings/Settings.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 typedef struct
 {

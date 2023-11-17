@@ -39,7 +39,7 @@
 #include "URL.h"
 #include "settings/AdvancedSettings.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "LocalizeStrings.h"
 #include "utils/Variant.h"
 #include "video/VideoDatabase.h"

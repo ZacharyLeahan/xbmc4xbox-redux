@@ -20,8 +20,8 @@
 
 #include "DownloadQueue.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/File.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/File.h"
+#include "filesystem/CurlFile.h"
 #include "utils/log.h"
 
 using namespace std;

@@ -21,7 +21,7 @@
 #include "include.h"
 #include "GUIColorManager.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "addons/Skin.h"
 
 CGUIColorManager g_colorManager;

@@ -21,7 +21,7 @@
 #include "include.h"
 #include "XMLUtils.h"
 #include "URL.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "utils/StringUtils.h"
 
 bool XMLUtils::GetHex(const TiXmlNode* pRootNode, const char* strTag, uint32_t& hexValue)

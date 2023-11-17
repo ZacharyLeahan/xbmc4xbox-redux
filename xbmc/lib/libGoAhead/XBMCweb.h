@@ -10,7 +10,7 @@
 
 /********************************* Includes ***********************************/
 
-#include "FileSystem/VirtualDirectory.h"
+#include "filesystem/VirtualDirectory.h"
 #include "includes.h"
 #include "boost/shared_ptr.hpp"
 

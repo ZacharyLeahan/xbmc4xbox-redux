@@ -21,8 +21,8 @@
 #include "utils/log.h"
 #include "DVDInputStreamStack.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
-#include "FileSystem/StackDirectory.h"
+#include "filesystem/File.h"
+#include "filesystem/StackDirectory.h"
 #include <limits>
 
 using namespace XFILE;

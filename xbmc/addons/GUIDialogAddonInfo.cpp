@@ -25,18 +25,17 @@
 #include "addons/AddonManager.h"
 #include "AddonDatabase.h"
 #include "FileItem.h"
-#include "FileSystem/Directory.h"
-#include "FileSystem/File.h"
-#include "FileSystem/SpecialProtocol.h"
-#include "addons/GUIDialogAddonSettings.h"
+#include "filesystem/Directory.h"
+#include "filesystem/SpecialProtocol.h"
+#include "GUIDialogAddonSettings.h"
 #include "dialogs/GUIDialogContextMenu.h"
 #include "dialogs/GUIDialogTextViewer.h"
 #include "GUIUserMessages.h"
-#include "GUIWindowManager.h"
-#include "URIUtils.h"
+#include "guilib/GUIWindowManager.h"
 #include "utils/JobManager.h"
 #include "utils/FileOperationJob.h"
 #include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
 #include "addons/AddonInstaller.h"
 
 #define CONTROL_BTN_INSTALL          6
@@ -54,7 +53,6 @@ CGUIDialogAddonInfo::CGUIDialogAddonInfo(void)
     : CGUIDialog(WINDOW_DIALOG_ADDON_INFO, "DialogAddonInfo.xml")
 {
   m_item = CFileItemPtr(new CFileItem);
-  m_loadType = KEEP_IN_MEMORY;
 }
 
 CGUIDialogAddonInfo::~CGUIDialogAddonInfo(void)
@@ -379,8 +377,8 @@ void CGUIDialogAddonInfo::OnJobComplete(unsigned int jobID, bool success,
 void CGUIDialogAddonInfo::GrabRollbackVersions()
 {
   CFileItemList items;
-  XFILE::CDirectory::GetDirectory("special://home/addons/packages/",items,".zip",false);
-  items.Sort(SortByLabel,SortOrderAscending);
+  XFILE::CDirectory::GetDirectory("special://home/addons/packages/",items,".zip",DIR_FLAG_NO_FILE_DIRS);
+  items.Sort(SortByLabel, SortOrderAscending);
   for (int i=0;i<items.Size();++i)
   {
     if (items[i]->m_bIsFolder)

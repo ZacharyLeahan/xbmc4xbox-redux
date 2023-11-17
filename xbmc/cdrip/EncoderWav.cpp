@@ -20,7 +20,7 @@
 
 #include "utils/log.h"
 #include "EncoderWav.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 CEncoderWav::CEncoderWav()
 {

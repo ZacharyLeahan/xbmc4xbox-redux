@@ -64,23 +64,23 @@
 #include "SectionLoader.h"
 #include "cores/DllLoader/DllLoaderContainer.h"
 #include "GUIUserMessages.h"
-#include "FileSystem/DirectoryCache.h"
-#include "FileSystem/StackDirectory.h"
-#include "FileSystem/SpecialProtocol.h"
-#include "FileSystem/DllLibCurl.h"
-#include "FileSystem/MythSession.h"
-#include "FileSystem/PluginDirectory.h"
+#include "filesystem/DirectoryCache.h"
+#include "filesystem/StackDirectory.h"
+#include "filesystem/SpecialProtocol.h"
+#include "filesystem/DllLibCurl.h"
+#include "filesystem/MythSession.h"
+#include "filesystem/PluginDirectory.h"
 #ifdef HAS_FILESYSTEM_SAP
-#include "FileSystem/SAPDirectory.h"
+#include "filesystem/SAPDirectory.h"
 #endif
-#include "FileSystem/HTSPDirectory.h"
+#include "filesystem/HTSPDirectory.h"
 #include "utils/TuxBoxUtil.h"
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
 #include "GUILargeTextureManager.h"
 #include "music/LastFmManager.h"
 #include "SmartPlaylist.h"
-#include "FileSystem/RarManager.h"
+#include "filesystem/RarManager.h"
 #include "playlists/PlayList.h"
 #include "utils/DownloadQueueManager.h"
 #include "settings/AdvancedSettings.h"
@@ -88,11 +88,11 @@
 #include "utils/CharsetConverter.h"
 #include "utils/StringUtils.h"
 #ifdef HAS_FILESYSTEM
-#include "FileSystem/DAAPFile.h"
+#include "filesystem/DAAPFile.h"
 #endif
 #ifdef HAS_UPNP
 #include "network/UPnP.h"
-#include "FileSystem/UPnPDirectory.h"
+#include "filesystem/UPnPDirectory.h"
 #endif
 #include "PartyModeManager.h"
 #ifdef HAS_VIDEO_PLAYBACK

@@ -21,7 +21,7 @@
 #include "Util.h"
 #include "utils/URIUtils.h"
 #include "music/tags/MusicInfoTag.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 using namespace MUSIC_INFO;
 

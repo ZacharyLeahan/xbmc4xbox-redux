@@ -25,8 +25,8 @@
 #include "Util.h"
 #include "settings/Settings.h"
 #include "Key.h"
-#include "FileSystem/File.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/File.h"
+#include "filesystem/Directory.h"
 #include "FileItem.h"
 
 using namespace std;

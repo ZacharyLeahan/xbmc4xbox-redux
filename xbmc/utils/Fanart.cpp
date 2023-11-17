@@ -23,8 +23,8 @@
 #include "utils/URIUtils.h"
 #include "utils/StringUtils.h"
 #include "pictures/Picture.h"
-#include "FileSystem/CurlFile.h"
-#include "FileSystem/File.h"
+#include "filesystem/CurlFile.h"
+#include "filesystem/File.h"
 
 const unsigned int CFanart::max_fanart_colors=3;
 

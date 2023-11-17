@@ -19,7 +19,7 @@
  */
  
 #include "EmuFileWrapper.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 CEmuFileWrapper g_emuFileWrapper;
 

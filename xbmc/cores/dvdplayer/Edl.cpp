@@ -22,8 +22,8 @@
 #include "include.h"
 #include "utils/log.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/File.h"
-#include "FileSystem/MythFile.h"
+#include "filesystem/File.h"
+#include "filesystem/MythFile.h"
 #include "settings/AdvancedSettings.h"
 
 extern "C"

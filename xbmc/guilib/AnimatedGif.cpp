@@ -28,7 +28,7 @@
 
 #include "include.h"
 #include "AnimatedGif.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "utils/log.h"
 
 #ifdef _WIN32PC

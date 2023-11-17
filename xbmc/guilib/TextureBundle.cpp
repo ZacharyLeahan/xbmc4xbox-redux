@@ -13,7 +13,7 @@
 #include "addons/Skin.h"
 #include "settings/GUISettings.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 
 #ifdef _XBOX
 #pragma comment(lib,"xbmc/lib/liblzo/lzo.lib")

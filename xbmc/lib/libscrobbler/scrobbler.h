@@ -24,7 +24,7 @@
 #include <vector>
 #include "utils/StdString.h"
 #include "Thread.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 #include "CriticalSection.h"
 
 #define SCROBBLER_USER_ERROR_BADAUTH  1

@@ -20,7 +20,7 @@
 
 #include "system.h"
 #include "music/tags/APEv2Tag.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include <climits>
  
 using namespace XFILE;

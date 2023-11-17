@@ -31,7 +31,7 @@
 #include "utils/MemoryUnitManager.h"
 #endif
 #include "storage/DetectDVDType.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "utils/URIUtils.h"
 

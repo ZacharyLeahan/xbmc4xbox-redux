@@ -21,8 +21,8 @@
 #include "system.h"
 #include "utils/log.h"
 #include "storage/DetectDVDType.h"
-#include "FileSystem/cdioSupport.h"
-#include "FileSystem/iso9660.h"
+#include "filesystem/cdioSupport.h"
+#include "filesystem/iso9660.h"
 #ifdef HAS_UNDOCUMENTED
 #include "xbox/Undocumented.h"
 #endif
@@ -33,7 +33,7 @@
 #include "pictures/Picture.h"
 #include "GUIWindowManager.h"
 #include "GUIUserMessages.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/Settings.h"
 #include "FileItem.h"
 #include "Application.h"

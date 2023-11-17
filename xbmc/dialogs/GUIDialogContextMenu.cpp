@@ -39,7 +39,7 @@
 #include "dialogs/GUIDialogYesNo.h"
 #include "addons/AddonManager.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "pictures/Picture.h"
 #include "LocalizeStrings.h"
 #include "utils/StringUtils.h"

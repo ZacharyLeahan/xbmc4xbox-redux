@@ -24,7 +24,7 @@
 #include "pictures/Picture.h"
 #include "video/VideoInfoTag.h"
 #include "Util.h"
-#include "FileSystem/StackDirectory.h"
+#include "filesystem/StackDirectory.h"
 
 #include "DVDFileInfo.h"
 #include "DVDStreamInfo.h"

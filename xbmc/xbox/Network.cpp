@@ -25,7 +25,7 @@
 #include "Undocumented.h"
 #endif
 #include "Application.h"
-#include "FileSystem/SmbFile.h"
+#include "filesystem/SmbFile.h"
 #include "lib/libscrobbler/lastfmscrobbler.h"
 #include "lib/libscrobbler/librefmscrobbler.h"
 #include "settings/Settings.h"

@@ -25,8 +25,8 @@
 #endif
 #include "utils/URIUtils.h"
 #include "music/tags/MusicInfoTag.h"
-#include "FileSystem/File.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/File.h"
+#include "filesystem/SpecialProtocol.h"
 #include "SectionLoader.h"
 #include "utils/log.h"
 

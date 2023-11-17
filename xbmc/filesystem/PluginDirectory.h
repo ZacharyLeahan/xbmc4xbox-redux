@@ -19,8 +19,8 @@
  *
  */
 
-#include "FileSystem/IDirectory.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/IDirectory.h"
+#include "filesystem/Directory.h"
 #include "utils/StdString.h"
 #include "SortFileItem.h"
 

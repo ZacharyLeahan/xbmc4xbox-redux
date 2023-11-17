@@ -24,7 +24,7 @@
 #include "cores/DllLoader/DllLoader.h"
 #include "music/tags/MusicInfoTagLoaderSPC.h"
 #include "music/tags/MusicInfoTag.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "../../Util.h"
 #ifdef _WIN32PC
 #include "../DllLoader/Win32DllLoader.h"

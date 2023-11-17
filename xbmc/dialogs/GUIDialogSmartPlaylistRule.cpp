@@ -24,7 +24,7 @@
 #include "video/VideoDatabase.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogSelect.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "FileItem.h"
 #include "GUIEditControl.h"
 #include "storage/MediaManager.h"

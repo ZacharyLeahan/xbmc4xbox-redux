@@ -24,7 +24,7 @@
 #include "Util.h"
 #include "pictures/Picture.h"
 #include "settings/AdvancedSettings.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 // Use SDL macros to perform byte swapping on big-endian systems
 // This assumes that big-endian systems use SDL

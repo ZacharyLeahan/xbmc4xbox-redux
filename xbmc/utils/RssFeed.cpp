@@ -21,7 +21,7 @@
 #include "RssFeed.h"
 #include "settings/Settings.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 #include "tinyXML/tinyxml.h"
 #include "utils/log.h"
 #include "utils/Variant.h"

@@ -19,9 +19,9 @@
  */
 
 #include "Weather.h"
-#include "FileSystem/ZipManager.h"
-#include "FileSystem/RarManager.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/ZipManager.h"
+#include "filesystem/RarManager.h"
+#include "filesystem/CurlFile.h"
 #include "XMLUtils.h"
 #include "utils/POUtils.h"
 #include "Temperature.h"
@@ -36,7 +36,7 @@
 #include "XBDateTime.h"
 #include "LangInfo.h"
 #include "LocalizeStrings.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "StringUtils.h"
 #include "utils/CharsetConverter.h"
 #include "utils/log.h"

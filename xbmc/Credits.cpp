@@ -32,7 +32,7 @@
 #include "lib/liblzo/LZO1X.H"
 #include "addons/Skin.h"
 #include "GUIFont.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "SectionLoader.h"
 #include "utils/CharsetConverter.h"
 

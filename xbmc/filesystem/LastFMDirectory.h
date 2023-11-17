@@ -20,7 +20,7 @@
  */
 
 #include "IDirectory.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 #include "tinyXML/tinyxml.h"
 #include "utils/Thread.h"
 

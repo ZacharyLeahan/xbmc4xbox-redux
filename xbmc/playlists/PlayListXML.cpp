@@ -20,7 +20,7 @@
 
 #include "tinyXML/tinyxml.h"
 #include "playlists/PlayListXML.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "Util.h"
 #include "utils/URIUtils.h"
 #include "utils/RegExp.h"

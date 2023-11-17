@@ -22,7 +22,7 @@
 #include "music/tags/APEv2Tag.h"
 #include "music/tags/Id3Tag.h"
 #include "settings/AdvancedSettings.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/log.h"
 
 using namespace MUSIC_INFO;

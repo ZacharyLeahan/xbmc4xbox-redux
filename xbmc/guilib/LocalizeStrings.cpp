@@ -21,7 +21,7 @@
 #include "include.h"
 #include "LocalizeStrings.h"
 #include "utils/CharsetConverter.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "XMLUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/POUtils.h"
@@ -215,14 +215,14 @@ bool CLocalizeStrings::Load(const CStdString& strPathName, const CStdString& str
 
   // fill in the constant strings
   m_strings[20022].strTranslated = "";
-  m_strings[20027].strTranslated = ToUTF8(encoding_thisfile, "°F");
+  m_strings[20027].strTranslated = ToUTF8(encoding_thisfile, "ï¿½F");
   m_strings[20028].strTranslated = ToUTF8(encoding_thisfile, "K");
-  m_strings[20029].strTranslated = ToUTF8(encoding_thisfile, "°C");
-  m_strings[20030].strTranslated = ToUTF8(encoding_thisfile, "°Ré");
-  m_strings[20031].strTranslated = ToUTF8(encoding_thisfile, "°Ra");
-  m_strings[20032].strTranslated = ToUTF8(encoding_thisfile, "°Rø");
-  m_strings[20033].strTranslated = ToUTF8(encoding_thisfile, "°De");
-  m_strings[20034].strTranslated = ToUTF8(encoding_thisfile, "°N");
+  m_strings[20029].strTranslated = ToUTF8(encoding_thisfile, "ï¿½C");
+  m_strings[20030].strTranslated = ToUTF8(encoding_thisfile, "ï¿½Rï¿½");
+  m_strings[20031].strTranslated = ToUTF8(encoding_thisfile, "ï¿½Ra");
+  m_strings[20032].strTranslated = ToUTF8(encoding_thisfile, "ï¿½Rï¿½");
+  m_strings[20033].strTranslated = ToUTF8(encoding_thisfile, "ï¿½De");
+  m_strings[20034].strTranslated = ToUTF8(encoding_thisfile, "ï¿½N");
 
   m_strings[20200].strTranslated = ToUTF8(encoding_thisfile, "km/h");
   m_strings[20201].strTranslated = ToUTF8(encoding_thisfile, "m/min");

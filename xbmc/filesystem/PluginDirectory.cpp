@@ -32,7 +32,7 @@
 #include "../utils/SingleLock.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogProgress.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/GUISettings.h"
 #include "FileItem.h"
 #include "LocalizeStrings.h"

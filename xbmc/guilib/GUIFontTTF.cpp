@@ -23,7 +23,7 @@
 #include "GUIFontTTF.h"
 #include "GUIFontManager.h"
 #include "GraphicContext.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "utils/MathUtils.h"
 
 // stuff for freetype

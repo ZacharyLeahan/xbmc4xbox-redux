@@ -36,7 +36,7 @@
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogOK.h"
 #include "settings/Settings.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "LocalizeStrings.h"
 #include "utils/log.h"

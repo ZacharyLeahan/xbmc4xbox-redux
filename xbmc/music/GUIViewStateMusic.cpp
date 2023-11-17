@@ -29,9 +29,9 @@
 #include "Util.h"
 #include "LocalizeStrings.h"
 
-#include "FileSystem/Directory.h"
-#include "FileSystem/MusicDatabaseDirectory.h"
-#include "FileSystem/VideoDatabaseDirectory.h"
+#include "filesystem/Directory.h"
+#include "filesystem/MusicDatabaseDirectory.h"
+#include "filesystem/VideoDatabaseDirectory.h"
 
 using namespace XFILE;
 using namespace MUSICDATABASEDIRECTORY;

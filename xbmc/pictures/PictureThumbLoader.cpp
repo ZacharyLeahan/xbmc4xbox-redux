@@ -21,7 +21,7 @@
 #include "pictures/PictureThumbLoader.h"
 #include "pictures/Picture.h"
 #include "URL.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "video/VideoInfoTag.h"
 #include "TextureManager.h"

@@ -21,7 +21,7 @@
 #include "utils/log.h"
 #include "TimidityCodec.h"
 #include "cores/DllLoader/DllLoader.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 static const char * DEFAULT_SOUNDFONT_FILE = "special://xbmc/system/players/paplayer/timidity/soundfont.sf2";
 

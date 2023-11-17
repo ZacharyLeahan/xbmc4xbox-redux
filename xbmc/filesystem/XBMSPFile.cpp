@@ -22,7 +22,7 @@
 #include "XBMSPFile.h"
 #include "SectionLoader.h"
 #include "Util.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "URL.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/URIUtils.h"

@@ -22,7 +22,7 @@
 #include "utils/log.h"
 #include "playlists/PlayListFactory.h"
 #include "music/tags/MusicInfoTag.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "playlists/PlayList.h"
 
 using namespace std;

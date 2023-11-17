@@ -21,7 +21,7 @@
 #include "include.h"
 #include "GUIMultiImage.h"
 #include "TextureManager.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "utils/URIUtils.h"
 #include "FileItem.h"
 

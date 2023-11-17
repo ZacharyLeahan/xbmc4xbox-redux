@@ -23,7 +23,7 @@
 #include "utils/URIUtils.h"
 #include "MusicDatabaseDirectory/QueryParams.h"
 #include "music/MusicDatabase.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "utils/Crc32.h"
 #include "TextureManager.h"

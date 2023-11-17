@@ -26,7 +26,7 @@
 #include "settings/Settings.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/Crc32.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "AutoPtrHandle.h"
 #include "utils/SingleLock.h"
 #include "DbUrl.h"

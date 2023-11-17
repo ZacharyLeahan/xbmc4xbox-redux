@@ -33,8 +33,8 @@
 #include "DVDClock.h" // for DVD_TIME_BASE
 #include "utils/Win32Exception.h"
 #include "settings/AdvancedSettings.h"
-#include "FileSystem/File.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/File.h"
+#include "filesystem/Directory.h"
 
 void CDemuxStreamAudioFFmpeg::GetStreamInfo(std::string& strInfo)
 {

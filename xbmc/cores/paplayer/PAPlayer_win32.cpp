@@ -6,7 +6,7 @@
 #include "CodecFactory.h"
 #include "GUIInfoManager.h"
 #include "AudioContext.h"
-#include "FileSystem/ShoutcastFile.h"
+#include "filesystem/ShoutcastFile.h"
 #include "Application.h"
 #include "settings/Settings.h"
 #include "FileItem.h"

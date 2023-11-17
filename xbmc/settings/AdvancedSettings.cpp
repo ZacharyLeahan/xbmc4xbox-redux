@@ -24,7 +24,7 @@
 #include "settings/AdvancedSettings.h"
 #include "Application.h"
 #include "network/DNSNameCache.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/LangCodeExpander.h"
 #include "LangInfo.h"
 #include "utils/URIUtils.h"

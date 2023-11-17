@@ -21,7 +21,7 @@
  */
 
 #include "DVDInputStream.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 #include "utils/HttpHeader.h"
 
 class CDVDInputStreamHttp : public CDVDInputStream

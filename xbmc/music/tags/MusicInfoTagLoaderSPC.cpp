@@ -22,7 +22,7 @@
 #include "music/tags/MusicInfoTagLoaderSPC.h"
 #include "cores/paplayer/spc/Types.h"
 #include "music/tags/MusicInfoTag.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "utils/log.h"
 
 using namespace XFILE;

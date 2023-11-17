@@ -20,8 +20,8 @@
 
 #include "music/tags/MusicInfoTagLoaderDatabase.h"
 #include "music/MusicDatabase.h"
-#include "FileSystem/MusicDatabaseDirectory.h"
-#include "FileSystem/MusicDatabaseDirectory/DirectoryNode.h"
+#include "filesystem/MusicDatabaseDirectory.h"
+#include "filesystem/MusicDatabaseDirectory/DirectoryNode.h"
 #include "music/tags/MusicInfoTag.h"
 
 using namespace MUSIC_INFO;

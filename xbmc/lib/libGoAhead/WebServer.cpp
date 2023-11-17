@@ -12,7 +12,7 @@
 #include "system.h"
 #include "WebServer.h"
 #include "XBMCweb.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "utils/log.h"
 #include "utils/URIUtils.h"
 #include "addons/AddonManager.h"

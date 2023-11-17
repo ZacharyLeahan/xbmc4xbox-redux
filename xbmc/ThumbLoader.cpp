@@ -22,7 +22,7 @@
 #include "Util.h"
 #include "URL.h"
 #include "pictures/Picture.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "settings/GUISettings.h"
 #include "TextureManager.h"

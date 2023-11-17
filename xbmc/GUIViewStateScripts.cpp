@@ -23,7 +23,7 @@
 #include "FileItem.h"
 #include "ViewState.h"
 #include "settings/Settings.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 
 using namespace XFILE;
 

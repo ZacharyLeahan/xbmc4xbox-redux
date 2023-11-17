@@ -21,9 +21,9 @@
 #include "system.h"
 #include "music/windows/GUIWindowMusicBase.h"
 #include "music/dialogs/GUIDialogMusicInfo.h"
-#include "FileSystem/ZipManager.h"
+#include "filesystem/ZipManager.h"
 #ifdef HAS_FILESYSTEM
-#include "FileSystem/DAAPDirectory.h"
+#include "filesystem/DAAPDirectory.h"
 #endif
 #include "playlists/PlayListFactory.h"
 #include "Util.h"
@@ -31,7 +31,7 @@
 #include "playlists/PlayListM3U.h"
 #include "Application.h"
 #include "PlayListPlayer.h"
-#include "FileSystem/DirectoryCache.h"
+#include "filesystem/DirectoryCache.h"
 #ifdef HAS_CDDA_RIPPER
 #include "cdrip/CDDARipper.h"
 #endif
@@ -40,7 +40,7 @@
 #include "dialogs/GUIDialogMediaSource.h"
 #include "PartyModeManager.h"
 #include "GUIInfoManager.h"
-#include "FileSystem/MusicDatabaseDirectory.h"
+#include "filesystem/MusicDatabaseDirectory.h"
 #include "music/dialogs/GUIDialogSongInfo.h"
 #include "dialogs/GUIDialogSmartPlaylistEditor.h"
 #include "music/LastFmManager.h"
@@ -51,7 +51,7 @@
 #include "dialogs/GUIDialogKeyboard.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/AdvancedSettings.h"
 #include "LocalizeStrings.h"
 #include "utils/log.h"

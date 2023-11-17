@@ -21,7 +21,7 @@
 #include "system.h"
 #include "PlaylistDirectory.h"
 #include "settings/Settings.h"
-#include "FileSystem/HDDirectory.h"
+#include "filesystem/HDDirectory.h"
 #include "playlists/PlayListFactory.h"
 #include "Util.h"
 

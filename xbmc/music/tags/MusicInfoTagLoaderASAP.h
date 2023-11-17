@@ -20,7 +20,7 @@
  */
 
 #include "music/tags/ImusicInfoTagLoader.h"
-#include "FileSystem/DllASAP.h"
+#include "filesystem/DllASAP.h"
 #include "cores/paplayer/ASAPCodec.h"
 
 namespace MUSIC_INFO

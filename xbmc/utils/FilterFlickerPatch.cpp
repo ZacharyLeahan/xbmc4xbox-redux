@@ -28,7 +28,7 @@
 // ******************************************************
 
 #include "FilterFlickerPatch.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/GUISettings.h"
 #include "log.h"
 

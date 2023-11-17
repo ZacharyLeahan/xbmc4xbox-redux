@@ -25,7 +25,7 @@
 #include "DVDDemuxSPU.h"
 #include "DVDStateSerializer.h"
 #include "settings/GUISettings.h"
-#include "FileSystem/IFile.h"
+#include "filesystem/IFile.h"
 #include "LangInfo.h"
 
 #ifndef PRId64

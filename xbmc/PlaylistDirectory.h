@@ -20,7 +20,7 @@
  */
 #include "FileItem.h"
 #include "settings/Settings.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 
 #include <string>
 #include "utils/StdString.h"

@@ -33,8 +33,8 @@
 #include "GUIPassword.h"
 #include "pictures/Picture.h"
 #include "dialogs/GUIDialogYesNo.h"
-#include "FileSystem/Directory.h"
-#include "FileSystem/File.h"
+#include "filesystem/Directory.h"
+#include "filesystem/File.h"
 #include "FileItem.h"
 #include "LocalizeStrings.h"
 

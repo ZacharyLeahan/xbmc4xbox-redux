@@ -20,7 +20,7 @@
 
 #include "utils/log.h"
 #include "DynamicDll.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "SectionLoader.h"
 
 using namespace XFILE;

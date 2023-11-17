@@ -20,8 +20,8 @@
 
 #include "video/GUIViewStateVideo.h"
 #include "PlayListPlayer.h"
-#include "FileSystem/VideoDatabaseDirectory.h"
-#include "FileSystem/PluginDirectory.h"
+#include "filesystem/VideoDatabaseDirectory.h"
+#include "filesystem/PluginDirectory.h"
 #include "GUIBaseContainer.h"
 #include "video/VideoDatabase.h"
 #include "settings/Settings.h"

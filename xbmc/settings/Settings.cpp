@@ -39,8 +39,8 @@
 #include "AudioContext.h"
 #include "GUIInfoManager.h"
 #include "xbox/Network.h"
-#include "FileSystem/MultiPathDirectory.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/MultiPathDirectory.h"
+#include "filesystem/SpecialProtocol.h"
 #include "GUIBaseContainer.h" // for VIEW_TYPE enum
 #include "utils/FanController.h"
 #include "storage/MediaManager.h"
@@ -48,7 +48,7 @@
 #include "network/DNSNameCache.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogYesNo.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "FileItem.h"
 #include "LangInfo.h"
 #ifdef HAS_XBOX_HARDWARE

@@ -23,7 +23,7 @@
 #include "storage/DetectDVDType.h"
 #include "music/MusicDatabase.h"
 #include "FileItem.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 
 using namespace XFILE;
 using namespace MEDIA_DETECT;

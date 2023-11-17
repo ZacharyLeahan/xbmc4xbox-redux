@@ -26,7 +26,7 @@
 #include <sys/utime.h>
 
 #include "../DllLoader.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "Util.h"
 
 #ifdef _WIN32PC

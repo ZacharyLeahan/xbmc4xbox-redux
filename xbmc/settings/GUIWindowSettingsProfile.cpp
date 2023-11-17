@@ -29,7 +29,7 @@
 #include "GUIPassword.h"
 #include "windows/GUIWindowLoginScreen.h"
 #include "GUIWindowManager.h"
-#include "FileSystem/Directory.h"
+#include "filesystem/Directory.h"
 #include "FileItem.h"
 #include "utils/URIUtils.h"
 #include "LocalizeStrings.h"

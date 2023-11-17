@@ -24,7 +24,7 @@
 #include "utils/URIUtils.h"
 #include "dialogs/GUIDialogSmartPlaylistRule.h"
 #include "GUIWindowManager.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "settings/GUISettings.h"
 #include "settings/Settings.h"
 #include "FileItem.h"

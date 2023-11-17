@@ -20,7 +20,7 @@
 
 #include "ViewDatabase.h"
 #include "utils/URIUtils.h"
-#include "FileSystem/SpecialProtocol.h"
+#include "filesystem/SpecialProtocol.h"
 #include "settings/Settings.h"
 #include "ViewState.h"
 #include "utils/log.h"

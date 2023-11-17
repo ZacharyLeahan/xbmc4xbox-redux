@@ -23,7 +23,7 @@
 #include "ZipManager.h"
 #include "utils/URIUtils.h"
 #include "URL.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "SpecialProtocol.h"
 #include "CharsetConverter.h"
 

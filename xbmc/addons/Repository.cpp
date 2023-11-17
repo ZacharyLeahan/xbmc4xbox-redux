@@ -21,7 +21,7 @@
 
 #include "Repository.h"
 #include "tinyXML/tinyxml.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
 #include "XMLUtils.h"
 #include "AddonDatabase.h"
 #include "Application.h"

@@ -19,7 +19,7 @@
  */
 
 #include "music/tags/MusicInfoTagLoaderAAC.h"
-#include "FileSystem/File.h"
+#include "filesystem/File.h"
  
 #define PACK_UINT32(a,b,c,d) \
   ((((uint32_t)a) << 24) | \

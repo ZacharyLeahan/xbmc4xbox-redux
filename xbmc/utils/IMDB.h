@@ -34,7 +34,7 @@
 #include "video/VideoInfoTag.h"
 #include "addons/Scraper.h"
 #include "XBDateTime.h"
-#include "FileSystem/CurlFile.h"
+#include "filesystem/CurlFile.h"
 
 // forward definitions
 class TiXmlDocument;

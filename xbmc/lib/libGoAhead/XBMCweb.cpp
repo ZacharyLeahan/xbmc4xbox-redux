@@ -18,8 +18,8 @@
 
 #include "Util.h"
 #include "PlayListPlayer.h"
-#include "FileSystem/CDDADirectory.h"
-#include "FileSystem/ZipManager.h"
+#include "filesystem/CDDADirectory.h"
+#include "filesystem/ZipManager.h"
 #include "playlists/PlayListFactory.h"
 #include "GUIInfoManager.h"
 #include "music/tags/MusicInfoTagLoaderFactory.h"
