@@ -139,6 +139,7 @@ const BUILT_IN commands[] = {
   { "Skin.SetImage",              true,   "Prompts and sets a skin image" },
   { "Skin.SetLargeImage",         true,   "Prompts and sets a large skin images" },
   { "Skin.SetFile",               true,   "Prompts and sets a file" },
+  { "Skin.SetAddon",              true,   "Prompts and set an addon" },
   { "Skin.SetBool",               true,   "Sets a skin setting on" },
   { "Skin.Reset",                 true,   "Resets a skin setting to default" },
   { "Skin.ResetSettings",         false,  "Resets all skin settings" },
@@ -1063,6 +1064,23 @@ int CBuiltins::Execute(const CStdString& execString)
         g_settings.SetSkinString(string, value);
     }
     g_settings.Save();
+  }
+  else if (execute.Equals("skin.setaddon") && params.size() > 1)
+  {
+    int string = g_settings.TranslateSkinString(params[0]);
+    vector<ADDON::TYPE> types;
+    for (unsigned int i = 1 ; i < params.size() ; i++)
+    {
+      ADDON::TYPE type = TranslateType(params[i]);
+      if (type != ADDON_UNKNOWN)
+        types.push_back(type);
+    }
+    CStdString result;
+    if (types.size() > 0 && CGUIWindowAddonBrowser::SelectAddonID(types, result, true) == 1)
+    {
+      g_settings.SetSkinString(string, result);
+      g_settings.Save();
+    }
   }
   else if (execute.Equals("dialog.close") && params.size())
   {
