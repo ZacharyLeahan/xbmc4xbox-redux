@@ -20,12 +20,10 @@
  */
 
 #include "GUIViewStateAddonBrowser.h"
-#include "GUIBaseContainer.h"
 #include "FileItem.h"
-#include "Key.h"
+#include "guilib/Key.h"
 #include "ViewState.h"
 #include "settings/Settings.h"
-#include "filesystem/Directory.h"
 #include "addons/Addon.h"
 #include "addons/AddonManager.h"
 #include "AddonDatabase.h"
