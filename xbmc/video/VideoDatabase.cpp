@@ -3648,11 +3648,11 @@ void CVideoDatabase::SetScraperForPath(const CStdString& filePath, const Scraper
     CStdString strSQL;
     if (settings.exclude)
     { //NB See note in ::GetScraperForPath about strContent=='none'
-      strSQL=PrepareSQL("update path set strContent='', strScraper='', scanRecursive=0, useFolderNames=0, strSettings='', noUpdate=1, exclude=0, where idPath=%i", idPath);
+      strSQL=PrepareSQL("update path set strContent='', strScraper='', scanRecursive=0, useFolderNames=0, strSettings='', noUpdate=1, exclude=0 where idPath=%i", idPath);
     }
     else if(!scraper)
     { // catch clearing content, but not excluding
-      strSQL=PrepareSQL("update path set strContent='', strScraper='', scanRecursive=0, useFolderNames=0, strSettings='', noUpdate=0, exclude=1, where idPath=%i", idPath);
+      strSQL=PrepareSQL("update path set strContent='', strScraper='', scanRecursive=0, useFolderNames=0, strSettings='', noUpdate=0, exclude=1 where idPath=%i", idPath);
     }
     else
     {
