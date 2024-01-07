@@ -101,6 +101,7 @@
 #include "utils/Crc32.h"
 #include "utils/RssReader.h"
 #include "settings/AdvancedSettings.h"
+#include "utils/TimeUtils.h"
 #include "utils/URIUtils.h"
 #include "cores/dvdplayer/DVDSubtitles/DVDSubtitleTagSami.h"
 #include "cores/dvdplayer/DVDSubtitles/DVDSubtitleStream.h"
@@ -3810,9 +3811,9 @@ void CUtil::BootToDash()
 void CUtil::InitRandomSeed()
 {
   // Init random seed 
-  LARGE_INTEGER now; 
-  QueryPerformanceCounter(&now); 
-  unsigned int seed = (now.LowPart);
+  int64_t now; 
+  now = CurrentHostCounter(); 
+  unsigned int seed = now;
 //  CLog::Log(LOGDEBUG, "%s - Initializing random seed with %u", __FUNCTION__, seed);
   srand(seed);
 }

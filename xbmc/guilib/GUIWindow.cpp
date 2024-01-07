@@ -597,8 +597,8 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
   CSingleLock lock(g_graphicsContext);
 
 #ifdef _DEBUG
-  LARGE_INTEGER start;
-  QueryPerformanceCounter(&start);
+  int64_t start;
+  start = CurrentHostCounter();
 #endif
   // use forceLoad to determine if xml file needs loading
   forceLoad |= (m_loadType == LOAD_EVERY_TIME);
@@ -624,30 +624,30 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
     }
   }
 
-  LARGE_INTEGER slend;
-  QueryPerformanceCounter(&slend);
+  int64_t slend;
+  slend = CurrentHostCounter();
 
   // and now allocate resources
   g_TextureManager.StartPreLoad();
   CGUIControlGroup::PreAllocResources();
   g_TextureManager.EndPreLoad();
 
-  LARGE_INTEGER plend;
-  QueryPerformanceCounter(&plend);
+  int64_t plend;
+  plend = CurrentHostCounter();
 
   CGUIControlGroup::AllocResources();
 
   g_TextureManager.FlushPreLoad();
 #ifdef _DEBUG
-  LARGE_INTEGER end, freq;
-  QueryPerformanceCounter(&end);
-  QueryPerformanceFrequency(&freq);
+  int64_t end, freq;
+  end = CurrentHostCounter();
+  freq = CurrentHostFrequency();
   if (forceLoad)
-    CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load, %.2f ms preload)", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (slend.QuadPart - start.QuadPart) / freq.QuadPart, 1000.f * (plend.QuadPart - slend.QuadPart) / freq.QuadPart);
+    CLog::Log(LOGDEBUG,"Alloc resources: %.2fms (%.2f ms skin load, %.2f ms preload)", 1000.f * (end - start) / freq, 1000.f * (slend - start) / freq, 1000.f * (plend - slend) / freq);
   else
   {
     CLog::Log(LOGDEBUG,"Window %s was already loaded", GetProperty("xmlfile").c_str());
-    CLog::Log(LOGDEBUG,"Alloc resources: %.2fm", 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart);
+    CLog::Log(LOGDEBUG,"Alloc resources: %.2fm", 1000.f * (end - start) / freq);
   }
 #endif
   m_bAllocated = true;

@@ -434,8 +434,8 @@ int CGUITextureManager::Load(const CStdString& strTextureName, bool checkBundleO
   LPDIRECT3DPALETTE8 pPal = 0;
 
 #ifdef _DEBUG
-  LARGE_INTEGER start;
-  QueryPerformanceCounter(&start);
+  int64_t start;
+  start = CurrentHostCounter();
 #endif
 
   D3DXIMAGE_INFO info;
@@ -553,11 +553,11 @@ int CGUITextureManager::Load(const CStdString& strTextureName, bool checkBundleO
     }
 
 #ifdef _DEBUG
-    LARGE_INTEGER end, freq;
-    QueryPerformanceCounter(&end);
-    QueryPerformanceFrequency(&freq);
+    int64_t end, freq;
+    end = CurrentHostCounter();
+    freq = CurrentHostFrequency();
     char temp[200];
-    sprintf(temp, "Load %s: %.1fms%s\n", strPath.c_str(), 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, (bundle >= 0) ? " (bundled)" : "");
+    sprintf(temp, "Load %s: %.1fms%s\n", strPath.c_str(), 1000.f * (end - start) / freq, (bundle >= 0) ? " (bundled)" : "");
     OutputDebugString(temp);
 #endif
 
@@ -636,11 +636,11 @@ int CGUITextureManager::Load(const CStdString& strTextureName, bool checkBundleO
   m_vecTextures.push_back(pMap);
 
 #ifdef _DEBUG
-  LARGE_INTEGER end, freq;
-  QueryPerformanceCounter(&end);
-  QueryPerformanceFrequency(&freq);
+  int64_t end, freq;
+  end = CurrentHostCounter();
+  freq = CurrentHostFrequency();
   char temp[200];
-  sprintf(temp, "Load %s: %.1fms%s\n", strPath.c_str(), 1000.f * (end.QuadPart - start.QuadPart) / freq.QuadPart, (bundle >= 0) ? " (bundled)" : "");
+  sprintf(temp, "Load %s: %.1fms%s\n", strPath.c_str(), 1000.f * (end - start) / freq, (bundle >= 0) ? " (bundled)" : "");
   OutputDebugString(temp);
 #endif
 

@@ -51,19 +51,19 @@ public:
   void SetSpeed(int iSpeed);
 
   static double GetAbsoluteClock();
-  static double GetFrequency() { return (double)m_systemFrequency.QuadPart ; }
+  static double GetFrequency() { return (double)m_systemFrequency ; }
 protected:
   static void CheckSystemClock();
-  static double SystemToAbsolute(LARGE_INTEGER system);
-  double SystemToPlaying(LARGE_INTEGER system);
+  static double SystemToAbsolute(int64_t system);
+  double SystemToPlaying(int64_t system);
 
   CSharedSection m_critSection;
-  LARGE_INTEGER m_systemUsed;  
-  LARGE_INTEGER m_startClock;
-  LARGE_INTEGER m_pauseClock;
+  int64_t m_systemUsed;
+  int64_t m_startClock;
+  int64_t m_pauseClock;
   double m_iDisc;
   bool m_bReset;
   
-  static LARGE_INTEGER m_systemFrequency;
+  static int64_t m_systemFrequency;
   static CCriticalSection m_systemsection;
 };
