@@ -558,7 +558,7 @@ void CGUIWindowManager::UpdateModelessVisibility()
     if (pWindow && pWindow->IsDialog() && pWindow->GetVisibleCondition())
     {
       if (g_infoManager.GetBoolValue(pWindow->GetVisibleCondition()))
-        ((CGUIDialog *)pWindow)->Show();
+        ((CGUIDialog *)pWindow)->Show_Internal();
       else
         ((CGUIDialog *)pWindow)->Close_Internal();
     }
