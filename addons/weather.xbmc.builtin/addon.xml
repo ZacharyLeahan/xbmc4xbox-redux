@@ -3,6 +3,9 @@
        name="Weather.com (standard)"
        version="1.0.0"
        provider-name="Team XBMC">
+  <requires>
+    <import addon="xbmc.python" version="2.0"/>
+  </requires>
   <extension point="xbmc.python.weather" library=""/>
   <extension point="xbmc.addon.metadata">
     <summary>Current weather conditions.</summary>
