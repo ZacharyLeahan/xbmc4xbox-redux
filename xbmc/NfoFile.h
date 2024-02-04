@@ -80,7 +80,7 @@ private:
 
   int Load(const CStdString&);
   int Scrape(ADDON::ScraperPtr& scraper);
-  void AddScrapers(bool any, ADDON::VECADDONS& addons,
+  void AddScrapers(ADDON::VECADDONS& addons,
                    std::vector<ADDON::ScraperPtr>& vecScrapers);
 };
 

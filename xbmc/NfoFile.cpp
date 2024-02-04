@@ -22,8 +22,6 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "NfoFile.h"
-#include "music/MusicDatabase.h"
-#include "video/VideoDatabase.h"
 #include "video/VideoInfoDownloader.h"
 #include "addons/AddonManager.h"
 #include "filesystem/File.h"
@@ -96,39 +94,20 @@ CNfoFile::NFOResult CNfoFile::Create(const CStdString& strPath, const ScraperPtr
   }
 
   vector<ScraperPtr> vecScrapers;
-  ADDON::ScraperPtr selected;
-  // Get Selected Scraper
-  if (m_type == ADDON_SCRAPER_MOVIES      ||
-      m_type == ADDON_SCRAPER_MUSICVIDEOS ||
-      m_type == ADDON_SCRAPER_TVSHOWS)
-  {
-    CVideoDatabase database;
-    database.Open();
-    selected = database.GetScraperForPath(strPath);
-  }
-  if (m_type == ADDON_SCRAPER_ALBUMS ||
-      m_type == ADDON_SCRAPER_ARTISTS)
-  {
-    CMusicDatabase database;
-    database.Open();
-    database.GetScraperForPath(strPath2,selected,m_type);
-  }
 
   // add selected scraper
-  if (selected)
-    vecScrapers.push_back(selected);
+  if (m_info)
+    vecScrapers.push_back(m_info);
 
   VECADDONS addons;
   CAddonMgr::Get().GetAddons(m_type,addons);
   // first pass - add language based scrapers
-  if (g_guiSettings.GetBool("scrapers.langfallback"))
-    AddScrapers(false,addons,vecScrapers);
+  if (m_info && g_guiSettings.GetBool("scrapers.langfallback"))
+    AddScrapers(addons,vecScrapers);
 
   // add default scraper
-  if ((selected && selected->ID() != defaultScraper->ID()) || !selected)
+  if ((m_info && m_info->ID() != defaultScraper->ID()) || !m_info)
     vecScrapers.push_back(defaultScraper);
-
-  AddScrapers(true,addons,vecScrapers);
 
   // search ..
   int res = -1;
@@ -204,7 +183,7 @@ void CNfoFile::Close()
   m_scurl.Clear();
 }
 
-void CNfoFile::AddScrapers(bool any, VECADDONS& addons,
+void CNfoFile::AddScrapers(VECADDONS& addons,
                            vector<ScraperPtr>& vecScrapers)
 {
   for (unsigned i=0;i<addons.size();++i)
@@ -216,12 +195,7 @@ void CNfoFile::AddScrapers(bool any, VECADDONS& addons,
       continue;
 
     // add same language and multi-language
-    if (any || 
-       scraper->Language().Equals(g_langInfo.GetDVDSubtitleLanguage()) ||
-       scraper->Language().Equals("multi"))
-    {
-      if (find(vecScrapers.begin(),vecScrapers.end(),scraper) == vecScrapers.end())
-        vecScrapers.push_back(scraper);
-    }
+    if (scraper->Language() == m_info->Language() || scraper->Language().Equals("multi"))
+      vecScrapers.push_back(scraper);
   }
 }
