@@ -7095,7 +7095,7 @@ msgid "Writers"
 msgstr ""
 
 msgctxt "#20419"
-msgid "Clean file and folder names"
+msgid "Show metadata in files view"
 msgstr ""
 
 #empty string with id 20420

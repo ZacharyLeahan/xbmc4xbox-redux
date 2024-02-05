@@ -4281,9 +4281,21 @@ void CVideoDatabase::UpdateBasePathID(const char *table, const char *id, int col
   m_pDS2->close();
 }
 
-bool CVideoDatabase::GetPlayCounts(CFileItemList &items)
+bool CVideoDatabase::GetPlayCounts(const CStdString &strPath, CFileItemList &items)
 {
-  int pathID = GetPathId(items.GetPath());
+  if(URIUtils::IsMultiPath(strPath))
+  {
+    vector<CStdString> paths;
+    CMultiPathDirectory::GetPaths(strPath, paths);
+
+    bool ret = false;
+    for(unsigned i=0;i<paths.size();i++)
+      ret |= GetPlayCounts(paths[i], items);
+
+    return ret;
+  }
+
+  int pathID = GetPathId(strPath);
   if (pathID < 0)
     return false; // path (and thus files) aren't in the database
 
@@ -4302,7 +4314,7 @@ bool CVideoDatabase::GetPlayCounts(CFileItemList &items)
     while (!m_pDS->eof())
     {
       CStdString path;
-      ConstructPath(path, items.GetPath(), m_pDS->fv(0).get_asString());
+      ConstructPath(path, strPath, m_pDS->fv(0).get_asString());
       CFileItemPtr item = items.Get(path);
       if (item)
         item->GetVideoInfoTag()->m_playCount = m_pDS->fv(1).get_asInt();

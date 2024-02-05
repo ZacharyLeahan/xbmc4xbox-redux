@@ -1096,15 +1096,9 @@ void CFileItem::CleanString()
   if (IsLiveTV())
     return;
 
-  bool bIsFolder = m_bIsFolder;
-
-  // make sure we don't append the extension to stacked dvd folders
-  if (HasProperty("isstacked") && IsDVDFile(false, true))
-    bIsFolder = true;
-
   CStdString strLabel = GetLabel();
   CStdString strTitle, strTitleAndYear, strYear;
-  CUtil::CleanString(strLabel, strTitle, strTitleAndYear, strYear, (bIsFolder || !g_guiSettings.GetBool("filelists.showextensions") ) );
+  CUtil::CleanString(strLabel, strTitle, strTitleAndYear, strYear, true );
   SetLabel(strTitleAndYear);
 }
 
