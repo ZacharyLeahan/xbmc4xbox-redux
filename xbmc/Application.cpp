@@ -3645,6 +3645,8 @@ void CApplication::Stop(bool bLCDStop)
 {
   try
   {
+    SaveFileState(true);
+
     if (m_pXbmcHttp)
     {
       if(g_guiSettings.GetInt("services.httpapibroadcastlevel")>=1)
@@ -4366,15 +4368,27 @@ bool CApplication::IsFullScreen()
          g_windowManager.GetActiveWindow() == WINDOW_SLIDESHOW;
 }
 
-void CApplication::SaveFileState()
+void CApplication::SaveFileState(bool bForeground /* = false */)
 {
   if (!CProfilesManager::Get().GetCurrentProfile().canWriteDatabases())
     return;
 
-  CJob* job = new CSaveFileStateJob(*m_progressTrackingItem,
-      m_progressTrackingVideoResumeBookmark,
-      m_progressTrackingPlayCountUpdate);
-  CJobManager::GetInstance().AddJob(job, NULL);
+  if (bForeground)
+  {
+    CSaveFileStateJob job(*m_progressTrackingItem,
+    m_progressTrackingVideoResumeBookmark,
+    m_progressTrackingPlayCountUpdate);
+
+    // Run job in the foreground to make sure it finishes
+    job.DoWork();
+  }
+  else
+  {
+    CJob* job = new CSaveFileStateJob(*m_progressTrackingItem,
+        m_progressTrackingVideoResumeBookmark,
+        m_progressTrackingPlayCountUpdate);
+    CJobManager::GetInstance().AddJob(job, NULL);
+  }
 }
 
 void CApplication::UpdateFileState()
