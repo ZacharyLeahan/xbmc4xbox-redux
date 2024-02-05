@@ -762,11 +762,6 @@ bool URIUtils::IsShoutCast(const CStdString& strFile)
   return strFile.Left(6).Equals("shout:");
 }
 
-bool URIUtils::IsLastFM(const CStdString& strFile)
-{
-  return strFile.Left(7).Equals("lastfm:");
-}
-
 bool URIUtils::IsLibraryFolder(const CStdString& strFile)
 {
   CURL url(strFile);

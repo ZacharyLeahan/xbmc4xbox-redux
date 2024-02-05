@@ -26,7 +26,6 @@
 #include "HTTPFile.h"
 #include "DAVFile.h"
 #include "ShoutcastFile.h"
-#include "LastFMFile.h"
 #include "FileReaderFile.h"
 #ifdef HAS_FILESYSTEM
 #include "ISOFile.h"
@@ -97,7 +96,6 @@ IFile* CFileFactory::CreateLoader(const CURL& url)
     else if (strProtocol == "http" ||  strProtocol == "https") return new CHTTPFile();
     else if (strProtocol == "dav" || strProtocol == "davs") return new CDAVFile();
     else if (strProtocol == "shout") return new CShoutcastFile();
-    else if (strProtocol == "lastfm") return new CLastFMFile();
     else if (strProtocol == "tuxbox") return new CTuxBoxFile();
     else if (strProtocol == "hdhomerun") return new CHomeRunFile();
     else if (strProtocol == "sling") return new CSlingboxFile();

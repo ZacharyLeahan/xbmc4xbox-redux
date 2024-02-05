@@ -29,7 +29,6 @@
 #include "dialogs/GUIDialogContextMenu.h"
 #include "GUIPassword.h"
 #include "lib/libPython/XBPython.h"
-#include "lib/libscrobbler/scrobbler.h"
 #include "utils/Weather.h"
 #include "utils/FanController.h"
 #include "xbox/network.h"

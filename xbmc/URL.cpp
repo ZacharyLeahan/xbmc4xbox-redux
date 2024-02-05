@@ -288,7 +288,6 @@ void CURL::Parse(const CStdString& strURL1)
     || m_strProtocol.CompareNoCase("musicdb") == 0
     || m_strProtocol.CompareNoCase("videodb") == 0
     || m_strProtocol.CompareNoCase("sources") == 0
-    || m_strProtocol.CompareNoCase("lastfm") == 0
     || m_strProtocol.Left(3).CompareNoCase("mem") == 0)
   {
     if (m_strHostName != "" && m_strFileName != "")
@@ -440,7 +439,6 @@ const CStdString CURL::GetTranslatedProtocol() const
    || m_strProtocol == "daap"
    || m_strProtocol == "dav"
    || m_strProtocol == "tuxbox"
-   || m_strProtocol == "lastfm"
    || m_strProtocol == "mms"
    || m_strProtocol == "rss")
    return "http";

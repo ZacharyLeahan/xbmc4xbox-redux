@@ -167,7 +167,6 @@ public:
   void CheckShutdown();
   void CheckScreenSaver();   // CB: SCREENSAVER PATCH
   void CheckPlayingProgress();
-  void CheckAudioScrobblerStatus();
   void ActivateScreenSaver(bool forceType = false);
 
   virtual void Process();

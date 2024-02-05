@@ -42,7 +42,6 @@
 #include "filesystem/MusicDatabaseDirectory.h"
 #include "music/dialogs/GUIDialogSongInfo.h"
 #include "dialogs/GUIDialogSmartPlaylistEditor.h"
-#include "music/LastFmManager.h"
 #include "music/tags/MusicInfoTag.h"
 #include "GUIWindowManager.h"
 #include "GUIUserMessages.h"
@@ -879,14 +878,8 @@ void CGUIWindowMusicBase::GetContextButtons(int itemNumber, CContextButtons &but
   {
     if (item && !item->IsParentFolder())
     {
-      if (item->GetExtraInfo().Equals("lastfmloved"))
-      {
-        buttons.Add(CONTEXT_BUTTON_LASTFM_UNLOVE_ITEM, 15295); //unlove
-      }
-      else if (item->GetExtraInfo().Equals("lastfmbanned"))
-      {
-        buttons.Add(CONTEXT_BUTTON_LASTFM_UNBAN_ITEM, 15296); //unban
-      }
+      if (!m_vecItems->IsPlugin() && (item->IsPlugin()))
+        buttons.Add(CONTEXT_BUTTON_INFO,24003); // Add-on info
       else if (item->CanQueue())
       {
         buttons.Add(CONTEXT_BUTTON_QUEUE_ITEM, 13347); //queue
@@ -1002,20 +995,7 @@ bool CGUIWindowMusicBase::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   case CONTEXT_BUTTON_SETTINGS:
     g_windowManager.ActivateWindow(WINDOW_SETTINGS_MYMUSIC);
     return true;
-  case CONTEXT_BUTTON_LASTFM_UNBAN_ITEM:
-    if (CLastFmManager::GetInstance()->Unban(*item->GetMusicInfoTag()))
-    {
-      g_directoryCache.ClearDirectory(m_vecItems->GetPath());
-      Refresh(true);
-    }
-    return true;
-  case CONTEXT_BUTTON_LASTFM_UNLOVE_ITEM:
-    if (CLastFmManager::GetInstance()->Unlove(*item->GetMusicInfoTag()))
-    {
-      g_directoryCache.ClearDirectory(m_vecItems->GetPath());
-      Refresh(true);
-    }
-    return true;
+
   default:
     break;
   }
@@ -1164,7 +1144,7 @@ bool CGUIWindowMusicBase::OnPlayMedia(int iItem)
   CFileItemPtr pItem = m_vecItems->Get(iItem);
 
   // party mode
-  if (g_partyModeManager.IsEnabled() && !pItem->IsLastFM())
+  if (g_partyModeManager.IsEnabled())
   {
     CPlayList playlistTemp;
     playlistTemp.Add(pItem);

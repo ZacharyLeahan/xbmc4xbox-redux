@@ -262,15 +262,6 @@ namespace INFO
 #define VIDEOPLAYER_PLAYCOUNT         293
 #define VIDEOPLAYER_LASTPLAYED        294
 
-#define AUDIOSCROBBLER_ENABLED      300
-#define AUDIOSCROBBLER_CONN_STATE   301
-#define AUDIOSCROBBLER_SUBMIT_INT   302
-#define AUDIOSCROBBLER_FILES_CACHED 303
-#define AUDIOSCROBBLER_SUBMIT_STATE 304
-#define LASTFM_RADIOPLAYING         305
-#define LASTFM_CANLOVE              306
-#define LASTFM_CANBAN               307
-
 #define CONTAINER_CAN_FILTER         342
 #define CONTAINER_CAN_FILTERADVANCED 343
 #define CONTAINER_FILTERED           344
@@ -796,8 +787,6 @@ protected:
   int ConditionalStringParameter(const CStdString &strParameter, bool caseSensitive = false);
   int AddMultiInfo(const GUIInfo &info);
   int AddListItemProp(const CStdString &str, int offset=0);
-
-  CStdString GetAudioScrobblerLabel(int item);
 
   // Conditional string parameters are stored here
   CStdStringArray m_stringParameters;

@@ -57,8 +57,6 @@
 #include "lib/libPython/XBPython.h"
 #include "input/ButtonTranslator.h"
 #include "GUIAudioManager.h"
-#include "lib/libscrobbler/lastfmscrobbler.h"
-#include "lib/libscrobbler/librefmscrobbler.h"
 #include "GUIPassword.h"
 #include "ApplicationMessenger.h"
 #include "SectionLoader.h"
@@ -78,7 +76,6 @@
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
 #include "GUILargeTextureManager.h"
-#include "music/LastFmManager.h"
 #include "SmartPlaylist.h"
 #include "filesystem/RarManager.h"
 #include "playlists/PlayList.h"
@@ -3593,9 +3590,6 @@ HRESULT CApplication::Cleanup()
     g_charsetConverter.clear();
     g_directoryCache.Clear();
     CButtonTranslator::GetInstance().Clear();
-    CLastfmScrobbler::RemoveInstance();
-    CLibrefmScrobbler::RemoveInstance();
-    CLastFmManager::RemoveInstance();
 #ifdef HAS_EVENT_SERVER
     CEventServer::RemoveInstance();
 #endif
@@ -3734,11 +3728,6 @@ bool CApplication::PlayMedia(const CFileItem& item, int iPlaylist)
     if (XFILE::CPluginDirectory::GetPluginResult(item.GetPath(), item_new))
       return PlayMedia(item_new, iPlaylist);
     return false;
-  }
-  if (item.IsLastFM())
-  {
-    g_partyModeManager.Disable();
-    return CLastFmManager::GetInstance()->ChangeStation(item.GetAsUrl());
   }
   if (item.IsSmartPlayList())
   {
@@ -4162,12 +4151,6 @@ void CApplication::OnPlayBackEnded()
   // Let's tell the outside world as well
   if (m_pXbmcHttp && g_guiSettings.GetInt("services.httpapibroadcastlevel")>=1)
     m_applicationMessenger.HttpApi("broadcastlevel; OnPlayBackEnded;1");
-  
-  if (IsPlayingAudio())
-  {
-    CLastfmScrobbler::GetInstance()->SubmitQueue();
-    CLibrefmScrobbler::GetInstance()->SubmitQueue();
-  }
 
   CLog::Log(LOGDEBUG, "%s - Playback has finished", __FUNCTION__);
 
@@ -4206,12 +4189,6 @@ void CApplication::OnQueueNextItem()
 
   CLog::Log(LOGDEBUG, "Player has asked for the next item");
 
-  if(IsPlayingAudio())
-  {
-    CLastfmScrobbler::GetInstance()->SubmitQueue();
-    CLibrefmScrobbler::GetInstance()->SubmitQueue();
-  }
-
   CGUIMessage msg(GUI_MSG_QUEUE_NEXT_ITEM, 0, 0);
   g_windowManager.SendThreadMessage(msg);
 }
@@ -4228,12 +4205,6 @@ void CApplication::OnPlayBackStopped()
   // Let's tell the outside world as well
   if (m_pXbmcHttp && g_guiSettings.GetInt("services.httpapibroadcastlevel")>=1)
     m_applicationMessenger.HttpApi("broadcastlevel; OnPlayBackStopped;1");
-  
-  if (IsPlayingAudio())
-  {
-    CLastfmScrobbler::GetInstance()->SubmitQueue();
-    CLibrefmScrobbler::GetInstance()->SubmitQueue();
-  }
 
   CLog::Log(LOGDEBUG, "%s - Playback was stopped", __FUNCTION__);
 
@@ -4927,7 +4898,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
         *m_itemCurrentFile = *item;
       }
       g_infoManager.SetCurrentItem(*m_itemCurrentFile);
-      CLastFmManager::GetInstance()->OnSongChange(*m_itemCurrentFile);
       g_partyModeManager.OnSongChange(true);
 
       CheckNetworkHDSpinDown(true);
@@ -4956,13 +4926,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
             m_pCdgParser->Start(m_itemCurrentFile->GetPath());
         }
 #endif
-        // Let scrobbler know about the track
-        const CMusicInfoTag* tag=g_infoManager.GetCurrentSongTag();
-        if (tag)
-        {
-          CLastfmScrobbler::GetInstance()->AddSong(*tag, CLastFmManager::GetInstance()->IsRadioEnabled());
-          CLibrefmScrobbler::GetInstance()->AddSong(*tag, CLastFmManager::GetInstance()->IsRadioEnabled());
-        }
       }
       
       return true;
@@ -5021,10 +4984,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
       m_itemCurrentFile->Reset();
       g_infoManager.ResetCurrentItem();
       m_currentStack->Clear();
-
-      // stop lastfm
-      if (CLastFmManager::GetInstance()->IsRadioEnabled())
-        CLastFmManager::GetInstance()->StopRadio();
 
       if (message.GetMessage() == GUI_MSG_PLAYBACK_ENDED)
       {
@@ -5181,7 +5140,7 @@ void CApplication::Process()
   g_audioManager.FreeUnused();
 
   // check how far we are through playing the current item
-  // and do anything that needs doing (lastfm submission, playcount updates etc)
+  // and do anything that needs doing (playcount updates etc)
   CheckPlayingProgress();
 
   // update sound
@@ -5215,12 +5174,6 @@ void CApplication::ProcessSlow()
 
   // Store our file state for use on close()
   UpdateFileState();
-
-  if (IsPlayingAudio())
-  {
-    CLastfmScrobbler::GetInstance()->UpdateStatus();
-    CLibrefmScrobbler::GetInstance()->UpdateStatus();
-  }
 
   // Check if we need to activate the screensaver (if enabled).
   if (g_guiSettings.GetString("screensaver.mode") != "None")

@@ -258,13 +258,6 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.strPath = "soundtrack://";
     extraShares.push_back(share1);
 #endif
-    
-    if (g_guiSettings.GetString("scrobbler.lastfmusername") != "")
-    {
-      share1.strName = "Last.FM";
-      share1.strPath = "lastfm://";
-      extraShares.push_back(share1);
-    }
  }
   else if (m_type == "video")
   { // add the music playlist location

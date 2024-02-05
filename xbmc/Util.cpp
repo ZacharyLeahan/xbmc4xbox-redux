@@ -82,8 +82,6 @@
 #ifdef HAS_FTP_SERVER
 #include "lib/libfilezilla/xbfilezilla.h"
 #endif
-#include "lib/libscrobbler/scrobbler.h"
-#include "music/LastFmManager.h"
 #include "music/MusicInfoLoader.h"
 #include "XBVideoConfig.h"
 #ifndef HAS_XBOX_D3D
@@ -329,15 +327,6 @@ CStdString CUtil::GetTitleFromPath(const CStdString& strFileNameAndPath, bool bI
     feed.Init(path);
     feed.ReadFeed();
     strFilename = feed.GetFeedTitle();
-  }
-
-  // LastFM
-  if (url.GetProtocol() == "lastfm")
-  {
-    if (strFilename.IsEmpty())
-      strFilename = g_localizeStrings.Get(15200);
-    else
-      strFilename = g_localizeStrings.Get(15200) + " - " + strFilename;
   }
 
   // Shoutcast
@@ -2677,8 +2666,6 @@ int CUtil::GetMatchingSource(const CStdString& strPath1, VECSOURCES& VECSOURCES,
 
   if (checkURL.GetProtocol() == "shout")
     strPath = checkURL.GetHostName();
-  if (checkURL.GetProtocol() == "lastfm")
-    return 1;
   if (checkURL.GetProtocol() == "tuxbox")
     return 1;
   if (checkURL.GetProtocol() == "plugin")

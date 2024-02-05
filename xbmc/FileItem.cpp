@@ -585,7 +585,6 @@ bool CFileItem::IsAudio() const
   if (HasPictureInfoTag()) return false;
   if (IsCDDA()) return true;
   if (!m_bIsFolder && IsShoutCast()) return true;
-  if (!m_bIsFolder && IsLastFM()) return true;
 
   CStdString extension;
   if( m_mimetype.Left(12).Equals("application/") )
@@ -634,11 +633,6 @@ bool CFileItem::IsCUESheet() const
 bool CFileItem::IsShoutCast() const
 {
   return URIUtils::IsShoutCast(m_strPath);
-}
-
-bool CFileItem::IsLastFM() const
-{
-  return URIUtils::IsLastFM(m_strPath);
 }
 
 bool CFileItem::IsInternetStream() const

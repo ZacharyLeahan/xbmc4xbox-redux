@@ -1102,12 +1102,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\LangInfo.cpp">
 				</File>
 				<File
-					RelativePath=".\xbmc\music\LastFmManager.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\music\LastFmManager.h">
-				</File>
-				<File
 					RelativePath=".\xbmc\utils\LED.cpp">
 				</File>
 				<File
@@ -1906,18 +1900,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\FileSystem\ISOFile.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\FileSystem\LastFMDirectory.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\FileSystem\LastFMDirectory.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\FileSystem\LastFMFile.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\FileSystem\LastFMFile.h">
 				</File>
 				<File
 					RelativePath=".\xbmc\FileSystem\LibraryDirectory.cpp">
@@ -5196,28 +5178,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\lib\libGoAhead\XBMCweb.h">
-				</File>
-			</Filter>
-			<Filter
-				Name="libScrobbler"
-				Filter="">
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\lastfmscrobbler.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\lastfmscrobbler.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\librefmscrobbler.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\librefmscrobbler.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\scrobbler.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\lib\libscrobbler\scrobbler.h">
 				</File>
 			</Filter>
 			<Filter

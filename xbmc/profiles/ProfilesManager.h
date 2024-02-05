@@ -154,7 +154,6 @@ public:
 
   // Xbox specific methods since we currently don't have TextureDatabase
   std::string GetMusicThumbFolder() const;
-  std::string GetLastFMThumbFolder() const;
   std::string GetMusicArtistThumbFolder() const;
   std::string GetPicturesThumbFolder() const;
   std::string GetProgramsThumbFolder() const;

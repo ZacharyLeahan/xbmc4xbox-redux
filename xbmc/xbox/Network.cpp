@@ -26,8 +26,6 @@
 #endif
 #include "Application.h"
 #include "filesystem/SmbFile.h"
-#include "lib/libscrobbler/lastfmscrobbler.h"
-#include "lib/libscrobbler/librefmscrobbler.h"
 #include "settings/GUISettings.h"
 #include "GUIWindowManager.h"
 #include "ApplicationMessenger.h"
@@ -610,8 +608,6 @@ void CNetwork::NetworkMessage(EMESSAGE message, DWORD dwParam)
       g_application.StartFtpServer();
       g_application.StartUPnP();
       g_application.StartEventServer();
-      CLastfmScrobbler::GetInstance()->Init();
-      CLibrefmScrobbler::GetInstance()->Init();
       CRssManager::Get().Start();
       g_weatherManager.Refresh();
     }
@@ -624,8 +620,6 @@ void CNetwork::NetworkMessage(EMESSAGE message, DWORD dwParam)
       g_application.StopFtpServer();
       g_application.StopUPnP();
       g_application.StopEventServer();
-      CLastfmScrobbler::GetInstance()->Term();
-      CLibrefmScrobbler::GetInstance()->Term();
       // smb.Deinit(); if any file is open over samba this will break.
 
       CRssManager::Get().Stop();

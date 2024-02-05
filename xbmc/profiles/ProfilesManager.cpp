@@ -344,7 +344,6 @@ void CProfilesManager::CreateProfileFolders()
 #ifdef _XBOX
   CDirectory::Create(GetMusicThumbFolder());
   CDirectory::Create(GetMusicArtistThumbFolder());
-  CDirectory::Create(GetLastFMThumbFolder());
   CDirectory::Create(GetVideoFanartFolder());
   CDirectory::Create(GetMusicFanartFolder());
   CDirectory::Create(GetProgramsThumbFolder());
@@ -508,11 +507,6 @@ std::string CProfilesManager::GetSettingsFile() const
 std::string CProfilesManager::GetMusicThumbFolder() const
 {
   return URIUtils::AddFileToFolder(GetThumbnailsFolder(), "Music");
-}
-
-std::string CProfilesManager::GetLastFMThumbFolder() const
-{
-  return URIUtils::AddFileToFolder(GetThumbnailsFolder(), "Music/LastFM");
 }
 
 std::string CProfilesManager::GetMusicArtistThumbFolder() const

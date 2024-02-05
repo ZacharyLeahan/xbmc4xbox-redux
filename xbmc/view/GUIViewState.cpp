@@ -97,9 +97,6 @@ CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& it
   if (url.GetProtocol() == "shout")
     return new CGUIViewStateMusicShoutcast(items);
 
-  if (url.GetProtocol() == "lastfm")
-    return new CGUIViewStateMusicLastFM(items);
-
   if (items.GetPath() == "special://musicplaylists/")
     return new CGUIViewStateWindowMusicSongs(items);
   
