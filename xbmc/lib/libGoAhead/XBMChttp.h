@@ -1,5 +1,6 @@
 #pragma once
 
+#include "network/UdpClient.h"
 #include "Key.h"
 #include "boost/shared_ptr.hpp"
 
@@ -17,7 +18,6 @@ typedef char char_t;
 typedef struct websRec *webs_t;
 
 class CFileItem; typedef boost::shared_ptr<CFileItem> CFileItemPtr;
-class CUdpClient;
 
 class CXbmcHttpShim
 {
