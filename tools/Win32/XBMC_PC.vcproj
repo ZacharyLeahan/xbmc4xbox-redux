@@ -1843,9 +1843,6 @@
 					RelativePath="..\..\xbmc\utils\TuxBoxUtil.h">
 				</File>
 				<File
-					RelativePath="..\..\xbmc\utils\UdpClient.cpp">
-				</File>
-				<File
 					RelativePath="..\..\xbmc\utils\URIUtils.cpp">
 				</File>
 				<File
@@ -3458,9 +3455,6 @@
 			</File>
 			<File
 				RelativePath="..\..\xbmc\utils\Trainer.h">
-			</File>
-			<File
-				RelativePath="..\..\xbmc\utils\UdpClient.h">
 			</File>
 			<File
 				RelativePath="..\..\xbmc\URL.h">

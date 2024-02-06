@@ -1252,9 +1252,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\utils\TuxBoxUtil.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\utils\UdpClient.cpp">
-				</File>
-				<File
 					RelativePath=".\xbmc\utils\URIUtils.cpp">
 				</File>
 				<File
@@ -2811,6 +2808,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				<File
 					RelativePath=".\xbmc\network\GUIDialogNetworkSetup.h">
 				</File>
+				<File
+					RelativePath=".\xbmc\network\UdpClient.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\network\UdpClient.h">
+				</File>
 				<Filter
 					Name="upnp"
 					Filter="">
@@ -3677,9 +3680,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 			</File>
 			<File
 				RelativePath=".\xbmc\utils\Trainer.h">
-			</File>
-			<File
-				RelativePath=".\xbmc\utils\UdpClient.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\xbox\Undocumented.h">

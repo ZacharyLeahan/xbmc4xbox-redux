@@ -19,8 +19,7 @@
  */
 
 #include "UdpClient.h"
-#include "GraphicContext.h"
-#include "GraphicContext.h"
+#include "guilib/GraphicContext.h"
 #include "utils/log.h"
 
 #define UDPCLIENT_DEBUG_LEVEL LOGDEBUG

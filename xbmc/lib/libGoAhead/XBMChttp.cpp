@@ -38,7 +38,7 @@
 #include "windows/GUIWindowFileManager.h"
 #include "filesystem/Directory.h"
 #include "filesystem/VirtualDirectory.h"
-#include "utils/UdpClient.h"
+#include "network/UdpClient.h"
 #include "xbox/XKHDD.h"
 #include "filesystem/Directory.h"
 #include "playlists/PlayList.h"
