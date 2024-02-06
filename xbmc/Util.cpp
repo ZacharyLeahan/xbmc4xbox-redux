@@ -37,6 +37,7 @@
 #include "filesystem/MultiPathDirectory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/SpecialProtocol.h"
+#include "FileSystem/RSSDirectory.h"
 #include "ThumbnailCache.h"
 #include "filesystem/ZipManager.h"
 #include "filesystem/RarManager.h"
@@ -58,7 +59,6 @@
 #include "profiles/ProfilesManager.h"
 #include "utils/RegExp.h"
 #include "utils/AlarmClock.h"
-#include "utils/RssFeed.h"
 #include "input/ButtonTranslator.h"
 #include "pictures/Picture.h"
 #include "dialogs/GUIDialogNumeric.h"
@@ -322,12 +322,10 @@ CStdString CUtil::GetTitleFromPath(const CStdString& strFileNameAndPath, bool bI
 
   if (url.GetProtocol() == "rss")
   {
-    url.SetProtocol("http");
-    path = url.Get();
-    CRssFeed feed;
-    feed.Init(path);
-    feed.ReadFeed();
-    strFilename = feed.GetFeedTitle();
+    CRSSDirectory dir;
+    CFileItemList items;
+    if(dir.GetDirectory(strFileNameAndPath, items) && !items.m_strTitle.IsEmpty())
+      return items.m_strTitle;
   }
 
   // Shoutcast
