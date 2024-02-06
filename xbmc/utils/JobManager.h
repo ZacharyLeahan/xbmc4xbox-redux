@@ -22,8 +22,8 @@
 #include <queue>
 #include <vector>
 #include <string>
-#include "utils/CriticalSection.h"
-#include "utils/thread.h"
+#include "threads/CriticalSection.h"
+#include "threads/Thread.h"
 #include "Job.h"
 
 class CJobManager;

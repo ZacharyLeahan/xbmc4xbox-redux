@@ -20,7 +20,7 @@
  *
  */
 
-#include "Thread.h"
+#include "threads/Thread.h"
 #include "filesystem/File.h"
 
 class CAsyncFileCopy : public CThread, public XFILE::IFileCallback

@@ -23,7 +23,7 @@
 
 #include "Cdg.h"
 #include "CdgVoiceManager.h" // Karaoke patch (114097)
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "filesystem/File.h"
 
 //////////////////////

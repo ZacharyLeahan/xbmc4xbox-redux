@@ -24,8 +24,8 @@
 #include "AddonManager.h"
 #include "DateTime.h"
 #include "utils/Job.h"
-#include "utils/CriticalSection.h"
-#include "utils/SingleLock.h"
+#include "threads/CriticalSection.h"
+#include "threads/SingleLock.h"
 
 namespace ADDON
 {

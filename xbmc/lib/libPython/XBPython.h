@@ -22,7 +22,7 @@
 
 #include "XBPyThread.h"
 #include "cores/IPlayer.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include "interfaces/IAnnouncer.h"
 #include "addons/IAddon.h"
 

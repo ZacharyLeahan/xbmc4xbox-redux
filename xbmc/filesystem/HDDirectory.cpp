@@ -31,7 +31,7 @@
 #include "settings/GUISettings.h"
 #include "FileItem.h"
 #include "utils/CharsetConverter.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 #ifndef INVALID_FILE_ATTRIBUTES
 #define INVALID_FILE_ATTRIBUTES ((DWORD) -1)

@@ -29,7 +29,7 @@
 #include "utils/URIUtils.h"
 #include "settings/GUISettings.h"
 #include "addons/Skin.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/Variant.h"
 
 #ifndef _XBOX

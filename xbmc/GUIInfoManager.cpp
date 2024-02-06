@@ -67,7 +67,7 @@
 #include "settings/MediaSettings.h"
 #include "settings/SkinSettings.h"
 #include "utils/URIUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 // stuff for current song
 #ifdef HAS_FILESYSTEM

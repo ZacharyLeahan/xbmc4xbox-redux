@@ -18,7 +18,7 @@
  *  <http://www.gnu.org/licenses/>.
  *
  */
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "music/MusicDatabase.h"
 #include "music/infoscanner/MusicAlbumInfo.h"
 

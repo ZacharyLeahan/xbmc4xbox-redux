@@ -28,7 +28,7 @@
 #include "URL.h"
 #include "DirectoryCache.h"
 #include "utils/TimeUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 extern "C" {
 #include "lib/cmyth/include/cmyth/cmyth.h"

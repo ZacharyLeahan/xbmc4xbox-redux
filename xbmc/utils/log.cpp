@@ -22,9 +22,9 @@
 #include "log.h"
 #include "stdio_utf8.h"
 #include "stat_utf8.h"
-#include "utils/CriticalSection.h"
-#include "utils/SingleLock.h"
-#include "utils/Thread.h"
+#include "threads/CriticalSection.h"
+#include "threads/SingleLock.h"
+#include "threads/Thread.h"
 #include "utils/StdString.h"
 
 #define critSec XBMC_GLOBAL_USE(CLog::CLogGlobals).critSec

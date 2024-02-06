@@ -37,7 +37,7 @@
 #include "settings/GUISettings.h"
 #include "FileItem.h"
 #include "LocalizeStrings.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 #include "playlists/PlayList.h"
 #include "interfaces/AnnouncementManager.h"

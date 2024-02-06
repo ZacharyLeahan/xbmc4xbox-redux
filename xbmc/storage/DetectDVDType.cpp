@@ -23,7 +23,7 @@
 #include "utils/log.h"
 #include "DetectDVDType.h"
 #include "filesystem/iso9660.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #ifdef HAS_UNDOCUMENTED
 #include "xbox/Undocumented.h"
 #endif

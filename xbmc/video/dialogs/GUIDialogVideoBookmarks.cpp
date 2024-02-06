@@ -36,7 +36,7 @@
 #include "guilib/LocalizeStrings.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "Util.h"
 
 using namespace std;

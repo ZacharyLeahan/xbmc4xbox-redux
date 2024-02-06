@@ -26,7 +26,7 @@
 #include "RegExp.h"
 #include "utils/XMLUtils.h"
 #include "utils/JobManager.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "FileItem.h"
 #include "LangInfo.h"
 #include "settings/GUISettings.h"
@@ -36,7 +36,7 @@
 #include "settings/AdvancedSettings.h"
 #include "utils/log.h"
 #include "utils/XBMCTinyXML.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 #ifdef HAS_VISUALISATION
 #include "Visualisation.h"

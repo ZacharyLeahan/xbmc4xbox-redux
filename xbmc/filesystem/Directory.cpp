@@ -33,7 +33,7 @@
 #include "Application.h"
 #include "guilib/GUIWindowManager.h"
 #include "dialogs/GUIDialogBusy.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/URIUtils.h"
 
 using namespace std;

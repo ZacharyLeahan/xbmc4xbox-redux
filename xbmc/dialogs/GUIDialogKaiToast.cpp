@@ -22,7 +22,7 @@
 #include "guilib/GUIImage.h"
 #include "guilib/GUIAudioManager.h"
 #include "guilib/GUIWindowManager.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/TimeUtils.h"
 
 #define POPUP_ICON                400

@@ -19,7 +19,7 @@
  *
  */
 
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/StdString.h"
 #include "gui3d.h"
 

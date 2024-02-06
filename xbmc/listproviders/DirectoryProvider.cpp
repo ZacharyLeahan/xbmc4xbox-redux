@@ -27,7 +27,7 @@
 #include "utils/TimeUtils.h"
 #include "utils/Variant.h"
 #include "utils/XMLUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "ApplicationMessenger.h"
 #include "FileItem.h"
 

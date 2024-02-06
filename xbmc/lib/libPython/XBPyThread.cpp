@@ -28,7 +28,7 @@
 #include "dialogs/GUIDialogKaiToast.h"
 #include "LocalizeStrings.h"
 #include "utils/log.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/URIUtils.h"
 #include "addons/AddonManager.h"
 #include "addons/Addon.h"

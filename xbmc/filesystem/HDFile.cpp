@@ -25,7 +25,7 @@
 #include "URL.h"
 #include "settings/GUISettings.h"
 #include "utils/CharsetConverter.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 #include <sys/stat.h>
 

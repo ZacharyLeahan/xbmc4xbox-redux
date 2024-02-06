@@ -19,7 +19,7 @@
  */
 
 #include "AnnouncementManager.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include <stdio.h>
 #include "utils/log.h"
 #include "utils/Variant.h"

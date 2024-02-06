@@ -18,7 +18,7 @@
  *  <http://www.gnu.org/licenses/>.
  *
  */
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "VideoDatabase.h"
 #include "addons/Scraper.h"
 #include "NfoFile.h"

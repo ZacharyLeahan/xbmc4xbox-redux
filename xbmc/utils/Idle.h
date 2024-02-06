@@ -21,7 +21,7 @@
  *
  */
 
-#include "Thread.h" 
+#include "threads/Thread.h" 
 ///////////////////////////////// Classes //////////////////////////////
 
 class CIdleThread : public CThread

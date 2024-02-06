@@ -3,7 +3,7 @@
 #include "IDevice.h"
 #include "dosfs.h"
 #include "memutil.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include <map>
 
 // structure for vfat name entries (unicode)

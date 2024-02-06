@@ -21,7 +21,7 @@ to maintain a single distribution point for the source code.
 #ifndef __SNTP_H__
 #define __SNTP_H__
 
-#include "Thread.h" 
+#include "threads/Thread.h" 
 ///////////////////////////////// Classes //////////////////////////////
 
 //Representation of an NTP timestamp

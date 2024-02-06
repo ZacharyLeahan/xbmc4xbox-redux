@@ -19,7 +19,7 @@
  *
  */
 
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "IDirectory.h"
 #include "Directory.h"
 

@@ -22,8 +22,8 @@
 #include <list>
 #include <vector>
 
-#include "utils/CriticalSection.h"
-#include "utils/Thread.h"
+#include "threads/CriticalSection.h"
+#include "threads/Thread.h"
 #include "utils/IRssObserver.h"
 #include "utils/StdString.h"
 #include "utils/XBMCTinyXML.h"

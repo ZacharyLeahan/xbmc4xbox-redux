@@ -22,7 +22,7 @@
  */
 
 #include "python/Include/Python.h"
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "addons/IAddon.h"
 #include "utils/StringUtils.h"
 

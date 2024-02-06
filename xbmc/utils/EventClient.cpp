@@ -24,7 +24,7 @@
 
 #include "EventClient.h"
 #include "EventPacket.h"
-#include "SingleLock.h"
+#include "threads/SingleLock.h"
 #include "input/ButtonTranslator.h"
 #include "GraphicContext.h"
 #include "Key.h"

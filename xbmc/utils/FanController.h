@@ -20,7 +20,7 @@
  *
  */
 
-#include "Thread.h"
+#include "threads/Thread.h"
 #include "Temperature.h"
 
 class CFanController : public CThread

@@ -23,7 +23,7 @@
 #include "utils/FileOperationJob.h"
 #include "addons/Addon.h"
 #include "utils/Stopwatch.h"
-#include "utils/Event.h"
+#include "threads/Event.h"
 
 class CAddonInstaller : public IJobCallback
 {

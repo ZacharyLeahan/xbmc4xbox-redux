@@ -20,8 +20,8 @@
  *
  */
 
-#include "utils/Thread.h"
-#include "utils/CriticalSection.h"
+#include "threads/Thread.h"
+#include "threads/CriticalSection.h"
 #include "TextureManager.h"
 
 class CGUILargeTextureManager : public CThread

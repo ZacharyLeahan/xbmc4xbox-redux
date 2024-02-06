@@ -25,7 +25,7 @@
 #include "GUISound.h"
 #include "settings/GUISettings.h"
 #include "input/ButtonTranslator.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/URIUtils.h"
 #include "utils/XBMCTinyXML.h"
 #include "addons/Skin.h"

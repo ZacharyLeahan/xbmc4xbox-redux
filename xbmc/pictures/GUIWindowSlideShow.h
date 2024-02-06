@@ -22,8 +22,8 @@
 
 #include <set>
 #include "GUIWindow.h"
-#include "utils/Thread.h"
-#include "utils/CriticalSection.h"
+#include "threads/Thread.h"
+#include "threads/CriticalSection.h"
 #include "pictures/SlideShowPicture.h"
 #include "pictures/DllImageLib.h"
 #include "utils/SortUtils.h"

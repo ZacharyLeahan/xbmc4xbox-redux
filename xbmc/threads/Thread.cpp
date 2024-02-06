@@ -20,8 +20,8 @@
 
 #include "Thread.h"
 #include <process.h>
-#include "win32exception.h"
-#include "log.h"
+#include "utils/win32exception.h"
+#include "utils/log.h"
 #include "Util.h"
 
 //////////////////////////////////////////////////////////////////////

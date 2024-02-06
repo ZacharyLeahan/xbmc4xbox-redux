@@ -40,7 +40,7 @@
 #include "settings/AdvancedSettings.h"
 #include "PasswordManager.h"
 #include "Application.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 struct CachedDirEntry
 {

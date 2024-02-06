@@ -21,7 +21,7 @@
  */
 
 #include "utils/StdString.h"
-#include "Thread.h"
+#include "threads/Thread.h"
 
 class CURL;
 class TiXmlElement;

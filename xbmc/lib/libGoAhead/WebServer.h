@@ -12,7 +12,7 @@
 #pragma once
 
 #include "utils/StdString.h"
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 
 #ifdef __cplusplus
 extern "C" {

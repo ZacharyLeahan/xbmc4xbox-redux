@@ -20,7 +20,7 @@
 
 #include "ThumbnailCache.h"
 #include "filesystem/File.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace std;
 using namespace XFILE;

@@ -45,7 +45,7 @@
 #include "FileItem.h"
 #include "settings/AdvancedSettings.h"
 #include "LocalizeStrings.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "input/ButtonTranslator.h"
 
 #include <stdio.h>

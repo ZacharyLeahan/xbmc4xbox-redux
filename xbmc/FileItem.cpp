@@ -41,7 +41,7 @@
 #include "SortFileItem.h"
 #include "utils/TuxBoxUtil.h"
 #include "video/VideoInfoTag.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "music/tags/MusicInfoTag.h"
 #include "pictures/PictureInfoTag.h"
 #include "music/Artist.h"

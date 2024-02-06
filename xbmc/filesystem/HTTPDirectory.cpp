@@ -29,7 +29,7 @@
 #include "utils/log.h"
 #include "utils/URIUtils.h"
 #include "utils/HTMLUtil.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 using namespace XFILE;
 

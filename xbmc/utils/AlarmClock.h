@@ -22,8 +22,8 @@
 
 #include "utils/StdString.h"
 #include "Stopwatch.h"
-#include "CriticalSection.h"
-#include "Thread.h"
+#include "threads/CriticalSection.h"
+#include "threads/Thread.h"
 #include "utils/log.h"
 
 #include <map>

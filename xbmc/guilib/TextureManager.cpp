@@ -24,7 +24,7 @@
 #include "AnimatedGif.h"
 #include "PackedTexture.h"
 #include "GraphicContext.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/StringUtils.h"
 #include "pictures/Picture.h"
 #include "utils/CharsetConverter.h"

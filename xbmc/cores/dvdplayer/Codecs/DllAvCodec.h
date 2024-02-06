@@ -25,7 +25,7 @@ extern "C" {
 #include "libavcodec/audioconvert.h"
 }
 
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "settings/Settings.h"
 
 class DllAvCodecInterface

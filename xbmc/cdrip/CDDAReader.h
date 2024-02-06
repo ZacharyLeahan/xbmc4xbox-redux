@@ -25,7 +25,7 @@
 #define CDDARIP_ERR   1
 #define CDDARIP_DONE  2
 
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "filesystem/File.h"
 
 struct RipBuffer

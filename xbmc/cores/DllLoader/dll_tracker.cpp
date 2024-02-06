@@ -27,7 +27,7 @@
 #include "dll_tracker_critical_section.h"
 #include "dll_tracker_socket.h"
 #include "DllLoader.h"
-#include "../../utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 #ifdef _cplusplus
 extern "C"

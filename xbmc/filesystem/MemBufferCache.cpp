@@ -20,7 +20,7 @@
 
 #include "MemBufferCache.h"
 #include "utils/log.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "settings/AdvancedSettings.h"
 
 #include <math.h>

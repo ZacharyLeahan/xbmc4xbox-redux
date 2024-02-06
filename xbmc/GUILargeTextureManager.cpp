@@ -26,7 +26,7 @@
 #include "settings/Settings.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/URIUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace std;
 

@@ -21,7 +21,7 @@
 #include "utils/log.h"
 #include "DVDMessageQueue.h"
 #include "DVDDemuxers/DVDDemuxUtils.h"
-#include "SingleLock.h"
+#include "threads/SingleLock.h"
 #include "DVDClock.h"
 #include "utils/MathUtils.h"
 

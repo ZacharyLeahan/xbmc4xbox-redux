@@ -20,7 +20,7 @@
  */
 
 #include "utils/StdString.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include "utils/GlobalsHandling.h"
 
 //  forward

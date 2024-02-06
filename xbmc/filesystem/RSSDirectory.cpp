@@ -29,7 +29,7 @@
 #include "utils/StringUtils.h"
 #include "video/VideoInfoTag.h"
 #include "utils/log.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace XFILE;
 using namespace std;

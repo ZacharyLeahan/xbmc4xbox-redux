@@ -29,7 +29,7 @@
 #ifdef HAS_PYTHON
 #include "lib/libPython/XBPython.h"
 #endif
-#include "../utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "GUIWindowManager.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "filesystem/File.h"

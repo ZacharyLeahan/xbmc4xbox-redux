@@ -23,7 +23,7 @@
 
 #include "system.h"
 #include <xvoice.h>
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 enum CDG_DEVICE_TYPE
 {

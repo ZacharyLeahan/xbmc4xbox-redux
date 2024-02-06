@@ -25,7 +25,7 @@
 #include "addons/ScreenSaver.h"
 #endif
 
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 #define SCREENSAVER_FADE   1
 #define SCREENSAVER_BLACK  2

@@ -24,7 +24,7 @@
 #include "ArabicShaping.h"
 #include "settings/GUISettings.h"
 #include "LangInfo.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 
 #ifndef _LINUX

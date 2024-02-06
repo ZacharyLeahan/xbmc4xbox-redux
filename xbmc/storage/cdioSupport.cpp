@@ -20,7 +20,7 @@
 
 #include "system.h"
 #include "cdioSupport.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 #include "lib/libcdio/cdio.h"
 #include "lib/libcdio/logging.h"

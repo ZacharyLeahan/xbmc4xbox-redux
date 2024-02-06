@@ -28,8 +28,8 @@
 #else
 
 #include "XBoxRenderer.h"
-#include "utils/SharedSection.h"
-#include "utils/Thread.h"
+#include "threads/SharedSection.h"
+#include "threads/Thread.h"
 
 class CXBoxRenderManager : private CThread
 {

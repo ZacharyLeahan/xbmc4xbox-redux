@@ -37,7 +37,7 @@
 #include "guilib/GraphicContext.h"
 #include "profiles/ProfilesManager.h"
 #include "utils/log.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/TimeUtils.h"
 
 XBPython g_pythonParser;

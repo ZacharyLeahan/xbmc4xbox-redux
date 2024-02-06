@@ -22,7 +22,7 @@
 #include "CodecFactory.h"
 #include "settings/GUISettings.h"
 #include "FileItem.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 
 #define INTERNAL_BUFFER_LENGTH  sizeof(float)*2*44100       // float samples, 2 channels, 44100 samples per sec = 1 second

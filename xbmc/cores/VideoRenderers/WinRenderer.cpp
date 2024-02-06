@@ -26,7 +26,7 @@
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
 #include "settings/MediaSettings.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 // http://www.martinreddy.net/gfx/faqs/colorconv.faq
 

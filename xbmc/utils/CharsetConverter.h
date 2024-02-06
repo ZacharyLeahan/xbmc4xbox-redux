@@ -21,10 +21,10 @@
  *
  */
 
-#include "CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include "StdString.h"
 #include "utils/GlobalsHandling.h"
-#include "../xbox/PlatFormDefs.h"
+#include "xbox/PlatformDefs.h"
 
 #include <vector>
 

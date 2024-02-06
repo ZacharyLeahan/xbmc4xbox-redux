@@ -2,7 +2,7 @@
 #include "utils/log.h"
 #include "Fat32Device.h"
 #include "xbox/Undocumented.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace std;
 

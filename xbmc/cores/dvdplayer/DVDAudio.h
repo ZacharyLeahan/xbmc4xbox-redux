@@ -22,7 +22,7 @@
 
 #include "cores/mplayer/IDirectSoundRenderer.h"
 #include "cores/mplayer/IAudioCallback.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include <queue>
 
 enum AVCodecID;

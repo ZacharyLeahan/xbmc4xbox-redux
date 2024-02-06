@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "settings/ISettingsHandler.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 class CRssReader;
 class IRssObserver;

@@ -20,7 +20,7 @@
  
 #include "system.h"
 #include "utils/log.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "DVDAudio.h"
 #ifdef _XBOX
 #include "cores/mplayer/ASyncDirectSound.h"

@@ -23,7 +23,7 @@
 #include "BackgroundInfoLoader.h"
 #include "FileItem.h"
 #include "settings/AdvancedSettings.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace std;
 

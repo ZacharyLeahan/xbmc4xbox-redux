@@ -30,7 +30,7 @@
 #include <mach/mach.h>
 #include <mach/clock.h>
 #include <mach/mach_error.h>
-#include "Thread.h"
+#include "threads/Thread.h"
 #endif
 
 #define WIN32_TIME_OFFSET ((unsigned long long)(369 * 365 + 89) * 24 * 3600 * 10000000)

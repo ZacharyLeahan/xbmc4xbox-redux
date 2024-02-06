@@ -21,7 +21,7 @@
  */
 
 #include "IAudioDeviceChangedCallback.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 // forward definitions
 class CAction;

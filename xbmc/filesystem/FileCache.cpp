@@ -22,7 +22,7 @@
 
 #include "AutoPtrHandle.h"
 #include "FileCache.h"
-#include "utils/Thread.h"
+#include "threads/Thread.h"
 #include "File.h"
 #include "URL.h"
 #include "utils/TimeUtils.h"
@@ -30,7 +30,7 @@
 
 #include "MemBufferCache.h"
 #include "CircularCache.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 using namespace AUTOPTR;
 using namespace XFILE;

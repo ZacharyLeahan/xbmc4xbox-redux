@@ -23,7 +23,7 @@
 #include "profiles/dialogs/GUIDialogLockSettings.h"
 #include "URL.h"
 #include "utils/XMLUtils.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 #include "filesystem/File.h"
 

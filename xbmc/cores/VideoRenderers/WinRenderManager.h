@@ -21,7 +21,7 @@
  */
 
 #include "WinRenderer.h"
-#include "utils/SharedSection.h"
+#include "threads/SharedSection.h"
 
 class CWinRenderManager
 {

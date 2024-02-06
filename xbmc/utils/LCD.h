@@ -20,7 +20,7 @@
  *
  */
 
-#include "Thread.h"
+#include "threads/Thread.h"
 
 #include "GUILabelControl.h"  // for CInfoPortion
 

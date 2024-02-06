@@ -23,7 +23,7 @@
 #include "GUIWindow.h"
 #include "filesystem/VirtualDirectory.h"
 #include "filesystem/DirectoryHistory.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 #include "utils/JobManager.h"
 
 class CFileItem;

@@ -21,7 +21,7 @@
  */
 
 #include "utils/StdString.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 #include <vector>
 

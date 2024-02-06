@@ -20,7 +20,7 @@
 
 #include "JobManager.h"
 #include <algorithm>
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "utils/log.h"
 
 #include "system.h"

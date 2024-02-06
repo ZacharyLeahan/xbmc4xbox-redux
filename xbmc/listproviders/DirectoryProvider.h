@@ -24,7 +24,7 @@
 #include "IListProvider.h"
 #include "guilib/GUIStaticItem.h"
 #include "utils/Job.h"
-#include "utils/CriticalSection.h"
+#include "threads/CriticalSection.h"
 
 class TiXmlElement;
 

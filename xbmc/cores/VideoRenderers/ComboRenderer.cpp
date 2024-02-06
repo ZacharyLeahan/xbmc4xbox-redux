@@ -25,7 +25,7 @@
 #include "settings/DisplaySettings.h"
 #include "settings/DisplaySettings.h"
 #include "settings/MediaSettings.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 CComboRenderer::CComboRenderer(LPDIRECT3DDEVICE8 pDevice)
     : CXBoxRenderer(pDevice)

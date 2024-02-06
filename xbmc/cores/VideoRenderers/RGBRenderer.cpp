@@ -20,7 +20,7 @@
  
 #include "utils/log.h"
 #include "RGBRenderer.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 #define SURFTOTEX(a) ((a)->Parent ? (a)->Parent : (D3DBaseTexture*)(a))
 

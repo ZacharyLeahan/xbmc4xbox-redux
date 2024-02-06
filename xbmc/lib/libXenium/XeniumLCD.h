@@ -1,5 +1,5 @@
 #pragma once
-#include "utils/thread.h"
+#include "threads/Thread.h"
 #include "utils/lcd.h"
 #include "xenium.h"
 

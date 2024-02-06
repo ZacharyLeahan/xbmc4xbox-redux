@@ -29,9 +29,9 @@
 //
 
 #include "cdioSupport.h"
-#include "utils/CriticalSection.h"
-#include "utils/Event.h"
-#include "utils/Thread.h"
+#include "threads/CriticalSection.h"
+#include "threads/Event.h"
+#include "threads/Thread.h"
 #include "boost/shared_ptr.hpp"
 
 namespace MEDIA_DETECT

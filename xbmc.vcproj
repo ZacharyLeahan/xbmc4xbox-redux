@@ -973,9 +973,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\utils\Crc32.cpp">
 				</File>
 				<File
-					RelativePath=".\xbmc\utils\CriticalSection.cpp">
-				</File>
-				<File
 					RelativePath=".\xbmc\utils\DatabaseUtils.cpp">
 				</File>
 				<File
@@ -998,9 +995,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\DynamicDll.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\utils\Event.cpp">
 				</File>
 				<File
 					RelativePath=".\xbmc\utils\Fanart.cpp">
@@ -1207,13 +1201,7 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\SectionLoader.cpp">
 				</File>
 				<File
-					RelativePath=".\xbmc\utils\SharedSection.cpp">
-				</File>
-				<File
 					RelativePath=".\xbmc\Shortcut.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\utils\SingleLock.cpp">
 				</File>
 				<File
 					RelativePath=".\xbmc\utils\Sntp.cpp">
@@ -1253,9 +1241,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\Temperature.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\utils\Thread.cpp">
 				</File>
 				<File
 					RelativePath=".\xbmc\ThumbnailCache.cpp">
@@ -3039,6 +3024,36 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				<File
 					RelativePath=".\xbmc\threads\Atomics.h">
 				</File>
+				<File
+					RelativePath=".\xbmc\threads\CriticalSection.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\CriticalSection.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\Event.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\Event.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\SharedSection.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\SharedSection.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\SingleLock.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\SingleLock.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\Thread.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\threads\Thread.h">
+				</File>
 			</Filter>
 			<Filter
 				Name="view"
@@ -3235,9 +3250,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				RelativePath=".\xbmc\utils\Crc32.h">
 			</File>
 			<File
-				RelativePath=".\xbmc\utils\CriticalSection.h">
-			</File>
-			<File
 				RelativePath=".\xbmc\CueDocument.h">
 			</File>
 			<File
@@ -3272,9 +3284,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 			</File>
 			<File
 				RelativePath=".\xbmc\DynamicDll.h">
-			</File>
-			<File
-				RelativePath=".\xbmc\utils\Event.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\utils\EventClient.h">
@@ -3601,13 +3610,7 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				RelativePath=".\xbmc\settings\Settings.h">
 			</File>
 			<File
-				RelativePath=".\xbmc\utils\SharedSection.h">
-			</File>
-			<File
 				RelativePath=".\xbmc\Shortcut.h">
-			</File>
-			<File
-				RelativePath=".\xbmc\utils\SingleLock.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\playlists\SmartPlaylistFileItemListModifier.h">
@@ -3656,9 +3659,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 			</File>
 			<File
 				RelativePath=".\xbmc\Temperature.h">
-			</File>
-			<File
-				RelativePath=".\xbmc\utils\Thread.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\ThumbnailCache.h">

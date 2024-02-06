@@ -23,7 +23,7 @@
 #include "music/infoscanner/MusicAlbumInfo.h"
 #include "music/infoscanner/MusicArtistInfo.h"
 #include "addons/Scraper.h"
-#include "Thread.h"
+#include "threads/Thread.h"
 #include "filesystem/CurlFile.h"
 
 namespace XFILE { class CCurlFile; }

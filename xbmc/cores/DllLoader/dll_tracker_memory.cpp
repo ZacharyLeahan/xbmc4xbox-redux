@@ -22,7 +22,7 @@
 #include "dll_tracker_memory.h"
 #include "dll_tracker.h"
 #include "DllLoader.h"
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 
 struct MSizeCount
 {

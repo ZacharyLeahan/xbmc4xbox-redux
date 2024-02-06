@@ -20,7 +20,7 @@
  *
  */
 
-#include "utils/SingleLock.h"
+#include "threads/SingleLock.h"
 #include "Key.h"
 
 #include <queue>
