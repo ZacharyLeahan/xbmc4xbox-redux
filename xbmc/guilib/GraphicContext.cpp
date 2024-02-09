@@ -687,12 +687,10 @@ void CGraphicContext::SetScalingResolution(const RESOLUTION_INFO &res, bool need
       fToHeight = (float)CDisplaySettings::Get().GetResolutionInfo(m_Resolution).Overscan.bottom - fToPosY;
     }
 
-    // add additional zoom to compensate for any overskan built in skin
-    float fZoom = g_SkinInfo->GetSkinZoom();
-
     if(!g_guiSkinzoom) // lookup gui setting if we didn't have it already
       g_guiSkinzoom = (CSettingInt*)g_guiSettings.GetSetting("lookandfeel.skinzoom");
 
+    float fZoom = 1.0f;
     if(g_guiSkinzoom)
       fZoom *= (100 + g_guiSkinzoom->GetData()) * 0.01f;
 

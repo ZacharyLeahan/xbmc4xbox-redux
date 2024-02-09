@@ -19,16 +19,15 @@
  *
  */
 
-#include "include.h"
-#include "addons/Skin.h"
+#include "Skin.h"
 #include "AddonManager.h"
 #include "GUIWindowManager.h"
 #include "settings/GUISettings.h"
 #include "filesystem/File.h"
 #include "filesystem/SpecialProtocol.h"
 #include "utils/URIUtils.h"
+#include "utils/log.h"
 #include "utils/StringUtils.h"
-#include "utils/XMLUtils.h"
 
 // fallback for new skin resolution code
 #include "filesystem/Directory.h"
@@ -79,13 +78,13 @@ CSkinInfo::CSkinInfo(const cp_extension_t *ext)
   else
   { // no resolutions specified -> backward compatibility
     CStdString defaultWide = CAddonMgr::Get().GetExtValue(ext->configuration, "@defaultwideresolution");
-    if (defaultWide.IsEmpty())
+    if (defaultWide.empty())
       defaultWide = CAddonMgr::Get().GetExtValue(ext->configuration, "@defaultresolution");
     TranslateResolution(defaultWide, m_defaultRes);
   }
 
   CStdString str = CAddonMgr::Get().GetExtValue(ext->configuration, "@effectslowdown");
-  if (!str.IsEmpty())
+  if (!str.empty())
     m_effectsSlowDown = (float)atof(str.c_str());
   else
     m_effectsSlowDown = 1.f;
@@ -93,7 +92,6 @@ CSkinInfo::CSkinInfo(const cp_extension_t *ext)
   str = CAddonMgr::Get().GetExtValue(ext->configuration, "@debugging");
   m_debugging = !strcmp(str.c_str(), "true");
 
-  m_skinzoom = 1.0f;
   m_bLegacy = false;
   LoadStartupWindows(ext);
   m_Version = 2.11;
@@ -150,7 +148,7 @@ CStdString CSkinInfo::GetSkinPath(const CStdString& strFile, RESOLUTION_INFO *re
     return ""; // invalid skin
 
   CStdString strPathToUse = Path();
-  if (!strBaseDir.IsEmpty())
+  if (!strBaseDir.empty())
     strPathToUse = strBaseDir;
 
   // if the caller doesn't care about the resolution just use a temporary

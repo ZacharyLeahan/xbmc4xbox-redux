@@ -100,8 +100,6 @@ public:
 
   const std::vector<CStartupWindow> &GetStartupWindows() const { return m_startupWindows; };
 
-  inline float GetSkinZoom() const { return m_skinzoom; };
-
   inline float GetLegacy() { return m_bLegacy; };
 
   /*! \brief Retrieve the skin paths to search for skin XML files
@@ -145,7 +143,6 @@ protected:
 
   std::vector<CStartupWindow> m_startupWindows;
   bool m_debugging;
-  float m_skinzoom;
   bool m_bLegacy;
 };
 
