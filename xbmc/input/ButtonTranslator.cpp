@@ -189,7 +189,9 @@ static const ActionMapping actions[] =
         {"firstpage"         , ACTION_FIRST_PAGE},
         {"lastpage"          , ACTION_LAST_PAGE},
         {"increasepar"       , ACTION_INCREASE_PAR},
-        {"decreasepar"       , ACTION_DECREASE_PAR}};
+        {"decreasepar"       , ACTION_DECREASE_PAR},
+        {"settingsreset"      , ACTION_SETTINGS_RESET},
+        {"settingslevelchange", ACTION_SETTINGS_LEVEL_CHANGE}};
 
 static const ActionMapping windows[] =
        {{"home"                     , WINDOW_HOME},
@@ -210,7 +212,8 @@ static const ActionMapping windows[] =
         {"musicsettings"            , WINDOW_SETTINGS_MYMUSIC},
         {"systemsettings"           , WINDOW_SETTINGS_SYSTEM},
         {"videossettings"           , WINDOW_SETTINGS_MYVIDEOS},
-        {"networksettings"          , WINDOW_SETTINGS_NETWORK},
+        {"networksettings"          , WINDOW_SETTINGS_SERVICE}, // backward compat
+        {"servicesettings"          , WINDOW_SETTINGS_SERVICE},
         {"appearancesettings"       , WINDOW_SETTINGS_APPEARANCE},
         {"scripts"                  , WINDOW_SCRIPTS},
         {"videofiles"               , WINDOW_VIDEO_FILES},
@@ -634,7 +637,7 @@ void CButtonTranslator::MapWindowActions(TiXmlNode *pWindow, int windowID)
   }
   if ((pDevice = pWindow->FirstChild("remote")) != NULL)
   { // map remote actions
-    bool bUseMCE = g_guiSettings.GetBool("system.mceremote");
+    bool bUseMCE = CSettings::Get().GetBool("system.mceremote");
     TiXmlElement *pRemote;
     CStdString remoteName;
     while (pDevice)

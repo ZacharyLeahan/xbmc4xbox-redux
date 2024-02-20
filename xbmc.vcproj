@@ -431,9 +431,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\settings\DisplaySettings.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\settings\GUISettings.cpp">
-				</File>
-				<File
 					RelativePath=".\xbmc\settings\ISetting.cpp">
 				</File>
 				<File
@@ -506,6 +503,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\settings\SettingPath.h">
 				</File>
 				<File
+					RelativePath=".\xbmc\settings\SettingRequirement.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\settings\SettingRequirement.h">
+				</File>
+				<File
 					RelativePath=".\xbmc\settings\Settings.cpp">
 				</File>
 				<File
@@ -527,12 +530,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\settings\SettingUpdate.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\settings\SettingVisibility.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\settings\SettingVisibility.h">
-				</File>
-				<File
 					RelativePath=".\xbmc\settings\SkinSettings.cpp">
 				</File>
 				<File
@@ -548,10 +545,10 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					Name="windows"
 					Filter="">
 					<File
-						RelativePath=".\xbmc\settings\windows\GUISettingControls.cpp">
+						RelativePath=".\xbmc\settings\windows\GUIControlSettings.cpp">
 					</File>
 					<File
-						RelativePath=".\xbmc\settings\windows\GUISettingControls.h">
+						RelativePath=".\xbmc\settings\windows\GUIControlSettings.h">
 					</File>
 					<File
 						RelativePath=".\xbmc\settings\windows\GUIWindowSettings.cpp">
@@ -2708,7 +2705,7 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\lib\smartXX\smartxxlcd.cpp">
 				</File>
 				<File
-					RelativePath=".\xbmc\lib\smartXX\smartxxLCD.h">
+					RelativePath=".\xbmc\lib\smartXX\smartxxlcd.h">
 				</File>
 				<File
 					RelativePath=".\xbmc\lib\x3lcd\x3lcd.cpp">
@@ -2807,6 +2804,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				</File>
 				<File
 					RelativePath=".\xbmc\network\GUIDialogNetworkSetup.h">
+				</File>
+				<File
+					RelativePath=".\xbmc\network\NetworkServices.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\network\NetworkServices.h">
 				</File>
 				<File
 					RelativePath=".\xbmc\network\UdpClient.cpp">
@@ -3382,9 +3385,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 				RelativePath=".\xbmc\GUIPassword.h">
 			</File>
 			<File
-				RelativePath=".\xbmc\settings\GUISettings.h">
-			</File>
-			<File
 				RelativePath=".\xbmc\GuiUserMessages.h">
 			</File>
 			<File
@@ -3779,7 +3779,7 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\cores\mplayer\DllMPlayer.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\cores\mplayer\mplayer.cpp">
+					RelativePath=".\xbmc\cores\mplayer\MPlayer.cpp">
 				</File>
 				<File
 					RelativePath=".\xbmc\cores\mplayer\MPlayer.h">

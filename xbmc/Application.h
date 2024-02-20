@@ -66,6 +66,16 @@ namespace MUSIC_INFO
 #define VOLUME_MINIMUM -6000  // -60dB
 #define VOLUME_MAXIMUM 0      // 0dB
 
+// replay gain settings struct for quick access by the player multiple
+// times per second (saves doing settings lookup)
+struct ReplayGainSettings
+{
+  int iPreAmp;
+  int iNoGainPreAmp;
+  int iType;
+  bool bAvoidClipping;
+};
+
 struct VOICE_MASK {
   float energy;
   float pitch;
@@ -73,9 +83,6 @@ struct VOICE_MASK {
   float whisper;
 };
 
-class CWebServer;
-class CXBFileZilla;
-class CSNTPClient;
 class CCdgParser;
 class CApplicationMessenger;
 class CProfile;
@@ -83,7 +90,7 @@ class CSplash;
 class CGUITextLayout;
 
 class CApplication : public CXBApplicationEx, public IPlayerCallback, public IMsgTargetCallback,
-                     public ISettingsHandler, public ISubSettings
+                     public ISettingCallback, public ISettingsHandler, public ISubSettings
 {
 public:
   CApplication(void);
@@ -100,20 +107,6 @@ public:
   void StopServices();
   void StartIdleThread();
   void StopIdleThread();
-  void StartWebServer();
-  void StopWebServer();
-  void StartFtpServer();
-  void StopFtpServer();
-  void StartTimeServer();
-  void StopTimeServer();
-  void StartUPnP();
-  void StopUPnP(bool bWait = false);
-  void StartUPnPRenderer();
-  void StopUPnPRenderer();
-  void StartUPnPServer();
-  void StopUPnPServer();
-  void StartEventServer();
-  bool StopEventServer(bool promptuser=false);
   void RefreshEventServer();
   void StartLEDControl(bool switchoff = false);
   void DimLCDOnPlayback(bool dim);
@@ -224,9 +217,6 @@ public:
   MEDIA_DETECT::CAutorun m_Autorun;
   MEDIA_DETECT::CDetectDVDMedia m_DetectDVDType;
   CDelayController m_ctrDpad;
-  CSNTPClient *m_psntpClient;
-  CWebServer* m_pWebServer;
-  CXBFileZilla* m_pFileZilla;
   IPlayer* m_pPlayer;
 
   bool m_bSpinDown;
@@ -248,11 +238,17 @@ public:
   int GlobalIdleTime();
 
   bool SetLanguage(const CStdString &strLanguage);
+
+  ReplayGainSettings& GetReplayGainSettings() { return m_replayGainSettings; }
 protected:
   virtual bool OnSettingsSaving() const;
 
   virtual bool Load(const TiXmlNode *settings);
   virtual bool Save(TiXmlNode *settings) const;
+
+  virtual void OnSettingChanged(const CSetting *setting);
+  virtual void OnSettingAction(const CSetting *setting);
+  virtual bool OnSettingUpdate(CSetting* &setting, const char *oldSettingId, const TiXmlNode *oldSettingNode);
 
   void LoadSkin(const boost::shared_ptr<ADDON::CSkinInfo>& skin);
 
@@ -321,7 +317,6 @@ protected:
   bool ProcessJoystickEvent(const std::string& joystickName, int button, bool isAxis, float fAmount, unsigned int holdTime = 0);
 
   void CheckForDebugButtonCombo();
-  void StartFtpEmergencyRecoveryMode();
   float NavigationIdleTime();
   void CheckForTitleChange();
   static bool AlwaysProcess(const CAction& action);
@@ -336,6 +331,8 @@ protected:
 #ifdef HAS_EVENT_SERVER
   std::map<std::string, std::map<int, float> > m_lastAxisMap;
 #endif
+
+  ReplayGainSettings m_replayGainSettings;
 };
 
 XBMC_GLOBAL_REF(CApplication,g_application);
