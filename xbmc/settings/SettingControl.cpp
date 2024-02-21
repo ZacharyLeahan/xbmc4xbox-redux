@@ -120,12 +120,14 @@ bool CSettingControl::setAttributes(const std::string &strAttributes)
   std::vector<std::string> attributeList = StringUtils2::Split(strAttributes, ",");
 
   int controlAttributes = SettingControlAttributeNone;
-  for (std::vector<std::string>::const_iterator attribute = attributeList.begin(); attribute != attributeList.end(); attribute++)
+  for (std::vector<std::string>::const_iterator attribute = attributeList.begin(); attribute != attributeList.end(); ++attribute)
   {
     if (StringUtils2::EqualsNoCase(*attribute, "hidden"))
       controlAttributes |= (int)SettingControlAttributeHidden;
     else if (StringUtils2::EqualsNoCase(*attribute, "new"))
       controlAttributes |= (int)SettingControlAttributeVerifyNew;
+    else if (StringUtils2::EqualsNoCase(*attribute, "hide_value"))
+      controlAttributes |= (int)SettingControlAttributeHideValue;
     else
       return false;
   }
