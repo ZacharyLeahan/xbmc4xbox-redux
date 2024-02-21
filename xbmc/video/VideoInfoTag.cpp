@@ -556,7 +556,7 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie)
   XMLUtils::GetString(movie, "plot", m_strPlot);
   XMLUtils::GetString(movie, "tagline", m_strTagLine);
   CStdString runtime;
-  if (XMLUtils::GetString(movie, "runtime", runtime))
+  if (XMLUtils::GetString(movie, "runtime", runtime) && !runtime.empty())
     m_duration = GetDurationFromMinuteString(runtime);
   XMLUtils::GetString(movie, "mpaa", m_strMPAARating);
   XMLUtils::GetInt(movie, "playcount", m_playCount);
