@@ -66,7 +66,17 @@ public:
   virtual bool Deserialize(const TiXmlNode *node, bool update = false);
 
   const int GetLabel() const { return m_label; }
+  /*!
+   \brief Sets the localizeable label ID of the setting category.
+   \param label Localizeable label ID of the setting category
+   */
+  void SetLabel(int label) { m_label = label; }
   const int GetHelp() const { return m_help; }
+  /*!
+   \brief Sets the localizeable help ID of the setting category.
+   \param label Localizeable help ID of the setting category
+   */
+  void SetHelp(int help) { m_help = help; }
   const SettingGroupList& GetGroups() const { return m_groups; }
   SettingGroupList GetGroups(SettingLevel level) const;
 
@@ -96,7 +106,17 @@ public:
   virtual bool Deserialize(const TiXmlNode *node, bool update = false);
 
   const int GetLabel() const { return m_label; }
+  /*!
+   \brief Sets the localizeable label ID of the setting section.
+   \param label Localizeable label ID of the setting section
+   */
+  void SetLabel(int label) { m_label = label; }
   const int GetHelp() const { return m_help; }
+  /*!
+   \brief Sets the localizeable help ID of the setting section.
+   \param label Localizeable help ID of the setting section
+   */
+  void SetHelp(int help) { m_help = help; }
   const SettingCategoryList& GetCategories() const { return m_categories; }
   SettingCategoryList GetCategories(SettingLevel level) const;
 

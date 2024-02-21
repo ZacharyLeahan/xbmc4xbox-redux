@@ -43,9 +43,7 @@ msgctxt "#31006"
 msgid "View Options"
 msgstr ""
 
-msgctxt "#31007"
-msgid "Settings Options"
-msgstr ""
+#empty string with id 31007
 
 msgctxt "#31008"
 msgid "Fullscreen"
@@ -342,6 +340,10 @@ msgstr ""
 
 msgctxt "#31141"
 msgid "Video OSD"
+msgstr ""
+
+msgctxt "#31142"
+msgid "Settings level"
 msgstr ""
 
 #empty strings from id 31142 to 31198
