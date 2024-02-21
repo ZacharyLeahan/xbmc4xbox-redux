@@ -2673,7 +2673,11 @@ msgctxt "#665"
 msgid "Compression level"
 msgstr ""
 
-#empty strings from id 666 to 699
+msgctxt "#666"
+msgid "Verbose logging..."
+msgstr ""
+
+#empty strings from id 667 to 699
 
 msgctxt "#700"
 msgid "Cleaning up library"
@@ -7713,7 +7717,10 @@ msgctxt "#20381"
 msgid "Specials"
 msgstr ""
 
-#empty string with id 20382
+#: system/settings/settings.xml
+msgctxt "#20382"
+msgid "Automatically grab season thumbs"
+msgstr ""
 
 msgctxt "#20383"
 msgid "Selected folder contains a single video"
@@ -10515,10 +10522,7 @@ msgctxt "#38779"
 msgid "Game saves"
 msgstr ""
 
-#: system/settings/settings.xml
-msgctxt "#38780"
-msgid "Automatically grab season thumbs"
-msgstr ""
+#empty string with id 38780
 
 #: xbmc/video/windows/GUIWindowVideoNav.cpp
 msgctxt "#38781"
