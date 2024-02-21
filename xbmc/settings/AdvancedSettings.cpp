@@ -180,21 +180,21 @@ CAdvancedSettings::CAdvancedSettings()
   //m_videoStackRegExps.push_back("(.*?)([ ._-]*[0-9])(.*?)(\\.[^.]+)$");
 
   // foo.s01.e01, foo.s01_e01, S01E02 foo, S01 - E02
-  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[Ss]([0-9]+)[][ ._-]*[Ee]([0-9]+)([^\\\\/]*)$"));
+  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[Ss]([0-9]+)[][ ._-]*[Ee]([0-9]+(?:[a-i]|\\.[1-9](?![0-9]))?)([^\\\\/]*)$"));
   // foo.ep01, foo.EP_01
-  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\._ -]()[Ee][Pp]_?([0-9]+)([^\\\\/]*)$"));
+  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\._ -]()[Ee][Pp]_?([0-9]+(?:[a-i]|\\.[1-9](?![0-9]))?)([^\\\\/]*)$"));
   // foo.yyyy.mm.dd.* (byDate=true)
   m_tvshowStackRegExps.push_back(TVShowRegexp(true,"([0-9]{4})[\\.-]([0-9]{2})[\\.-]([0-9]{2})"));
   // foo.mm.dd.yyyy.* (byDate=true)
   m_tvshowStackRegExps.push_back(TVShowRegexp(true,"([0-9]{2})[\\.-]([0-9]{2})[\\.-]([0-9]{4})"));
   // foo.1x09* or just /1x09*
-  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\\\/\\._ \\[\\(-]([0-9]+)x([0-9]+)([^\\\\/]*)$"));
+  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\\\/\\._ \\[\\(-]([0-9]+)x([0-9]+(?:[a-i]|\\.[1-9](?![0-9]))?)([^\\\\/]*)$"));
   // foo.103*, 103 foo
-  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\\\/\\._ -]([0-9]+)([0-9][0-9])([\\._ -][^\\\\/]*)$"));
+  m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\\\/\\._ -]([0-9]+)([0-9][0-9](?:[a-i]|\\.[1-9](?![0-9]))?)([\\._ -][^\\\\/]*)$"));
   // Part I, Pt.VI
   m_tvshowStackRegExps.push_back(TVShowRegexp(false,"[\\/._ -]p(?:ar)?t[_. -]()([ivx]+)([._ -][^\\/]*)$"));
 
-  m_tvshowMultiPartStackRegExp = "^[-_EeXx]+([0-9]+)";
+  m_tvshowMultiPartStackRegExp = "^[-_EeXx]+([0-9]+(?:[a-i]|\\.[1-9](?![0-9]))?)";
 
   m_remoteRepeat = 480;
   m_controllerDeadzone = 0.2f;
