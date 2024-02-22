@@ -29,7 +29,7 @@
 #include "SettingControl.h"
 #include "SettingDependency.h"
 #include "SettingUpdate.h"
-#include "threads/CriticalSection.h"
+#include "threads/SharedSection.h"
 
 typedef enum {
   SettingTypeNone = 0,
@@ -112,7 +112,7 @@ protected:
   SettingDependencies m_dependencies;
   std::set<CSettingUpdate> m_updates;
   bool m_changed;
-  CCriticalSection m_critical;
+  CSharedSection m_critical;
 };
 
 typedef std::vector<CSetting *> SettingList;
@@ -134,7 +134,7 @@ public:
   virtual bool CheckValidity(const std::string &value) const;
   virtual void Reset() { SetValue(m_default); }
 
-  bool GetValue() const { return m_value; }
+  bool GetValue() const { CSharedLock lock(m_critical); return m_value; }
   bool SetValue(bool value);
   bool GetDefault() const { return m_default; }
   void SetDefault(bool value);
@@ -167,7 +167,7 @@ public:
   virtual bool CheckValidity(int value) const;
   virtual void Reset() { SetValue(m_default); }
 
-  int GetValue() const { return m_value; }
+  int GetValue() const { CSharedLock lock(m_critical); return m_value; }
   bool SetValue(int value);
   int GetDefault() const { return m_default; }
   void SetDefault(int value);
@@ -219,7 +219,7 @@ public:
   virtual bool CheckValidity(double value) const;
   virtual void Reset() { SetValue(m_default); }
 
-  double GetValue() const { return m_value; }
+  double GetValue() const { CSharedLock lock(m_critical); return m_value; }
   bool SetValue(double value);
   double GetDefault() const { return m_default; }
   void SetDefault(double value);
@@ -256,7 +256,7 @@ public:
   virtual bool CheckValidity(const std::string &value) const;
   virtual void Reset() { SetValue(m_default); }
 
-  virtual const std::string& GetValue() const { return m_value; }
+  virtual const std::string& GetValue() const { CSharedLock lock(m_critical); return m_value; }
   virtual bool SetValue(const std::string &value);
   virtual const std::string& GetDefault() const { return m_default; }
   virtual void SetDefault(const std::string &value);

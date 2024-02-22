@@ -30,7 +30,7 @@
 #include "ISubSettings.h"
 #include "SettingConditions.h"
 #include "SettingDependency.h"
-#include "threads/CriticalSection.h"
+#include "threads/SharedSection.h"
 
 class CSettingSection;
 class CSettingUpdate;
@@ -163,5 +163,6 @@ private:
   typedef std::map<std::string, SettingOptionsFiller> SettingOptionsFillerMap;
   SettingOptionsFillerMap m_optionsFillers;
 
-  CCriticalSection m_critical;
+  CSharedSection m_critical;
+  CSharedSection m_settingsCritical;
 };
