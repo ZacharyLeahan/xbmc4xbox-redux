@@ -185,6 +185,27 @@ bool CLangCodeExpander::LookupInDb(CStdString& desc, const CStdString& code)
 #pragma comment(linker, "/merge:LC_RDATA=LCODE")
 #endif
 
+std::vector<std::string> CLangCodeExpander::GetLanguageNames(LANGFORMATS format /* = CLangCodeExpander::ISO_639_1 */) const
+{
+  std::vector<std::string> languages;
+  const LCENTRY *lang = g_iso639_1;
+  size_t length = sizeof(g_iso639_1);
+  if (format == CLangCodeExpander::ISO_639_2)
+  {
+    lang = g_iso639_2;
+    length = sizeof(g_iso639_2);
+  }
+  length /= sizeof(LCENTRY);
+
+  for (size_t i = 0; i < length; i++)
+  {
+    languages.push_back(lang->name);
+    ++lang;
+  }
+
+  return languages;
+}
+
 extern const LCENTRY g_iso639_1[143] =
 {
   { MAKECODE('\0','\0','c','c'), "Closed Caption" },
@@ -397,7 +418,7 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','b','i','n'), "Bini" },
   { MAKECODE('\0','b','i','s'), "Bislama" },
   { MAKECODE('\0','b','y','n'), "Blin" },
-  { MAKECODE('\0','n','o','b'), "Bokmål, Norwegian" },
+  { MAKECODE('\0','n','o','b'), "Bokmï¿½l, Norwegian" },
   { MAKECODE('\0','b','o','s'), "Bosnian" },
   { MAKECODE('\0','b','r','a'), "Braj" },
   { MAKECODE('\0','b','r','e'), "Breton" },
@@ -521,7 +542,7 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','k','a','l'), "Greenlandic" },
   { MAKECODE('\0','g','r','n'), "Guarani" },
   { MAKECODE('\0','g','u','j'), "Gujarati" },
-  { MAKECODE('\0','g','w','i'), "Gwich´in" },
+  { MAKECODE('\0','g','w','i'), "Gwichï¿½in" },
   { MAKECODE('\0','h','a','i'), "Haida" },
   { MAKECODE('\0','h','a','t'), "Haitian" },
   { MAKECODE('\0','h','a','t'), "Haitian Creole" },
@@ -688,7 +709,7 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','n','s','o'), "Northern Sotho" },
   { MAKECODE('\0','n','d','e'), "North Ndebele" },
   { MAKECODE('\0','n','o','r'), "Norwegian" },
-  { MAKECODE('\0','n','o','b'), "Norwegian Bokmål" },
+  { MAKECODE('\0','n','o','b'), "Norwegian Bokmï¿½l" },
   { MAKECODE('\0','n','n','o'), "Norwegian Nynorsk" },
   { MAKECODE('\0','n','u','b'), "Nubian languages" },
   { MAKECODE('\0','n','y','m'), "Nyamwezi" },
@@ -728,8 +749,8 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','p','o','l'), "Polish" },
   { MAKECODE('\0','p','o','r'), "Portuguese" },
   { MAKECODE('\0','p','r','a'), "Prakrit languages" },
-  { MAKECODE('\0','o','c','i'), "Provençal" },
-  { MAKECODE('\0','p','r','o'), "Provençal, Old (to 1500)" },
+  { MAKECODE('\0','o','c','i'), "Provenï¿½al" },
+  { MAKECODE('\0','p','r','o'), "Provenï¿½al, Old (to 1500)" },
   { MAKECODE('\0','p','a','n'), "Punjabi" },
   { MAKECODE('\0','p','u','s'), "Pushto" },
   { MAKECODE('\0','q','u','e'), "Quechua" },
@@ -848,7 +869,7 @@ extern const LCENTRY g_iso639_2[536] =
   { MAKECODE('\0','c','a','t'), "Valencian" },
   { MAKECODE('\0','v','e','n'), "Venda" },
   { MAKECODE('\0','v','i','e'), "Vietnamese" },
-  { MAKECODE('\0','v','o','l'), "Volapük" },
+  { MAKECODE('\0','v','o','l'), "Volapï¿½k" },
   { MAKECODE('\0','v','o','t'), "Votic" },
   { MAKECODE('\0','w','a','k'), "Wakashan languages" },
   { MAKECODE('\0','w','a','l'), "Walamo" },

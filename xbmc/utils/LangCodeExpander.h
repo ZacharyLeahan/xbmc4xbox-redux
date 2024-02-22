@@ -27,6 +27,13 @@ class CLangCodeExpander
 {
 public:
 
+  enum LANGFORMATS
+  {
+    ISO_639_1,
+    ISO_639_2,
+    ENGLISH_NAME
+  };
+
   CLangCodeExpander(void);
   ~CLangCodeExpander(void);
 
@@ -35,6 +42,8 @@ public:
 
   void LoadUserCodes(const TiXmlElement* pRootElement);
   void Clear();
+
+  std::vector<std::string> GetLanguageNames(LANGFORMATS format = ISO_639_1) const;
 protected:
 
 
