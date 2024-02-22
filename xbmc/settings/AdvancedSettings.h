@@ -64,11 +64,13 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     static CAdvancedSettings* getInstance();
 
     virtual void OnSettingsLoaded();
+    virtual void OnSettingsUnloaded();
 
     virtual void OnSettingChanged(const CSetting *setting);
 
     virtual void OnSettingAction(const CSetting *setting);
 
+    bool Initialized() { return m_initialized; };
     void AddSettingsFile(const CStdString &filename);
     bool Load();
     void Clear();
@@ -249,6 +251,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_bgInfoLoaderMaxThreads;
 
     bool m_loaded;
+    bool m_initialized;
 
     void SetDebugMode(bool debug);
     void SetExtraLogsFromAddon(ADDON::IAddon* addon);

@@ -66,7 +66,7 @@ void CMediaSourceSettings::OnSettingsLoaded()
   Load();
 }
 
-void CMediaSourceSettings::OnSettingsCleared()
+void CMediaSourceSettings::OnSettingsUnloaded()
 {
   Clear();
 }

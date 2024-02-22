@@ -45,9 +45,14 @@ public:
    */
   virtual void OnSettingsSaved() const { }
   /*!
-   \brief Settings have been cleared.
-   This callback can be used to trigger clearing any state variables
+   \brief Setting values have been unloaded.
+   This callback can be used to trigger uninitializing any state variables
    (e.g. before re-loading the settings).
+   */
+  virtual void OnSettingsUnloaded() { }
+  /*!
+   \brief Settings have been cleared.
+   This callback can be used to trigger clearing any state variables.
    */
   virtual void OnSettingsCleared() { }
 };

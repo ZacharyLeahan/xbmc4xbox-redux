@@ -66,6 +66,11 @@ void CAdvancedSettings::OnSettingsLoaded()
   CLog::SetLogLevel(m_logLevel);
 }
 
+void CAdvancedSettings::OnSettingsUnloaded()
+{
+  m_initialized = false;
+}
+
 void CAdvancedSettings::OnSettingChanged(const CSetting *setting)
 {
   if (setting == NULL)
@@ -93,6 +98,9 @@ void CAdvancedSettings::OnSettingAction(const CSetting *setting)
 
 CAdvancedSettings::CAdvancedSettings()
 {
+  if (m_initialized)
+    return;
+
   m_DisableModChipDetection = true;
   m_bPowerSave = true;
 
@@ -291,6 +299,8 @@ CAdvancedSettings::CAdvancedSettings()
   m_userAgent = g_sysinfo.GetUserAgent();
 
   m_loaded = false;
+
+  m_initialized = true;
 }
 
 bool CAdvancedSettings::Load()
