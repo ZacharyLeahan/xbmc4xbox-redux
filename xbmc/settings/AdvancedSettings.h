@@ -70,6 +70,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
 
     virtual void OnSettingAction(const CSetting *setting);
 
+    void Initialize();
     bool Initialized() { return m_initialized; };
     void AddSettingsFile(const CStdString &filename);
     bool Load();

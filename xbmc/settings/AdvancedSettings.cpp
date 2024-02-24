@@ -43,6 +43,12 @@ using namespace ADDON;
 using namespace XFILE;
 using namespace std;
 
+CAdvancedSettings::CAdvancedSettings()
+{
+  m_initialized = false;
+  m_loaded = false;
+}
+
 void CAdvancedSettings::OnSettingsLoaded()
 {
   // load advanced settings
@@ -96,7 +102,7 @@ void CAdvancedSettings::OnSettingAction(const CSetting *setting)
   }
 }
 
-CAdvancedSettings::CAdvancedSettings()
+void CAdvancedSettings::Initialize()
 {
   if (m_initialized)
     return;
@@ -283,8 +289,6 @@ CAdvancedSettings::CAdvancedSettings()
 
   m_bgInfoLoaderMaxThreads = 1;
 
-  m_guiKeepInMemory = false;
-
   m_pictureExtensions = ".png|.jpg|.jpeg|.bmp|.gif|.ico|.tif|.tiff|.tga|.pcx|.cbz|.zip|.cbr|.rar|.m3u|.dng|.nef|.cr2|.crw|.orf|.arw|.erf|.3fr|.dcr|.x3f|.mef|.raf|.mrw|.pef|.sr2|.rss";
   m_musicExtensions = ".nsv|.m4a|.flac|.aac|.strm|.pls|.rm|.rma|.mpa|.wav|.wma|.ogg|.mp3|.mp2|.m3u|.mod|.amf|.669|.dmf|.dsm|.far|.gdm|.imf|.it|.m15|.med|.okt|.s3m|.stm|.sfx|.ult|.uni|.xm|.sid|.ac3|.dts|.cue|.aif|.aiff|.wpl|.ape|.mac|.mpc|.mp+|.mpp|.shn|.zip|.rar|.wv|.nsf|.spc|.gym|.adplug|.adx|.dsp|.adp|.ymf|.ast|.afc|.hps|.xsp|.xwav|.waa|.wvs|.wam|.gcm|.idsp|.mpdsp|.mss|.spt|.rsd|.mid|.kar|.sap|.cmc|.cmr|.dmc|.mpt|.mpd|.rmt|.tmc|.tm8|.tm2|.oga|.url|.pxml|.rss";
   m_videoExtensions = ".m4v|.3g2|.3gp|.nsv|.tp|.ts|.ty|.strm|.pls|.rm|.rmvb|.m3u|.m3u8|.ifo|.mov|.qt|.divx|.xvid|.bivx|.vob|.nrg|.img|.iso|.pva|.wmv|.asf|.asx|.ogm|.m2v|.avi|.bin|.dat|.mpg|.mpeg|.mp4|.mkv|.avc|.vp3|.svq3|.nuv|.viv|.dv|.fli|.flv|.rar|.001|.wpl|.zip|.vdr|.dvr-ms|.xsp|.mts|.m2t|.m2ts|.evo|.ogv|.sdp|.avs|.rec|.url|.pxml|.vc1|.h264|.rcv|.rss|.mpls|.webm|.xmv|.bik|.sfd";
@@ -298,8 +302,6 @@ CAdvancedSettings::CAdvancedSettings()
 
   m_userAgent = g_sysinfo.GetUserAgent();
 
-  m_loaded = false;
-
   m_initialized = true;
 }
 
@@ -308,6 +310,7 @@ bool CAdvancedSettings::Load()
   // NOTE: This routine should NOT set the default of any of these parameters
   //       it should instead use the versions of GetString/Integer/Float that
   //       don't take defaults in.  Defaults are set in the constructor above
+  Initialize(); // In case of profile switch.
   ParseSettingsFile("special://xbmc/system/advancedsettings.xml");
   for (unsigned int i = 0; i < m_settingsFiles.size(); i++)
     ParseSettingsFile(m_settingsFiles[i]);

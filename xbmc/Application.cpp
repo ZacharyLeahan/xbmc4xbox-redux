@@ -728,18 +728,9 @@ HRESULT CApplication::Create(HWND hWnd)
       wrmsr
     }
     m_128MBHack = true;
-    g_advancedSettings.m_guiKeepInMemory = true;
   }
+  g_advancedSettings.m_guiKeepInMemory = m_128MBHack;
 #endif
-
-#ifdef _DEBUG
-  g_advancedSettings.m_logLevel     = LOG_LEVEL_DEBUG;
-  g_advancedSettings.m_logLevelHint = LOG_LEVEL_DEBUG;
-#else
-  g_advancedSettings.m_logLevel     = LOG_LEVEL_NORMAL;
-  g_advancedSettings.m_logLevelHint = LOG_LEVEL_NORMAL;
-#endif
-  CLog::SetLogLevel(g_advancedSettings.m_logLevel);
 
   for (int i = RES_HDTV_1080i; i <= RES_PAL60_16x9; i++)
   {
@@ -5623,6 +5614,8 @@ void CApplication::InitDirectoriesXbox()
 
   // First profile is always the Master Profile
   CSpecialProtocol::SetMasterProfilePath("Q:\\home\\userdata");
+
+  g_advancedSettings.m_logFolder = "special://home/";
 }
 
 bool CApplication::SetLanguage(const CStdString &strLanguage)
