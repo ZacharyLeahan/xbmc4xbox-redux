@@ -9,7 +9,7 @@
       </group>
       <group id="2">
         <setting id="lookandfeel.rssedit">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -21,7 +21,7 @@
       </group>
       <group id="2">
         <setting id="locale.timezonecountry">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="locale.usedst" type="boolean" label="14075" help="">
           <level>2</level>
@@ -31,10 +31,10 @@
       </group>
       <group id="4">
         <setting id="locale.audiolanguage">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="locale.subtitlelanguage">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -62,7 +62,7 @@
     <category id="videoplayer">
       <group id="1">
         <setting id="videoplayer.autoplaynextitem">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
@@ -83,19 +83,19 @@
           <control type="spinner" format="string" />
         </setting>
         <setting id="videoplayer.hqscalers">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.adjustrefreshrate">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.pauseafterrefreshchange">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.usedisplayasclock">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.synctype">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.flicker" type="integer" label="13100" help="">
           <level>0</level>
@@ -113,24 +113,24 @@
           <control type="toggle" />
         </setting>
         <setting id="videoplayer.stretch43">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="4">
-        <visible>false</visible> <!-- not working for some reason -->
+        <level>4</level> <!-- not working for some reason -->
         <setting id="videoplayer.teletextenabled">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.teletextscale">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="5">
         <setting id="videoplayer.stereoscopicplaybackmode">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.quitstereomodeonstop">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoplayer.defaultplayer" type="integer" label="38784" help="">
           <level>3</level>
@@ -405,12 +405,12 @@
           </constraints>
         </setting>
         <setting id="subtitles.overrideassfonts">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
         <setting id="subtitles.align">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="subtitles.searchrars" type="boolean" label="13249" help="">
           <level>1</level>
@@ -422,7 +422,7 @@
     <category id="dvds">
       <group id="1">
         <setting id="dvds.autorun">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -467,12 +467,12 @@
     <category id="audiocds">
       <group id="1">
         <setting id="audiocds.autoaction">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
         <setting id="audiocds.ejectonrip">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -484,30 +484,30 @@
           <control type="toggle" />
         </setting>
         <setting id="karaoke.autopopupselector">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
-        <visible>false</visible> <!-- not working for some reason -->
+        <level>4</level> <!-- not working for some reason -->
         <setting id="karaoke.font">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="karaoke.fontheight">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="karaoke.fontcolors">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="karaoke.charset">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="3">
         <setting id="karaoke.export">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="karaoke.importcsv">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="karaoke.voiceenabled" type="boolean" label="13361" help="">
           <level>2</level>
@@ -679,6 +679,9 @@
         <setting id="network.dnssuffix" type="string" label="22002" help="">
           <level>1</level>
           <default></default>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
           <control type="edit" format="string" />
         </setting>
       </group>
@@ -722,10 +725,10 @@
     <category id="upnp">
       <group id="1">
         <setting id="services.upnpannounce">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="services.upnpcontroller">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -765,7 +768,7 @@
           <default>false</default>
         </setting>
         <setting id="services.esallinterfaces">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
@@ -1004,8 +1007,9 @@
       <group id="8">
         <setting id="myprograms.trainerpath" type="path" label="20003" help="">
           <level>1</level>
-          <default>select folder</default>
+          <default></default>
           <constraints>
+            <allowempty>true</allowempty>
             <writable>false</writable>
           </constraints>
           <control type="button" format="path">
@@ -1016,7 +1020,7 @@
       <group id="9">
         <setting id="myprograms.usedashpath" type="boolean" label="38720" help="">
           <level>1</level>
-          <default>true</default>
+          <default>false</default>
           <control type="toggle" />
         </setting>
         <setting id="myprograms.dashboard" type="string" label="38719" help="">
@@ -1032,30 +1036,30 @@
     <category id="videoscreen">
       <group id="1">
         <setting id="videoscreen.screen">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoscreen.resolution">
           <default>10</default> <!-- RES_AUTORES -->
         </setting>
         <setting id="videoscreen.fakefullscreen">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoscreen.blankdisplays">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
-        <visible>false</visible> <!-- this is not working for some reason -->
+        <level>4</level> <!-- this is not working for some reason -->
         <setting id="videoscreen.stereoscopicmode">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoscreen.preferedstereoscopicmode">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="3">
         <setting id="videoscreen.vsync">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="videoscreen.flickerfilter" type="integer" label="13100" help="">
           <level>0</level>
@@ -1109,22 +1113,22 @@
     <category id="audiooutput">
       <group id="1">
         <setting id="audiooutput.audiodevice">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.channels">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.config">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.samplerate">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.stereoupmix">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.streamsilence">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.mode" type="integer" label="38629" help="">
           <level>0</level>
@@ -1139,17 +1143,17 @@
         </setting>
       </group>
       <group id="2">
-        <visible>false</visible> <!-- not working for some reason -->
+        <level>4</level> <!-- not working for some reason -->
         <setting id="audiooutput.guisoundmode">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="3">
         <setting id="audiooutput.passthrough">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.passthroughdevice">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.ac3passthrough" parent="audiooutput.mode">
           <dependencies>
@@ -1157,7 +1161,7 @@
           </dependencies>
         </setting>
         <setting id="audiooutput.eac3passthrough">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.dtspassthrough" parent="audiooutput.mode">
           <dependencies>
@@ -1173,10 +1177,10 @@
           <control type="toggle" />
         </setting>
         <setting id="audiooutput.truehdpassthrough">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="audiooutput.dtshdpassthrough">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="musicplayer.outputtoallspeakers" type="boolean" label="38621" help="">
           <level>0</level>
@@ -1195,30 +1199,30 @@
     </category>
     <category id="input">
       <group id="1">
-        <visible>false</visible> <!-- not working for some reason -->
+        <level>4</level> <!-- not working for some reason -->
         <setting id="input.peripherals">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
       <group id="2">
         <setting id="input.remoteaskeyboard">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="input.enablemouse">
           <default>true</default>
         </setting>
         <setting id="input.enablesystemkeys">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>
     <category id="powermanagement">
       <group id="1">
         <setting id="powermanagement.displaysoff">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="powermanagement.shutdownstate">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
         <setting id="harddisk.spindowntime" type="integer" label="229" help="">
           <level>1</level>
@@ -1301,9 +1305,9 @@
         </setting>
       </group>
       <group id="2">
-        <visible>false</visible> <!-- not working for some reason -->
+        <level>4</level> <!-- not working for some reason -->
         <setting id="powermanagement.wakeonaccess">
-          <visible>false</visible>
+          <level>4</level>
         </setting>
       </group>
     </category>

@@ -488,13 +488,7 @@ bool CSettingsManager::GetBool(const std::string &id) const
   CSharedLock lock(m_settingsCritical);
   CSetting *setting = GetSetting(id);
   if (setting == NULL || setting->GetType() != SettingTypeBool)
-  {
-    // Backward compatibility (skins use this setting)
-    if (setting == NULL && StringUtils2::EqualsNoCase(id.c_str(), "lookandfeel.enablemouse"))
-      return GetBool("input.enablemouse");
-
     return false;
-  }
 
   return ((CSettingBool*)setting)->GetValue();
 }

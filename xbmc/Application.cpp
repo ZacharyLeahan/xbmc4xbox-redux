@@ -1219,7 +1219,7 @@ HRESULT CApplication::Create(HWND hWnd)
   D3DDevice::SetWaitCallback(WaitCallback);
 #endif
 
-  g_Mouse.SetEnabled(CSettings::Get().GetBool("lookandfeel.enablemouse"));
+  g_Mouse.SetEnabled(CSettings::Get().GetBool("input.enablemouse"));
 
   CUtil::InitRandomSeed();
 
