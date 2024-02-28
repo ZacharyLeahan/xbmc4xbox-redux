@@ -19,11 +19,40 @@
  *
  */
 
-#pragma once
+#include "XbmcContext.h"
 
-#if (defined TARGET_POSIX)
-#include "threads/platform/pthreads/Condition.h"
-#elif (defined TARGET_WINDOWS) || (defined _XBOX)
-#include "threads/platform/win/Condition.h"
-#endif
+#include "threads/Thread.h"
+#include "commons/Exception.h"
+#include "utils/log.h"
 
+namespace XBMC
+{
+
+  class ContextOpaque
+  {
+  public:
+    XbmcCommons::ILogger* loggerImpl;
+
+    ContextOpaque() : loggerImpl(NULL) {}
+  };
+
+  Context::Context()
+  {
+    impl = new ContextOpaque;
+
+    // instantiate
+    impl->loggerImpl = new XbmcUtils::LogImplementation;
+
+    // set
+    XbmcCommons::Exception::SetLogger(impl->loggerImpl);
+    CThread::SetLogger(impl->loggerImpl);
+  }
+
+  Context::~Context()
+  {
+    // cleanup
+    delete impl->loggerImpl;
+
+    delete impl;
+  }
+}

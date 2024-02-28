@@ -19,11 +19,21 @@
  *
  */
 
-#pragma once
+#include "commons/ilog.h"
+#include "utils/StdString.h"
 
-#if (defined TARGET_POSIX)
-#include "threads/platform/pthreads/Condition.h"
-#elif (defined TARGET_WINDOWS) || (defined _XBOX)
-#include "threads/platform/win/Condition.h"
-#endif
+namespace XbmcCommons
+{
+  void ILogger::Log(int loglevel, const char *format, ... )
+  {
+    CStdString strData;
 
+    strData.reserve(16384);
+    va_list va;
+    va_start(va, format);
+    strData.FormatV(format,va);
+    va_end(va);
+
+    log(loglevel, strData);
+  }
+}

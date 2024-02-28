@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2005-2011 Team XBMC
+ *      Copyright (C) 2005-2012 Team XBMC
  *      http://www.xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
@@ -19,11 +19,11 @@
  *
  */
 
-#pragma once
+#include "Exception.h"
 
-#if (defined TARGET_POSIX)
-#include "threads/platform/pthreads/Condition.h"
-#elif (defined TARGET_WINDOWS) || (defined _XBOX)
-#include "threads/platform/win/Condition.h"
-#endif
+namespace XbmcCommons
+{
+  ILogger* Exception::logger = NULL;
 
+  Exception::~Exception() {}
+}
