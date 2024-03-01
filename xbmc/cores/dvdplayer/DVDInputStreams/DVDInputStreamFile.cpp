@@ -18,10 +18,11 @@
  *
  */
  
-#include "utils/log.h"
 #include "DVDInputStreamFile.h"
-#include "utils/URIUtils.h"
 #include "filesystem/File.h"
+#include "settings/AdvancedSettings.h"
+#include "utils/URIUtils.h"
+#include "utils/log.h"
 
 using namespace XFILE;
 
@@ -51,6 +52,11 @@ bool CDVDInputStreamFile::Open(const char* strFile, const std::string& content)
     return false;
 
   unsigned int flags = READ_TRUNCATED | READ_BITRATE | READ_CHUNKED;
+
+  if ( g_advancedSettings.m_alwaysForceBuffer && 
+       !URIUtils::IsOnDVD(strFile) && 
+       /*!URIUtils::IsBluray(strFile)*/ )
+    flags |= READ_CACHED; 
 
   if (content == "video/mp4" || content == "video/x-msvideo" || content == "video/avi")
     flags |= READ_MULTI_STREAM;

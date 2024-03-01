@@ -127,6 +127,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_guiKeepInMemory;
 
     unsigned int m_cacheMemBufferSize;
+    bool m_alwaysForceBuffer;
 
     float m_slideshowBlackBarCompensation;
     float m_slideshowZoomAmount;

@@ -150,6 +150,7 @@ void CAdvancedSettings::Initialize()
   m_musicResample = 48000;
 
   m_cacheMemBufferSize = 1024 * 1024;
+  m_alwaysForceBuffer = false;
 
   m_slideshowPanAmount = 2.5f;
   m_slideshowZoomAmount = 5.0f;
@@ -494,6 +495,7 @@ void CAdvancedSettings::ParseSettingsFile(const CStdString &file)
     XMLUtils::GetInt(pElement, "curllowspeedtime", m_curllowspeedtime, 1, 1000);
     XMLUtils::GetInt(pElement, "curlretries", m_curlretries, 0, 10);
     XMLUtils::GetUInt(pElement, "cachemembuffersize", m_cacheMemBufferSize);
+    XMLUtils::GetBoolean(pElement, "alwaysforcebuffer", m_alwaysForceBuffer);
   }
 
   pElement = pRootElement->FirstChildElement("samba");
