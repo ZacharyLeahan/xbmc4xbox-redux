@@ -37,6 +37,7 @@
 #include "FileItem.h"
 #include "LocalizeStrings.h"
 #include "StringUtils.h"
+#include "ApplicationMessenger.h"
 
 using namespace XFILE;
 using namespace std;
@@ -451,8 +452,7 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CS
 
     // check our script is still running
 #ifdef HAS_PYTHON
-    int id = g_pythonParser.getScriptId(scriptPath.c_str());
-    if (id == -1)
+    if (!g_pythonParser.isRunning(g_pythonParser.getScriptId(scriptPath.c_str())))
 #endif
     { // check whether we exited normally
       if (!m_fetchComplete.WaitMSec(0))
@@ -514,7 +514,7 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, const CS
   }
 
   if (progressBar)
-    progressBar->Close();
+    CApplicationMessenger::Get().Close(progressBar, false, false);
 
   return !cancelled && m_success;
 }
