@@ -43,6 +43,7 @@ public:
 
   void SetHeading(const CStdString &strHeading);
   void SetMode(INPUT_MODE mode, void *initial);
+  void SetMode(INPUT_MODE mode, const CStdString &initial);
   void GetOutput(void *output);
 
   static bool ShowAndGetTime(SYSTEMTIME &time, const CStdString &heading);
@@ -52,6 +53,9 @@ public:
   static bool ShowAndGetSeconds(CStdString& timeString, const CStdString &heading);
 
 protected:
+  virtual void OnInitWindow();
+  virtual void OnDeinitWindow(int nextWindowID);
+
   void OnNumber(unsigned int num);
   void VerifyDate(bool checkYear);
   void OnNext();
@@ -66,9 +70,8 @@ protected:
   INPUT_MODE m_mode;                // the current input mode
   SYSTEMTIME m_datetime;            // for time and date modes
   WORD m_ip[4];                     // for ip address mode
-  __int64 m_integer;                // for numeric input modes
   unsigned int m_block;             // for time, date, and IP methods.
   unsigned int m_lastblock;
   bool m_dirty;                     // true if the current block has been changed.
-  CStdString m_password;            // for password input
+  CStdString m_number;              ///< for number or password input
 };
