@@ -82,6 +82,6 @@ private:
 
   bool m_paused;
   __int64 m_clock;
-  DWORD m_lastTime;
+  unsigned int m_lastTime;
   int m_speed;
 };

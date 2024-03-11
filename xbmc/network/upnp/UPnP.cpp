@@ -1154,7 +1154,7 @@ CUPnPServer::OnBrowseDirectChildren(PLT_ActionReference&          action,
     items.SetPath(CStdString(parent_id));
     if (!items.Load()) {
         // cache anything that takes more than a second to retrieve
-        DWORD time = GetTickCount() + 1000;
+        unsigned int time = XbmcThreads::SystemClockMillis();
 
         if (parent_id.StartsWith("virtualpath://upnproot")) {
             CFileItemPtr item;
@@ -1175,7 +1175,7 @@ CUPnPServer::OnBrowseDirectChildren(PLT_ActionReference&          action,
             CDirectory::GetDirectory((const char*)parent_id, items);
         }
 
-        if (items.CacheToDiscAlways() || (items.CacheToDiscIfSlow() && time < GetTickCount())) {
+        if (items.CacheToDiscAlways() || (items.CacheToDiscIfSlow() && (XbmcThreads::SystemClockMillis() - time) > 1000 )) {
             items.Save();
         }
     }

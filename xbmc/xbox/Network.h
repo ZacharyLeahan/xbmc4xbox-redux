@@ -56,7 +56,7 @@ public:
   void Deinitialize();
 
   /* waits for network to finish init */
-  bool WaitForSetup(DWORD timeout = WAIT_TIME);
+  bool WaitForSetup(unsigned int iTimeout = WAIT_TIME);
   
   // Return true if the magic packet was send
   bool WakeOnLan(char *mac); 

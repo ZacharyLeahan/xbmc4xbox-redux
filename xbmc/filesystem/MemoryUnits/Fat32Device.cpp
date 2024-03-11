@@ -1,3 +1,4 @@
+#include "threads/SystemClock.h"
 #include "system.h"
 #include "utils/log.h"
 #include "Fat32Device.h"
@@ -56,7 +57,7 @@ const char *CFat32Device::GetFileSystem()
 
 void CFat32Device::CachePage(unsigned long page, unsigned char *buffer)
 {
-  DWORD time = timeGetTime();
+  unsigned int time = XbmcThreads::SystemClockMillis();
   if (m_cache.size() >= CACHE_SIZE)
   { // remove the last used cache
     FATCACHE::iterator lastUsed = m_cache.begin();
@@ -101,7 +102,7 @@ bool CFat32Device::ReadFromCache(unsigned long sector, unsigned char *buffer)
   {
     cacheHit++;
     CSector *cacheSector = (*it).second;
-    cacheSector->IncrementUsage(timeGetTime());
+    cacheSector->IncrementUsage(XbmcThreads::SystemClockMillis());
     fast_memcpy(buffer, cacheSector->Get() + (sector - page)*m_sectorsize, m_sectorsize);
     return true;
   }

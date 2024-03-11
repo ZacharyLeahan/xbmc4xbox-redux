@@ -1602,10 +1602,7 @@ void CFileItemList::Reserve(int iCount)
 void CFileItemList::Sort(FILEITEMLISTCOMPARISONFUNC func)
 {
   CSingleLock lock(m_lock);
-  DWORD dwStart = GetTickCount();
   std::stable_sort(m_items.begin(), m_items.end(), func);
-  DWORD dwElapsed = GetTickCount() - dwStart;
-  CLog::Log(LOGDEBUG,"%s, sorting took %u millis", __FUNCTION__, dwElapsed);
 }
 
 void CFileItemList::FillSortFields(FILEITEMFILLFUNC func)

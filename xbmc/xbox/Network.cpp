@@ -418,11 +418,11 @@ bool CNetwork::IsEthernetConnected()
   return true;
 }
 
-bool CNetwork::WaitForSetup(DWORD timeout)
+bool CNetwork::WaitForSetup(unsigned int iTimeout)
 {
 #ifdef HAS_XBOX_NETWORK
   // Wait until the net is inited
-  DWORD timestamp = GetTickCount() + timeout;
+  XbmcThreads::EndTime timeout(iTimeout);
 
   do
   {
@@ -432,7 +432,7 @@ bool CNetwork::WaitForSetup(DWORD timeout)
       return true;
     
     Sleep(100);
-  } while (GetTickCount() < timestamp);
+  } while (timeout.IsTimePast());
 
   CLog::Log(LOGDEBUG, "%s - Waiting for network setup failed!", __FUNCTION__);
   return false;

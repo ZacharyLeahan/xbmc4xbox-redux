@@ -191,7 +191,7 @@ bool CGUIWindowGameSaves::GetDirectory(const CStdString& strDirectory, CFileItem
   //FILE *newfile;
   CFile newfile;
   // flatten any folders with 1 save
-  DWORD dwTick=timeGetTime();
+  unsigned int tick=XbmcThreads::SystemClockMillis();
   bool bProgressVisible = false;
   CGUIDialogProgress* m_dlgProgress = (CGUIDialogProgress*)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
   LABEL_MASKS labelMasks;
@@ -201,7 +201,7 @@ bool CGUIWindowGameSaves::GetDirectory(const CStdString& strDirectory, CFileItem
   {
     CFileItemPtr item = items[i];
 
-    if (!bProgressVisible && timeGetTime()-dwTick>1500 && m_dlgProgress)
+    if (!bProgressVisible && XbmcThreads::SystemClockMillis()-tick>1500 && m_dlgProgress)
     { // tag loading takes more then 1.5 secs, show a progress dialog
       m_dlgProgress->SetHeading(189);
       m_dlgProgress->SetLine(0, 20120);

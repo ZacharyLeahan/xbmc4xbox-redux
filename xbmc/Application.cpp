@@ -2355,13 +2355,13 @@ bool CApplication::OnAction(CAction &action)
   // power down : turn off after 3 seconds of button down
   static bool PowerButtonDown = false;
   static DWORD PowerButtonCode;
-  static DWORD MarkTime;
+  static unsigned int MarkTime;
   if (action.GetID() == ACTION_POWERDOWN)
   {
     // Hold button for 3 secs to power down
     if (!PowerButtonDown)
     {
-      MarkTime = GetTickCount();
+      MarkTime = XbmcThreads::SystemClockMillis();
       PowerButtonDown = true;
       PowerButtonCode = action.GetButtonCode();
     }
@@ -2370,7 +2370,7 @@ bool CApplication::OnAction(CAction &action)
   {
     if (g_application.IsButtonDown(PowerButtonCode))
     {
-      if (GetTickCount() >= MarkTime + 3000)
+      if (XbmcThreads::SystemClockMillis() >= MarkTime + 3000)
       {
         CApplicationMessenger::Get().Shutdown();
         return true;
@@ -2616,14 +2616,14 @@ bool CApplication::OnAction(CAction &action)
 void CApplication::UpdateLCD()
 {
 #ifdef HAS_LCD
-  static lTickCount = 0;
+  static unsigned int lTickCount = 0;
 
   if (!g_lcd || CSettings::Get().GetInt("lcd.type") == LCD_TYPE_NONE)
     return ;
-  long lTimeOut = 1000;
+  unsigned int lTimeOut = 1000;
   if ( m_iPlaySpeed != 1)
     lTimeOut = 0;
-  if ( ((long)GetTickCount() - lTickCount) >= lTimeOut)
+  if ( (XbmcThreads::SystemClockMillis() - lTickCount) >= lTimeOut)
   {
     if (g_application.NavigationIdleTime() < 5)
       g_lcd->Render(ILCD::LCD_MODE_NAVIGATION);
@@ -2637,7 +2637,7 @@ void CApplication::UpdateLCD()
       g_lcd->Render(ILCD::LCD_MODE_GENERAL);
 
     // reset tick count
-    lTickCount = GetTickCount();
+    lTickCount = XbmcThreads::SystemClockMillis();
   }
 #endif
 }

@@ -707,7 +707,7 @@ BOOL CSNTPClient::SetClientTime(const CNtpTime& NewTime)
 void CSNTPClient::Update()
 {
   // update once every 5 minutes
-  m_dwTimeout = GetTickCount() + 5*60*1000;
+  m_dwTimeout = XbmcThreads::SystemClockMillis() + 5*60*1000;
 
   if(!g_application.getNetwork().IsAvailable())
   {
@@ -726,7 +726,7 @@ void CSNTPClient::Update()
 
 bool CSNTPClient::UpdateNeeded()
 {
-  return m_dwTimeout < GetTickCount();
+  return m_dwTimeout < XbmcThreads::SystemClockMillis();
 }
 
 

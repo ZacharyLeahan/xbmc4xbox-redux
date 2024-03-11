@@ -427,7 +427,7 @@ bool CGUIWindowFullScreen::OnAction(const CAction &action)
 #endif
       }
       m_bShowViewModeInfo = true;
-      m_dwShowViewModeTimeout = timeGetTime();
+      m_dwShowViewModeTimeout = XbmcThreads::SystemClockMillis();
     }
     return true;
     break;
@@ -777,7 +777,7 @@ void CGUIWindowFullScreen::RenderFullScreen()
   //----------------------
   // ViewMode Information
   //----------------------
-  if (m_bShowViewModeInfo && timeGetTime() - m_dwShowViewModeTimeout > 2500)
+  if (m_bShowViewModeInfo && XbmcThreads::SystemClockMillis() - m_dwShowViewModeTimeout > 2500)
   {
     m_bShowViewModeInfo = false;
   }
@@ -830,7 +830,7 @@ void CGUIWindowFullScreen::RenderFullScreen()
 
   if (m_timeCodeShow && m_timeCodePosition != 0)
   {
-    if ( (timeGetTime() - m_timeCodeTimeout) >= 2500)
+    if ( (XbmcThreads::SystemClockMillis() - m_timeCodeTimeout) >= 2500)
     {
       m_timeCodeShow = false;
       m_timeCodePosition = 0;
@@ -932,7 +932,7 @@ void CGUIWindowFullScreen::ChangetheTimeCode(int remote)
   if (remote >= REMOTE_0 && remote <= REMOTE_9)
   {
     m_timeCodeShow = true;
-    m_timeCodeTimeout = timeGetTime();
+    m_timeCodeTimeout = XbmcThreads::SystemClockMillis();
     if (m_timeCodePosition < 6)
       m_timeCodeStamp[m_timeCodePosition++] = remote - REMOTE_0;
     else

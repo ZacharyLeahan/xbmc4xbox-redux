@@ -80,7 +80,7 @@ void CLowLevelKeyboard::Update()
   if (S_OK == m_keyboard->GetDeviceState(sizeof(unsigned char[256]), (LPVOID)m_keystate))
   {
     // only a press
-    if (m_keyDownLastFrame + KEY_DELAY_TIME > timeGetTime())
+    if (m_keyDownLastFrame + KEY_DELAY_TIME > XbmcThreads::SystemClockMillis())
       return;
 
     // qualifying keys
@@ -219,7 +219,7 @@ void CLowLevelKeyboard::Update()
 
     // reset frame count
     if (m_VKey)
-      m_keyDownLastFrame = timeGetTime();
+      m_keyDownLastFrame = XbmcThreads::SystemClockMillis();
   }  
 }
 

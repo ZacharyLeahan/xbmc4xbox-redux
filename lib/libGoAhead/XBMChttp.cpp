@@ -2129,9 +2129,9 @@ CStdString CXbmcHttp::GetCloseTag()
 CKey CXbmcHttp::GetKey()
 {
   if (repeatKeyRate!=0)
-    if (GetTickCount() >= MarkTime + repeatKeyRate)
+    if ((XbmcThreads::SystemClockMillis() - MarkTime) >=  repeatKeyRate)
     {
-      MarkTime=GetTickCount();
+      MarkTime=XbmcThreads::SystemClockMillis();
       key=lastKey;
     }
   return key;
@@ -2874,13 +2874,13 @@ int CXbmcHttp::xbmcSpinDownHardDisk(int numParas, CStdString paras[])
 	  }
   }
   if (g_application.m_dwSpinDownTime==0)
-	return SetResponse(openTag+"OK:Already spun down");
+	  return SetResponse(openTag+"OK:Already spin down");
   if (g_windowManager.HasModalDialog())
-	return SetResponse(openTag+"Error:Can't spin down now (modal dialog)");
+	  return SetResponse(openTag+"Error:Can't spin down now (modal dialog)");
   if (g_application.MustBlockHDSpinDown())
-	return SetResponse(openTag+"Error:Can't spin down now (must block)");
+	  return SetResponse(openTag+"Error:Can't spin down now (must block)");
   if (g_application.IsPlaying() && g_application.CurrentFileItem().IsHD())
-	return SetResponse(openTag+"Error:Can't spin down now (playing media on hard disk)");
+	  return SetResponse(openTag+"Error:Can't spin down now (playing media on hard disk)");
   #ifdef HAS_XBOX_HARDWARE
     XKHDD::SpindownHarddisk();
   #endif

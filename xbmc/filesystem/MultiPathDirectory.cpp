@@ -18,17 +18,17 @@
  *
  */
 
-
-#include "utils/log.h"
+#include "threads/SystemClock.h"
 #include "MultiPathDirectory.h"
 #include "Directory.h"
 #include "Util.h"
-#include "utils/URIUtils.h"
-#include "utils/StringUtils.h"
 #include "URL.h"
-#include "GUIWindowManager.h"
+#include "guilib/GUIWindowManager.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "FileItem.h"
+#include "utils/StringUtils.h"
+#include "utils/log.h"
+#include "utils/URIUtils.h"
 
 using namespace std;
 using namespace XFILE;
@@ -54,14 +54,14 @@ bool CMultiPathDirectory::GetDirectory(const CURL& url, CFileItemList &items)
   if (!GetPaths(url, vecPaths))
     return false;
 
-  DWORD progressTime = timeGetTime() + 3000L;   // 3 seconds before showing progress bar
+  XbmcThreads::EndTime progressTime(3000); // 3 seconds before showing progress bar
   CGUIDialogProgress* dlgProgress = NULL;
   
   unsigned int iFailures = 0;
   for (unsigned int i = 0; i < vecPaths.size(); ++i)
   {
     // show the progress dialog if we have passed our time limit
-    if (timeGetTime() > progressTime && !dlgProgress)
+    if (progressTime.IsTimePast() && !dlgProgress)
     {
       dlgProgress = (CGUIDialogProgress *)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
       if (dlgProgress)
@@ -251,7 +251,7 @@ CStdString CMultiPathDirectory::ConstructMultiPath(const vector<CStdString> &vec
 void CMultiPathDirectory::MergeItems(CFileItemList &items)
 {
   CLog::Log(LOGDEBUG, "CMultiPathDirectory::MergeItems, items = %i", (int)items.Size());
-  DWORD dwTime=GetTickCount();
+  unsigned int time = XbmcThreads::SystemClockMillis();
   if (items.Size() == 0)
     return;
   // sort items by label
@@ -306,7 +306,9 @@ void CMultiPathDirectory::MergeItems(CFileItemList &items)
     i++;
   }
 
-  CLog::Log(LOGDEBUG, "CMultiPathDirectory::MergeItems, items = %i,  took %ld ms", items.Size(), GetTickCount()-dwTime);
+  CLog::Log(LOGDEBUG,
+            "CMultiPathDirectory::MergeItems, items = %i,  took %d ms",
+            items.Size(), XbmcThreads::SystemClockMillis() - time);
 }
 
 bool CMultiPathDirectory::SupportsWriteFileOperations(const CStdString &strPath)

@@ -48,7 +48,7 @@ bool CMusicSearchDirectory::GetDirectory(const CURL& url, CFileItemList &items)
 
   // and retrieve the search details
   items.SetURL(url);
-  DWORD time = timeGetTime();
+  unsigned int time = XbmcThreads::SystemClockMillis();
   CMusicDatabase db;
   db.Open();
   db.Search(search, items);

@@ -148,10 +148,10 @@ void CRssReader::Process()
       strXML = "<rss><item><title>"+g_localizeStrings.Get(15301)+"</title></item></rss>";
     else
     {
-      DWORD starttime = timeGetTime();
+      unsigned int starttime = XbmcThreads::SystemClockMillis();
       while (!m_bStop && nRetries > 0)
       {
-        DWORD currenttimer = timeGetTime() - starttime;
+        unsigned int currenttimer = XbmcThreads::SystemClockMillis() - starttime;
         if (currenttimer > 15000)
         {
           CLog::Log(LOGERROR, "Timeout whilst retrieving %s", strUrl.c_str());

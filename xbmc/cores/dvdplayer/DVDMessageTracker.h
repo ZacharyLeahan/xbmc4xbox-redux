@@ -36,12 +36,12 @@ public:
   {
     m_pMsg = pMsg;
     m_debug_logged = false;
-    m_time_created = GetTickCount();
+    m_time_created = XbmcThreads::SystemClockMillis();
   }
   
   CDVDMsg* m_pMsg;
   bool m_debug_logged;
-  DWORD m_time_created;
+  unsigned int m_time_created;
     
 };
 

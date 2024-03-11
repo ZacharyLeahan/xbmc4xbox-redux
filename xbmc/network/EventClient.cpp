@@ -809,7 +809,7 @@ bool CEventClient::GetMousePos(float& x, float& y)
 
 bool CEventClient::CheckButtonRepeat(unsigned int &next)
 {
-  unsigned int now = timeGetTime();
+  unsigned int now = XbmcThreads::SystemClockMillis();
 
   if ( next == 0 )
   {

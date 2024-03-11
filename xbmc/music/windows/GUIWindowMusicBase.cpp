@@ -615,12 +615,12 @@ void CGUIWindowMusicBase::OnRetrieveMusicInfo(CFileItemList& items)
 /// \brief Retrieve tag information for \e m_vecItems
 void CGUIWindowMusicBase::RetrieveMusicInfo()
 {
-  DWORD dwStartTick = timeGetTime();
+  unsigned int startTick = XbmcThreads::SystemClockMillis();
 
   OnRetrieveMusicInfo(*m_vecItems);
 
   CLog::Log(LOGDEBUG, "RetrieveMusicInfo() took %u msec",
-            timeGetTime() - dwStartTick);
+            XbmcThreads::SystemClockMillis() - startTick);
 }
 
 /// \brief Add selected list/thumb control item to playlist and start playing
@@ -1259,15 +1259,15 @@ void CGUIWindowMusicBase::OnRetrieveMusicInfo(CFileItemList& items)
   bool bShowProgress=!g_windowManager.HasModalDialog();
   bool bProgressVisible=false;
 
-  DWORD dwTick=timeGetTime();
+  unsigned int tick=XbmcThreads::SystemClockMillis();
 
   while (m_musicInfoLoader.IsLoading())
   {
     if (bShowProgress)
     { // Do we have to init a progress dialog?
-      DWORD dwElapsed=timeGetTime()-dwTick;
+      unsigned int elapsed=XbmcThreads::SystemClockMillis()-tick;
 
-      if (!bProgressVisible && dwElapsed>1500 && m_dlgProgress)
+      if (!bProgressVisible && elapsed>1500 && m_dlgProgress)
       { // tag loading takes more then 1.5 secs, show a progress dialog
         CURL url(items.GetPath());
         CStdString strStrippedPath = url.GetWithoutUserDetails();

@@ -18,13 +18,14 @@
  *
  */
 
-#include "utils/log.h"
+#include "threads/SystemClock.h"
 #include "URL.h"
 #include "FileItem.h"
 #include "DllHDHomeRun.h"
 #include "HDHomeRunFile.h"
-#include "Util.h"
+#include "utils/log.h"
 #include "utils/URIUtils.h"
+#include "Util.h"
 
 using namespace XFILE;
 using namespace std;
@@ -120,7 +121,7 @@ ssize_t CHomeRunFile::Read(void* lpBuf, size_t uiBufSize)
   // neither of the players can be forced to 
   // continue even if read return 0 as can happen
   // on live streams.
-  DWORD timestamp = GetTickCount() + 5000;
+  XbmcThreads::EndTime timestamp(5000);
   while(1) 
   {
     datasize = (unsigned int)min((unsigned int) uiBufSize,UINT_MAX);
@@ -131,7 +132,7 @@ ssize_t CHomeRunFile::Read(void* lpBuf, size_t uiBufSize)
       return datasize;
     }
 
-    if(GetTickCount() > timestamp)
+    if(timestamp.IsTimePast())
       return 0;
 
     Sleep(64);

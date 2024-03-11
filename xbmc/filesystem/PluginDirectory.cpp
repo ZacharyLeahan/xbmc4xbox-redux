@@ -434,7 +434,7 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, int scri
   const unsigned int timeBeforeProgressBar = 1500;
   const unsigned int timeToKillScript = 1000;
 
-  DWORD startTime = timeGetTime();
+  unsigned int startTime = XbmcThreads::SystemClockMillis();
   CGUIDialogProgress *progressBar = NULL;
   bool cancelled = false;
 
@@ -465,14 +465,14 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, int scri
     }
 
     // check whether we should pop up the progress dialog
-    if (!retrievingDir && !progressBar && timeGetTime() - startTime > timeBeforeProgressBar)
+    if (!retrievingDir && !progressBar && XbmcThreads::SystemClockMillis() - startTime > timeBeforeProgressBar)
     { // loading takes more then 1.5 secs, show a progress dialog
       progressBar = (CGUIDialogProgress *)g_windowManager.GetWindow(WINDOW_DIALOG_PROGRESS);
 
       // if script has shown progressbar don't override it
       if (progressBar && progressBar->IsActive())
       {
-        startTime = timeGetTime();
+        startTime = XbmcThreads::SystemClockMillis();
         progressBar = NULL;
       }
 
@@ -498,9 +498,9 @@ bool CPluginDirectory::WaitOnScriptResult(const CStdString &scriptPath, int scri
     if (!cancelled && m_cancelled)
     {
       cancelled = true;
-      startTime = timeGetTime();
+      startTime = XbmcThreads::SystemClockMillis();
     }
-    if (cancelled && timeGetTime() - startTime > timeToKillScript)
+    if (cancelled && XbmcThreads::SystemClockMillis() - startTime > timeToKillScript)
     { // cancel our script
 #ifdef HAS_PYTHON
       if (scriptId != -1 && g_pythonParser.isRunning(scriptId))

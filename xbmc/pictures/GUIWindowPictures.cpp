@@ -228,15 +228,15 @@ void CGUIWindowPictures::OnPrepareFileItems(CFileItemList& items)
   bool bShowProgress=!g_windowManager.HasModalDialog();
   bool bProgressVisible=false;
 
-  DWORD dwTick=timeGetTime();
+  unsigned int tick=XbmcThreads::SystemClockMillis();
 
   while (loader.IsLoading() && m_dlgProgress && !m_dlgProgress->IsCanceled())
   {
     if (bShowProgress)
     { // Do we have to init a progress dialog?
-      DWORD dwElapsed=timeGetTime()-dwTick;
+      unsigned int elapsed=XbmcThreads::SystemClockMillis()-tick;
 
-      if (!bProgressVisible && dwElapsed>1500 && m_dlgProgress)
+      if (!bProgressVisible && elapsed>1500 && m_dlgProgress)
       { // tag loading takes more then 1.5 secs, show a progress dialog
         CURL url(items.GetPath());
         

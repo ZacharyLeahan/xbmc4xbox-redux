@@ -1012,7 +1012,7 @@ void CDVDPlayer::Process()
         {
           if (m_dvd.iDVDStillTime > 0)
           {
-            if ((GetTickCount() - m_dvd.iDVDStillStartTime) >= m_dvd.iDVDStillTime)
+            if ((XbmcThreads::SystemClockMillis() - m_dvd.iDVDStillStartTime) >= m_dvd.iDVDStillTime)
             {
               m_dvd.iDVDStillTime = 0;
               m_dvd.iDVDStillStartTime = 0;
@@ -2899,13 +2899,13 @@ int CDVDPlayer::OnDVDNavResult(void* pData, int iMessage)
           else
             m_dvd.iDVDStillTime = 0;
 
-          m_dvd.iDVDStillStartTime = GetTickCount();
+          m_dvd.iDVDStillStartTime = XbmcThreads::SystemClockMillis();
 
           /* adjust for the output delay in the video queue */
-          DWORD time = 0;
+          unsigned int time = 0;
           if( m_CurrentVideo.stream && m_dvd.iDVDStillTime > 0 )
           {
-            time = (DWORD)(m_dvdPlayerVideo.GetOutputDelay() / ( DVD_TIME_BASE / 1000 ));
+            time = (unsigned int)(m_dvdPlayerVideo.GetOutputDelay() / ( DVD_TIME_BASE / 1000 ));
             if( time < 10000 && time > 0 )
               m_dvd.iDVDStillTime += time;
           }
@@ -3488,7 +3488,7 @@ void CDVDPlayer::UpdatePlayState(double timeout)
 
       if(m_dvd.state == DVDSTATE_STILL)
       {
-        state.time       = GetTickCount() - m_dvd.iDVDStillStartTime;
+        state.time       = XbmcThreads::SystemClockMillis() - m_dvd.iDVDStillStartTime;
         state.time_total = m_dvd.iDVDStillTime;
         state.time_src   = ETIMESOURCE_MENU;
       }

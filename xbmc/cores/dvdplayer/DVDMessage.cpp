@@ -18,6 +18,7 @@
  *
  */
  
+#include "threads/SystemClock.h"
 #include "DVDMessage.h"
 #include "DVDDemuxers/DVDDemuxUtils.h"
 #include "DVDStreamInfo.h"
@@ -44,12 +45,12 @@ void CDVDMsgGeneralSynchronize::Wait(volatile bool *abort, DWORD source)
 
   AtomicIncrement(&m_objects);
 
-  DWORD timeout = GetTickCount() + m_timeout;
+  XbmcThreads::EndTime timeout(m_timeout);
 
   if (abort)
-    while( m_objects < GetNrOfReferences() && timeout > GetTickCount() && !(*abort)) Sleep(1);
+    while( m_objects < GetNrOfReferences() && !timeout.IsTimePast() && !(*abort)) Sleep(1);
   else
-    while( m_objects < GetNrOfReferences() && timeout > GetTickCount() ) Sleep(1);
+    while( m_objects < GetNrOfReferences() && !timeout.IsTimePast() ) Sleep(1);
 }
 
 /**

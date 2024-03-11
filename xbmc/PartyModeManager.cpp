@@ -104,7 +104,7 @@ bool CPartyModeManager::Enable(PartyModeContext context /*= PARTYMODECONTEXT_MUS
   pDialog->StartModal();
 
   ClearState();
-  DWORD time = timeGetTime();
+  unsigned int time = XbmcThreads::SystemClockMillis();
   vector< pair<int,int> > songIDs;
   if (m_type.Equals("songs") || m_type.Equals("mixed"))
   {
@@ -189,7 +189,8 @@ bool CPartyModeManager::Enable(PartyModeContext context /*= PARTYMODECONTEXT_MUS
     pDialog->Close();
     return false;
   }
-  CLog::Log(LOGDEBUG, "%s time for song fetch: %lu", __FUNCTION__, timeGetTime() - time);
+  CLog::Log(LOGDEBUG, "%s time for song fetch: %u",
+            __FUNCTION__, XbmcThreads::SystemClockMillis() - time);
 
   // start playing
   g_playlistPlayer.SetCurrentPlaylist(iPlaylist);

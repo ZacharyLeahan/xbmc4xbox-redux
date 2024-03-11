@@ -1674,7 +1674,7 @@ static const char * sub_exts[] = { ".utf", ".utf8", ".utf-8", ".sub", ".srt", ".
 
 void CUtil::CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionCached, XFILE::IFileCallback *pCallback )
 {
-  DWORD startTimer = timeGetTime();
+  unsigned int startTimer = XbmcThreads::SystemClockMillis();
   CLog::Log(LOGDEBUG,"%s: START", __FUNCTION__);
 
   // new array for commons sub dirs
@@ -1784,7 +1784,7 @@ void CUtil::CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionC
     strLookInPaths.push_back(strPath);
   }
 
-  DWORD nextTimer = timeGetTime();
+  unsigned int nextTimer = XbmcThreads::SystemClockMillis();
   CLog::Log(LOGDEBUG,"%s: Done (time: %i ms)", __FUNCTION__, (int)(nextTimer - startTimer));
 
   CStdString strLExt;
@@ -1851,7 +1851,7 @@ void CUtil::CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionC
       }
     }
   }
-  CLog::Log(LOGDEBUG,"%s: Done (time: %i ms)", __FUNCTION__, (int)(timeGetTime() - nextTimer));
+  CLog::Log(LOGDEBUG,"%s: Done (time: %i ms)", __FUNCTION__, (int)(XbmcThreads::SystemClockMillis() - nextTimer));
 
   // build the vector with extensions
   CFileItemList items;
@@ -1893,7 +1893,7 @@ void CUtil::CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionC
   for (vector<CStdString>::iterator it=vecExtensionsCached.begin(); it != vecExtensionsCached.end(); ++it)
     strExtensionCached += *it+"|";
 
-  CLog::Log(LOGDEBUG,"%s: END (total time: %i ms)", __FUNCTION__, (int)(timeGetTime() - startTimer));
+  CLog::Log(LOGDEBUG,"%s: END (total time: %i ms)", __FUNCTION__, (int)(XbmcThreads::SystemClockMillis() - startTimer));
 }
 
 bool CUtil::CacheRarSubtitles(const CStdString& strRarPath, 
@@ -2984,10 +2984,10 @@ bool CUtil::AutoDetection()
   bool bReturn=false;
   if (CSettings::Get().GetBool("autodetect.onoff"))
   {
-    static DWORD pingTimer = 0;
-    if( timeGetTime() - pingTimer < (DWORD)g_advancedSettings.m_autoDetectPingTime * 1000)
+    static unsigned int pingTimer = 0;
+    if( XbmcThreads::SystemClockMillis() - pingTimer < g_advancedSettings.m_autoDetectPingTime * 1000)
       return false;
-    pingTimer = timeGetTime();
+    pingTimer = XbmcThreads::SystemClockMillis();
 
   // send ping and request new client info
   if ( CUtil::AutoDetectionPing(

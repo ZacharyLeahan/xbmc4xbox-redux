@@ -61,7 +61,7 @@ bool CGUILargeTextureManager::CLargeTexture::DecrRef(bool deleteImmediately)
     if (deleteImmediately)
       delete this;
     else
-      m_timeToDelete = timeGetTime() + TIME_TO_DELETE;
+      m_timeToDelete = XbmcThreads::SystemClockMillis() + TIME_TO_DELETE;
     return true;
   }
   return false;
@@ -69,7 +69,7 @@ bool CGUILargeTextureManager::CLargeTexture::DecrRef(bool deleteImmediately)
 
 bool CGUILargeTextureManager::CLargeTexture::DeleteIfRequired()
 {
-  if (m_refCount == 0 && m_timeToDelete < timeGetTime())
+  if (m_refCount == 0 && m_timeToDelete < XbmcThreads::SystemClockMillis())
   {
     delete this;
     return true;

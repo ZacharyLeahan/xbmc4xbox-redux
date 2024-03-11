@@ -90,8 +90,8 @@ void CBackgroundPicLoader::Create(CGUIWindowSlideShow *pCallback)
 
 void CBackgroundPicLoader::Process()
 {
-  DWORD totalTime = 0;
-  DWORD count = 0;
+  unsigned int totalTime = 0;
+  unsigned int count = 0;
   while (!m_bStop)
   { // loop around forever, waiting for the app to call LoadPic
     if (AbortableWait(m_loadPic,10) == WAIT_SIGNALED)
@@ -99,9 +99,9 @@ void CBackgroundPicLoader::Process()
       if (m_pCallback)
       {
         CPicture pic;
-        DWORD start = timeGetTime();
+        unsigned int start = XbmcThreads::SystemClockMillis();
         IDirect3DTexture8 *pTexture = pic.Load(m_strFileName, m_maxWidth, m_maxHeight);
-        totalTime += timeGetTime() - start;
+        totalTime += XbmcThreads::SystemClockMillis() - start;
         count++;
         // tell our parent
         bool bFullSize = ((int)pic.GetWidth() < m_maxWidth) && ((int)pic.GetHeight() < m_maxHeight);

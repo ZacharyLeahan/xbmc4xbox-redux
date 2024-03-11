@@ -1728,21 +1728,21 @@ void CMusicDatabase::EmptyCache()
 
 bool CMusicDatabase::Search(const CStdString& search, CFileItemList &items)
 {
-  unsigned int time = timeGetTime();
+  unsigned int time = XbmcThreads::SystemClockMillis();
   // first grab all the artists that match
   SearchArtists(search, items);
   CLog::Log(LOGDEBUG, "%s Artist search in %i ms",
-            __FUNCTION__, timeGetTime() - time); time = timeGetTime();
+            __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
 
   // then albums that match
   SearchAlbums(search, items);
   CLog::Log(LOGDEBUG, "%s Album search in %i ms",
-            __FUNCTION__, timeGetTime() - time); time = timeGetTime();
+            __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
 
   // and finally songs
   SearchSongs(search, items);
   CLog::Log(LOGDEBUG, "%s Songs search in %i ms",
-            __FUNCTION__, timeGetTime() - time); time = timeGetTime();
+            __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
   return true;
 }
 
@@ -2887,7 +2887,7 @@ bool CMusicDatabase::GetArtistsNav(const CStdString& strBaseDir, CFileItemList& 
   if (NULL == m_pDS.get()) return false;
   try
   {
-    unsigned int time = timeGetTime();
+    unsigned int time = XbmcThreads::SystemClockMillis();
 
     CMusicDbUrl musicUrl;
     if (!musicUrl.FromString(strBaseDir))
@@ -2903,7 +2903,7 @@ bool CMusicDatabase::GetArtistsNav(const CStdString& strBaseDir, CFileItemList& 
     musicUrl.AddOption("albumartistsonly", albumArtistsOnly);
 
     bool result = GetArtistsByWhere(musicUrl.ToString(), filter, items, sortDescription, countOnly);
-    CLog::Log(LOGDEBUG,"Time to retrieve artists from dataset = %i", timeGetTime() - time);
+    CLog::Log(LOGDEBUG,"Time to retrieve artists from dataset = %i", XbmcThreads::SystemClockMillis() - time);
 
     return result;
   }
@@ -3180,11 +3180,11 @@ bool CMusicDatabase::GetAlbumsByWhere(const CStdString &baseDir, const Filter &f
 
     CLog::Log(LOGDEBUG, "%s query: %s", __FUNCTION__, strSQL.c_str());
     // run query
-    unsigned int time = timeGetTime();
+    unsigned int time = XbmcThreads::SystemClockMillis();
     if (!m_pDS->query(strSQL.c_str()))
       return false;
     CLog::Log(LOGDEBUG, "%s - query took %i ms",
-              __FUNCTION__, timeGetTime() - time); time = timeGetTime();
+              __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
 
     int iRowsFound = m_pDS->num_rows();
     if (iRowsFound <= 0)
@@ -3257,7 +3257,7 @@ bool CMusicDatabase::GetSongsByWhere(const CStdString &baseDir, const Filter &fi
 
   try
   {
-    unsigned int time = timeGetTime();
+    unsigned int time = XbmcThreads::SystemClockMillis();
     int total = -1;
 
     CStdString strSQL = "SELECT %s FROM songview ";
@@ -3340,7 +3340,7 @@ bool CMusicDatabase::GetSongsByWhere(const CStdString &baseDir, const Filter &fi
 
     // cleanup
     m_pDS->close();
-    CLog::Log(LOGDEBUG, "%s(%s) - took %d ms", __FUNCTION__, filter.where.c_str(), timeGetTime() - time);
+    CLog::Log(LOGDEBUG, "%s(%s) - took %d ms", __FUNCTION__, filter.where.c_str(), XbmcThreads::SystemClockMillis() - time);
     return true;
   }
   catch (...)

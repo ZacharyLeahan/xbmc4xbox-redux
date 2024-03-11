@@ -105,8 +105,8 @@ private:
   float m_speedY;
 
   // active/click timers
-  int m_lastActiveTime;
-  int m_lastClickTime[5];
+  unsigned int m_lastActiveTime;
+  unsigned int m_lastClickTime[5];
 
 public:
   // public access variables to button clicks etc.

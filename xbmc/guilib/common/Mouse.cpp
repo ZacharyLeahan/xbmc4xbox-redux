@@ -93,7 +93,7 @@ void CMouse::Update()
     if (HasMoved())
     {
       m_mouseState.active = true;
-      m_lastActiveTime = timeGetTime();
+      m_lastActiveTime = XbmcThreads::SystemClockMillis();
     }
   }
   else
@@ -102,7 +102,7 @@ void CMouse::Update()
     m_mouseState.dy = 0;
     m_mouseState.dz = 0;
     // check how long we've been inactive
-    if (timeGetTime() - m_lastActiveTime > MOUSE_ACTIVE_LENGTH)
+    if (XbmcThreads::SystemClockMillis() - m_lastActiveTime > MOUSE_ACTIVE_LENGTH)
       m_mouseState.active = false;
   }
 
@@ -118,7 +118,7 @@ void CMouse::Update()
       if (!m_mouseState.active) // wake up mouse on any click
       {
         m_mouseState.active = true;
-        m_lastActiveTime = timeGetTime();
+        m_lastActiveTime = XbmcThreads::SystemClockMillis();
       }
       bNothingDown = false;
       if (m_lastDown[i])
@@ -127,7 +127,7 @@ void CMouse::Update()
       }
       else
       {
-        if (timeGetTime() - m_lastClickTime[i] < MOUSE_DOUBLE_CLICK_LENGTH)
+        if (XbmcThreads::SystemClockMillis() - m_lastClickTime[i] < MOUSE_DOUBLE_CLICK_LENGTH)
         { // Double click
           bDoubleClick[i] = true;
         }
@@ -142,7 +142,7 @@ void CMouse::Update()
       { // Mouse up
         bNothingDown = false;
         bClick[i] = true;
-        m_lastClickTime[i] = timeGetTime();
+        m_lastClickTime[i] = XbmcThreads::SystemClockMillis();
       }
       else
       { // no change
@@ -209,7 +209,7 @@ void CMouse::SetLocation(const CPoint &point, bool activate)
   m_mouseState.y = (int)point.y;
   if (activate)
   {
-    m_lastActiveTime = timeGetTime();
+    m_lastActiveTime = XbmcThreads::SystemClockMillis();
     m_mouseState.active = true;
   }
 }

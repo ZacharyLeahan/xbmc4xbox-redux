@@ -131,8 +131,8 @@ int64_t MemBufferCache::WaitForData(unsigned int iMinAvail, unsigned int iMillis
   if (iMillis == 0 || IsEndOfInput())
     return m_buffer.getMaxReadSize();
 
-  DWORD dwTime = GetTickCount() + iMillis;
-  while (!IsEndOfInput() && (unsigned int) m_buffer.getMaxReadSize() < iMinAvail && GetTickCount() < dwTime )
+  XbmcThreads::EndTime endTime(iMillis);
+  while (!IsEndOfInput() && (unsigned int) m_buffer.getMaxReadSize() < iMinAvail && !endTime.IsTimePast() )
     m_written.WaitMSec(50); // may miss the deadline. shouldn't be a problem.
 
   return m_buffer.getMaxReadSize();

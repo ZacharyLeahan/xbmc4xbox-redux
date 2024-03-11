@@ -520,13 +520,13 @@ void PAPlayer::ToFFRW(int iSpeed)
 void PAPlayer::UpdateCacheLevel()
 {
   //check cachelevel every .5 seconds
-  if (m_LastCacheLevelCheck + 500 < GetTickCount())
+  if ((XbmcThreads::SystemClockMillis() - m_LastCacheLevelCheck) > 500)
   {
     ICodec* codec = m_decoder[m_currentDecoder].GetCodec();
     if (codec)
     {
       m_CacheLevel = codec->GetCacheLevel();
-      m_LastCacheLevelCheck = GetTickCount();
+      m_LastCacheLevelCheck = XbmcThreads::SystemClockMillis();
       //CLog::Log(LOGDEBUG,"Cachelevel: %i%%", m_CacheLevel);
     }
   }
@@ -735,7 +735,6 @@ bool PAPlayer::ProcessPAP()
     }
 
     // Let our decoding stream(s) do their thing
-    DWORD time = timeGetTime();
     int retVal = m_decoder[m_currentDecoder].ReadSamples(PACKET_SIZE);
     if (retVal == RET_ERROR)
     {
@@ -747,7 +746,6 @@ bool PAPlayer::ProcessPAP()
     {
       m_decoder[1 - m_currentDecoder].Destroy();
     }
-    DWORD time2 = timeGetTime();
 
     // if we're cross-fading, then we do this for both streams, otherwise
     // we do it just for the one stream.
@@ -781,8 +779,6 @@ bool PAPlayer::ProcessPAP()
 
     if (retVal == RET_SLEEP && retVal2 == RET_SLEEP)
       Sleep(1);
-    DWORD time3 = timeGetTime();
-//   CLog::Log(LOGINFO, "Time Decoding: %i, Time Resampling: %i, bytes processed %i, buffer 1 state %i, buffer 2 state %i", time2-time, time3-time2, dataToRead, m_decoder[m_currentDecoder].GetDataSize(), m_decoder[1 - m_currentDecoder].GetDataSize());
   }
   return true;
 }
@@ -914,9 +910,9 @@ void PAPlayer::HandleSeeking()
 {
   if (m_SeekTime != -1)
   {
-    DWORD time = timeGetTime();
+    unsigned int time = XbmcThreads::SystemClockMillis();
     m_timeOffset = m_decoder[m_currentDecoder].Seek(m_SeekTime);
-    CLog::Log(LOGDEBUG, "Seek to time %f took %i ms", 0.001f * m_SeekTime, timeGetTime() - time);
+    CLog::Log(LOGDEBUG, "Seek to time %f took %i ms", 0.001f * m_SeekTime, (int)(XbmcThreads::SystemClockMillis() - time));
     FlushStreams();
     m_bytesSentOut = 0;
     m_SeekTime = -1;

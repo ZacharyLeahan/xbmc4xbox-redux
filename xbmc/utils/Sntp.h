@@ -115,7 +115,7 @@ protected:
 #endif
 
   // next point in time we wish to update
-  DWORD m_dwTimeout;
+  unsigned int m_dwTimeout;
 
   //AR 22-07-2000
 #ifndef _WIN32_WCE

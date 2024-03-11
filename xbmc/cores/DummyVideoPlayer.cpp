@@ -71,14 +71,14 @@ bool CDummyVideoPlayer::IsPlaying() const
 void CDummyVideoPlayer::Process()
 {
   m_clock = 0;
-  m_lastTime = timeGetTime();
+  m_lastTime = XbmcThreads::SystemClockMillis();
 
   m_callback.OnPlayBackStarted();
   while (!m_bStop)
   {
     if (!m_paused)
-      m_clock += (timeGetTime() - m_lastTime)*m_speed;
-    m_lastTime = timeGetTime();
+      m_clock += (XbmcThreads::SystemClockMillis() - m_lastTime)*m_speed;
+    m_lastTime = XbmcThreads::SystemClockMillis();
     Sleep(0);
     g_graphicsContext.Lock();
     if (g_graphicsContext.IsFullScreenVideo())
