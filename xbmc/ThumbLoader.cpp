@@ -134,8 +134,7 @@ bool CVideoThumbLoader::LoadItem(CFileItem* pItem)
       pItem->SetProperty("fanart_image",pItem->GetCachedFanart());
   }
 
-  if (pItem->HasVideoInfoTag() &&
-      pItem->GetVideoInfoTag()->m_resumePoint.type != CBookmark::RESUME && pItem->GetVideoInfoTag()->m_resumePoint.totalTimeInSeconds == 0)
+  if (pItem->HasVideoInfoTag() && !pItem->GetVideoInfoTag()->m_resumePoint.IsSet())
   {
     CVideoDatabase db;
     db.Open();

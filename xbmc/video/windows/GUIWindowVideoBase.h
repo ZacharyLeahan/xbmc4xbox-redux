@@ -56,7 +56,10 @@ public:
   static void UpdateVideoTitle(const CFileItem* pItem);
 
   /*! \brief Show the resume menu for this item (if it has a resume bookmark)
-   If a resume bookmark is found, we set the item's m_lStartOffset to STARTOFFSET_RESUME
+   If a resume bookmark is found, we set the item's m_lStartOffset to STARTOFFSET_RESUME.
+   Note that we do this in favour of setting the resume point, as we need additional
+   information from the database (in particular, the playerState) when resuming some items
+   (eg ISO/VIDEO_TS).
    \param item item to check for a resume bookmark
    \return true if an option was chosen, false if the resume menu was cancelled.
    */
@@ -83,7 +86,7 @@ public:
    \param item selected item
    \return string containing the resume position or an empty string if there is no resume position
    */
-  static CStdString GetResumeString(CFileItem item);
+  static CStdString GetResumeString(const CFileItem &item);
 
 private:
   bool IsCorrectDiskInDrive(const CStdString& strFileName, const CStdString& strDVDLabel);
