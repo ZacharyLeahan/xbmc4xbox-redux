@@ -40,5 +40,6 @@ protected:
   void CallScript();
   void SetLocation(int loc);
 
+  int iScriptId; // some hack to make current weather work with new way of launching scripts (not originally in XBMC)
   CStopWatch m_scriptTimer;
 };

@@ -280,8 +280,8 @@
 
 #define ACTION_FILTER                 233
 
-#define ACTION_SETTINGS_RESET         240
-#define ACTION_SETTINGS_LEVEL_CHANGE  241
+#define ACTION_SETTINGS_RESET         241
+#define ACTION_SETTINGS_LEVEL_CHANGE  242
 
 // Window ID defines to make the code a bit more readable
 #define WINDOW_INVALID                     9999
@@ -401,6 +401,8 @@
 #define ICON_TYPE_WEATHER       107
 #define ICON_TYPE_SETTINGS      109
 
+#ifndef SWIG
+
 class CKey;
 
 /*!
@@ -412,8 +414,9 @@ class CAction
 public:
   CAction(int actionID, float amount1 = 1.0f, float amount2 = 0.0f, const CStdString &name = "", unsigned int holdTime = 0);
   CAction(int actionID, wchar_t unicode);
-  CAction(int actionID, unsigned int state, float posX, float posY, float offsetX, float offsetY);
+  CAction(int actionID, unsigned int state, float posX, float posY, float offsetX, float offsetY, const CStdString &name = "");
   CAction(int actionID, const CStdString &name, const CKey &key);
+  CAction(int actionID, const std::string &name);
 
   /*! \brief Identifier of the action
    \return id of the action
@@ -532,5 +535,7 @@ private:
   bool m_fromHttpApi;
   unsigned int m_held;
 };
+#endif //undef SWIG
+
 #endif
 

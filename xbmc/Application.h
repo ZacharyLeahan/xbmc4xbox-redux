@@ -91,6 +91,18 @@ class CApplication : public CXBApplicationEx, public IPlayerCallback, public IMs
                      public ISettingCallback, public ISettingsHandler, public ISubSettings
 {
 public:
+
+  enum ESERVERS
+  {
+    ES_WEBSERVER = 1,
+    ES_AIRPLAYSERVER,
+    ES_JSONRPCSERVER,
+    ES_UPNPRENDERER,
+    ES_UPNPSERVER,
+    ES_EVENTSERVER,
+    ES_ZEROCONF
+  };
+
   CApplication(void);
   virtual ~CApplication(void);
   virtual HRESULT Initialize();
@@ -238,6 +250,8 @@ public:
 
   ReplayGainSettings& GetReplayGainSettings() { return m_replayGainSettings; }
 
+  void SetLoggingIn(bool loggingIn) { m_loggingIn = loggingIn; }
+
   bool SwitchToFullScreen();
 
   CSplash* GetSplash() { return m_splash; }
@@ -254,6 +268,8 @@ protected:
   bool LoadSkin(const boost::shared_ptr<ADDON::CSkinInfo>& skin);
 
   bool m_skinReverting;
+
+  bool m_loggingIn;
 
   // screensaver
   bool m_bScreenSave;
