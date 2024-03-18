@@ -986,6 +986,10 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const FRECT &rect, TiXmlEl
 
   // the <texture> tag can be overridden by the <info> tag
   GetInfoTexture(pControlNode, "texture", texture, textureFile, parentID);
+#ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
+  if (type == CGUIControl::GUICONTROL_IMAGE && insideContainer && textureFile.IsConstant())
+    aspect.ratio = CAspectRatio::AR_STRETCH;
+#endif
 
   GetTexture(pControlNode, "bordertexture", borderTexture);
 
@@ -1332,10 +1336,6 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const FRECT &rect, TiXmlEl
     else
       control = new CGUIBorderedImage(
         parentID, id, posX, posY, width, height, texture, borderTexture, borderSize);
-#ifdef PRE_SKIN_VERSION_9_10_COMPATIBILITY
-    if (insideContainer && textureFile.IsConstant())
-      aspect.ratio = CAspectRatio::AR_STRETCH;
-#endif
     ((CGUIImage *)control)->SetInfo(textureFile);
     ((CGUIImage *)control)->SetAspectRatio(aspect);
     ((CGUIImage *)control)->SetCrossFade(fadeTime);
