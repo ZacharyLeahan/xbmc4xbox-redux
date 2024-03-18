@@ -528,6 +528,31 @@ void CAddonMgr::RemoveAddon(const CStdString& ID)
     m_cpluff->uninstall_plugin(m_cp_context,ID.c_str());
 }
 
+bool CAddonMgr::DisableAddon(const std::string& ID, bool disable)
+{
+  CSingleLock lock(m_critSection);
+  if (m_database.DisableAddon(ID, disable))
+  {
+    m_disabled[ID] = disable;
+    return true;
+  }
+
+  return false;
+}
+
+bool CAddonMgr::IsAddonDisabled(const std::string& ID)
+{
+  CSingleLock lock(m_critSection);
+  std::map<std::string, bool>::const_iterator it = m_disabled.find(ID);
+  if (it != m_disabled.end())
+    return it->second;
+
+  bool ret = m_database.IsAddonDisabled(ID);
+  m_disabled.insert(pair<std::string, bool>(ID, ret));
+
+  return ret;
+}
+
 const char *CAddonMgr::GetTranslatedString(const cp_cfg_element_t *root, const char *tag)
 {
   if (!root)
