@@ -506,7 +506,7 @@ std::vector<CScraperUrl> CScraper::FindMovie(XFILE::CCurlFile &fcurl, const CStd
   if (IsNoop())
     return vcscurl;
 
-  if (!fFirst || Content() == CONTENT_MUSICVIDEOS)
+  if (!fFirst)
     sTitle.Replace("-"," ");
 
   sTitle.ToLower();
