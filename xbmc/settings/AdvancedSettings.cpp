@@ -138,6 +138,8 @@ void CAdvancedSettings::Initialize()
   m_videoIgnorePercentAtEnd   = 8.0f;
   m_videoPlayCountMinimumPercent = 90.0f;
 
+  m_videoBusyDialogDelay_ms = 100;
+
   m_musicUseTimeSeeking = true;
   m_musicTimeSeekForward = 10;
   m_musicTimeSeekBackward = -10;
@@ -439,6 +441,10 @@ void CAdvancedSettings::ParseSettingsFile(const CStdString &file)
     XMLUtils::GetString(pElement,"ppffmpegdeinterlacing",m_videoPPFFmpegDeint);
     XMLUtils::GetString(pElement,"ppffmpegpostprocessing",m_videoPPFFmpegPostProc);
   }
+
+  // controls the delay, in milliseconds, until
+  // the busy dialog is shown when starting video playback.
+  XMLUtils::GetInt(pElement, "busydialogdelayms", m_videoBusyDialogDelay_ms, 0, 1000);
 
   pElement = pRootElement->FirstChildElement("musiclibrary");
   if (pElement)

@@ -122,6 +122,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     float m_videoIgnorePercentAtEnd;
     bool m_audioApplyDrc;
 
+    int  m_videoBusyDialogDelay_ms;
+
     float m_videoPlayCountMinimumPercent;
     
     bool m_guiKeepInMemory;
