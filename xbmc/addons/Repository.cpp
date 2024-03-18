@@ -205,7 +205,7 @@ bool CRepositoryUpdateJob::DoWork()
 
     bool deps_met = CAddonInstaller::Get().CheckDependencies(addons[i]);
     if (!deps_met && addons[i]->Props().broken.empty())
-      addons[i]->Props().broken = g_localizeStrings.Get(24044);
+      addons[i]->Props().broken = "DEPSNOTMET";
 
     AddonPtr addon;
     CAddonMgr::Get().GetAddon(addons[i]->ID(),addon);
@@ -232,8 +232,11 @@ bool CRepositoryUpdateJob::DoWork()
     {
       if (database.IsAddonBroken(addons[i]->ID()).IsEmpty())
       {
+        std::string line = g_localizeStrings.Get(24096);
+        if (addons[i]->Props().broken == "DEPSNOTMET")
+          line = g_localizeStrings.Get(24104);
         if (addon && CGUIDialogYesNo::ShowAndGetInput(addons[i]->Name(),
-                                             g_localizeStrings.Get(24096),
+                                             line,
                                              g_localizeStrings.Get(24097),
                                              ""))
           database.DisableAddon(addons[i]->ID());
