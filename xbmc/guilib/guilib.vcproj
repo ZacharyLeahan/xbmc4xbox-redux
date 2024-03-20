@@ -671,6 +671,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\ISliderCallback.h">
+			</File>
+			<File
 				RelativePath=".\IWindowManagerCallback.h">
 			</File>
 			<File

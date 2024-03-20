@@ -1300,7 +1300,7 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const FRECT &rect, TiXmlEl
   {
     control = new CGUISliderControl(
       parentID, id, posX, posY, width, height,
-      textureBar, textureNib, textureNibFocus, SPIN_CONTROL_TYPE_TEXT, orientation);
+      textureBar, textureNib, textureNibFocus, SLIDER_CONTROL_TYPE_PERCENTAGE, orientation);
 
     ((CGUISliderControl *)control)->SetInfo(singleInfo);
     ((CGUISliderControl *)control)->SetAction(action);
@@ -1309,7 +1309,7 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const FRECT &rect, TiXmlEl
   {
     control = new CGUISettingsSliderControl(
       parentID, id, posX, posY, width, height, sliderWidth, sliderHeight, textureFocus, textureNoFocus,
-      textureBar, textureNib, textureNibFocus, labelInfo, SPIN_CONTROL_TYPE_TEXT);
+      textureBar, textureNib, textureNibFocus, labelInfo, SLIDER_CONTROL_TYPE_PERCENTAGE);
 
     ((CGUISettingsSliderControl *)control)->SetText(strLabel);
     ((CGUISettingsSliderControl *)control)->SetInfo(singleInfo);
