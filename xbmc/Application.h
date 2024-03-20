@@ -82,6 +82,7 @@ struct VOICE_MASK {
   float whisper;
 };
 
+class CSeekHandler;
 class CCdgParser;
 class CProfile;
 class CSplash;
@@ -256,6 +257,12 @@ public:
   bool SwitchToFullScreen();
 
   CSplash* GetSplash() { return m_splash; }
+
+  /*! \brief Retrieve the applications seek handler.
+   \return a constant pointer to the seek handler.
+   \sa CSeekHandler
+   */
+  const CSeekHandler *GetSeekHandler() const { return m_seekHandler; };
 protected:
   virtual bool OnSettingsSaving() const;
 
@@ -345,6 +352,7 @@ protected:
 
   void InitDirectoriesXbox();
 
+  CSeekHandler *m_seekHandler;
   CNetwork    *m_network;
   
 #ifdef HAS_EVENT_SERVER

@@ -92,6 +92,7 @@
 #include "settings/SkinSettings.h"
 #include "settings/Settings.h"
 #include "guilib/LocalizeStrings.h"
+#include "utils/SeekHandler.h"
 #include "utils/CharsetConverter.h"
 #include "utils/RssReader.h"
 #include "utils/StringUtils.h"
@@ -315,6 +316,7 @@ CApplication::CApplication(void)
   , m_progressTrackingItem(new CFileItem)
   , m_videoInfoScanner(new CVideoInfoScanner)
   , m_musicInfoScanner(new CMusicInfoScanner)
+  , m_seekHandler(new CSeekHandler)
 {
   m_network = NULL;
   m_iPlaySpeed = 1;
@@ -356,6 +358,8 @@ CApplication::CApplication(void)
 CApplication::~CApplication(void)
 {
   delete m_currentStack;
+
+  delete m_seekHandler;
 }
 
 // text out routine for below
@@ -2598,9 +2602,7 @@ bool CApplication::OnAction(CAction &action)
   if (IsPlaying() && action.GetAmount() && (action.GetID() == ACTION_ANALOG_SEEK_FORWARD || action.GetID() == ACTION_ANALOG_SEEK_BACK))
   {
     if (!m_pPlayer->CanSeek()) return false;
-    CGUIWindow *seekBar = g_windowManager.GetWindow(WINDOW_DIALOG_SEEK_BAR);
-    if (seekBar)
-      seekBar->OnAction(action);
+    m_seekHandler->Seek(action.GetID() == ACTION_ANALOG_SEEK_FORWARD, action.GetAmount(), action.GetRepeat());
     return true;
   }
   if (action.GetID() == ACTION_SHOW_PLAYLIST)
@@ -4718,6 +4720,9 @@ bool CApplication::OnMessage(CGUIMessage& message)
 
   case GUI_MSG_PLAYBACK_STARTED:
     {
+      // reset the seek handler
+      m_seekHandler->Reset();
+
       // Update our infoManager with the new details etc.
       if (m_nextPlaylistItem >= 0)
       { // we've started a previously queued item

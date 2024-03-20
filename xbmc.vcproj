@@ -1195,6 +1195,12 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\SectionLoader.cpp">
 				</File>
 				<File
+					RelativePath=".\xbmc\utils\SeekHandler.cpp">
+				</File>
+				<File
+					RelativePath=".\xbmc\utils\SeekHandler.h">
+				</File>
+				<File
 					RelativePath=".\xbmc\Shortcut.cpp">
 				</File>
 				<File
