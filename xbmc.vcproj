@@ -1231,6 +1231,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\utils\StringUtils2.cpp">
 				</File>
 				<File
+					RelativePath=".\xbmc\utils\StringValidation.cpp">
+				</File>
+				<File
 					RelativePath=".\xbmc\utils\SystemInfo.cpp">
 				</File>
 				<File
@@ -4296,6 +4299,9 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 			</File>
 			<File
 				RelativePath=".\xbmc\utils\StringUtils2.h">
+			</File>
+			<File
+				RelativePath=".\xbmc\utils\StringValidation.h">
 			</File>
 			<File
 				RelativePath=".\xbmc\system.h">
