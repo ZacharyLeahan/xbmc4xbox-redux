@@ -1,6 +1,6 @@
 /*
- *      Copyright (C) 2012 Team XBMC
- *      http://www.xbmc.org
+ *      Copyright (C) 2012-2013 Team XBMC
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "SmartPlayList.h"
 #include "utils/log.h"
 #include "utils/MathUtils.h"
+#include "utils/StringUtils.h"
 #include "video/VideoDatabase.h"
 
 #define TIMEOUT_DELAY             500
@@ -378,8 +379,7 @@ void CGUIDialogMediaFilter::SetupPage()
   else if (m_mediaType == "songs")
     localizedMediaId = 134;
 
-  CStdString format;
-  format.Format(g_localizeStrings.Get(1275).c_str(), g_localizeStrings.Get(localizedMediaId).c_str());
+  CStdString format = StringUtils2::Format(g_localizeStrings.Get(1275).c_str(), g_localizeStrings.Get(localizedMediaId).c_str());
   SET_CONTROL_LABEL(CONTROL_HEADING, format);
 
   // now we can finally set the label/values of the button settings (genre, actors etc)
@@ -496,11 +496,10 @@ void CGUIDialogMediaFilter::OnSettingChanged(SettingInfo &setting)
         }
         else
         {
-          CStdString tmp;
-          tmp.Format("%.1f", *valueLower);
+          CStdString tmp = StringUtils2::Format("%.1f", *valueLower);
           filter.rule->m_parameter.push_back(tmp);
           tmp.clear();
-          tmp.Format("%.1f", *valueUpper);
+          tmp = StringUtils2::Format("%.1f", *valueUpper);
           filter.rule->m_parameter.push_back(tmp);
         }
       }
@@ -570,8 +569,11 @@ void CGUIDialogMediaFilter::Reset()
         break;
 
       case SettingInfo::RANGE:
-        delete ((float **)filter->second.data)[0];
-        delete ((float **)filter->second.data)[1];
+        if (filter->second.data != NULL)
+        {
+          delete ((float **)filter->second.data)[0];
+          delete ((float **)filter->second.data)[1];
+        }
         delete (float *)filter->second.data;
         break;
 
@@ -647,7 +649,7 @@ void CGUIDialogMediaFilter::UpdateControls()
       else
       {
         CONTROL_ENABLE(itFilter->second.controlIndex);
-        label.Format("%s [%d]", label, size);
+        label = StringUtils2::Format("%s [%d]", label.c_str(), size);
       }
       SET_CONTROL_LABEL(itFilter->second.controlIndex, label);
     }
@@ -754,8 +756,7 @@ void CGUIDialogMediaFilter::OnBrowse(const Filter &filter, CFileItemList &items,
   CGUIDialogSelect* pDialog = (CGUIDialogSelect*)g_windowManager.GetWindow(WINDOW_DIALOG_SELECT);
   pDialog->Reset();
   pDialog->SetItems(&selectItems);
-  CStdString strHeading;
-  strHeading.Format(g_localizeStrings.Get(13401), g_localizeStrings.Get(filter.label));
+  CStdString strHeading = StringUtils2::Format(g_localizeStrings.Get(13401), g_localizeStrings.Get(filter.label).c_str());
   pDialog->SetHeading(strHeading);
   pDialog->SetMultiSelection(true);
 
@@ -830,14 +831,14 @@ void CGUIDialogMediaFilter::GetRange(const Filter &filter, float &min, float &in
       else if (m_mediaType == "tvshows")
       {
         table = "tvshowview";
-        year.Format("strftime(\"%%Y\", %s)", DatabaseUtils::GetField(FieldYear, MediaTypeTvShow, DatabaseQueryPartWhere));
+        year = StringUtils2::Format("strftime(\"%%Y\", %s)", DatabaseUtils::GetField(FieldYear, MediaTypeTvShow, DatabaseQueryPartWhere).c_str());
       }
       else if (m_mediaType == "musicvideos")
       {
         table = "musicvideoview";
         year = DatabaseUtils::GetField(FieldYear, MediaTypeMusicVideo, DatabaseQueryPartWhere);
       }
-      
+
       CDatabase::Filter filter;
       filter.where = year + " > 0";
       GetMinMax(table, year, min, max, filter);
@@ -873,7 +874,7 @@ void CGUIDialogMediaFilter::GetRange(const Filter &filter, float &min, float &in
 
     if (m_mediaType == "episodes")
     {
-      CStdString field; field.Format("CAST(strftime(\"%%s\", c%02d) AS INTEGER)", VIDEODB_ID_EPISODE_AIRED);
+      CStdString field = StringUtils2::Format("CAST(strftime(\"%%s\", c%02d) AS INTEGER)", VIDEODB_ID_EPISODE_AIRED);
       
       GetMinMax("episodeview", field, min, max);
       interval = 60 * 60 * 24 * 7; // 1 week
@@ -965,9 +966,9 @@ CStdString CGUIDialogMediaFilter::RangeAsFloat(float valueLower, float valueUppe
 {
   CStdString text;
   if (valueLower != valueUpper)
-    text.Format(g_localizeStrings.Get(21467).c_str(), valueLower, valueUpper);
+    text = StringUtils2::Format(g_localizeStrings.Get(21467).c_str(), valueLower, valueUpper);
   else
-    text.Format("%.1f", valueLower);
+    text = StringUtils2::Format("%.1f", valueLower);
   return text;
 }
 
@@ -975,9 +976,11 @@ CStdString CGUIDialogMediaFilter::RangeAsInt(float valueLower, float valueUpper,
 {
   CStdString text;
   if (valueLower != valueUpper)
-    text.Format(g_localizeStrings.Get(21468).c_str(), MathUtils::round_int((double)valueLower), MathUtils::round_int((double)valueUpper));
+    text = StringUtils2::Format(g_localizeStrings.Get(21468).c_str(),
+                               MathUtils::round_int((double)valueLower),
+                               MathUtils::round_int((double)valueUpper));
   else
-    text.Format("%d", MathUtils::round_int((double)valueLower));
+    text = StringUtils2::Format("%d", MathUtils::round_int((double)valueLower));
   return text;
 }
 
@@ -987,9 +990,12 @@ CStdString CGUIDialogMediaFilter::RangeAsDate(float valueLower, float valueUpper
   CDateTime to = (time_t)valueUpper;
   CStdString text;
   if (valueLower != valueUpper)
-    text.Format(g_localizeStrings.Get(21469).c_str(), from.GetAsLocalizedDate(), to.GetAsLocalizedDate());
+    text = StringUtils2::Format(g_localizeStrings.Get(21469).c_str(),
+                               from.GetAsLocalizedDate().c_str(),
+                               to.GetAsLocalizedDate().c_str());
   else
-    text.Format("%s", from.GetAsLocalizedDate());
+    text = StringUtils2::Format("%s",
+                               from.GetAsLocalizedDate().c_str());
   return text;
 }
 
@@ -999,8 +1005,10 @@ CStdString CGUIDialogMediaFilter::RangeAsTime(float valueLower, float valueUpper
   CDateTime to = (time_t)valueUpper;
   CStdString text;
   if (valueLower != valueUpper)
-    text.Format(g_localizeStrings.Get(21469).c_str(), from.GetAsLocalizedTime("mm:ss"), to.GetAsLocalizedTime("mm:ss"));
+    text = StringUtils2::Format(g_localizeStrings.Get(21469).c_str(),
+                               from.GetAsLocalizedTime("mm:ss").c_str(),
+                               to.GetAsLocalizedTime("mm:ss").c_str());
   else
-    text.Format("%s", from.GetAsLocalizedTime("mm:ss"));
+    text = StringUtils2::Format("%s", from.GetAsLocalizedTime("mm:ss").c_str());
   return text;
 }
