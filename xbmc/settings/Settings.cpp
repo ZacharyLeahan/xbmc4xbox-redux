@@ -402,6 +402,9 @@ void CSettings::Uninitialize()
 #endif // defined(TARGET_LINUX)
   m_settingsManager->UnregisterCallback(&g_weatherManager);
 
+  // cleanup the settings manager
+  m_settingsManager->Clear();
+
   // unregister ISubSettings implementations
   m_settingsManager->UnregisterSubSettings(&g_application);
   m_settingsManager->UnregisterSubSettings(&CDisplaySettings::Get());
@@ -425,9 +428,6 @@ void CSettings::Uninitialize()
   m_settingsManager->UnregisterSettingsHandler(&g_videoConfig);
   m_settingsManager->UnregisterSettingsHandler(&g_timezone);
 #endif
-
-  // cleanup the settings manager
-  m_settingsManager->Clear();
 
   m_initialized = false;
 }
