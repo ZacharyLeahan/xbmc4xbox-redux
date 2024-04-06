@@ -36,6 +36,7 @@
 #include "FileItem.h"
 #include "settings/Settings.h"
 #include "guilib/LocalizeStrings.h"
+#include "TextureCache.h"
 
 using namespace XFILE;
 
@@ -169,19 +170,7 @@ void CGUIDialogProfileSettings::OnSettingChanged(SettingInfo &setting)
         !strThumb.Equals("thumb://Current"))
     {
       m_bNeedSave = true;
-      CFileItem item(strThumb);
-      item.SetPath(strThumb);
-      m_strThumb = item.GetCachedProfileThumb();
-      if (CFile::Exists(m_strThumb))
-        CFile::Delete(m_strThumb);
-
-      if (!strThumb.Equals("thumb://None"))
-      {
-        CPicture pic;
-        pic.CreateThumbnail(strThumb, m_strThumb);
-      }
-      else
-        m_strThumb.clear();
+      m_strThumb = strThumb.Equals("thumb://None") ? "" : strThumb;
 
       CGUIImage *pImage = (CGUIImage*)GetControl(2);
       if (pImage)

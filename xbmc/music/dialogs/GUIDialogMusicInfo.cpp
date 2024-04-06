@@ -42,6 +42,7 @@
 #include "settings/Settings.h"
 #include "LocalizeStrings.h"
 #include "utils/log.h"
+#include "TextureCache.h"
 
 using namespace XFILE;
 
@@ -440,8 +441,7 @@ void CGUIDialogMusicInfo::OnGetThumb()
     item->SetLabel(g_localizeStrings.Get(415));
     item->SetProperty("labelonthumbload", g_localizeStrings.Get(20015));
     // make sure any previously cached thumb is removed
-    if (CFile::Exists(item->GetCachedPictureThumb()))
-      CFile::Delete(item->GetCachedPictureThumb());
+    CTextureCache::Get().ClearCachedImage(item->GetCachedPictureThumb());
     items.Add(item);
   }
 
@@ -499,6 +499,7 @@ void CGUIDialogMusicInfo::OnGetThumb()
   else
     cachedThumb = CUtil::GetCachedAlbumThumb(m_album.strAlbum, StringUtils::Join(m_album.artist, g_advancedSettings.m_musicItemSeparator));
 
+  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
   if (result.Left(14).Equals("thumb://Remote"))
   {
     CFileItem chosen(result, false);
@@ -513,8 +514,8 @@ void CGUIDialogMusicInfo::OnGetThumb()
   }
   if (result == "thumb://None")
   { // cache the default thumb
-    CPicture pic;
-    pic.CacheSkinImage("DefaultAlbumCover.png", cachedThumb);
+  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
+    cachedThumb = "";
   }
   else if (result == "thumb://Local")
     CFile::Copy(cachedLocalThumb, cachedThumb);
@@ -551,25 +552,18 @@ void CGUIDialogMusicInfo::OnGetFanart()
   }
 
   // Grab the thumbnails from the web
-  CStdString strPath;
-  URIUtils::AddFileToFolder(g_advancedSettings.m_cachePath,"fanartthumbs",strPath);
-  CUtil::WipeDir(strPath);
-  XFILE::CDirectory::Create(strPath);
   for (unsigned int i = 0; i < m_artist.fanart.GetNumFanarts(); i++)
   {
     CStdString strItemPath;
     strItemPath.Format("fanart://Remote%i",i);
     CFileItemPtr item(new CFileItem(strItemPath, false));
-    item->SetThumbnailImage("http://this.is/a/thumb/from/the/web");
+    CStdString thumb = m_artist.fanart.GetPreviewURL(i);
+    item->SetThumbnailImage(CTextureCache::GetWrappedThumbURL(thumb));
     item->SetIconImage("DefaultPicture.png");
-    item->GetVideoInfoTag()->m_fanart = m_artist.fanart;
-    item->SetProperty("fanart_number", (int)i);
-    item->SetLabel(g_localizeStrings.Get(415));
-    item->SetProperty("labelonthumbload", g_localizeStrings.Get(20441));
+    item->SetLabel(g_localizeStrings.Get(20441));
 
-    // make sure any previously cached thumb is removed
-    if (CFile::Exists(item->GetCachedPictureThumb()))
-      CFile::Delete(item->GetCachedPictureThumb());
+    // TODO: Do we need to clear the cached image?
+    //    CTextureCache::Get().ClearCachedImage(thumb);
     items.Add(item);
   }
   
@@ -585,9 +579,9 @@ void CGUIDialogMusicInfo::OnGetFanart()
     CFileItemPtr itemLocal(new CFileItem("fanart://Local",false));
     itemLocal->SetThumbnailImage(strLocal);
     itemLocal->SetLabel(g_localizeStrings.Get(20438));
-    // make sure any previously cached thumb is removed
-    if (CFile::Exists(itemLocal->GetCachedPictureThumb()))
-      CFile::Delete(itemLocal->GetCachedPictureThumb());
+
+    // TODO: Do we need to clear the cached image?
+    CTextureCache::Get().ClearCachedImage(strLocal);
     items.Add(itemLocal);
   }
   else
@@ -613,8 +607,7 @@ void CGUIDialogMusicInfo::OnGetFanart()
   if (result.Equals("fanart://Local"))
     result = strLocal;
  
-  if (CFile::Exists(cachedThumb))
-    CFile::Delete(cachedThumb);
+  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
 
   if (!result.Equals("fanart://None"))
   { // local file

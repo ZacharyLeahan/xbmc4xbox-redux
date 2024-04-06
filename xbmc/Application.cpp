@@ -79,6 +79,7 @@
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
 #include "GUILargeTextureManager.h"
+#include "TextureCache.h"
 #include "playlists/SmartPlayList.h"
 #include "filesystem/RarManager.h"
 #include "playlists/PlayList.h"
@@ -1217,6 +1218,7 @@ HRESULT CApplication::Create(HWND hWnd)
             CDisplaySettings::Get().GetResolutionInfo(iResolution).iHeight,
             CDisplaySettings::Get().GetResolutionInfo(iResolution).strMode.c_str());
   g_windowManager.Initialize();
+  CTextureCache::Get().Initialize();
 
   // show recovery console on fatal error instead of freezing
   CLog::Log(LOGINFO, "install unhandled exception filter");
@@ -1254,8 +1256,6 @@ HRESULT CApplication::Initialize()
   CDirectory::Create(CProfilesManager::Get().GetUserDataFolder());
   CDirectory::Create(CProfilesManager::Get().GetProfileUserDataFolder());
   CProfilesManager::Get().CreateProfileFolders();
-
-  CDirectory::Create(CProfilesManager::Get().GetProfilesThumbFolder());
 
   CDirectory::Create("special://home/addons");
   CDirectory::Create("special://home/addons/packages");
@@ -1850,6 +1850,7 @@ void CApplication::UnloadSkin(bool forReload /* = false */)
   g_audioManager.Enable(false);
 
   g_windowManager.DeInitialize();
+  CTextureCache::Get().Deinitialize();
 
   //These windows are not handled by the windowmanager (why not?) so we should unload them manually
   CGUIMessage msg(GUI_MSG_WINDOW_DEINIT, 0, 0);
@@ -4215,10 +4216,7 @@ void CApplication::UpdateFileState()
 
       if (m_progressTrackingItem->IsVideo())
       {
-        if ((m_progressTrackingItem->IsDVDImage() ||
-             m_progressTrackingItem->IsDVDFile()    ) &&
-            m_pPlayer->GetTotalTime() > 15*60)
-
+        if ((m_progressTrackingItem->IsDVDImage() || m_progressTrackingItem->IsDVDFile()) && m_pPlayer->GetTotalTime() > 15*60)
         {
           m_progressTrackingItem->GetVideoInfoTag()->m_streamDetails.Reset();
           m_pPlayer->GetStreamDetails(m_progressTrackingItem->GetVideoInfoTag()->m_streamDetails);

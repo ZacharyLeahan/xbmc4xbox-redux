@@ -48,6 +48,7 @@
 #include "LocalizeStrings.h"
 #include "ApplicationMessenger.h"
 #include "ThumbLoader.h"
+#include "TextureCache.h"
 
 using namespace std;
 using namespace XFILE;
@@ -628,8 +629,7 @@ void CGUIDialogVideoInfo::OnGetThumb()
     item->SetProperty("labelonthumbload", g_localizeStrings.Get(20015));
 
     // make sure any previously cached thumb is removed
-    if (CFile::Exists(item->GetCachedPictureThumb()))
-      CFile::Delete(item->GetCachedPictureThumb());
+    CTextureCache::Get().ClearCachedImage(item->GetCachedPictureThumb());
     items.Add(item);
   }
 
@@ -670,6 +670,7 @@ void CGUIDialogVideoInfo::OnGetThumb()
   CStdString cachedThumb(item.GetCachedVideoThumb());
   if (!m_movieItem->m_bIsFolder && m_movieItem->GetVideoInfoTag()->m_iSeason > -1)
     cachedThumb = item.GetCachedEpisodeThumb();
+  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
 
   if (result.Left(14) == "thumb://Remote")
   {
@@ -732,25 +733,18 @@ void CGUIDialogVideoInfo::OnGetFanart()
   m_movieItem->GetVideoInfoTag()->m_fanart.Unpack();
 
   // Grab the thumbnails from the web
-  CStdString strPath;
-  URIUtils::AddFileToFolder(g_advancedSettings.m_cachePath,"fanartthumbs",strPath);
-  CUtil::WipeDir(strPath);
-  XFILE::CDirectory::Create(strPath);
   for (unsigned int i = 0; i < m_movieItem->GetVideoInfoTag()->m_fanart.GetNumFanarts(); i++)
   {
     CStdString strItemPath;
     strItemPath.Format("fanart://Remote%i",i);
     CFileItemPtr item(new CFileItem(strItemPath, false));
-    item->SetThumbnailImage("http://this.is/a/thumb/from/the/web");
+    CStdString thumb = m_movieItem->GetVideoInfoTag()->m_fanart.GetPreviewURL(i);
+    item->SetThumbnailImage(CTextureCache::GetWrappedThumbURL(thumb));
     item->SetIconImage("DefaultPicture.png");
-    item->GetVideoInfoTag()->m_fanart = m_movieItem->GetVideoInfoTag()->m_fanart;
-    item->SetProperty("fanart_number", (int)i);
-    item->SetLabel(g_localizeStrings.Get(415));
-    item->SetProperty("labelonthumbload", g_localizeStrings.Get(20441));
+    item->SetLabel(g_localizeStrings.Get(20441));
 
-    // make sure any previously cached thumb is removed
-    if (CFile::Exists(item->GetCachedPictureThumb()))
-      CFile::Delete(item->GetCachedPictureThumb());
+    // TODO: Do we need to clear the cached image?
+//    CTextureCache::Get().ClearCachedImage(thumb);
     items.Add(item);
   }
   
@@ -760,9 +754,9 @@ void CGUIDialogVideoInfo::OnGetFanart()
     CFileItemPtr itemLocal(new CFileItem("fanart://Local",false));
     itemLocal->SetThumbnailImage(strLocal);
     itemLocal->SetLabel(g_localizeStrings.Get(20438));
-    // make sure any previously cached thumb is removed
-    if (CFile::Exists(itemLocal->GetCachedPictureThumb()))
-      CFile::Delete(itemLocal->GetCachedPictureThumb());
+
+    // TODO: Do we need to clear the cached image?
+    CTextureCache::Get().ClearCachedImage(strLocal);
     items.Add(itemLocal);
   }
   else
@@ -779,9 +773,8 @@ void CGUIDialogVideoInfo::OnGetFanart()
   bool flip=false;
   if (!CGUIDialogFileBrowser::ShowAndGetImage(items, sources, g_localizeStrings.Get(20437), result, &flip, 20445) || result.Equals("fanart://Current"))
     return;   // user cancelled
-    
-  if (CFile::Exists(cachedThumb))
-    CFile::Delete(cachedThumb);
+
+  CTextureCache::Get().ClearCachedImage(cachedThumb, true);
 
   if (result.Equals("fanart://Local"))
     result = strLocal;

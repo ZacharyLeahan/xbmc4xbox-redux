@@ -359,22 +359,19 @@ void CProfilesManager::CreateProfileFolders()
   CDirectory::Create(GetMusicArtistThumbFolder());
   CDirectory::Create(GetVideoFanartFolder());
   CDirectory::Create(GetMusicFanartFolder());
-  CDirectory::Create(GetProgramsThumbFolder());
   CDirectory::Create(GetPicturesThumbFolder());
   CDirectory::Create(GetGameSaveThumbFolder());
 #endif
   for (size_t hex = 0; hex < 16; hex++)
-#ifndef _XBOX
-    CDirectory::Create(URIUtils::AddFileToFolder(GetThumbnailsFolder(), StringUtils2::Format("%x", hex)));
-#else
   {
+    CDirectory::Create(URIUtils::AddFileToFolder(GetThumbnailsFolder(), StringUtils2::Format("%x", hex)));
+#ifdef _XBOX
     string strHex = StringUtils2::Format("%x", hex);
     CDirectory::Create(URIUtils::AddFileToFolder(GetPicturesThumbFolder(), strHex));
     CDirectory::Create(URIUtils::AddFileToFolder(GetMusicThumbFolder(), strHex));
     CDirectory::Create(URIUtils::AddFileToFolder(GetVideoThumbFolder(), strHex));
-    CDirectory::Create(URIUtils::AddFileToFolder(GetProgramsThumbFolder(), strHex));
-  }
 #endif
+  }
 
   CDirectory::Create("special://profile/addon_data");
   CDirectory::Create("special://profile/keymaps");
@@ -540,11 +537,6 @@ std::string CProfilesManager::GetProgramsThumbFolder() const
 std::string CProfilesManager::GetGameSaveThumbFolder() const
 {
   return URIUtils::AddFileToFolder(GetThumbnailsFolder(), "GameSaves");
-}
-
-std::string CProfilesManager::GetProfilesThumbFolder() const
-{
-  return URIUtils::AddFileToFolder(GetUserDataFolder(), "Thumbnails/Profiles");
 }
 
 std::string CProfilesManager::GetVideoFanartFolder() const

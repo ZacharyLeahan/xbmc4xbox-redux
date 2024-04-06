@@ -20,18 +20,18 @@
  */
 
 #include "utils/StdString.h"
-#include "BackgroundInfoLoader.h"
+#include "ThumbLoader.h"
 
-class CPictureThumbLoader : public CBackgroundInfoLoader
+class CPictureThumbLoader : public CThumbLoader
 {
 public:
   CPictureThumbLoader();
   virtual ~CPictureThumbLoader();
   virtual bool LoadItem(CFileItem* pItem);
   void SetRegenerateThumbs(bool regenerate) { m_regenerateThumbs = regenerate; };
+  static void ProcessFoldersAndArchives(CFileItem *pItem);
 protected:
   virtual void OnLoaderFinish();
 private:
-  bool DownloadVideoThumb(CFileItem *item, const CStdString &cachedThumb);
   bool m_regenerateThumbs;
 };
