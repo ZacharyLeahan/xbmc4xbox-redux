@@ -459,8 +459,6 @@ bool CGUIDialogContextMenu::OnContextButton(const CStdString &type, const CFileI
         }
         else if (type == "video")
           cachedThumb = item->GetCachedVideoThumb();
-        else if (type == "pictures")
-          cachedThumb = item->GetCachedPictureThumb();
         else  // assume "programs"
         { // store the thumb for this share
           CTextureDatabase db;

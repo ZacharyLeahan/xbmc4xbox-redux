@@ -56,6 +56,7 @@
 #include "guilib/LocalizeStrings.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
+#include "TextureCache.h"
 #include "utils/SystemInfo.h"
 
 #ifdef _WIN32PC
@@ -1402,17 +1403,12 @@ int CXbmcHttp::xbmcGetCurrentlyPlaying(int numParas, CStdString paras[])
       resolution = slide->GetPictureInfoTag()->GetInfo(SLIDE_RESOLUTION);
     output+=closeTag+openTag+"Resolution:" + resolution;
     CFileItem item(*slide);
-    item.SetCachedPictureThumb();
-    if (autoGetPictureThumbs && !item.HasThumbnail())
+    thumb = CTextureCache::Get().GetCachedImage(CTextureCache::GetWrappedThumbURL(item.GetPath()));
+    if (autoGetPictureThumbs && thumb.IsEmpty())
+      thumb = CTextureCache::Get().CheckAndCacheImage(CTextureCache::GetWrappedThumbURL(item.GetPath()), false);
+    if (thumb.IsEmpty())
     {
-      CPicture pic;
-      pic.CreateThumbnail(item.GetPath(), item.GetCachedPictureThumb());
-      item.SetCachedPictureThumb();
-    }
-    thumb = item.GetCachedPictureThumb();
-    if (!item.HasThumbnail())
-    {
-      thumb = "[None] " + thumb;
+      thumb = "[None]";
       copyThumb("DefaultPicture.png",thumbFn);
     }
     else
