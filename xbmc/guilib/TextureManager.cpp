@@ -21,6 +21,7 @@
 
 #include "include.h"
 #include "TextureManager.h"
+#include "Texture.h"
 #include "AnimatedGif.h"
 #include "PackedTexture.h"
 #include "GraphicContext.h"
@@ -46,11 +47,12 @@ extern "C" void dllprintf( const char *format, ... );
 
 CGUITextureManager g_TextureManager;
 
-CTexture::CTexture(int width, int height, int loops, LPDIRECT3DPALETTE8 palette, bool packed, bool texCoordsArePixels)
+CTextureArray::CTextureArray(int width, int height, int loops, LPDIRECT3DPALETTE8 palette, bool packed, bool texCoordsArePixels)
 {
   m_width = width;
   m_height = height;
   m_loops = loops;
+  m_orientation = 0;
   m_palette = palette;
   m_texWidth = 0;
   m_texHeight = 0;
@@ -64,12 +66,37 @@ CTexture::CTexture(int width, int height, int loops, LPDIRECT3DPALETTE8 palette,
   m_packed = packed;
 };
 
-unsigned int CTexture::size() const
+CTextureArray::CTextureArray()
+{
+  Reset();
+}
+
+CTextureArray::~CTextureArray()
+{
+
+}
+
+unsigned int CTextureArray::size() const
 {
   return m_textures.size();
 }
 
-void CTexture::Add(LPDIRECT3DTEXTURE8 texture, int delay)
+void CTextureArray::Reset()
+{
+  m_textures.clear();
+  m_delays.clear();
+  m_palette = NULL;
+  m_width = 0;
+  m_height = 0;
+  m_loops = 0;
+  m_orientation = 0;
+  m_texWidth = 0;
+  m_texHeight = 0;
+  m_texCoordsArePixels = false;
+  m_packed = false;
+}
+
+void CTextureArray::Add(LPDIRECT3DTEXTURE8 texture, int delay)
 {
   if (!texture)
     return;
@@ -87,15 +114,20 @@ void CTexture::Add(LPDIRECT3DTEXTURE8 texture, int delay)
   }
 }
 
-void CTexture::Set(LPDIRECT3DTEXTURE8 texture, int width, int height)
+void CTextureArray::Set(CBaseTexture *texture, int width, int height)
 {
   assert(!m_textures.size()); // don't try and set a texture if we already have one!
   m_width = width;
   m_height = height;
+  m_orientation = texture ? texture->GetOrientation() : 0;
+#ifdef HAS_XBOX_D3D
+  Add(texture->GetTextureObject(), 100);
+#else
   Add(texture, 100);
+#endif
 }
 
-void CTexture::Free()
+void CTextureArray::Free()
 {
   CSingleLock lock(g_graphicsContext);
   for (unsigned int i = 0; i < m_textures.size(); i++)
@@ -210,7 +242,7 @@ bool CTextureMap::Release()
   return false;
 }
 
-const CTexture &CTextureMap::GetTexture()
+const CTextureArray &CTextureMap::GetTexture()
 {
   m_referenceCount++;
   return m_texture;
@@ -254,9 +286,9 @@ CGUITextureManager::~CGUITextureManager(void)
   Cleanup();
 }
 
-static const CTexture emptyTexture;
+static const CTextureArray emptyTexture;
 
-const CTexture &CGUITextureManager::GetTexture(const CStdString& strTextureName)
+const CTextureArray &CGUITextureManager::GetTexture(const CStdString& strTextureName)
 {
   //  CLog::Log(LOGINFO, " refcount++ for  GetTexture(%s)\n", strTextureName.c_str());
   for (int i = 0; i < (int)m_vecTextures.size(); ++i)
@@ -585,10 +617,11 @@ int CGUITextureManager::Load(const CStdString& strTextureName, bool checkBundleO
     // as thumbnails could be slightly bigger on disk due to libjpeg scaling
     if (URIUtils::GetExtension(strPath).Equals(".tbn"))
     {
-      CPicture pic;
-      pTexture = pic.Load(strPath, g_advancedSettings.m_thumbSize, g_advancedSettings.m_thumbSize);
-      info.Width = pic.GetWidth();
-      info.Height = pic.GetHeight();
+      CTexture texture;
+      if (!texture.LoadFromFile(strPath, g_advancedSettings.m_thumbSize, g_advancedSettings.m_thumbSize))
+        return 0;
+      info.Width = texture.GetWidth();
+      info.Height = texture.GetHeight();
     }
     else
     {
