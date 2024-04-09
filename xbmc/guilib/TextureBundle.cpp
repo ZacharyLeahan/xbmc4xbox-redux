@@ -504,8 +504,7 @@ int CTextureBundle::LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filena
   *ppTextures = NULL; *ppPalette = NULL; *ppDelays = NULL;
 
   CAutoTexBuffer UnpackedBuf;
-  HRESULT r = LoadFile(Filename, UnpackedBuf);
-  if (r != S_OK)
+  if (!LoadFile(Filename, UnpackedBuf))
     return 0;
 
   struct AnimInfo_t
