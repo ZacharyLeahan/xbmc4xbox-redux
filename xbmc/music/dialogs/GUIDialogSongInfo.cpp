@@ -297,7 +297,8 @@ void CGUIDialogSongInfo::OnGetThumb()
   CTextureCache::Get().ClearCachedImage(cachedThumb, true);
   if (result == "thumb://None")
   { // cache the default thumb
-    CPicture::CacheSkinImage("DefaultAlbumCover.png", cachedThumb);
+    CFile::Delete(cachedThumb);
+    cachedThumb = "";
   }
   else if (result == "thumb://allmusic.com")
     CFile::Copy(thumbFromWeb, cachedThumb);

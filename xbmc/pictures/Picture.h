@@ -33,10 +33,6 @@ public:
   static bool CacheThumb(const CStdString& sourceUrl, const CStdString& destFileName);
   static bool CacheFanart(const CStdString& sourceUrl, const CStdString& destFileName);
 
-  // caches a skin image as a thumbnail image
-  static bool CacheSkinImage(const CStdString &srcFile, const CStdString &destFile);
-  static bool CreateThumbnailFromSwizzledTexture(LPDIRECT3DTEXTURE8 &texture, int width, int height, const CStdString &thumbFile);
-
 private:
   static bool CacheImage(const CStdString& sourceUrl, const CStdString& destFileName, int width, int height);
 

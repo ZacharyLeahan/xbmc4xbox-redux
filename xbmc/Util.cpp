@@ -1222,7 +1222,27 @@ bool CUtil::CacheXBEIcon(const CStdString& strFilePath, const CStdString& strIco
         int iHeight = descSurface.Height;
         int iWidth = descSurface.Width;
         DWORD dwFormat = descSurface.Format;
-        success = CPicture::CreateThumbnailFromSwizzledTexture(pTexture, iHeight, iWidth, strIcon.c_str());
+        success = false;
+
+        // this part of code before was in CPicture::CreateThumbnailFromSwizzledTexture
+        LPDIRECT3DTEXTURE8 linTexture = NULL;
+        if (D3D_OK == D3DXCreateTexture(g_graphicsContext.Get3DDevice(), iWidth, iHeight, 1, 0, D3DFMT_LIN_A8R8G8B8, D3DPOOL_MANAGED, &linTexture))
+        {
+          LPDIRECT3DSURFACE8 source;
+          LPDIRECT3DSURFACE8 dest;
+          pTexture->GetSurfaceLevel(0, &source);
+          linTexture->GetSurfaceLevel(0, &dest);
+          D3DXLoadSurfaceFromSurface(dest, NULL, NULL, source, NULL, NULL, D3DX_FILTER_NONE, 0);
+          D3DLOCKED_RECT lr;
+          dest->LockRect(&lr, NULL, 0);
+          bool success = CPicture::CreateThumbnailFromSurface((BYTE *)lr.pBits, iWidth, iHeight, lr.Pitch, strIcon);
+          dest->UnlockRect();
+          SAFE_RELEASE(source);
+          SAFE_RELEASE(dest);
+          SAFE_RELEASE(linTexture);
+          success = true;
+        }
+        // end of CPicture::CreateThumbnailFromSwizzledTexture
       }
       pTexture->Release();
     }
