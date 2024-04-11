@@ -23,7 +23,6 @@
 #include "TextureManager.h"
 #include "Texture.h"
 #include "AnimatedGif.h"
-#include "PackedTexture.h"
 #include "GraphicContext.h"
 #include "threads/SingleLock.h"
 #include "utils/StringUtils.h"

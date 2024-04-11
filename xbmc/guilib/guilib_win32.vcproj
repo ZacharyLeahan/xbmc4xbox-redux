@@ -304,9 +304,6 @@
 				RelativePath=".\LocalizeStrings.cpp">
 			</File>
 			<File
-				RelativePath=".\PackedTexture.cpp">
-			</File>
-			<File
 				RelativePath=".\SkinInfo.cpp">
 			</File>
 			<File
@@ -541,9 +538,6 @@
 			</File>
 			<File
 				RelativePath=".\LocalizeStrings.h">
-			</File>
-			<File
-				RelativePath=".\PackedTexture.h">
 			</File>
 			<File
 				RelativePath=".\SkinInfo.h">
