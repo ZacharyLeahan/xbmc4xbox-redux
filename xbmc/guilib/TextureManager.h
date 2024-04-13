@@ -29,26 +29,29 @@
 #include <vector>
 #include <list>
 #include "TextureBundle.h"
+#include "threads/CriticalSection.h"
 
 #pragma once
 
-
-// currently just used as a transport from texture manager to rest of app
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 class CTextureArray
 {
 public:
+  CTextureArray(int width, int height, int loops, bool texCoordsArePixels = false);
   CTextureArray();
-  CTextureArray(int width, int height, int loops, LPDIRECT3DPALETTE8 palette = NULL, bool packed = false, bool texCoordsArePixels = false);
+
+  virtual ~CTextureArray();
 
   void Reset();
 
-  void Add(LPDIRECT3DTEXTURE8 texture, int delay);
+  void Add(CBaseTexture *texture, int delay);
   void Set(CBaseTexture *texture, int width, int height);
   void Free();
   unsigned int size() const;
 
-  std::vector<LPDIRECT3DTEXTURE8> m_textures;
-  LPDIRECT3DPALETTE8 m_palette;
+  std::vector<CBaseTexture* > m_textures;
   std::vector<int> m_delays;
   int m_width;
   int m_height;
@@ -57,27 +60,29 @@ public:
   int m_texWidth;
   int m_texHeight;
   bool m_texCoordsArePixels;
-  bool m_packed;
 };
 
 /*!
  \ingroup textures
  \brief
  */
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 class CTextureMap
 {
 public:
   CTextureMap();
+  CTextureMap(const CStdString& textureName, int width, int height, int loops);
   virtual ~CTextureMap();
 
-  CTextureMap(const CStdString& textureName, int width, int height, int loops, LPDIRECT3DPALETTE8 palette, bool packed);
-  void Add(LPDIRECT3DTEXTURE8 pTexture, int delay);
+  void Add(CBaseTexture* texture, int delay);
   bool Release();
 
   const CStdString& GetName() const;
-  const CTextureArray &GetTexture();
+  const CTextureArray& GetTexture();
   void Dump() const;
-  unsigned int GetMemoryUsage() const;
+  uint32_t GetMemoryUsage() const;
   void Flush();
   bool IsEmpty() const;
 protected:
@@ -86,31 +91,36 @@ protected:
   CStdString m_textureName;
   CTextureArray m_texture;
   unsigned int m_referenceCount;
-  unsigned int m_memUsage;
+  uint32_t m_memUsage;
 };
 
 /*!
  \ingroup textures
  \brief
  */
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 class CGUITextureManager
 {
 public:
   CGUITextureManager(void);
   virtual ~CGUITextureManager(void);
 
+#ifdef HAS_XBOX_D3D
   void StartPreLoad();
   void PreLoad(const CStdString& strTextureName);
   void EndPreLoad();
   void FlushPreLoad();
+#endif
   bool HasTexture(const CStdString &textureName, CStdString *path = NULL, int *bundle = NULL, int *size = NULL);
   bool CanLoad(const CStdString &texturePath) const; ///< Returns true if the texture manager can load this texture
   int Load(const CStdString& strTextureName, bool checkBundleOnly = false);
-  const CTextureArray &GetTexture(const CStdString& strTextureName);
+  const CTextureArray& GetTexture(const CStdString& strTextureName);
   void ReleaseTexture(const CStdString& strTextureName);
   void Cleanup();
   void Dump() const;
-  unsigned int GetMemoryUsage() const;
+  uint32_t GetMemoryUsage() const;
   void Flush();
   CStdString GetTexturePath(const CStdString& textureName, bool directory = false);
   void GetBundledTexturesFromPath(const CStdString& texturePath, std::vector<CStdString> &items);
@@ -119,15 +129,24 @@ public:
   void SetTexturePath(const CStdString &texturePath);    ///< Set a single path as the path to check when loading media (clear then add)
   void RemoveTexturePath(const CStdString &texturePath); ///< Remove a path from the paths to check when loading media
 
+#ifndef HAS_XBOX_D3D
+  void FreeUnusedTextures(); ///< Free textures (called from app thread only)
+#endif
 protected:
   std::vector<CTextureMap*> m_vecTextures;
+#ifndef HAS_XBOX_D3D // We could probably switch to XBMC way of cleaning unused textures
+  std::vector<CTextureMap*> m_unusedTextures;
+#endif
   typedef std::vector<CTextureMap*>::iterator ivecTextures;
   // we have 2 texture bundles (one for the base textures, one for the theme)
   CTextureBundle m_TexBundle[2];
+#ifdef HAS_XBOX_D3D
   std::list<CStdString> m_PreLoadNames[2];
   std::list<CStdString>::iterator m_iNextPreload[2];
+#endif
 
   std::vector<CStdString> m_texturePaths;
+  CCriticalSection m_section;
 };
 
 /*!

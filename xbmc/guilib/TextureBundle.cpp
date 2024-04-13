@@ -419,16 +419,16 @@ bool CTextureBundle::LoadFile(const CStdString& Filename, CAutoTexBuffer& Unpack
   return success;
 }
 
-bool CTextureBundle::LoadTexture(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filename, D3DXIMAGE_INFO* pInfo, LPDIRECT3DTEXTURE8* ppTexture,
-                                    LPDIRECT3DPALETTE8* ppPalette)
+bool CTextureBundle::LoadTexture(const CStdString& Filename, CBaseTexture** ppTexture, int &width, int &height)
 {
-  *ppTexture = NULL; *ppPalette = NULL;
+  DWORD ResDataOffset;
+  *ppTexture = NULL;
 
   CAutoTexBuffer UnpackedBuf;
   if (!LoadFile(Filename, UnpackedBuf))
     return false;
 
-  D3DTexture* pTex = (D3DTexture*)(new char[sizeof(D3DTexture) + sizeof(DWORD)]);
+  D3DTexture* pTex = (D3DTexture*)(new char[sizeof(D3DTexture) + sizeof(DWORD)]); // Why we are appending sizeof(DWORD) here? It's not like that on Kodi
   D3DPalette* pPal = 0;
   void* ResData = 0;
 
@@ -460,36 +460,38 @@ bool CTextureBundle::LoadTexture(LPDIRECT3DDEVICE8 pDevice, const CStdString& Fi
   memcpy(RealSize, Next, 4);
   Next += 4;
 
-  DWORD ResDataOffset = ((Next - UnpackedBuf) + 127) & ~127;
+  ResDataOffset = ((Next - UnpackedBuf) + 127) & ~127;
   ResData = UnpackedBuf + ResDataOffset;
 
   if ((pTex->Common & D3DCOMMON_TYPE_MASK) != D3DCOMMON_TYPE_TEXTURE)
     goto PackedLoadError;
 
-  *ppTexture = (LPDIRECT3DTEXTURE8)pTex;
 #ifdef HAS_XBOX_D3D
-  (*ppTexture)->Register(ResData);
+  *ppTexture = new CTexture(RealSize[0], RealSize[1], XB_FMT_A8R8G8B8, (LPDIRECT3DTEXTURE8)pTex, NULL, true);
+  (*ppTexture)->GetTextureObject()->Register(ResData);
 #else
   GetTextureFromData(pTex, ResData, ppTexture);
+  delete[] pTex;
 #endif
-  *(DWORD*)(pTex + 1) = (DWORD)(BYTE*)UnpackedBuf;
 #ifdef HAS_XBOX_D3D
+  *(DWORD*)(pTex + 1) = (DWORD)(BYTE*)UnpackedBuf;
   if (pPal)
   {
-    *ppPalette = (LPDIRECT3DPALETTE8)pPal;
-    (*ppPalette)->Register(ResData);
+    (*ppTexture)->SetPaletteObject((LPDIRECT3DPALETTE8)pPal);
+    (*ppTexture)->GetPaletteObject()->Register(ResData);
   }
   UnpackedBuf.Release();
 #endif
 
-  pInfo->Width = RealSize[0];
-  pInfo->Height = RealSize[1];
-  pInfo->Depth = 0;
-  pInfo->MipLevels = 1;
+  width = RealSize[0];
+  height = RealSize[1];
+/* DXMERGE - this was previously used to specify the format of the image - probably only affects directx?
+#ifndef HAS_SDL
   D3DSURFACE_DESC desc;
   (*ppTexture)->GetLevelDesc(0, &desc);
   pInfo->Format = desc.Format;
-
+#endif
+*/
   return true;
 
 PackedLoadError:
@@ -498,10 +500,13 @@ PackedLoadError:
   if (pPal) delete pPal;
   return false;
 }
-int CTextureBundle::LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filename, D3DXIMAGE_INFO* pInfo, LPDIRECT3DTEXTURE8** ppTextures,
-                             LPDIRECT3DPALETTE8* ppPalette, int& nLoops, int** ppDelays)
+int CTextureBundle::LoadAnim(const CStdString& Filename, CBaseTexture*** ppTextures,
+                              int &width, int &height, int& nLoops, int** ppDelays)
 {
-  *ppTextures = NULL; *ppPalette = NULL; *ppDelays = NULL;
+  DWORD ResDataOffset;
+  int nTextures = 0;
+
+  *ppTextures = NULL; *ppDelays = NULL;
 
   CAutoTexBuffer UnpackedBuf;
   if (!LoadFile(Filename, UnpackedBuf))
@@ -536,7 +541,7 @@ int CTextureBundle::LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filena
     Next += sizeof(D3DPalette);
   }
 
-  int nTextures = flags >> 16;
+  nTextures = flags >> 16;
   ppTex = new D3DTexture * [nTextures];
   *ppDelays = new int[nTextures];
   for (int i = 0; i < nTextures; ++i)
@@ -549,18 +554,18 @@ int CTextureBundle::LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filena
     Next += sizeof(int);
   }
 
-  DWORD ResDataOffset = ((DWORD)(Next - UnpackedBuf) + 127) & ~127;
+  ResDataOffset = ((DWORD)(Next - UnpackedBuf) + 127) & ~127;
   ResData = UnpackedBuf + ResDataOffset;
 
-  *ppTextures = new LPDIRECT3DTEXTURE8[nTextures];
+  *ppTextures = new CBaseTexture*[nTextures];
   for (int i = 0; i < nTextures; ++i)
   {
     if ((ppTex[i]->Common & D3DCOMMON_TYPE_MASK) != D3DCOMMON_TYPE_TEXTURE)
       goto PackedAnimError;
 
-    (*ppTextures)[i] = (LPDIRECT3DTEXTURE8)ppTex[i];
 #ifdef HAS_XBOX_D3D
-    (*ppTextures)[i]->Register(ResData);
+    (*ppTextures)[i] = new CTexture(pAnimInfo->RealSize[0], pAnimInfo->RealSize[1], XB_FMT_A8R8G8B8, (LPDIRECT3DTEXTURE8)ppTex[i], NULL, true);
+    (*ppTextures)[i]->GetTextureObject()->Register(ResData);
 #else
     GetTextureFromData(ppTex[i], ResData, &(*ppTextures)[i]);
 #endif
@@ -574,17 +579,14 @@ int CTextureBundle::LoadAnim(LPDIRECT3DDEVICE8 pDevice, const CStdString& Filena
 #ifdef HAS_XBOX_D3D
   if (pPal)
   {
-    *ppPalette = (LPDIRECT3DPALETTE8)pPal;
-    (*ppPalette)->Register(ResData);
+    (*ppTextures)[0]->SetPaletteObject((LPDIRECT3DPALETTE8)pPal);
+    (*ppTextures)[0]->GetPaletteObject()->Register(ResData);
   }
   UnpackedBuf.Release();
 #endif
 
-  pInfo->Width = pAnimInfo->RealSize[0];
-  pInfo->Height = pAnimInfo->RealSize[1];
-  pInfo->Depth = 0;
-  pInfo->MipLevels = 1;
-  pInfo->Format = D3DFMT_UNKNOWN;
+  width = pAnimInfo->RealSize[0];
+  height = pAnimInfo->RealSize[1];
 
   return nTextures;
 
