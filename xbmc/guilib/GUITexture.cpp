@@ -106,7 +106,7 @@ void CGUITextureBase::AllocateOnDemand()
 {
   if (m_visible)
   { // visible, so make sure we're allocated
-    if (!IsAllocated() || (m_isAllocated == LARGE && !m_texture.size()))
+    if (!IsAllocated() || (m_isAllocated == IN_PROGRESS))
       AllocResources();
   }
   else
@@ -292,11 +292,12 @@ void CGUITextureBase::AllocResources()
       CTextureArray texture;
       if (g_largeTextureManager.GetImage(m_info.filename, texture, !IsAllocated()))
       {
-        m_isAllocated = LARGE;
+        m_isAllocated = IN_PROGRESS;
 
         if (!texture.size()) // not ready as yet
           return;
 
+        m_isAllocated = LARGE;
         m_texture = texture;
       }
       else
@@ -425,7 +426,9 @@ void CGUITextureBase::CalculateSize()
 
 void CGUITextureBase::FreeResources(bool immediately /* = false */)
 {
-  if (m_isAllocated == LARGE || m_isAllocated == LARGE_FAILED)
+  if (m_isAllocated == IN_PROGRESS)
+    g_largeTextureManager.ReleaseQueuedImage(m_info.filename);
+  else if (m_isAllocated == LARGE || m_isAllocated == LARGE_FAILED)
     g_largeTextureManager.ReleaseImage(m_info.filename, immediately || (m_isAllocated == LARGE_FAILED));
   else if (m_isAllocated == NORMAL && m_texture.size())
     g_TextureManager.ReleaseTexture(m_info.filename);

@@ -231,7 +231,9 @@ void CPictureThumbLoader::ProcessFoldersAndArchives(CFileItem *pItem)
         CStdString relativeCacheFile = CTextureCache::GetCacheFile(thumb) + ".png";
         if (CPicture::CreateTiledThumb(files, CTextureCache::GetCachedPath(relativeCacheFile)))
         {
-          CTextureCache::Get().AddCachedTexture(thumb, relativeCacheFile, "");
+          CTextureDetails details;
+          details.file = relativeCacheFile;
+          CTextureCache::Get().AddCachedTexture(thumb, details);
           db.SetTextureForPath(pItem->GetPath(), "thumb", thumb);
           pItem->SetThumbnailImage(CTextureCache::GetCachedPath(relativeCacheFile));
         }

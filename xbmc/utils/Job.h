@@ -53,7 +53,7 @@ public:
    
    \param jobID the unique id of the job (as retrieved from CJobManager::AddJob)
    \param success the result from the DoWork call
-   \param job the job that has been processed.  The job will be destroyed after this function returns
+   \param job the job that has been processed.
    \sa CJobManager and CJob
    */
   virtual void OnJobComplete(unsigned int jobID, bool success, CJob *job)=0;

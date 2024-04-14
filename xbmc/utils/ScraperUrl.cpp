@@ -254,8 +254,7 @@ bool CScraperUrl::DownloadThumbnail(const CStdString &thumb, const CScraperUrl::
   { // do a direct file copy
     try
     {
-      CPicture picture;
-      return picture.CreateThumbnail(entry.m_url, thumb);
+      return CPicture::CreateThumbnail(entry.m_url, thumb);
     }
     catch (...)
     {
@@ -271,8 +270,7 @@ bool CScraperUrl::DownloadThumbnail(const CStdString &thumb, const CScraperUrl::
   {
     try
     {
-      CPicture picture;
-      return picture.CreateThumbnailFromMemory((const BYTE *)thumbData.c_str(), thumbData.size(), URIUtils::GetExtension(entry.m_url), thumb);
+      return CPicture::CreateThumbnailFromMemory((const BYTE *)thumbData.c_str(), thumbData.size(), URIUtils::GetExtension(entry.m_url), thumb);
     }
     catch (...)
     {

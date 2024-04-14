@@ -25,6 +25,7 @@
 #include "addons/AddonManager.h"
 #include "dialogs/GUIDialogYesNo.h"
 #include "dialogs/GUIDialogKaiToast.h"
+#include "TextureDatabase.h"
 #include "filesystem/File.h"
 #include "filesystem/PluginDirectory.h"
 #include "settings/Settings.h"
@@ -239,6 +240,9 @@ bool CRepositoryUpdateJob::DoWork()
   // check for updates
   CAddonDatabase database;
   database.Open();
+
+  CTextureDatabase textureDB;
+  textureDB.Open();
   VECADDONS notifications;
   for (map<string, AddonPtr>::const_iterator i = addons.begin(); i != addons.end(); ++i)
   {
@@ -250,6 +254,12 @@ bool CRepositoryUpdateJob::DoWork()
     bool deps_met = CAddonInstaller::Get().CheckDependencies(newAddon);
     if (!deps_met && newAddon->Props().broken.empty())
       newAddon->Props().broken = "DEPSNOTMET";
+
+    // invalidate the art associated with this item
+    if (!newAddon->Props().fanart.empty())
+      textureDB.InvalidateCachedTexture(newAddon->Props().fanart);
+    if (!newAddon->Props().icon.empty())
+      textureDB.InvalidateCachedTexture(newAddon->Props().icon);
 
     AddonPtr addon;
     CAddonMgr::Get().GetAddon(newAddon->ID(),addon);

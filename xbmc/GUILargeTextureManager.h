@@ -64,6 +64,7 @@ public:
 
   bool GetImage(const CStdString &path, CTextureArray &texture, bool firstRequest);
   void ReleaseImage(const CStdString &path, bool immediately = false);
+  void ReleaseQueuedImage(const CStdString &path);
 
   void CleanupUnusedImages();
 

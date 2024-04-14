@@ -1652,8 +1652,7 @@ namespace VIDEO
             strCheck.ToLower();
             if (reg.RegFind(strCheck.c_str()) > -1)
             {
-              CPicture picture;
-              picture.CreateThumbnail(tbnItems[j]->GetPath(),items[i]->GetCachedSeasonThumb());
+              CPicture::CreateThumbnail(tbnItems[j]->GetPath(),items[i]->GetCachedSeasonThumb());
               bDownload=false;
               break;
             }
