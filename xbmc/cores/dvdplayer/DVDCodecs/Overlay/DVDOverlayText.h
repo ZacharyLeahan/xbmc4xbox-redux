@@ -21,7 +21,7 @@
  */
 
 #include "DVDOverlay.h"
-#include <string.h>
+#include <string>
 
 class CDVDOverlayText : public CDVDOverlay
 {
@@ -55,25 +55,31 @@ public:
 
   class CElementText : public CElement
   {
+  private:
+    std::string m_text;
   public:
     CElementText(const char* strText, int size = -1) : CElement(ELEMENT_TYPE_TEXT)
     {
-      if(size == -1)
-        m_text = strdup(strText);
+      if (!strText)
+        return;
+      if (size == -1)
+        m_text.assign(strText);
       else
-      {
-        m_text = (char*)malloc(size+1);
-        memcpy(m_text, strText, size);
-        m_text[size] = '\0';
-      }
+        m_text.assign(strText, size);
     }
-    
-    virtual ~CElementText()
+    CElementText(const std::string& text) : CElement(ELEMENT_TYPE_TEXT)
     {
-      if (m_text) free(m_text);
+      m_text = text;
     }
-    
-    char* m_text;
+
+    const std::string& GetText()
+    { return m_text; }
+    const char* GetTextPtr()
+    { return m_text.c_str(); }
+
+    virtual ~CElementText()
+    {  }
+
   };
   
   class CElementProperty : public CElement

@@ -234,7 +234,7 @@ void CDVDPlayerSubtitle::GetCurrentSubtitle(CStdString& strSubtitle, double pts)
           if (e->IsElementType(CDVDOverlayText::ELEMENT_TYPE_TEXT))
           {
             CDVDOverlayText::CElementText* t = (CDVDOverlayText::CElementText*)e;
-            strSubtitle += t->m_text;
+            strSubtitle += t->GetText();
             strSubtitle += "\n";
           }
           e = e->pNext;

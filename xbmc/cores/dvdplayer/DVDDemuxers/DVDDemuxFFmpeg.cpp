@@ -805,6 +805,9 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
 
 bool CDVDDemuxFFmpeg::SeekTime(int time, bool backwords, double *startpts)
 {
+  if (!m_pInput)
+    return false;
+
   g_demuxer.set(this);
 
   if(time < 0)

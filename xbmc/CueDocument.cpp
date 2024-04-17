@@ -319,7 +319,7 @@ int CCueDocument::ExtractTimeFromIndex(const CStdString &index)
   numberTime.TrimLeft();
   while (!numberTime.IsEmpty())
   {
-    if (!isdigit(numberTime[0]))
+    if (!StringUtils2::isasciidigit(numberTime[0]))
       break;
     numberTime.erase(0, 1);
   }
@@ -344,8 +344,8 @@ int CCueDocument::ExtractTimeFromIndex(const CStdString &index)
 int CCueDocument::ExtractNumericInfo(const CStdString &info)
 {
   CStdString number(info);
-  number.TrimLeft();
-  if (number.IsEmpty() || !isdigit(number[0]))
+  StringUtils2::TrimLeft(number);
+  if (number.empty() || !StringUtils2::isasciidigit(number[0]))
     return -1;
   return atoi(number.c_str());
 }
