@@ -62,7 +62,7 @@ CDelayedMessage::CDelayedMessage(ThreadMessage& msg, unsigned int delay) : CThre
   m_msg.dwMessage  = msg.dwMessage;
   m_msg.dwParam1   = msg.dwParam1;
   m_msg.dwParam2   = msg.dwParam2;
-  m_msg.hWaitEvent = msg.hWaitEvent;
+  m_msg.waitEvent  = msg.waitEvent;
   m_msg.lpVoid     = msg.lpVoid;
   m_msg.strParam   = msg.strParam;
   m_msg.params     = msg.params;
@@ -100,8 +100,8 @@ void CApplicationMessenger::Cleanup()
   {
     ThreadMessage* pMsg = m_vecMessages.front();
 
-    if (pMsg->hWaitEvent)
-      pMsg->hWaitEvent->Set();
+    if (pMsg->waitEvent)
+      pMsg->waitEvent->Set();
 
     delete pMsg;
     m_vecMessages.pop();
@@ -111,8 +111,8 @@ void CApplicationMessenger::Cleanup()
   {
     ThreadMessage* pMsg = m_vecWindowMessages.front();
 
-    if (pMsg->hWaitEvent)
-      pMsg->hWaitEvent->Set();
+    if (pMsg->waitEvent)
+      pMsg->waitEvent->Set();
 
     delete pMsg;
     m_vecWindowMessages.pop();
@@ -121,12 +121,16 @@ void CApplicationMessenger::Cleanup()
 
 void CApplicationMessenger::SendMessage(ThreadMessage& message, bool wait)
 {
-  message.hWaitEvent = NULL;
+  message.waitEvent.reset();
+  boost::shared_ptr<CEvent> waitEvent;
   if (wait)
   { // check that we're not being called from our application thread, else we'll be waiting
     // forever!
     if (GetCurrentThreadId() != g_application.GetThreadId())
-      message.hWaitEvent = new CEvent(true);
+    {
+      message.waitEvent.reset(new CEvent(true));
+      waitEvent = message.waitEvent;
+    }
     else
     {
       //OutputDebugString("Attempting to wait on a SendMessage() from our application thread will cause lockup!\n");
@@ -140,11 +144,8 @@ void CApplicationMessenger::SendMessage(ThreadMessage& message, bool wait)
 
   if (g_application.m_bStop)
   {
-    if (message.hWaitEvent)
-    {
-      delete message.hWaitEvent;
-      message.hWaitEvent = NULL;
-    }
+    if (message.waitEvent)
+      message.waitEvent.reset();
     return;
   }
 
@@ -152,7 +153,7 @@ void CApplicationMessenger::SendMessage(ThreadMessage& message, bool wait)
   msg->dwMessage = message.dwMessage;
   msg->dwParam1 = message.dwParam1;
   msg->dwParam2 = message.dwParam2;
-  msg->hWaitEvent = message.hWaitEvent;
+  msg->waitEvent = message.waitEvent;
   msg->lpVoid = message.lpVoid;
   msg->strParam = message.strParam;
   msg->params = message.params;
@@ -162,14 +163,18 @@ void CApplicationMessenger::SendMessage(ThreadMessage& message, bool wait)
     m_vecWindowMessages.push(msg);
   else
     m_vecMessages.push(msg);
-  lock.Leave();
-
-  if (message.hWaitEvent)
-  { // ensure the thread doesn't hold the graphics lock
+  lock.Leave();  // this releases the lock on the vec of messages and
+                 //   allows the ProcessMessage to execute and therefore
+                 //   delete the message itself. Therefore any accesss
+                 //   of the message itself after this point consittutes
+                 //   a race condition (yarc - "yet another race condition")
+                 //
+  if (waitEvent) // ... it just so happens we have a spare reference to the
+                 //  waitEvent ... just for such contingencies :)
+  { 
+    // ensure the thread doesn't hold the graphics lock
     CSingleExit exit(g_graphicsContext);
-    message.hWaitEvent->Wait();
-    delete message.hWaitEvent;
-    message.hWaitEvent = NULL;
+    waitEvent->Wait();
   }
 }
 
@@ -185,11 +190,13 @@ void CApplicationMessenger::ProcessMessages()
 
     //Leave here as the message might make another
     //thread call processmessages or sendmessage
-    lock.Leave();
+
+    boost::shared_ptr<CEvent> waitEvent = pMsg->waitEvent; 
+    lock.Leave(); // <- see the large comment in SendMessage ^
 
     ProcessMessage(pMsg);
-    if (pMsg->hWaitEvent)
-      pMsg->hWaitEvent->Set();
+    if (waitEvent)
+      waitEvent->Set();
     delete pMsg;
 
     //Reenter here again, to not ruin message vector
@@ -718,11 +725,13 @@ void CApplicationMessenger::ProcessWindowMessages()
     m_vecWindowMessages.pop();
 
     // leave here in case we make more thread messages from this one
-    lock.Leave();
+
+    boost::shared_ptr<CEvent> waitEvent = pMsg->waitEvent;
+    lock.Leave(); // <- see the large comment in SendMessage ^
 
     ProcessMessage(pMsg);
-    if (pMsg->hWaitEvent)
-      pMsg->hWaitEvent->Set();
+    if (waitEvent)
+      waitEvent->Set();
     delete pMsg;
 
     lock.Enter();
