@@ -57,6 +57,27 @@ using namespace std;
 
 extern HWND g_hWnd;
 
+CDelayedMessage::CDelayedMessage(ThreadMessage& msg, unsigned int delay) : CThread("DelayedMessage")
+{
+  m_msg.dwMessage  = msg.dwMessage;
+  m_msg.dwParam1   = msg.dwParam1;
+  m_msg.dwParam2   = msg.dwParam2;
+  m_msg.hWaitEvent = msg.hWaitEvent;
+  m_msg.lpVoid     = msg.lpVoid;
+  m_msg.strParam   = msg.strParam;
+  m_msg.params     = msg.params;
+
+  m_delay = delay;
+}
+
+void CDelayedMessage::Process()
+{
+  Sleep(m_delay);
+
+  if (!m_bStop)
+    CApplicationMessenger::Get().SendMessage(m_msg, false);
+}
+
 CApplicationMessenger& CApplicationMessenger::Get()
 {
   return s_messenger;

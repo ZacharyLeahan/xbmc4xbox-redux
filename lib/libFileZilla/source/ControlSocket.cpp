@@ -19,6 +19,7 @@
 // ControlSocket.cpp: Implementierungsdatei
 //
 
+#include "ApplicationMessenger.h"
 #include "stdafx.h"
 #include "ControlSocket.h"
 #include "transfersocket.h"
@@ -37,7 +38,6 @@
 #include "Utils/log.h"
 #include "settings/Settings.h"
 #include "settings/AdvancedSettings.h"
-#include "ApplicationMessenger.h"
 #include "utils/MemoryUnitManager.h"
 #endif
 

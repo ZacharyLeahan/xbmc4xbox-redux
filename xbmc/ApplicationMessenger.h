@@ -22,7 +22,7 @@
 
 #include "threads/CriticalSection.h"
 #include "guilib/Key.h"
-#include "threads/Event.h"
+#include "threads/Thread.h"
 
 #include "xbox/PlatformDefs.h"
 
@@ -97,6 +97,17 @@ typedef struct
   LPVOID lpVoid;
 }
 ThreadMessage;
+
+class CDelayedMessage : public CThread
+{
+  public:
+    CDelayedMessage(ThreadMessage& msg, unsigned int delay);
+    virtual void Process();
+
+  private:
+    unsigned int   m_delay;
+    ThreadMessage  m_msg;
+};
 
 class CApplicationMessenger;
 namespace xbmcutil
