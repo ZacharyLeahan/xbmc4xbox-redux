@@ -501,6 +501,16 @@ void CGUISliderControl::AllocResources()
   m_guiSelectorUpperFocus.AllocResources();
 }
 
+void CGUISliderControl::SetInvalid()
+{
+  CGUIControl::SetInvalid();
+  m_guiBackground.SetInvalid();
+  m_guiSelectorLower.SetInvalid();
+  m_guiSelectorUpper.SetInvalid();
+  m_guiSelectorLowerFocus.SetInvalid();
+  m_guiSelectorUpperFocus.SetInvalid();
+}
+
 bool CGUISliderControl::HitTest(const CPoint &point) const
 {
   if (m_guiBackground.HitTest(point)) return true;

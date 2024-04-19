@@ -69,6 +69,7 @@ public:
   virtual void AllocResources();
   virtual void FreeResources(bool immediately = false);
   virtual void DynamicResourceAlloc(bool bOnOff);
+  virtual void SetInvalid();
   virtual void SetPosition(float posX, float posY);
   void SetLimits(int iX1, int iY1, int iX2, int iY2);
   void SetLocation(int iLocX, int iLocY, bool bSetPosition = true);

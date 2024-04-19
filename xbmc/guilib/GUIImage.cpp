@@ -221,6 +221,12 @@ void CGUIImage::FreeResources(bool immediately)
   CGUIControl::FreeResources(immediately);
 }
 
+void CGUIImage::SetInvalid()
+{
+  m_texture.SetInvalid();
+  CGUIControl::SetInvalid();
+}
+
 // WORKAROUND - we are currently resetting all animations when this is called, which shouldn't be the case
 //              see CGUIControl::FreeResources() - this needs remedying.
 void CGUIImage::FreeResourcesButNotAnims()

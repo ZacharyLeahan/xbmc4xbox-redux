@@ -290,6 +290,16 @@ void CGUISelectButtonControl::AllocResources()
   m_imgLeftFocus.SetPosition(posX, posY);
 }
 
+void CGUISelectButtonControl::SetInvalid()
+{
+  CGUIButtonControl::SetInvalid();
+  m_imgBackground.SetInvalid();
+  m_imgLeft.SetInvalid();
+  m_imgLeftFocus.SetInvalid();
+  m_imgRight.SetInvalid();
+  m_imgRightFocus.SetInvalid();
+}
+
 void CGUISelectButtonControl::OnLeft()
 {
   if (m_bShowSelect)

@@ -123,6 +123,7 @@ public:
   void PreAllocResources();
   void AllocResources();
   void FreeResources(bool immediately = false);
+  void SetInvalid();
 
   void SetVisible(bool visible);
   void SetAlpha(unsigned char alpha);
