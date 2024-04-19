@@ -187,11 +187,11 @@ CStdString CGUIListItem::GetOverlayImage() const
   }
 }
 
-void CGUIListItem::SetArt(const ArtMap &art)
+void CGUIListItem::SetArt(const ArtMap &art, bool setFallback /* = true */)
 {
   m_art = art;
   // ensure that the fallback "thumb" is available
-  if (m_art.find("thumb") == m_art.end())
+  if (setFallback && m_art.find("thumb") == m_art.end())
   {
     if (HasArt("poster"))
       m_art["thumb"] = m_art["poster"];

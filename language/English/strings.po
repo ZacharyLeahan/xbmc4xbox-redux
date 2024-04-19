@@ -7989,10 +7989,7 @@ msgctxt "#20434"
 msgid "Sets"
 msgstr ""
 
-#: system/settings/settings.xml
-msgctxt "#20435"
-msgid "Combine split video items"
-msgstr ""
+#empty string with id 20435
 
 msgctxt "#20436"
 msgid "Export actor thumbs?"
@@ -8076,10 +8073,7 @@ msgctxt "#20455"
 msgid "Listeners"
 msgstr ""
 
-#: system/settings/settings.xml
-msgctxt "#20456"
-msgid "Flatten library hierarchy"
-msgstr ""
+#empty string with id 20456
 
 #: xbmc/playlists/SmartPlaylist.cpp
 msgctxt "#20457"
@@ -12797,19 +12791,7 @@ msgctxt "#38779"
 msgid "Game saves"
 msgstr ""
 
-#empty string with id 38780
-
-#: xbmc/video/windows/GUIWindowVideoNav.cpp
-msgctxt "#38781"
-msgid "Set movieset thumb"
-msgstr ""
-
-#: xbmc/video/windows/GUIWindowVideoNav.cpp
-msgctxt "#38782"
-msgid "Set movieset fanart"
-msgstr ""
-
-#empty string with id 38783
+#empty strings from id 38780 to 38783
 
 #: system/settings/settings.xml
 msgctxt "#38784"

@@ -1977,7 +1977,7 @@ int CVideoDatabase::SetDetailsForMovie(const CStdString& strFilenameAndPath, con
   return -1;
 }
 
-int CVideoDatabase::SetDetailsForTvShow(const CStdString& strPath, const CVideoInfoTag& details, const map<string, string> &artwork, const map<int, string> &seasonArt, int idTvShow /*= -1 */)
+int CVideoDatabase::SetDetailsForTvShow(const CStdString& strPath, const CVideoInfoTag& details, const map<string, string> &artwork, const map<int, map<string, string> > &seasonArt, int idTvShow /*= -1 */)
 {
   try
   {
@@ -2038,11 +2038,11 @@ int CVideoDatabase::SetDetailsForTvShow(const CStdString& strPath, const CVideoI
     AddSeason(idTvShow, -1);
 
     SetArtForItem(idTvShow, "tvshow", artwork);
-    for (map<int, string>::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
+    for (map<int, map<string, string> >::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
     {
       int idSeason = AddSeason(idTvShow, i->first);
       if (idSeason > -1)
-        SetArtForItem(idSeason, "season", "thumb", i->second);
+        SetArtForItem(idSeason, "season", i->second);
     }
 
     // and insert the new row
@@ -3583,7 +3583,7 @@ string CVideoDatabase::GetArtForItem(int mediaId, const string &mediaType, const
   return GetSingleValue("art", "url", PrepareSQL("media_id=%i AND media_type='%s' AND type='%s'", mediaId, mediaType.c_str(), artType.c_str()));
 }
 
-bool CVideoDatabase::GetTvShowSeasonArt(int showId, map<int, string> &seasonArt)
+bool CVideoDatabase::GetTvShowSeasonArt(int showId, map<int, map<string, string> > &seasonArt)
 {
   try
   {
@@ -3603,7 +3603,11 @@ bool CVideoDatabase::GetTvShowSeasonArt(int showId, map<int, string> &seasonArt)
     m_pDS2->close();
 
     for (vector< pair<int,int> >::const_iterator i = seasons.begin(); i != seasons.end(); ++i)
-      seasonArt.insert(make_pair(i->second,GetArtForItem(i->first, "season", "thumb")));
+    {
+      map<string, string> art;
+      GetArtForItem(i->first, "season", art);
+      seasonArt.insert(make_pair(i->second,art));
+    }
   }
   catch (...)
   {
@@ -3823,6 +3827,17 @@ bool CVideoDatabase::ScraperInUse(const CStdString &scraperID) const
   }
   return false;
 }
+
+class CArtItem
+{
+public:
+  CArtItem() { art_id = 0; media_id = 0; };
+  int art_id;
+  string art_type;
+  string art_url;
+  int media_id;
+  string media_type;
+};
 
 bool CVideoDatabase::UpdateOldVersion(int iVersion)
 {
@@ -8503,7 +8518,7 @@ void CVideoDatabase::ExportToXML(const CStdString &path, bool singleFiles /* = f
     {
       CVideoInfoTag tvshow = GetDetailsForTvShow(m_pDS, true);
 
-      map<int, string> seasonArt;
+      map<int, map<string, string> > seasonArt;
       GetTvShowSeasonArt(tvshow.m_iDbId, seasonArt);
 
       map<string, string> artwork;
@@ -8512,11 +8527,12 @@ void CVideoDatabase::ExportToXML(const CStdString &path, bool singleFiles /* = f
         TiXmlElement additionalNode("art");
         for (map<string, string>::const_iterator i = artwork.begin(); i != artwork.end(); ++i)
           XMLUtils::SetString(&additionalNode, i->first.c_str(), i->second);
-        for (map<int, string>::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
+        for (map<int, map<string, string> >::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
         {
           TiXmlElement seasonNode("season");
           seasonNode.SetAttribute("num", i->first);
-          XMLUtils::SetString(&seasonNode, "thumb", i->second);
+          for (map<string, string>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
+            XMLUtils::SetString(&seasonNode, j->first.c_str(), j->second);
           additionalNode.InsertEndChild(seasonNode);
         }
         tvshow.Save(pMain, "tvshow", true, &additionalNode);
@@ -8589,18 +8605,21 @@ void CVideoDatabase::ExportToXML(const CStdString &path, bool singleFiles /* = f
           ExportActorThumbs(actorsDir, tvshow, singleFiles, overwrite);
 
         // export season thumbs
-        for (map<int, string>::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
+        for (map<int, map<string, string> >::const_iterator i = seasonArt.begin(); i != seasonArt.end(); ++i)
         {
-          CStdString seasonThumb;
+          string seasonThumb;
           if (i->first == -1)
             seasonThumb = "season-all";
           else if (i->first == 0)
             seasonThumb = "season-specials";
           else
-            seasonThumb.Format("season%02i", i->first);
-          CStdString savedThumb(item.GetLocalArt(seasonThumb, true));
-          if (!i->second.empty())
-            CTextureCache::Get().Export(i->second, savedThumb, overwrite);
+            seasonThumb = StringUtils2::Format("season%02i", i->first);
+          for (map<string, string>::const_iterator j = i->second.begin(); j != i->second.end(); j++)
+          {
+            CStdString savedThumb(item.GetLocalArt(seasonThumb + "-" + j->first, true));
+            if (!i->second.empty())
+              CTextureCache::Get().Export(j->second, savedThumb, overwrite);
+          }
         }
       }
 
