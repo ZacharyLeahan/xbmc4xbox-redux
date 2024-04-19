@@ -1217,8 +1217,6 @@ HRESULT CApplication::Create(HWND hWnd)
             CDisplaySettings::Get().GetResolutionInfo(iResolution).iWidth,
             CDisplaySettings::Get().GetResolutionInfo(iResolution).iHeight,
             CDisplaySettings::Get().GetResolutionInfo(iResolution).strMode.c_str());
-  g_windowManager.Initialize();
-  CTextureCache::Get().Initialize();
 
   // show recovery console on fatal error instead of freezing
   CLog::Log(LOGINFO, "install unhandled exception filter");
@@ -1802,6 +1800,7 @@ bool CApplication::LoadSkin(const SkinPtr& skin)
   g_windowManager.AddMsgTarget(&g_infoManager);
   g_windowManager.SetCallback(*this);
   g_windowManager.Initialize();
+  CTextureCache::Get().Initialize();
   g_audioManager.Enable(true);
   g_audioManager.Load();
 
