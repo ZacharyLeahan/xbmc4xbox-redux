@@ -105,7 +105,7 @@ bool CSaveFileStateJob::DoWork()
 
     if (m_item.IsAudio())
     {
-      CLog::Log(LOGDEBUG, "%s - Saving file state for audio item %s", __FUNCTION__, progressTrackingFile.c_str());
+      CLog::Log(LOGDEBUG, "%s - Saving file state for audio item %s", __FUNCTION__, m_item.GetPath().c_str());
 
       if (m_updatePlayCount)
       {
@@ -116,12 +116,12 @@ bool CSaveFileStateJob::DoWork()
 #endif
         {
           // consider this item as played
-          CLog::Log(LOGDEBUG, "%s - Marking audio item %s as listened", __FUNCTION__, progressTrackingFile.c_str());
+          CLog::Log(LOGDEBUG, "%s - Marking audio item %s as listened", __FUNCTION__, m_item.GetPath().c_str());
 
           CMusicDatabase musicdatabase;
           if (musicdatabase.Open())
           {
-            musicdatabase.IncrTop100CounterByFileName(progressTrackingFile);
+            musicdatabase.IncrementPlayCount(m_item);
             musicdatabase.Close();
           }
         }
