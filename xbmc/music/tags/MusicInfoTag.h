@@ -156,7 +156,7 @@ public:
   void AppendGenre(const CStdString &genre);
 
   virtual void Archive(CArchive& ar);
-  virtual void Serialize(CVariant& ar);
+  virtual void Serialize(CVariant& ar) const;
   virtual void ToSortable(SortItem& sortable, Field field) const;
 
   void Clear();

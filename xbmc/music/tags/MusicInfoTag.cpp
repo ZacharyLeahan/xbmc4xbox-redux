@@ -487,7 +487,7 @@ void CMusicInfoTag::SetSong(const CSong& song)
   m_iAlbumId = song.idAlbum;
 }
 
-void CMusicInfoTag::Serialize(CVariant& value)
+void CMusicInfoTag::Serialize(CVariant& value) const
 {
   value["url"] = m_strURL;
   value["title"] = m_strTitle;

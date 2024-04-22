@@ -29,7 +29,7 @@ void CStreamDetail::Archive(CArchive &ar)
 {
   // there's nothing to do here, the type is stored externally and parent isn't stored
 }
-void CStreamDetail::Serialize(CVariant &value)
+void CStreamDetail::Serialize(CVariant &value) const
 {
   // there's nothing to do here, the type is stored externally and parent isn't stored
 }
@@ -59,7 +59,7 @@ void CStreamDetailVideo::Archive(CArchive& ar)
     ar >> m_iDuration;
   }
 }
-void CStreamDetailVideo::Serialize(CVariant& value)
+void CStreamDetailVideo::Serialize(CVariant& value) const
 {
   value["codec"] = m_strCodec;
   value["aspect"] = m_fAspect;
@@ -99,7 +99,7 @@ void CStreamDetailAudio::Archive(CArchive& ar)
     ar >> m_iChannels;
   }
 }
-void CStreamDetailAudio::Serialize(CVariant& value)
+void CStreamDetailAudio::Serialize(CVariant& value) const
 {
   value["codec"] = m_strCodec;
   value["language"] = m_strLanguage;
@@ -139,7 +139,7 @@ void CStreamDetailSubtitle::Archive(CArchive& ar)
     ar >> m_strLanguage;
   }
 }
-void CStreamDetailSubtitle::Serialize(CVariant& value)
+void CStreamDetailSubtitle::Serialize(CVariant& value) const
 {
   value["language"] = m_strLanguage;
 }
@@ -450,7 +450,7 @@ void CStreamDetails::Archive(CArchive& ar)
     DetermineBestStreams();
   }
 }
-void CStreamDetails::Serialize(CVariant& value)
+void CStreamDetails::Serialize(CVariant& value) const
 {
   std::vector<CStreamDetail *>::const_iterator iter;
   CVariant v;

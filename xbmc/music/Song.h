@@ -57,7 +57,7 @@ public:
   CSong(CFileItem& item);
   virtual ~CSong(){};
   void Clear() ;
-  virtual void Serialize(CVariant& value);
+  virtual void Serialize(CVariant& value) const;
 
   bool operator<(const CSong &song) const
   {
