@@ -75,6 +75,7 @@ public:
   bool ArtMatches(const CSong &right) const;
 
   long idSong;
+  int idAlbum;
   CStdString strFileName;
   CStdString strTitle;
   std::vector<std::string> artist;
@@ -97,7 +98,6 @@ public:
   CDateTime lastPlayed;
   int iStartOffset;
   int iEndOffset;
-  int iAlbumId;
   bool bCompilation;
 };
 
