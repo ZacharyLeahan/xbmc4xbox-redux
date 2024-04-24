@@ -26,11 +26,20 @@ NPT_UInt32 CUPnPServer::m_MaxReturnedItems = 0;
 NPT_String CUPnPServer::BuildSafeResourceUri(const char* host,
                                              const char* file_path)
 {
+    CURL url(file_path);
     CStdString md5;
     XBMC::XBMC_MD5 md5state;
+
+    // determine the filename to provide context to md5'd urls
+    CStdString filename;
+    if (url.GetProtocol() == "image")
+      filename = URIUtils::GetFileName(url.GetHostName());
+    else
+      filename = URIUtils::GetFileName(file_path);
+
     md5state.append(file_path);
     md5state.getDigest(md5);
-    md5 += "/" + URIUtils::GetFileName(file_path);
+    md5 += "/" + filename;
     { NPT_AutoLock lock(m_FileMutex);
       NPT_CHECK(m_FileMap.Put(md5.c_str(), file_path));
     }
@@ -84,8 +93,29 @@ CUPnPServer::Build(CFileItemPtr                  item,
                 item->SetLabel("Music Library");
                 item->SetLabelPreformated(true);
             } else {
-                if (!item->HasMusicInfoTag())
-                    item->LoadMusicTag();
+                if (!item->HasMusicInfoTag()) {
+                    MUSICDATABASEDIRECTORY::CQueryParams params;
+                    MUSICDATABASEDIRECTORY::CDirectoryNode::GetDatabaseInfo((const char*)path, params);
+
+                    CMusicDatabase db;
+                    if (!db.Open() ) return NULL;
+
+                    if (params.GetSongId() >= 0 ) {
+                        CSong song;
+                        if (db.GetSongById(params.GetSongId(), song))
+                            item->GetMusicInfoTag()->SetSong(song);
+                    }
+                    else if (params.GetAlbumId() >= 0 ) {
+                        CAlbum album;
+                        if (db.GetAlbumInfo(params.GetAlbumId(), album, NULL))
+                            item->GetMusicInfoTag()->SetAlbum(album);
+                    }
+                    else if (params.GetArtistId() >= 0 ) {
+                        CArtist artist;
+                        if (db.GetArtistInfo(params.GetArtistId(), artist, false))
+                            item->GetMusicInfoTag()->SetArtist(artist);
+                    }
+                }
 
                 if (!item->HasArt("thumb") )
                     item->SetArt("thumb", CThumbLoader::GetCachedImage(*item, "thumb"));

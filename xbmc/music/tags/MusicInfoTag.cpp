@@ -20,6 +20,7 @@
 
 #include "music/tags/MusicInfoTag.h"
 #include "music/Album.h"
+#include "music/Artist.h"
 #include "utils/StringUtils.h"
 #include "settings/AdvancedSettings.h"
 #include "utils/Variant.h"
@@ -442,6 +443,16 @@ void CMusicInfoTag::SetMusicBrainzTRMID(const CStdString& strTRMID)
 void CMusicInfoTag::SetCoverArtInfo(size_t size, const std::string &mimeType)
 {
   m_coverArt.set(size, mimeType);
+}
+
+void CMusicInfoTag::SetArtist(const CArtist& artist)
+{
+  SetArtist(artist.strArtist);
+  SetAlbumArtist(artist.strArtist);
+  SetGenre(artist.genre);
+  m_iDbId = artist.idArtist;
+  m_type = "artist";
+  m_bLoaded = true;
 }
 
 void CMusicInfoTag::SetAlbum(const CAlbum& album)
