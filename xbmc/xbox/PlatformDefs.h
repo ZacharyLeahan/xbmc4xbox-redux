@@ -52,10 +52,10 @@ typedef int ssize_t;
 #endif
 
 #ifndef strcasecmp
-#define strcasecmp strcmpi
+#define strcasecmp _strcmpi
 #endif
 #ifndef strncasecmp
-#define strncasecmp strnicmp
+#define strncasecmp _strnicmp
 #endif
 
 #ifndef va_copy 

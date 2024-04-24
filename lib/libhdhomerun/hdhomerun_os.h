@@ -1,7 +1,7 @@
 /*
  * hdhomerun_os.h
  *
- * Copyright © 2006 Silicondust Engineering Ltd. <www.silicondust.com>.
+ * Copyright ï¿½ 2006 Silicondust Engineering Ltd. <www.silicondust.com>.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
+#include "PlatformDefs.h" // strcasecmp
 #elif defined(__WINDOWS__)
 #include <windows.h>
 #include <stdlib.h>
@@ -77,7 +78,6 @@ typedef unsigned __int64 uint64_t;
 #define sock_getlasterror_socktimeout (WSAGetLastError() == WSAETIMEDOUT)
 #define atoll _atoi64
 #define strdup _strdup
-#define strcasecmp _stricmp
 #define snprintf _snprintf
 #define fseeko _fseeki64
 #define ftello _ftelli64

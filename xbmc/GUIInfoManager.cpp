@@ -3785,7 +3785,9 @@ void CGUIInfoManager::SetCurrentSong(CFileItem &item)
     {
       CLog::Log(LOGDEBUG,"Streaming media detected... using %s to find a thumb", g_application.m_strPlayListFile.c_str());
       CFileItem streamingItem(g_application.m_strPlayListFile,false);
-      CMusicThumbLoader::FillThumb(streamingItem);
+
+      CMusicThumbLoader loader;
+      loader.FillThumb(streamingItem);
       if (streamingItem.HasArt("thumb"))
         m_currentFile->SetArt("thumb", streamingItem.GetArt("thumb"));
     }
@@ -3834,7 +3836,9 @@ void CGUIInfoManager::SetCurrentMovie(CFileItem &item)
     {
       CLog::Log(LOGDEBUG,"Streaming media detected... using %s to find a thumb", g_application.m_strPlayListFile.c_str());
       CFileItem thumbItem(g_application.m_strPlayListFile,false);
-      if (CVideoThumbLoader::FillThumb(thumbItem))
+
+      CVideoThumbLoader loader;
+      if (loader.FillThumb(thumbItem))
         item.SetArt("thumb", thumbItem.GetArt("thumb"));
     }
   }

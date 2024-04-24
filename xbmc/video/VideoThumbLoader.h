@@ -27,7 +27,6 @@
 #define kJobTypeMediaFlags "mediaflags"
 
 class CStreamDetails;
-class IStreamDetailsObserver;
 class CVideoDatabase;
 
 /*!
@@ -68,9 +67,12 @@ public:
   CVideoThumbLoader();
   virtual ~CVideoThumbLoader();
 
-  virtual void Initialize();
+  virtual void OnLoaderStart();
+  virtual void OnLoaderFinish();
+
   virtual bool LoadItem(CFileItem* pItem);
-  void SetStreamDetailsObserver(IStreamDetailsObserver *pObs) { m_pStreamDetailsObs = pObs; }
+  virtual bool LoadItemCached(CFileItem* pItem);
+  virtual bool LoadItemLookup(CFileItem* pItem);
 
   /*! \brief Fill the thumb of a video item
    First uses a cached thumb from a previous run, then checks for a local thumb
@@ -78,7 +80,7 @@ public:
    \param item the CFileItem object to fill
    \return true if we fill the thumb, false otherwise
    */
-  static bool FillThumb(CFileItem &item);
+  virtual bool FillThumb(CFileItem &item);
 
   /*! \brief Find a particular art type for a given item, optionally checking at the folder level
    \param item the CFileItem to search.
@@ -124,11 +126,7 @@ public:
   static void SetArt(CFileItem &item, const std::map<std::string, std::string> &artwork);
 
 protected:
-  virtual void OnLoaderStart();
-  virtual void OnLoaderFinish();
-
-  IStreamDetailsObserver *m_pStreamDetailsObs;
-  CVideoDatabase *m_database;
+  CVideoDatabase *m_videoDatabase;
   typedef std::map<int, std::map<std::string, std::string> > ArtCache;
   ArtCache m_showArt;
 };

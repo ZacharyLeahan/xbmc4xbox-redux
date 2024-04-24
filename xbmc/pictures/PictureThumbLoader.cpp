@@ -38,7 +38,7 @@
 using namespace XFILE;
 using namespace std;
 
-CPictureThumbLoader::CPictureThumbLoader() : CThumbLoader(1), CJobQueue(true)
+CPictureThumbLoader::CPictureThumbLoader() : CThumbLoader(), CJobQueue(true)
 {
   m_regenerateThumbs = false;  
 }
@@ -48,17 +48,34 @@ CPictureThumbLoader::~CPictureThumbLoader()
   StopThread();
 }
 
+void CPictureThumbLoader::OnLoaderFinish()
+{
+  m_regenerateThumbs = false;
+  CThumbLoader::OnLoaderFinish();
+}
+
 bool CPictureThumbLoader::LoadItem(CFileItem* pItem)
 {
-  if (pItem->m_bIsShareOrDrive) return true;
-  if (pItem->IsParentFolder()) return true;
+  bool result  = LoadItemCached(pItem);
+       result |= LoadItemLookup(pItem);
+
+  return result;
+}
+
+bool CPictureThumbLoader::LoadItemCached(CFileItem* pItem)
+{
+  if (pItem->m_bIsShareOrDrive
+  ||  pItem->IsParentFolder())
+    return false;
 
   if (pItem->HasArt("thumb") && m_regenerateThumbs)
   {
     CTextureCache::Get().ClearCachedImage(pItem->GetArt("thumb"));
-    CTextureDatabase db;
-    if (db.Open())
-      db.ClearTextureForPath(pItem->GetPath(), "thumb");
+    if (m_textureDatabase->Open())
+    {
+      m_textureDatabase->ClearTextureForPath(pItem->GetPath(), "thumb");
+      m_textureDatabase->Close();
+    }
     pItem->SetArt("thumb", "");
   }
 
@@ -69,7 +86,8 @@ bool CPictureThumbLoader::LoadItem(CFileItem* pItem)
   }
   else if (pItem->IsVideo() && !pItem->IsZIP() && !pItem->IsRAR() && !pItem->IsCBZ() && !pItem->IsCBR() && !pItem->IsPlayList())
   { // video
-    if (!CVideoThumbLoader::FillThumb(*pItem))
+    CVideoThumbLoader loader;
+    if (!loader.FillThumb(*pItem))
     {
       CStdString thumbURL = CVideoThumbLoader::GetEmbeddedThumbURL(*pItem);
       if (CTextureCache::Get().HasCachedImage(thumbURL))
@@ -98,6 +116,11 @@ bool CPictureThumbLoader::LoadItem(CFileItem* pItem)
   return true;
 }
 
+bool CPictureThumbLoader::LoadItemLookup(CFileItem* pItem)
+{
+  return false;
+}
+
 void CPictureThumbLoader::OnJobComplete(unsigned int jobID, bool success, CJob* job)
 {
   if (success)
@@ -109,11 +132,6 @@ void CPictureThumbLoader::OnJobComplete(unsigned int jobID, bool success, CJob* 
     g_windowManager.SendThreadMessage(msg);
   }
   CJobQueue::OnJobComplete(jobID, success, job);
-}
-
-void CPictureThumbLoader::OnLoaderFinish()
-{
-  m_regenerateThumbs = false;
 }
 
 void CPictureThumbLoader::ProcessFoldersAndArchives(CFileItem *pItem)

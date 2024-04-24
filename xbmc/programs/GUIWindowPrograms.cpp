@@ -706,7 +706,8 @@ bool CGUIWindowPrograms::GetDirectory(const CStdString &strDirectory, CFileItemL
   m_database.CommitTransaction();
 
   // set the folder thumb
-  CProgramThumbLoader::FillThumb(items);
+  CProgramThumbLoader loader;
+  loader.LoadItem(&items);
 
   if (bProgressVisible)
     m_dlgProgress->Close();

@@ -1027,7 +1027,8 @@ void CGUIWindowMusicBase::UpdateThumb(const CAlbum &album, const CStdString &pat
     CMusicInfoScanner::FileItemsToAlbums(items, albums);
     if (albums.size() == 1)
     { // set as folder thumb as well
-      CThumbLoader::SetCachedImage(items, "thumb", albumPath);
+      CMusicThumbLoader loader;
+      loader.SetCachedImage(items, "thumb", albumPath);
     }
   }
 
@@ -1094,7 +1095,10 @@ bool CGUIWindowMusicBase::GetDirectory(const CStdString &strDirectory, CFileItem
   items.SetArt("thumb", "");
   bool bResult = CGUIMediaWindow::GetDirectory(strDirectory, items);
   if (bResult)
-    CMusicThumbLoader::FillThumb(items);
+  {
+    CMusicThumbLoader loader;
+    loader.FillThumb(items);
+  }
 
   // add in the "New Playlist" item if we're in the playlists folder
   if ((items.GetPath() == "special://musicplaylists/") && !items.Contains("newplaylist://"))

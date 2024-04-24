@@ -260,7 +260,6 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_bNavVKeyboard; // if true we navigate the virtual keyboard using cursor keys
     
     bool m_bPythonVerbose;
-    int m_bgInfoLoaderMaxThreads;
 
     bool m_loaded;
     bool m_initialized;
