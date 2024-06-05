@@ -41,6 +41,7 @@ public:
   static bool ShowAndVerifyInput(CStdString& strPassword, const CStdString& dlgHeading, const CStdString& dlgLine0, const CStdString& dlgLine1, const CStdString& dlgLine2, bool bGetUserInput, bool bHideInputChars);
 protected:
   virtual bool OnAction(const CAction &action);
+  virtual void OnInitWindow();
   bool m_bCanceled;
   char m_cHideInputChar;
 };
