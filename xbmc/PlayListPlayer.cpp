@@ -37,6 +37,7 @@
 #include "boost/make_shared.hpp"
 
 using namespace PLAYLIST;
+using namespace KODI::MESSAGING;
 
 CPlayListPlayer g_playlistPlayer;
 
@@ -816,7 +817,7 @@ void PLAYLIST::CPlayListPlayer::OnApplicationMessage(KODI::MESSAGING::ThreadMess
       if (GetCurrentPlaylist() != pMsg->param1)
         SetCurrentPlaylist(pMsg->param1);
 
-      //PlayListPlayerPlay(pMsg->param2);
+      CApplicationMessenger::Get().SendMsg(TMSG_PLAYLISTPLAYER_PLAY, pMsg->param2);
     }
   }
   break;
