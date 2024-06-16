@@ -164,7 +164,7 @@ void CAdvancedSettings::Initialize()
   m_networkBufferMode = 0; // Default (buffer all internet streams/filesystems)
   // the following setting determines the readRate of a player data
   // as multiply of the default data read rate
-  m_readBufferFactor = 1.0f;
+  m_readBufferFactor = 4.0f;
 
   m_slideshowPanAmount = 2.5f;
   m_slideshowZoomAmount = 5.0f;
