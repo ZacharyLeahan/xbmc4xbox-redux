@@ -133,6 +133,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
 
     unsigned int m_cacheMemBufferSize;
     unsigned int m_networkBufferMode;
+    float m_readBufferFactor;
 
     float m_slideshowBlackBarCompensation;
     float m_slideshowZoomAmount;

@@ -162,6 +162,9 @@ void CAdvancedSettings::Initialize()
 
   m_cacheMemBufferSize = 1024 * 1024;
   m_networkBufferMode = 0; // Default (buffer all internet streams/filesystems)
+  // the following setting determines the readRate of a player data
+  // as multiply of the default data read rate
+  m_readBufferFactor = 1.0f;
 
   m_slideshowPanAmount = 2.5f;
   m_slideshowZoomAmount = 5.0f;
@@ -514,6 +517,7 @@ void CAdvancedSettings::ParseSettingsFile(const CStdString &file)
     XMLUtils::GetInt(pElement, "curlretries", m_curlretries, 0, 10);
     XMLUtils::GetUInt(pElement, "cachemembuffersize", m_cacheMemBufferSize);
     XMLUtils::GetUInt(pElement, "buffermode", m_networkBufferMode, 0, 3);
+    XMLUtils::GetFloat(pElement, "readbufferfactor", m_readBufferFactor);
   }
 
   pElement = pRootElement->FirstChildElement("samba");
