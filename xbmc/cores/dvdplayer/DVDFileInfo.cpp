@@ -114,7 +114,7 @@ bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, CTextureDetails &deta
   }
 
   if (pStreamDetails)
-    DemuxerToStreamDetails(pDemuxer, *pStreamDetails, strPath);
+    DemuxerToStreamDetails(pInputStream, pDemuxer, *pStreamDetails, strPath);
 
   CDemuxStream* pStream = NULL;
   int nVideoStream = -1;
@@ -286,7 +286,7 @@ bool CDVDFileInfo::GetFileStreamDetails(CFileItem *pItem)
   CDVDDemux *pDemuxer = CDVDFactoryDemuxer::CreateDemuxer(pInputStream);
   if (pDemuxer)
   {
-    bool retVal = DemuxerToStreamDetails(pDemuxer, pItem->GetVideoInfoTag()->m_streamDetails, strFileNameAndPath);
+    bool retVal = DemuxerToStreamDetails(pInputStream, pDemuxer, pItem->GetVideoInfoTag()->m_streamDetails, strFileNameAndPath);
     delete pDemuxer;
     delete pInputStream;
     return retVal;
@@ -299,7 +299,7 @@ bool CDVDFileInfo::GetFileStreamDetails(CFileItem *pItem)
 }
 
 /* returns true if details have been added */
-bool CDVDFileInfo::DemuxerToStreamDetails(CDVDDemux *pDemux, CStreamDetails &details, const CStdString &path)
+bool CDVDFileInfo::DemuxerToStreamDetails(CDVDInputStream *pInputStream, CDVDDemux *pDemux, CStreamDetails &details, const CStdString &path)
 {
   bool retVal = false;
   details.Reset();

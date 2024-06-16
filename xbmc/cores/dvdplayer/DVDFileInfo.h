@@ -24,6 +24,7 @@
 class CFileItem;
 class CDVDDemux;
 class CStreamDetails;
+class CDVDInputStream;
 class CTextureDetails;
 
 class CDVDFileInfo
@@ -37,7 +38,7 @@ public:
   
   // Probe the files streams and store the info in the VideoInfoTag
   static bool GetFileStreamDetails(CFileItem *pItem);
-  static bool DemuxerToStreamDetails(CDVDDemux *pDemux, CStreamDetails &details, const CStdString &path = "");
+  static bool DemuxerToStreamDetails(CDVDInputStream* pInputStream, CDVDDemux *pDemux, CStreamDetails &details, const CStdString &path = "");
 
   static bool GetFileDuration(const CStdString &path, int &duration);
 };
