@@ -31,8 +31,6 @@
 #include "utils/TimeUtils.h"
 #include "settings/AdvancedSettings.h"
 
-#include "MemBufferCache.h"
-
 using namespace AUTOPTR;
 using namespace XFILE;
  

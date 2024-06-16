@@ -2373,12 +2373,6 @@
 					RelativePath="..\..\xbmc\FileSystem\LastFMFile.h">
 				</File>
 				<File
-					RelativePath="..\..\xbmc\FileSystem\MemBufferCache.cpp">
-				</File>
-				<File
-					RelativePath="..\..\xbmc\FileSystem\MemBufferCache.h">
-				</File>
-				<File
 					RelativePath="..\..\xbmc\FileSystem\MultiPathDirectory.cpp">
 				</File>
 				<File

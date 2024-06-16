@@ -2008,12 +2008,6 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\FileSystem\LibraryDirectory.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\FileSystem\MemBufferCache.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\FileSystem\MemBufferCache.h">
-				</File>
-				<File
 					RelativePath=".\xbmc\FileSystem\MemUnitDirectory.cpp">
 				</File>
 				<File
