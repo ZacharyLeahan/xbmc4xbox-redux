@@ -201,6 +201,9 @@ GOTO:EOF
   ECHO Thumbs.db>>exclude.txt
   ECHO Desktop.ini>>exclude.txt
   ECHO dsstdfx.bin>>exclude.txt
+  ECHO Splash_2007.png>>exclude.txt
+  ECHO Splash_2008.png>>exclude.txt
+  ECHO Splash_2014.png>>exclude.txt
   ECHO exclude.txt>>exclude.txt
   ECHO addons\skin >>exclude.txt
 
