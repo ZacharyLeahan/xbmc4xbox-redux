@@ -33,6 +33,7 @@
 #include "commons/Exception.h"
 #include "settings/AdvancedSettings.h"
 #include "filesystem/File.h"
+#include "filesystem/CurlFile.h"
 #include "filesystem/Directory.h"
 #include "utils/log.h"
 #include "threads/Thread.h"
@@ -638,6 +639,11 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
 
     if (!headers.empty())
       m_dllAvUtil.av_dict_set(&options, "headers", headers.c_str(), 0);
+
+    std::string cookies;
+    if (XFILE::CCurlFile::GetCookies(url, cookies))
+      m_dllAvUtil.av_dict_set(&options, "cookies", cookies.c_str(), 0);
+
   }
   return options;
 }
