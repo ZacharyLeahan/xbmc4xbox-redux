@@ -121,7 +121,7 @@ protected:
   int ReadFrame(AVPacket *packet);
   void AddStream(int iId);
 
-  AVDictionary *GetFFMpegOptionsFromURL(const CURL &url);
+  AVDictionary *GetFFMpegOptionsFromInput();
   double ConvertTimestamp(int64_t pts, int den, int num);
   void UpdateCurrentPTS();
 

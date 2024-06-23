@@ -26,9 +26,9 @@
 #define __STDC_LIMIT_MACROS
 #endif
 #include "DVDDemuxFFmpeg.h"
-#include "DVDInputStreams/DVDInputStream.h"
-#include "DVDInputStreams/DVDInputStreamNavigator.h"
 #include "DVDDemuxUtils.h"
+#include "DVDInputStreams/DVDInputStream.h"
+#include "DVDInputStreams/DVDInputStreamFFmpeg.h"
 #include "DVDClock.h" // for DVD_TIME_BASE
 #include "commons/Exception.h"
 #include "settings/AdvancedSettings.h"
@@ -40,6 +40,8 @@
 #include "threads/SystemClock.h"
 #include "utils/StringUtils.h"
 #include "URL.h"
+
+#include <sstream>
 
 void CDemuxStreamAudioFFmpeg::GetStreamInfo(std::string& strInfo)
 {
@@ -273,13 +275,12 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput)
   {
     // special stream type that makes avformat handle file opening
     // allows internal ffmpeg protocols to be used
-    CURL url = m_pInput->GetURL();
-    CStdString protocol = url.GetProtocol();
+    AVDictionary *options = GetFFMpegOptionsFromInput();
 
-    AVDictionary *options = GetFFMpegOptionsFromURL(url);
+    CURL url = m_pInput->GetURL();
 
     int result=-1;
-    if (protocol.Equals("mms"))
+    if (url.IsProtocol("mms"))
     {
       // try mmsh, then mmst
       url.SetProtocol("mmsh");
@@ -605,13 +606,15 @@ void CDVDDemuxFFmpeg::SetSpeed(int iSpeed)
   }
 }
 
-AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
+AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromInput()
 {
-  CStdString protocol = url.GetProtocol();
+  const CDVDInputStreamFFmpeg *const input =
+    dynamic_cast<CDVDInputStreamFFmpeg*>(m_pInput);
 
+  const CURL url = m_pInput->GetURL();
   AVDictionary *options = NULL;
 
-  if (protocol.Equals("http") || protocol.Equals("https"))
+  if (url.IsProtocol("http") || url.IsProtocol("https"))
   {
     std::map<CStdString, CStdString> protocolOptions;
     url.GetProtocolOptions(protocolOptions);
@@ -645,6 +648,33 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
       m_dllAvUtil.av_dict_set(&options, "cookies", cookies.c_str(), 0);
 
   }
+
+  if (input)
+  {
+    const std::string host = input->GetProxyHost();
+    if (!host.empty() && input->GetProxyType() == "http")
+    {
+      std::ostringstream urlStream;
+
+      const uint16_t port = input->GetProxyPort();
+      const std::string user = input->GetProxyUser();
+      const std::string password = input->GetProxyPassword();
+
+      urlStream << "http://";
+
+      if (!user.empty()) {
+        urlStream << user;
+        if (!password.empty())
+          urlStream << ":" << password;
+        urlStream << "@";
+      }
+
+      urlStream << host << ':' << port;
+
+      m_dllAvUtil.av_dict_set(&options, "http_proxy", urlStream.str().c_str(), 0);
+    }
+  }
+
   return options;
 }
 

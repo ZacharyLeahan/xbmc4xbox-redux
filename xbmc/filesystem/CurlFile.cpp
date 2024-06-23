@@ -393,6 +393,11 @@ CCurlFile::~CCurlFile()
 }
 
 CCurlFile::CCurlFile()
+ : m_writeOffset(0)
+ , m_proxytype(PROXY_HTTP)
+ , m_proxyport(3128)
+ , m_overflowBuffer(NULL)
+ , m_overflowSize(0)
 {
   g_curlInterface.Load(); // loads the curl dll and resolves exports etc.
   m_opened = false;
@@ -413,7 +418,6 @@ CCurlFile::CCurlFile()
   m_username = "";
   m_password = "";
   m_httpauth = "";
-  m_proxytype = PROXY_HTTP;
   m_state = new CReadState();
   m_oldState = NULL;
   m_skipshout = false;
@@ -585,13 +589,18 @@ void CCurlFile::SetCommonOptions(CReadState* state)
   if (m_useOldHttpVersion)
     g_curlInterface.easy_setopt(h, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
 
-  if (m_proxy.length() > 0)
+  if (!m_proxyhost.empty())
   {
-    g_curlInterface.easy_setopt(h, CURLOPT_PROXY, m_proxy.c_str());
     g_curlInterface.easy_setopt(h, CURLOPT_PROXYTYPE, proxyType2CUrlProxyType[m_proxytype]);
-    if (m_proxyuserpass.length() > 0)
-      g_curlInterface.easy_setopt(h, CURLOPT_PROXYUSERPWD, m_proxyuserpass.c_str());
 
+    const std::string hostport = m_proxyhost +
+      StringUtils::Format(":%d", m_proxyport);
+    g_curlInterface.easy_setopt(h, CURLOPT_PROXY, hostport.c_str());
+
+    const std::string userpass =
+      m_proxyuser + std::string(":") + m_proxypassword;
+    if (!userpass.empty())
+      g_curlInterface.easy_setopt(h, CURLOPT_PROXYUSERPWD, userpass.c_str());
   }
   if (m_customrequest.length() > 0)
     g_curlInterface.easy_setopt(h, CURLOPT_CUSTOMREQUEST, m_customrequest.c_str());
@@ -748,23 +757,22 @@ void CCurlFile::ParseAndCorrectUrl(CURL &url2)
     /* ftp has no options */
     url2.SetOptions("");
   }
-  else if( strProtocol.Equals("http")
-       ||  strProtocol.Equals("https"))
+  else if( url2.IsProtocol("http")
+       ||  url2.IsProtocol("https"))
   {
-    if (CSettings::Get().GetBool("network.usehttpproxy")
-        && !CSettings::Get().GetString("network.httpproxyserver").empty()
-        && !CSettings::Get().GetString("network.httpproxyport").empty()
-        && m_proxy.IsEmpty())
+    const CSettings &s = CSettings::Get();
+    if (m_proxyhost.empty()
+        && s.GetBool("network.usehttpproxy")
+        && !s.GetString("network.httpproxyserver").empty()
+        && s.GetInt("network.httpproxyport") > 0)
     {
-      m_proxy = CSettings::Get().GetString("network.httpproxyserver");
-      m_proxy += ":" + CSettings::Get().GetString("network.httpproxyport");
-      if (CSettings::Get().GetString("network.httpproxyusername").length() > 0 && m_proxyuserpass.IsEmpty())
-      {
-        m_proxyuserpass = CSettings::Get().GetString("network.httpproxyusername");
-        m_proxyuserpass += ":" + CSettings::Get().GetString("network.httpproxypassword");
-      }
-      m_proxytype = (ProxyType)CSettings::Get().GetInt("network.httpproxytype");
-      CLog::Log(LOGDEBUG, "Using proxy %s, type %d", m_proxy.c_str(), proxyType2CUrlProxyType[m_proxytype]);
+      m_proxytype = (ProxyType)s.GetInt("network.httpproxytype");
+      m_proxyhost = s.GetString("network.httpproxyserver");
+      m_proxyport = s.GetInt("network.httpproxyport");
+      m_proxyuser = s.GetString("network.httpproxyusername");
+      m_proxypassword = s.GetString("network.httpproxypassword");
+      CLog::Log(LOGDEBUG, "Using proxy %s, type %d", m_proxyhost.c_str(),
+                proxyType2CUrlProxyType[m_proxytype]);
     }
 
     // get username and password
@@ -911,6 +919,28 @@ void CCurlFile::Cancel()
 void CCurlFile::Reset()
 {
   m_state->m_cancelled = false;
+}
+
+void CCurlFile::SetProxy(const std::string &type, const std::string &host,
+  uint16_t port, const std::string &user, const std::string &password)
+{
+  m_proxytype = CCurlFile::PROXY_HTTP;
+  if (type == "http")
+    m_proxytype = CCurlFile::PROXY_HTTP;
+  else if (type == "socks4")
+    m_proxytype = CCurlFile::PROXY_SOCKS4;
+  else if (type == "socks4a")
+    m_proxytype = CCurlFile::PROXY_SOCKS4A;
+  else if (type == "socks5")
+    m_proxytype = CCurlFile::PROXY_SOCKS5;
+  else if (type == "socks5-remote")
+    m_proxytype = CCurlFile::PROXY_SOCKS5_REMOTE;
+  else
+    CLog::Log(LOGERROR, "Invalid proxy type \"%s\"", type.c_str());
+  m_proxyhost = host;
+  m_proxyport = port;
+  m_proxyuser = user;
+  m_proxypassword = password;
 }
 
 bool CCurlFile::Open(const CURL& url)
