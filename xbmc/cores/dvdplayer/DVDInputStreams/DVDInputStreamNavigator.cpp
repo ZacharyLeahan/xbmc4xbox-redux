@@ -40,7 +40,8 @@
 #define HOLDMODE_SKIP 2 /* set by inputstream user, when they wish to skip the held mode */
 #define HOLDMODE_DATA 3 /* set after hold mode has been exited, and action that inited it has been executed */
 
-CDVDInputStreamNavigator::CDVDInputStreamNavigator(IDVDPlayer* player) : CDVDInputStream(DVDSTREAM_TYPE_DVD)
+CDVDInputStreamNavigator::CDVDInputStreamNavigator(IDVDPlayer* player, CFileItem& fileitem)
+  : CDVDInputStream(DVDSTREAM_TYPE_DVD, fileitem)
 {
   m_dvdnav = 0;
   m_pDVDPlayer = player;
@@ -65,10 +66,11 @@ CDVDInputStreamNavigator::~CDVDInputStreamNavigator()
   Close();
 }
 
-bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& content, bool contentLookup)
+bool CDVDInputStreamNavigator::Open()
 {
   char* strDVDFile;
-  if (!CDVDInputStream::Open(strFile, "video/x-dvd-mpeg", contentLookup))
+  m_item.SetMimeType("video/x-dvd-mpeg");
+  if (!CDVDInputStream::Open())
     return false;
   
   // load libdvdnav.dll
@@ -80,7 +82,7 @@ bool CDVDInputStreamNavigator::Open(const char* strFile, const std::string& cont
 
   // since libdvdnav automaticly play's the dvd if the directory contains VIDEO_TS.IFO
   // we strip it here.
-  strDVDFile = strdup(strFile);
+  strDVDFile = strdup(m_item.GetPath());
   if (strnicmp(strDVDFile + strlen(strDVDFile) - 12, "VIDEO_TS.IFO", 12) == 0)
   {
     strDVDFile[strlen(strDVDFile) - 13] = '\0';

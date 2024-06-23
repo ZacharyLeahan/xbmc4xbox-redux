@@ -26,8 +26,8 @@
 
 using namespace XFILE;
 
-CDVDInputStreamFFmpeg::CDVDInputStreamFFmpeg() 
-  : CDVDInputStream(DVDSTREAM_TYPE_FFMPEG)
+CDVDInputStreamFFmpeg::CDVDInputStreamFFmpeg(CFileItem& fileitem)
+  : CDVDInputStream(DVDSTREAM_TYPE_FFMPEG, fileitem)
 {
 
 }
@@ -42,25 +42,24 @@ bool CDVDInputStreamFFmpeg::IsEOF()
   return false;
 }
 
-bool CDVDInputStreamFFmpeg::Open(const char* strFile, const std::string& content, bool contentLookup)
+bool CDVDInputStreamFFmpeg::Open()
 {
-  CFileItem item(strFile, false);
   std::string selected;
-  if (item.IsInternetStream() && (item.IsType(".m3u8") || content == "application/vnd.apple.mpegurl"))
+  if (m_item.IsInternetStream() && (m_item.IsType(".m3u8") || m_item.GetMimeType() == "application/vnd.apple.mpegurl"))
   {
     // get the available bandwidth and  determine the most appropriate stream
     int bandwidth = CSettings::Get().GetInt("network.bandwidth");
     if(bandwidth <= 0)
       bandwidth = INT_MAX;
-    selected = PLAYLIST::CPlayListM3U::GetBestBandwidthStream(strFile, bandwidth);
-    if (selected.compare(strFile) != 0)
+    selected = PLAYLIST::CPlayListM3U::GetBestBandwidthStream(m_item.GetPath(), bandwidth);
+    if (selected.compare(m_item.GetPath()) != 0)
     {
       CLog::Log(LOGINFO, "CDVDInputStreamFFmpeg: Auto-selecting %s based on configured bandwidth.", selected.c_str());
-      strFile = selected.c_str();
+      m_item.SetPath(selected.c_str());
     }
   }
 
-  if (!CDVDInputStream::Open(strFile, content, contentLookup))
+  if (!CDVDInputStream::Open())
     return false;
 
   return true;

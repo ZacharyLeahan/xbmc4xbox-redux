@@ -28,9 +28,9 @@ class CDVDInputStreamHTSP
   , public CDVDInputStream::IDisplayTime
 {
 public:
-  CDVDInputStreamHTSP();
+  CDVDInputStreamHTSP(CFileItem& fileitem);
   virtual ~CDVDInputStreamHTSP();
-  virtual bool    Open(const char* file, const std::string &content, bool contentLookup);
+  virtual bool    Open();
   virtual void    Close();
   virtual int     Read(BYTE* buf, int buf_size);
   virtual int64_t Seek(int64_t offset, int whence) { return -1; }

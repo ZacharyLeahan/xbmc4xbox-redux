@@ -34,9 +34,9 @@ class CDVDInputStreamTV
   , public CDVDInputStream::IDisplayTime
 {
 public:
-  CDVDInputStreamTV();
+  CDVDInputStreamTV(CFileItem& fileitem);
   virtual ~CDVDInputStreamTV();
-  virtual bool    Open(const char* strFile, const std::string &content, bool contentLookup);
+  virtual bool    Open();
   virtual void    Close();
   virtual int     Read(BYTE* buf, int buf_size);
   virtual int64_t Seek(int64_t offset, int whence);

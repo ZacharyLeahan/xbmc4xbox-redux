@@ -49,11 +49,12 @@ bool CDVDFileInfo::GetFileDuration(const CStdString &path, int& duration)
   std::auto_ptr<CDVDInputStream> input;
   std::auto_ptr<CDVDDemux> demux;
 
-  input.reset(CDVDFactoryInputStream::CreateInputStream(NULL, path, ""));
+  CFileItem item(path, false);
+  input.reset(CDVDFactoryInputStream::CreateInputStream(NULL, item));
   if (!input.get())
     return false;
 
-  if (!input->Open(path.c_str(), "", true))
+  if (!input->Open())
     return false;
 
   demux.reset(CDVDFactoryDemuxer::CreateDemuxer(input.get()));
@@ -70,7 +71,8 @@ bool CDVDFileInfo::GetFileDuration(const CStdString &path, int& duration)
 bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, CTextureDetails &details, CStreamDetails *pStreamDetails)
 {
   unsigned int nTime = XbmcThreads::SystemClockMillis();
-  CDVDInputStream *pInputStream = CDVDFactoryInputStream::CreateInputStream(NULL, strPath, "");
+  CFileItem item(strPath, false);
+  CDVDInputStream *pInputStream = CDVDFactoryInputStream::CreateInputStream(NULL, item);
   if (!pInputStream)
   {
     CLog::Log(LOGERROR, "InputStream: Error creating stream for %s", strPath.c_str());
@@ -84,7 +86,7 @@ bool CDVDFileInfo::ExtractThumb(const CStdString &strPath, CTextureDetails &deta
     return false;
   }
 
-  if (!pInputStream->Open(strPath.c_str(), "", true))
+  if (!pInputStream->Open())
   {
     CLog::Log(LOGERROR, "InputStream: Error opening, %s", strPath.c_str());
     if (pInputStream)
@@ -273,11 +275,12 @@ bool CDVDFileInfo::GetFileStreamDetails(CFileItem *pItem)
   if (URIUtils::IsStack(playablePath))
     playablePath = XFILE::CStackDirectory::GetFirstStackedFile(playablePath);
 
-  CDVDInputStream *pInputStream = CDVDFactoryInputStream::CreateInputStream(NULL, playablePath, "");
+  CFileItem item(playablePath, false);
+  CDVDInputStream *pInputStream = CDVDFactoryInputStream::CreateInputStream(NULL, item);
   if (!pInputStream)
     return false;
 
-  if (pInputStream->IsStreamType(DVDSTREAM_TYPE_DVD) || !pInputStream->Open(playablePath.c_str(), "", true))
+  if (pInputStream->IsStreamType(DVDSTREAM_TYPE_DVD) || !pInputStream->Open())
   {
     delete pInputStream;
     return false;

@@ -35,17 +35,21 @@
 #endif
 #include "FileItem.h"
 
-CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, const std::string& file, const std::string& content, bool contentlookup)
+CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, CFileItem fileitem)
 {
-  CFileItem item(file.c_str(), false);
+  std::string file = fileitem.GetPath();
 
-  item.SetMimeType(content);
+  if (fileitem.IsDVDImage())
+    return new CDVDInputStreamNavigator(pPlayer, fileitem);
 
-  if (item.IsDVDFile(false, true) || item.IsDVDImage() ||
-      file.compare("\\Device\\Cdrom0") == 0)
-  {
-    return (new CDVDInputStreamNavigator(pPlayer));
-  }
+#ifdef _XBOX
+  if (file.compare("\\Device\\Cdrom0") == 0)
+#else
+  if(file.compare(g_mediaManager.TranslateDevicePath("")) == 0)
+#endif
+    return new CDVDInputStreamNavigator(pPlayer, fileitem);
+  if (fileitem.IsDVDFile(false, true))
+    return (new CDVDInputStreamNavigator(pPlayer, fileitem));
   else if(file.substr(0, 6) == "rtp://"
        || file.substr(0, 7) == "rtsp://"
        || file.substr(0, 6) == "sdp://"
@@ -54,42 +58,42 @@ CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, 
        || file.substr(0, 6) == "mms://"
        || file.substr(0, 7) == "mmst://"
        || file.substr(0, 7) == "mmsh://")
-    return new CDVDInputStreamFFmpeg();
+    return new CDVDInputStreamFFmpeg(fileitem);
   else if(file.substr(0, 8) == "sling://"
        || file.substr(0, 7) == "myth://"
        || file.substr(0, 8) == "cmyth://"
        || file.substr(0, 8) == "gmyth://")
-    return new CDVDInputStreamTV();
+    return new CDVDInputStreamTV(fileitem);
 #ifdef ENABLE_DVDINPUTSTREAM_STACK
   else if(file.substr(0, 8) == "stack://")
-    return new CDVDInputStreamStack();
+    return new CDVDInputStreamStack(fileitem);
 #endif
   else if(file.substr(0, 7) == "rtmp://"
        || file.substr(0, 8) == "rtmpt://"
        || file.substr(0, 8) == "rtmpe://"
        || file.substr(0, 9) == "rtmpte://"
        || file.substr(0, 8) == "rtmps://")
-    return new CDVDInputStreamRTMP();
+    return new CDVDInputStreamRTMP(fileitem);
 #ifdef HAS_FILESYSTEM
   else if(file.substr(0, 7) == "htsp://")
-    return new CDVDInputStreamHTSP();
+    return new CDVDInputStreamHTSP(fileitem);
 #endif
-  else if (item.IsInternetStream())
+  else if (fileitem.IsInternetStream())
   {
-    if (item.IsType(".m3u8"))
-      return new CDVDInputStreamFFmpeg();
+    if (fileitem.IsType(".m3u8"))
+      return new CDVDInputStreamFFmpeg(fileitem);
 
-    if (contentlookup)
+    if (fileitem.ContentLookup())
     {
       // request header
-      item.SetMimeType("");
-      item.FillInMimeType();
+      fileitem.SetMimeType("");
+      fileitem.FillInMimeType();
     }
 
-    if (item.GetMimeType() == "application/vnd.apple.mpegurl")
-      return new CDVDInputStreamFFmpeg();
+    if (fileitem.GetMimeType() == "application/vnd.apple.mpegurl")
+      return new CDVDInputStreamFFmpeg(fileitem);
   }
   
   // our file interface handles all these types of streams
-  return (new CDVDInputStreamFile());
+  return (new CDVDInputStreamFile(fileitem));
 }

@@ -57,7 +57,8 @@ extern "C"
   }
 }
 
-CDVDInputStreamRTMP::CDVDInputStreamRTMP() : CDVDInputStream(DVDSTREAM_TYPE_RTMP)
+CDVDInputStreamRTMP::CDVDInputStreamRTMP(CFileItem &fileitem)
+  : CDVDInputStream(DVDSTREAM_TYPE_RTMP, fileitem)
 {
   if (m_libRTMP.Load())
   {
@@ -127,7 +128,7 @@ static const struct {
   { NULL }
 };
 
-bool CDVDInputStreamRTMP::Open(const char* strFile, const std::string& content, bool contentLookup)
+bool CDVDInputStreamRTMP::Open()
 {
   if (m_sStreamPlaying)
   {
@@ -135,20 +136,21 @@ bool CDVDInputStreamRTMP::Open(const char* strFile, const std::string& content, 
     m_sStreamPlaying = NULL;
   }
 
-  if (!m_rtmp || !CDVDInputStream::Open(strFile, "video/x-flv", contentLookup))
+  m_item.SetMimeType("video/x-flv");
+  if (!m_rtmp || !CDVDInputStream::Open())
     return false;
 
   CSingleLock lock(m_RTMPSection);
 
   // libRTMP can and will alter strFile, so take a copy of it
-  m_sStreamPlaying = (char*)calloc(strlen(strFile)+1,sizeof(char));
-  strcpy(m_sStreamPlaying,strFile);
+  m_sStreamPlaying = (char*)calloc(strlen(m_item.GetPath().c_str())+1,sizeof(char));
+  strcpy(m_sStreamPlaying, m_item.GetPath().c_str());
 
   if (!m_libRTMP.SetupURL(m_rtmp, m_sStreamPlaying))
     return false;
 
   // make a note if we have the live property set
-  if ( m_item.GetProperty("IsLive") == "true" || strstr(strFile, " live=1") )
+  if ( m_item.GetProperty("IsLive") == "true" || strstr(m_item.GetPath().c_str(), " live=1") )
     m_bLive = true;
 
   // SetOpt and SetAVal copy pointers to the value. librtmp doesn't use the values until the Connect() call,

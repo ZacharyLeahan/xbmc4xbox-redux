@@ -70,8 +70,8 @@ htsmsg_t* CDVDInputStreamHTSP::ReadStream()
   return NULL;
 }
 
-CDVDInputStreamHTSP::CDVDInputStreamHTSP()
-  : CDVDInputStream(DVDSTREAM_TYPE_HTSP)
+CDVDInputStreamHTSP::CDVDInputStreamHTSP(CFileItem& fileitem)
+  : CDVDInputStream(DVDSTREAM_TYPE_HTSP, fileitem)
   , m_subs(0)
   , m_startup(false)
   , m_channel(0)
@@ -84,12 +84,12 @@ CDVDInputStreamHTSP::~CDVDInputStreamHTSP()
   Close();
 }
 
-bool CDVDInputStreamHTSP::Open(const char* file, const std::string& content, bool contentLookup)
+bool CDVDInputStreamHTSP::Open()
 {
-  if (!CDVDInputStream::Open(file, content, contentLookup))
+  if (!CDVDInputStream::Open())
     return false;
 
-  CURL url(file);
+  CURL url = m_item.GetURL();
   if(sscanf(url.GetFileName().c_str(), "tags/%d/%d", &m_tag, &m_channel) != 2)
   {
     CLog::Log(LOGERROR, "CDVDInputStreamHTSP::Open - invalid url (%s)\n", url.GetFileName().c_str());

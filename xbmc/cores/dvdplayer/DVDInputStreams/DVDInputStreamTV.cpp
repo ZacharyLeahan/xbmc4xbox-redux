@@ -25,7 +25,7 @@
 
 using namespace XFILE;
 
-CDVDInputStreamTV::CDVDInputStreamTV() : CDVDInputStream(DVDSTREAM_TYPE_TV)
+CDVDInputStreamTV::CDVDInputStreamTV(CFileItem& fileitem) : CDVDInputStream(DVDSTREAM_TYPE_TV, fileitem)
 {
   m_pFile = NULL;
   m_pRecordable = NULL;
@@ -43,11 +43,11 @@ bool CDVDInputStreamTV::IsEOF()
   return !m_pFile || m_eof;
 }
 
-bool CDVDInputStreamTV::Open(const char* strFile, const std::string& content, bool contentLookup)
+bool CDVDInputStreamTV::Open()
 {
-  if (!CDVDInputStream::Open(strFile, content, contentLookup)) return false;
+  if (!CDVDInputStream::Open()) return false;
 
-  if (strncmp(strFile, "sling://", 8) == 0)
+  if (strncmp(m_item.GetPath().c_str(), "sling://", 8) == 0)
   {
     m_pFile       = new CSlingboxFile();
     m_pLiveTV     = ((CSlingboxFile*)m_pFile)->GetLiveTV();
@@ -60,7 +60,7 @@ bool CDVDInputStreamTV::Open(const char* strFile, const std::string& content, bo
     m_pRecordable = ((CMythFile*)m_pFile)->GetRecordable();
   }
 
-  CURL url(strFile);
+  CURL url = m_item.GetURL();
   // open file in binary mode
   if (!m_pFile->Open(url))
   {

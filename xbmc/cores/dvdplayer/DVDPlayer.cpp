@@ -399,9 +399,7 @@ bool CDVDPlayer::OpenFile(const CFileItem& file, const CPlayerOptions &options)
     m_offset_pts = 0;
 
     m_PlayerOptions = options;
-    m_item     = file;
-    m_mimetype  = file.GetMimeType();
-    m_filename = file.GetPath();
+    m_item = file;
 
     m_ready.Reset();
     Create();
@@ -481,32 +479,28 @@ bool CDVDPlayer::OpenInputStream()
   CLog::Log(LOGNOTICE, "Creating InputStream");
 
   // correct the filename if needed
-  CStdString filename(m_filename);
-  if (filename.Find("dvd://") == 0
-  ||  filename.CompareNoCase("d:\\video_ts\\video_ts.ifo") == 0
-  ||  filename.CompareNoCase("iso9660://video_ts/video_ts.ifo") == 0)
+  std::string filename(m_item.GetPath());
+  if (URIUtils::IsProtocol(filename, "dvd") ||
+      StringUtils::EqualsNoCase(filename, "d:\\video_ts\\video_ts.ifo") ||
+      StringUtils::EqualsNoCase(filename, "iso9660://video_ts/video_ts.ifo"))
   {
-#ifdef _WIN32PC
-    m_filename = MEDIA_DETECT::CLibcdio::GetInstance()->GetDeviceFileName()+4;
-#elif defined (_LINUX)
-    m_filename = MEDIA_DETECT::CLibcdio::GetInstance()->GetDeviceFileName();
+#ifdef _XBOX
+    m_item.SetPath("\\Device\\Cdrom0");
 #else
-    m_filename = "\\Device\\Cdrom0";
+    m_item.SetPath(g_mediaManager.TranslateDevicePath(""));
 #endif
   }
 
-  m_pInputStream = CDVDFactoryInputStream::CreateInputStream(this, m_filename, m_mimetype, m_item.ContentLookup());
+  m_pInputStream = CDVDFactoryInputStream::CreateInputStream(this, m_item);
   if(m_pInputStream == NULL)
   {
-    CLog::Log(LOGERROR, "CDVDPlayer::OpenInputStream - unable to create input stream for [%s]", m_filename.c_str());
+    CLog::Log(LOGERROR, "CDVDPlayer::OpenInputStream - unable to create input stream for [%s]", m_item.GetPath().c_str());
     return false;
   }
-  else
-    m_pInputStream->SetFileItem(m_item);
 
-  if (!m_pInputStream->Open(m_filename.c_str(), m_mimetype, m_item.ContentLookup()))
+  if (!m_pInputStream->Open())
   {
-    CLog::Log(LOGERROR, "CDVDPlayer::OpenInputStream - error opening [%s]", m_filename.c_str());
+    CLog::Log(LOGERROR, "CDVDPlayer::OpenInputStream - error opening [%s]", m_item.GetPath().c_str());
     return false;
   }
 
@@ -517,7 +511,12 @@ bool CDVDPlayer::OpenInputStream()
   {
     // find any available external subtitles
     std::vector<std::string> filenames;
-    CDVDFactorySubtitle::GetSubtitles(filenames, m_filename);
+#ifdef _XBOX
+    std::string strPath = m_item.GetPath();
+    CDVDFactorySubtitle::GetSubtitles(filenames, strPath);
+#else
+    CUtil::ScanForExternalSubtitles(m_item.GetPath(), filenames);
+#endif
 
     // find any upnp subtitles
     CStdString key("upnp:subtitle:1");
@@ -828,7 +827,7 @@ void CDVDPlayer::Process()
   if (m_CurrentVideo.id >= 0 && m_CurrentVideo.hint.fpsrate > 0 && m_CurrentVideo.hint.fpsscale > 0)
   {
     fFramesPerSecond = (float)m_CurrentVideo.hint.fpsrate / (float)m_CurrentVideo.hint.fpsscale;
-    m_Edl.ReadEditDecisionLists(m_filename, fFramesPerSecond, m_CurrentVideo.hint.height);
+    m_Edl.ReadEditDecisionLists(m_item.GetPath(), fFramesPerSecond, m_CurrentVideo.hint.height);
   }
 
   /*
