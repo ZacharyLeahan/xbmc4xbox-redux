@@ -389,23 +389,23 @@ int CBuiltins::Execute(const CStdString& execString)
   }
   else if (execute.Equals("runscript") && params.size())
   {
-    vector<string> argv;
-    for (vector<string>::const_iterator param = params.begin(); param != params.end(); ++param)
-      argv.push_back(*param);
+    {
+      vector<string> argv;
+      for (vector<string>::const_iterator param = params.begin(); param != params.end(); ++param)
+        argv.push_back(*param);
 
-    vector<CStdString> path;
-    //split the path up to find the filename
-    StringUtils::SplitString(params[0],"\\",path);
+      AddonPtr script;
+      CStdString scriptpath(params[0]);
+      if (CAddonMgr::Get().GetAddon(params[0], script))
+        scriptpath = script->LibPath();
 
-    if (path.size())
-      argv[0] = path[path.size() - 1];
+      // split the path up to find the filename
+      std::string filename = URIUtils::GetFileName(scriptpath);
+      if (!filename.empty())
+        argv[0] = filename;
 
-    AddonPtr script;
-    CStdString scriptpath(params[0]);
-    if (CAddonMgr::Get().GetAddon(params[0], script))
-      scriptpath = script->LibPath();
-
-    CScriptInvocationManager::Get().Execute(scriptpath, script, argv);
+      CScriptInvocationManager::Get().Execute(scriptpath, script, argv);
+    }
   }
   else if (execute.Equals("stopscript"))
   {
