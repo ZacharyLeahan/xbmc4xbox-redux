@@ -298,6 +298,9 @@ void CDVDVideoCodecFFmpeg::Reset()
 
 bool CDVDVideoCodecFFmpeg::GetPictureCommon(DVDVideoPicture* pDvdVideoPicture)
 {
+  if (!m_pFrame)
+    return false;
+
   GetVideoAspect(m_pCodecContext, pDvdVideoPicture->iDisplayWidth, pDvdVideoPicture->iDisplayHeight);
 
   if(m_pCodecContext->coded_width  && m_pCodecContext->coded_width  < m_pCodecContext->width
@@ -313,9 +316,6 @@ bool CDVDVideoCodecFFmpeg::GetPictureCommon(DVDVideoPicture* pDvdVideoPicture)
     pDvdVideoPicture->iHeight = m_pCodecContext->height;
 
   pDvdVideoPicture->pts = DVD_NOPTS_VALUE;
-
-  if (!m_pFrame)
-    return false;
 
   pDvdVideoPicture->iRepeatPicture = 0.5 * m_pFrame->repeat_pict;
   pDvdVideoPicture->iFlags = DVP_FLAG_ALLOCATED;

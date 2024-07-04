@@ -95,6 +95,24 @@ double CPTSOutputQueue::Current(double timestamp)
   return m_current.pts + min(m_current.duration, (timestamp - m_current.timestamp));
 }
 
+/** \brief Reallocs the memory block pointed to by src by the size len.
+*   \param[in] src Pointer to a memory block.
+*   \param[in] len New size of the memory block.
+*   \exception realloc failed
+*   \return A pointer to the reallocated memory block. 
+*/
+static void* realloc_or_free(void* src, int len) throw(exception)
+{
+  void* new_pBuffer = realloc(src, len);
+  if (new_pBuffer)
+    return new_pBuffer;
+  else
+  {
+    CLog::Log(LOGERROR, "DVDAUDIO - %s : could not realloc the buffer",  __FUNCTION__);
+    free(src);
+    throw exception();
+  }
+}
 
 CDVDAudio::CDVDAudio(volatile bool &bStop)
   : m_bStop(bStop)
