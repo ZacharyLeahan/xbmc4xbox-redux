@@ -43,7 +43,6 @@ public:
   {
     m_stamp = XbmcThreads::SystemClockMillis();
     m_pos   = 0;
-    m_pause = 0;
     m_size = 0;
     m_time = 0;
   }
@@ -75,21 +74,9 @@ public:
     return (unsigned)(1000 * (m_size / (m_time + time_bias)));
   }
 
-  void Pause()
-  {
-    m_pause = XbmcThreads::SystemClockMillis();
-  }
-
-  void Resume()
-  {
-    m_stamp += XbmcThreads::SystemClockMillis() - m_pause;
-    m_pause  = 0;
-  }
-
 private:
   unsigned m_stamp;
   int64_t  m_pos;
-  unsigned m_pause;
   unsigned m_time;
   int64_t  m_size;
 };
@@ -107,7 +94,7 @@ CFileCache::CFileCache(const unsigned int flags)
   , m_chunkSize(0)
   , m_writeRate(0)
   , m_writeRateActual(0)
-  , m_cacheFull(false)
+  , m_forwardCacheSize(0)
   , m_fileSize(0)
   , m_flags(flags)
 {
@@ -119,7 +106,7 @@ CFileCache::CFileCache(CCacheStrategy *pCache, bool bDeleteCache /* = true */)
   , m_chunkSize(0)
   , m_writeRate(0)
   , m_writeRateActual(0)
-  , m_cacheFull(false)
+  , m_forwardCacheSize(0)
 {
   m_pCache = pCache;
   m_bDeleteCache = bDeleteCache;
@@ -182,6 +169,7 @@ bool CFileCache::Open(const CURL& url)
     {
       // Use cache on disk
       m_pCache = new CSimpleFileCache();
+      m_forwardCacheSize = 0;
     }
     else
     {
@@ -206,6 +194,7 @@ bool CFileCache::Open(const CURL& url)
         back /= 2;
       }
       m_pCache = new CCircularCache(front, back);
+      m_forwardCacheSize = front;
     }
 
     if (m_flags & READ_MULTI_STREAM)
@@ -227,7 +216,6 @@ bool CFileCache::Open(const CURL& url)
   m_writePos = 0;
   m_writeRate = 1024 * 1024;
   m_writeRateActual = 0;
-  m_cacheFull = false;
   m_seekEvent.Reset();
   m_seekEnded.Reset();
 
@@ -286,7 +274,6 @@ void CFileCache::Process()
         assert(m_writePos == cacheMaxPos);
         average.Reset(m_writePos, bCompleteReset); // Can only recalculate new average from scratch after a full reset (empty cache)
         limiter.Reset(m_writePos);
-        m_cacheFull = (m_pCache->GetMaxWriteSize(m_chunkSize) == 0);
         m_nSeekResult = m_seekPos;
       }
 
@@ -312,16 +299,13 @@ void CFileCache::Process()
     }
 
     size_t maxWrite = m_pCache->GetMaxWriteSize(m_chunkSize);
-    m_cacheFull = (maxWrite == 0);
 
     /* Only read from source if there's enough write space in the cache
      * else we may keep disposing data and seeking back on (slow) source
      */
-    if (m_cacheFull && !cacheReachEOF)
+    if (maxWrite == 0 && !cacheReachEOF)
     {
-      average.Pause();
       m_pCache->m_space.WaitMSec(5);
-      average.Resume();
       continue;
     }
 
@@ -361,9 +345,7 @@ void CFileCache::Process()
       }
       else if (iWrite == 0)
       {
-        average.Pause();
         m_pCache->m_space.WaitMSec(5);
-        average.Resume();
       }
 
       iTotalWrite += iWrite;
@@ -556,9 +538,9 @@ int CFileCache::IoControl(EIoControl request, void* param)
   {
     SCacheStatus* status = (SCacheStatus*)param;
     status->forward = m_pCache->WaitForData(0, 0);
+    status->level   = (m_forwardCacheSize == 0) ? 0.0 : (float) status->forward / m_forwardCacheSize;
     status->maxrate = m_writeRate;
     status->currate = m_writeRateActual;
-    status->full    = m_cacheFull;
     return 0;
   }
 

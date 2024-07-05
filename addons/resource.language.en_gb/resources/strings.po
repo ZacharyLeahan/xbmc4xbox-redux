@@ -8700,7 +8700,17 @@ msgctxt "#21452"
 msgid "Get More..."
 msgstr ""
 
-#empty strings from id 21453 to 21456
+#empty string with id 21453
+
+msgctxt "#21454"
+msgid "Source too slow"
+msgstr ""
+
+msgctxt "#21455"
+msgid "Read rate too low for continuous playback"
+msgstr ""
+
+#empty string with id 21456
 
 msgctxt "#21457"
 msgid "Watched episode count"
