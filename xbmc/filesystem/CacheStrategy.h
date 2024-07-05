@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <string>
-#include "threads/CriticalSection.h"
 #include "threads/Event.h"
 
 namespace XFILE {
@@ -79,8 +78,8 @@ protected:
 */
 class CSimpleFileCache : public CCacheStrategy {
 public:
-    CSimpleFileCache();
-    virtual ~CSimpleFileCache();
+  CSimpleFileCache();
+  virtual ~CSimpleFileCache();
 
   virtual int Open() ;
   virtual void Close() ;

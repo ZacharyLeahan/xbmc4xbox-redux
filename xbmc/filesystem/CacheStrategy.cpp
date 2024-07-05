@@ -18,15 +18,17 @@
  *
  */
 
-
-#include "system.h"
 #include "threads/SystemClock.h"
 #include "CacheStrategy.h"
 #include "IFile.h"
+#ifdef TARGET_POSIX
+#include "PlatformInclude.h"
+#include "ConvUtils.h"
+#endif
 #include "Util.h"
 #include "utils/log.h"
-#include "threads/SingleLock.h"
 #include "SpecialProtocol.h"
+#include "xbox/PlatformDefs.h" //for PRIdS, PRId64
 #include "URL.h"
 #if defined(TARGET_POSIX)
 #include "posix/PosixFile.h"
@@ -39,7 +41,10 @@
 #define CacheLocalFile CFileHD
 #endif // TARGET_WINDOWS
 
-namespace XFILE {
+#include <cassert>
+#include <algorithm>
+
+using namespace XFILE;
 
 CCacheStrategy::CCacheStrategy() : m_bEndOfInput(false)
 {
@@ -75,6 +80,7 @@ CSimpleFileCache::CSimpleFileCache()
 
 CSimpleFileCache::~CSimpleFileCache()
 {
+  Close();
   delete m_cacheFileRead;
   delete m_cacheFileWrite;
 }
@@ -122,7 +128,7 @@ void CSimpleFileCache::Close()
   m_cacheFileWrite->Close();
   m_cacheFileRead->Close();
 
-  if (!m_cacheFileRead->Delete(CURL(m_filename)))
+  if (!m_filename.empty() && !m_cacheFileRead->Delete(CURL(m_filename)))
     CLog::Log(LOGWARNING, "failed to delete temporary file \"%s\"", m_filename.c_str());
 
   m_filename.clear();
@@ -210,9 +216,6 @@ int64_t CSimpleFileCache::WaitForData(unsigned int iMinAvail, unsigned int iMill
 
 int64_t CSimpleFileCache::Seek(int64_t iFilePosition)
 {
-
-  CLog::Log(LOGDEBUG,"CSimpleFileCache::Seek, seeking to %"PRId64, iFilePosition);
-
   int64_t iTarget = iFilePosition - m_nStartPosition;
 
   if (iTarget < 0)
@@ -356,7 +359,7 @@ bool CDoubleCache::Reset(int64_t iSourcePosition, bool clearAnyway)
   }
   if (!m_pCacheOld)
   {
-    CSimpleFileCache *pCacheNew = new CSimpleFileCache();
+    CCacheStrategy *pCacheNew = m_pCache->CreateNew();
     if (pCacheNew->Open() != CACHE_RC_OK)
     {
       delete pCacheNew;
@@ -412,4 +415,3 @@ CCacheStrategy *CDoubleCache::CreateNew()
   return new CDoubleCache(m_pCache->CreateNew());
 }
 
-}
