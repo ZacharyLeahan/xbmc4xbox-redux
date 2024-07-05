@@ -19,7 +19,6 @@
  */
 
 #include "threads/SystemClock.h"
-#include "utils/AutoPtrHandle.h"
 #include "FileCache.h"
 #include "threads/Thread.h"
 #include "File.h"
@@ -27,13 +26,23 @@
 
 #include "CircularCache.h"
 #include "threads/SingleLock.h"
-#include "utils/log.h" 
-#include "utils/TimeUtils.h"
+#include "utils/log.h"
 #include "settings/AdvancedSettings.h"
 
-using namespace AUTOPTR;
+#if !defined(TARGET_WINDOWS) && !defined(_XBOX)
+#include "linux/ConvUtils.h" //GetLastError()
+#endif
+
+#include <cassert>
+#include <algorithm>
+#include <boost/move/unique_ptr.hpp>
+
+#ifdef TARGET_POSIX
+#include "linux/ConvUtils.h"
+#endif
+
 using namespace XFILE;
- 
+
 #define READ_CACHE_CHUNK_SIZE (64*1024)
 
 class CWriteRate
@@ -153,7 +162,7 @@ bool CFileCache::Open(const CURL& url)
   // opening the source file.
   if (!m_source.Open(m_sourcePath, READ_NO_CACHE | READ_TRUNCATED | READ_CHUNKED))
   {
-    CLog::Log(LOGERROR,"%s - failed to open source <%s>", __FUNCTION__, m_sourcePath.c_str());
+    CLog::Log(LOGERROR,"%s - failed to open source <%s>", __FUNCTION__, url.GetRedacted().c_str());
     Close();
     return false;
   }
@@ -233,7 +242,7 @@ void CFileCache::Process()
   }
 
   // create our read buffer
-  auto_aptr<char> buffer(new char[m_chunkSize]);
+  boost::movelib::unique_ptr<char[]> buffer(new char[m_chunkSize]);
   if (buffer.get() == NULL)
   {
     CLog::Log(LOGERROR, "%s - failed to allocate read buffer", __FUNCTION__);
@@ -261,7 +270,7 @@ void CFileCache::Process()
         m_nSeekResult = m_source.Seek(cacheMaxPos, SEEK_SET);
         if (m_nSeekResult != cacheMaxPos)
         {
-          CLog::Log(LOGERROR,"%s, error %d seeking. seek returned %"PRId64, __FUNCTION__, (int)GetLastError(), m_nSeekResult);
+          CLog::Log(LOGERROR,"CFileCache::Process - Error %d seeking. Seek returned %" PRId64, (int)GetLastError(), m_nSeekResult);
           m_seekPossible = m_source.IoControl(IOCTRL_SEEK_POSSIBLE, NULL);
           sourceSeekFailed = true;
         }
@@ -460,16 +469,16 @@ int64_t CFileCache::Seek(int64_t iFilePosition, int iWhence)
     m_seekPos = std::min(iTarget, std::max((int64_t)0, m_fileSize - m_chunkSize));
 
     m_seekEvent.Set();
-    if (!m_seekEnded.WaitMSec(INFINITE))
+    if (!m_seekEnded.Wait())
     {
-      CLog::Log(LOGWARNING,"%s - seek to %"PRId64" failed.", __FUNCTION__, m_seekPos);
+      CLog::Log(LOGWARNING,"%s - seek to %" PRId64" failed.", __FUNCTION__, m_seekPos);
       return -1;
     }
 
     /* wait for any remainin data */
     if(m_seekPos < iTarget)
     {
-      CLog::Log(LOGDEBUG,"%s - waiting for position %"PRId64".", __FUNCTION__, iTarget);
+      CLog::Log(LOGDEBUG,"%s - waiting for position %" PRId64".", __FUNCTION__, iTarget);
       if(m_pCache->WaitForData((unsigned)(iTarget - m_seekPos), 10000) < iTarget - m_seekPos)
       {
         CLog::Log(LOGWARNING,"%s - failed to get remaining data", __FUNCTION__);
@@ -555,4 +564,3 @@ int CFileCache::IoControl(EIoControl request, void* param)
 
   return -1;
 }
-

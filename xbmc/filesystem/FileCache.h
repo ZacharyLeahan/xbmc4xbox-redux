@@ -22,7 +22,7 @@
 #include "IFile.h"
 #include "CacheStrategy.h"
 #include "threads/CriticalSection.h"
-#include "filesystem/File.h"
+#include "File.h"
 #include "threads/Thread.h"
 
 namespace XFILE
@@ -66,7 +66,7 @@ namespace XFILE
     bool      m_bDeleteCache;
     int        m_seekPossible;
     CFile      m_source;
-    CStdString    m_sourcePath;
+    std::string    m_sourcePath;
     CEvent      m_seekEvent;
     CEvent      m_seekEnded;
     int64_t      m_nSeekResult;
