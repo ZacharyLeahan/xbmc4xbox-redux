@@ -249,7 +249,7 @@ void CAddon::SaveSettings(void)
   doc.SaveFile(m_userSettingsPath);
   m_userSettingsLoaded = true;
 
-  CAddonMgr::GetInstance().ReloadSettings(ID());//push the settings changes to the running addon instance
+  CServiceBroker::GetAddonMgr().ReloadSettings(ID());//push the settings changes to the running addon instance
 #ifdef HAS_PYTHON
   g_pythonParser.OnSettingsChanged(ID());
 #endif
@@ -344,18 +344,18 @@ void OnEnabled(const std::string& id)
 {
   // If the addon is a special, call enabled handler
   AddonPtr addon;
-  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_PVRDLL) ||
-      CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_ADSPDLL) ||
-      CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_PERIPHERALDLL))
+  if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_PVRDLL) ||
+      CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_ADSPDLL) ||
+      CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_PERIPHERALDLL))
     return addon->OnEnabled();
 
-  if (CAddonMgr::GetInstance().ServicesHasStarted())
+  if (CServiceBroker::GetAddonMgr().ServicesHasStarted())
   {
-    if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_SERVICE))
+    if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_SERVICE))
       boost::static_pointer_cast<CService>(addon)->Start();
   }
 
-  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_REPOSITORY))
+  if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_REPOSITORY))
     CRepositoryUpdater::GetInstance().ScheduleUpdate(); //notify updater there is a new addon
 }
 
@@ -363,18 +363,18 @@ void OnDisabled(const std::string& id)
 {
 
   AddonPtr addon;
-  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_PVRDLL, false) ||
-      CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_ADSPDLL, false) ||
-      CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_PERIPHERALDLL, false))
+  if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_PVRDLL, false) ||
+      CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_ADSPDLL, false) ||
+      CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_PERIPHERALDLL, false))
     return addon->OnDisabled();
 
-  if (CAddonMgr::GetInstance().ServicesHasStarted())
+  if (CServiceBroker::GetAddonMgr().ServicesHasStarted())
   {
-    if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_SERVICE, false))
+    if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_SERVICE, false))
       boost::static_pointer_cast<CService>(addon)->Stop();
   }
 
-  if (CAddonMgr::GetInstance().GetAddon(id, addon, ADDON_CONTEXT_ITEM, false))
+  if (CServiceBroker::GetAddonMgr().GetAddon(id, addon, ADDON_CONTEXT_ITEM, false))
     CContextMenuManager::GetInstance().Unload(*boost::static_pointer_cast<CContextMenuAddon>(addon));
 }
 
@@ -384,13 +384,13 @@ void OnPreInstall(const AddonPtr& addon)
   //that have this id, regardless of what the 'new' addon is.
   AddonPtr localAddon;
 
-  if (CAddonMgr::GetInstance().ServicesHasStarted())
+  if (CServiceBroker::GetAddonMgr().ServicesHasStarted())
   {
-    if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
+    if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
       boost::static_pointer_cast<CService>(localAddon)->Stop();
   }
 
-  if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_CONTEXT_ITEM))
+  if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_CONTEXT_ITEM))
     CContextMenuManager::GetInstance().Unload(*boost::static_pointer_cast<CContextMenuAddon>(localAddon));
 
   //Fallback to the pre-install callback in the addon.
@@ -401,13 +401,13 @@ void OnPreInstall(const AddonPtr& addon)
 void OnPostInstall(const AddonPtr& addon, bool update, bool modal)
 {
   AddonPtr localAddon;
-  if (CAddonMgr::GetInstance().ServicesHasStarted())
+  if (CServiceBroker::GetAddonMgr().ServicesHasStarted())
   {
-    if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
+    if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
       boost::static_pointer_cast<CService>(localAddon)->Start();
   }
 
-  if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_REPOSITORY))
+  if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_REPOSITORY))
     CRepositoryUpdater::GetInstance().ScheduleUpdate(); //notify updater there is a new addon or version
 
   addon->OnPostInstall(update, modal);
@@ -417,13 +417,13 @@ void OnPreUnInstall(const AddonPtr& addon)
 {
   AddonPtr localAddon;
 
-  if (CAddonMgr::GetInstance().ServicesHasStarted())
+  if (CServiceBroker::GetAddonMgr().ServicesHasStarted())
   {
-    if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
+    if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_SERVICE))
       boost::static_pointer_cast<CService>(localAddon)->Stop();
   }
 
-  if (CAddonMgr::GetInstance().GetAddon(addon->ID(), localAddon, ADDON_CONTEXT_ITEM))
+  if (CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_CONTEXT_ITEM))
     CContextMenuManager::GetInstance().Unload(*boost::static_pointer_cast<CContextMenuAddon>(localAddon));
 
   addon->OnPreUnInstall();

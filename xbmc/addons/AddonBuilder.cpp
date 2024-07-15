@@ -18,6 +18,7 @@
  *
  */
 
+#include "ServiceBroker.h"
 #include "addons/AddonBuilder.h"
 #include "addons/ContextMenuAddon.h"
 #include "addons/ImageResource.h"
@@ -69,7 +70,7 @@ boost::shared_ptr<IAddon> CAddonBuilder::Build()
     if (StringUtils::StartsWithNoCase(m_extPoint->plugin->identifier, "screensaver.xbmc.builtin."))
       return boost::make_shared<CAddon>(boost::move(m_props));
     // python screensaver
-    if (URIUtils::HasExtension(CAddonMgr::GetInstance().GetExtValue(m_extPoint->configuration, "@library"), ".py"))
+    if (URIUtils::HasExtension(CServiceBroker::GetAddonMgr().GetExtValue(m_extPoint->configuration, "@library"), ".py"))
       return boost::make_shared<CScreenSaver>(boost::move(m_props));
   }
 
@@ -83,7 +84,7 @@ boost::shared_ptr<IAddon> CAddonBuilder::Build()
       type == ADDON_INPUTSTREAM ||
       type == ADDON_PERIPHERALDLL)
   {
-    std::string value = CAddonMgr::GetInstance().GetPlatformLibraryName(m_extPoint->plugin->extensions->configuration);
+    std::string value = CServiceBroker::GetAddonMgr().GetPlatformLibraryName(m_extPoint->plugin->extensions->configuration);
     if (value.empty())
       return AddonPtr();
   }

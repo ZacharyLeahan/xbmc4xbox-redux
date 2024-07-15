@@ -67,7 +67,6 @@ namespace ADDON
   class CAddonMgr
   {
   public:
-    static CAddonMgr &GetInstance();
     bool ReInit() { DeInit(); return Init(); }
     bool Init();
     void DeInit();

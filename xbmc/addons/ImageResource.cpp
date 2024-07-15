@@ -19,6 +19,7 @@
 */
 #include "ImageResource.h"
 #include "URL.h"
+#include "ServiceBroker.h"
 #include "addons/AddonManager.h"
 #include "filesystem/File.h"
 #include "utils/StringUtils.h"
@@ -29,7 +30,7 @@ namespace ADDON
 
 boost::movelib::unique_ptr<CImageResource> CImageResource::FromExtension(AddonProps props, const cp_extension_t* ext)
 {
-  std::string type = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@type");
+  std::string type = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@type");
   return boost::movelib::unique_ptr<CImageResource>(new CImageResource(boost::move(props), boost::move(type)));
 }
 

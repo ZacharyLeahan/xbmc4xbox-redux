@@ -24,6 +24,7 @@
 
 #include "addons/AddonInstaller.h"
 #include "addons/AddonManager.h"
+#include "ServiceBroker.h"
 #include "filesystem/File.h"
 #include "interfaces/builtins/Builtins.h"
 #include "messaging/ApplicationMessenger.h"
@@ -77,7 +78,7 @@ void CRssManager::OnSettingAction(const CSetting *setting)
   if (settingId == "lookandfeel.rssedit")
   {
     ADDON::AddonPtr addon;
-    if (!ADDON::CAddonMgr::GetInstance().GetAddon("script.rss.editor", addon))
+    if (!CServiceBroker::GetAddonMgr().GetAddon("script.rss.editor", addon))
     {
       if (!CAddonInstaller::GetInstance().InstallModal("script.rss.editor", addon))
         return;

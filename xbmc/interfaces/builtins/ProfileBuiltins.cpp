@@ -78,7 +78,7 @@ static int LogOff(const std::vector<std::string>& params)
   if (CVideoLibraryQueue::GetInstance().IsRunning())
     CVideoLibraryQueue::GetInstance().CancelAllJobs();
 
-  ADDON::CAddonMgr::GetInstance().StopServices(true);
+  CServiceBroker::GetAddonMgr().StopServices(true);
 
   g_application.getNetwork().NetworkMessage(CNetwork::SERVICES_DOWN,1);
 #ifdef HAS_XBOX_HARDWARE

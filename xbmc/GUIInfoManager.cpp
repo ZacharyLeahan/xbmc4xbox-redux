@@ -2654,7 +2654,7 @@ bool CGUIInfoManager::GetMultiInfoBool(const GUIInfo &info, int contextWindow, c
       case SYSTEM_HAS_ADDON:
         {
           AddonPtr addon;
-          bReturn = CAddonMgr::GetInstance().GetAddon(m_stringParameters[info.GetData1()],addon) && addon;
+          bReturn = CServiceBroker::GetAddonMgr().GetAddon(m_stringParameters[info.GetData1()],addon) && addon;
           break;
         }
       case SYSTEM_IDLE_TIME:
@@ -3128,9 +3128,9 @@ CStdString CGUIInfoManager::GetMultiInfoLabel(const GUIInfo &info, int contextWi
     // in the future.
     AddonPtr addon;
     if (info.GetData2() == 0)
-      CAddonMgr::GetInstance().GetAddon(const_cast<CGUIInfoManager*>(this)->GetLabel(info.GetData1(), contextWindow),addon,ADDON_UNKNOWN,false);
+      CServiceBroker::GetAddonMgr().GetAddon(const_cast<CGUIInfoManager*>(this)->GetLabel(info.GetData1(), contextWindow),addon,ADDON_UNKNOWN,false);
     else
-      CAddonMgr::GetInstance().GetAddon(m_stringParameters[info.GetData1()],addon,ADDON_UNKNOWN,false);
+      CServiceBroker::GetAddonMgr().GetAddon(m_stringParameters[info.GetData1()],addon,ADDON_UNKNOWN,false);
     if (addon && info.m_info == SYSTEM_ADDON_TITLE)
       return addon->Name();
     if (addon && info.m_info == SYSTEM_ADDON_ICON)
@@ -4545,7 +4545,7 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::s
       if (item->GetAddonInfo()->Origin() == ORIGIN_SYSTEM)
         return g_localizeStrings.Get(24992);
       AddonPtr origin;
-      if (CAddonMgr::GetInstance().GetAddon(item->GetAddonInfo()->Origin(), origin, ADDON_UNKNOWN, false))
+      if (CServiceBroker::GetAddonMgr().GetAddon(item->GetAddonInfo()->Origin(), origin, ADDON_UNKNOWN, false))
         return origin->Name();
       return g_localizeStrings.Get(13205);
     }

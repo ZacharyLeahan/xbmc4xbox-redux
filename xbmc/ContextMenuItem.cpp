@@ -56,7 +56,7 @@ bool CContextMenuItem::Execute(const CFileItemPtr& item) const
     return false;
 
   ADDON::AddonPtr addon;
-  if (!ADDON::CAddonMgr::GetInstance().GetAddon(m_addonId, addon))
+  if (!CServiceBroker::GetAddonMgr().GetAddon(m_addonId, addon))
     return false;
 
   LanguageInvokerPtr invoker(new CContextItemAddonInvoker(&g_pythonParser, item));

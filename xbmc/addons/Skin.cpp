@@ -20,6 +20,7 @@
 
 #include "Skin.h"
 #include "AddonManager.h"
+#include "ServiceBroker.h"
 #include "Util.h"
 #include "dialogs/GUIDialogKaiToast.h"
 // fallback for new skin resolution code
@@ -156,16 +157,16 @@ boost::movelib::unique_ptr<CSkinInfo> CSkinInfo::FromExtension(AddonProps props,
   std::vector<RESOLUTION_INFO> resolutions;
 
   ELEMENTS elements;
-  if (CAddonMgr::GetInstance().GetExtElements(ext->configuration, "res", elements))
+  if (CServiceBroker::GetAddonMgr().GetExtElements(ext->configuration, "res", elements))
   {
     for (ELEMENTS::iterator i = elements.begin(); i != elements.end(); ++i)
     {
-      int width = atoi(CAddonMgr::GetInstance().GetExtValue(*i, "@width").c_str());
-      int height = atoi(CAddonMgr::GetInstance().GetExtValue(*i, "@height").c_str());
-      bool defRes = CAddonMgr::GetInstance().GetExtValue(*i, "@default") == "true";
-      std::string folder = CAddonMgr::GetInstance().GetExtValue(*i, "@folder");
+      int width = atoi(CServiceBroker::GetAddonMgr().GetExtValue(*i, "@width").c_str());
+      int height = atoi(CServiceBroker::GetAddonMgr().GetExtValue(*i, "@height").c_str());
+      bool defRes = CServiceBroker::GetAddonMgr().GetExtValue(*i, "@default") == "true";
+      std::string folder = CServiceBroker::GetAddonMgr().GetExtValue(*i, "@folder");
       float aspect = 0;
-      std::string strAspect = CAddonMgr::GetInstance().GetExtValue(*i, "@aspect");
+      std::string strAspect = CServiceBroker::GetAddonMgr().GetExtValue(*i, "@aspect");
       std::vector<std::string> fracs = StringUtils::Split(strAspect, ':');
       if (fracs.size() == 2)
         aspect = (float)(atof(fracs[0].c_str())/atof(fracs[1].c_str()));
@@ -181,18 +182,18 @@ boost::movelib::unique_ptr<CSkinInfo> CSkinInfo::FromExtension(AddonProps props,
   }
   else
   { // no resolutions specified -> backward compatibility
-    std::string defaultWide = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@defaultwideresolution");
+    std::string defaultWide = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@defaultwideresolution");
     if (defaultWide.empty())
-      defaultWide = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@defaultresolution");
+      defaultWide = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@defaultresolution");
     TranslateResolution(defaultWide, defaultRes);
   }
 
   float effectsSlowDown(1.f);
-  std::string str = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@effectslowdown");
+  std::string str = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@effectslowdown");
   if (!str.empty())
     effectsSlowDown = (float)atof(str.c_str());
 
-  bool debugging = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@debugging") == "true";
+  bool debugging = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@debugging") == "true";
 
   return boost::movelib::unique_ptr<CSkinInfo>(new CSkinInfo(boost::move(props), defaultRes, resolutions,
       effectsSlowDown, debugging));

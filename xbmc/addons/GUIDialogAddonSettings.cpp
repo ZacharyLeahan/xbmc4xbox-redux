@@ -19,6 +19,7 @@
  */
 
 #include "GUIDialogAddonSettings.h"
+#include "ServiceBroker.h"
 #include "filesystem/PluginDirectory.h"
 #include "addons/IAddon.h"
 #include "addons/AddonManager.h"
@@ -927,7 +928,7 @@ std::string CGUIDialogAddonSettings::GetAddonNames(const std::string& addonIDsli
     if (!retVal.empty())
       retVal += ", ";
     AddonPtr addon;
-    if (CAddonMgr::GetInstance().GetAddon(*it ,addon))
+    if (CServiceBroker::GetAddonMgr().GetAddon(*it ,addon))
       retVal += addon->Name();
     else
       retVal += *it;

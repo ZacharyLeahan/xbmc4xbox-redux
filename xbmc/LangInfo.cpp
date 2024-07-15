@@ -633,7 +633,7 @@ LanguageResourcePtr CLangInfo::GetLanguageAddon(const std::string& locale /* = "
     addonId = CSettings::Get().GetString("locale.language");
 
   ADDON::AddonPtr addon;
-  if (ADDON::CAddonMgr::GetInstance().GetAddon(addonId, addon, ADDON::ADDON_RESOURCE_LANGUAGE, true) && addon != NULL)
+  if (CServiceBroker::GetAddonMgr().GetAddon(addonId, addon, ADDON::ADDON_RESOURCE_LANGUAGE, true) && addon != NULL)
     return boost::dynamic_pointer_cast<ADDON::CLanguageResource>(addon);
 
   return LanguageResourcePtr();
@@ -679,10 +679,10 @@ bool CLangInfo::SetLanguage(bool& fallback, const std::string &strLanguage /* = 
       addonId = CSettings::Get().GetString("locale.language");
 
     ADDON::AddonPtr addon;
-    if (ADDON::CAddonMgr::GetInstance().GetAddon(addonId, addon, ADDON::ADDON_RESOURCE_LANGUAGE, false))
+    if (CServiceBroker::GetAddonMgr().GetAddon(addonId, addon, ADDON::ADDON_RESOURCE_LANGUAGE, false))
     {
       languageAddon = boost::static_pointer_cast<ADDON::CLanguageResource>(addon);
-      ADDON::CAddonMgr::GetInstance().EnableAddon(languageAddon->ID());
+      CServiceBroker::GetAddonMgr().EnableAddon(languageAddon->ID());
     }
   }
 
@@ -763,7 +763,7 @@ bool CLangInfo::SetLanguage(bool& fallback, const std::string &strLanguage /* = 
   }
 
   ADDON::VECADDONS addons;
-  if (ADDON::CAddonMgr::GetInstance().GetInstalledAddons(addons))
+  if (CServiceBroker::GetAddonMgr().GetInstalledAddons(addons))
   {
     std::string locale = CSettings::Get().GetString("locale.language");
     for (ADDON::VECADDONS::const_iterator it = addons.begin(); it != addons.end(); ++it)
@@ -1186,7 +1186,7 @@ void CLangInfo::SettingOptionsLanguageNamesFiller(const CSetting *setting, std::
 {
   // find languages...
   ADDON::VECADDONS addons;
-  if (!ADDON::CAddonMgr::GetInstance().GetAddons(addons, ADDON::ADDON_RESOURCE_LANGUAGE))
+  if (!CServiceBroker::GetAddonMgr().GetAddons(addons, ADDON::ADDON_RESOURCE_LANGUAGE))
     return;
 
   for (ADDON::VECADDONS::const_iterator addon = addons.begin(); addon != addons.end(); ++addon)

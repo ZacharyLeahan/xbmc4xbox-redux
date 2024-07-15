@@ -21,6 +21,7 @@
 #include "addons/AddonManager.h"
 #include "addons/AddonInstaller.h"
 #include "addons/AddonSystemSettings.h"
+#include "ServiceBroker.h"
 #include "addons/RepositoryUpdater.h"
 #include "guilib/GUIWindowManager.h"
 #include "messaging/helpers/DialogHelper.h"
@@ -94,7 +95,7 @@ bool CAddonSystemSettings::GetActive(const TYPE& type, AddonPtr& addon)
   if (it != m_activeSettings.end())
   {
     std::string settingValue = CSettings::Get().GetString(it->second);
-    return CAddonMgr::GetInstance().GetAddon(settingValue, addon, type);
+    return CServiceBroker::GetAddonMgr().GetAddon(settingValue, addon, type);
   }
   return false;
 }
@@ -135,13 +136,13 @@ bool CAddonSystemSettings::UnsetActive(const AddonPtr& addon)
 
 bool IsCompatible(const AddonPtr a)
 {
-  return CAddonMgr::GetInstance().IsCompatible(*a);
+  return CServiceBroker::GetAddonMgr().IsCompatible(*a);
 }
 
 ADDON::VECADDONS getIncompatible()
 {
   VECADDONS incompatible;
-  CAddonMgr::GetInstance().GetAddons(incompatible);
+  CServiceBroker::GetAddonMgr().GetAddons(incompatible);
   std::vector<AddonPtr>::iterator end_it = boost::range::remove_if(incompatible, IsCompatible);
   incompatible.erase(end_it, incompatible.end());
   return incompatible;
@@ -176,7 +177,7 @@ std::vector<std::string> CAddonSystemSettings::MigrateAddons(boost::function<voi
       CLog::Log(LOGWARNING, "ADDON: failed to unset %s", addon->ID().c_str());
       continue;
     }
-    if (!CAddonMgr::GetInstance().DisableAddon(addon->ID()))
+    if (!CServiceBroker::GetAddonMgr().DisableAddon(addon->ID()))
     {
       CLog::Log(LOGWARNING, "ADDON: failed to disable %s", addon->ID().c_str());
     }

@@ -21,6 +21,7 @@
 #include "Addon.h"
 #include "LanguageHook.h"
 
+#include "ServiceBroker.h"
 #include "addons/AddonManager.h"
 #include "addons/GUIDialogAddonSettings.h"
 #include "guilib/GUIWindowManager.h"
@@ -51,7 +52,7 @@ namespace XBMCAddon
         throw AddonException("No valid addon id could be obtained. None was passed and the script wasn't executed in a normal xbmc manner.");
 
       // if we still fail we MAY be able to recover.
-      if (!ADDON::CAddonMgr::GetInstance().GetAddon(id.c_str(), pAddon))
+      if (!CServiceBroker::GetAddonMgr().GetAddon(id.c_str(), pAddon))
       {
         // we need to check the version prior to trying a bw compatibility trick
         ADDON::AddonVersion version(getAddonVersion());
@@ -62,7 +63,7 @@ namespace XBMCAddon
           // try the default ...
           id = getDefaultId();
 
-          if (id.empty() || !ADDON::CAddonMgr::GetInstance().GetAddon(id.c_str(), pAddon))
+          if (id.empty() || !CServiceBroker::GetAddonMgr().GetAddon(id.c_str(), pAddon))
             throw AddonException("Could not get AddonPtr!");
           else
             CLog::Log(LOGERROR,"Use of deprecated functionality. Please to not assume that \"os.getcwd\" will return the script directory.");
@@ -75,12 +76,12 @@ namespace XBMCAddon
         }
       }
 
-      CAddonMgr::GetInstance().AddToUpdateableAddons(pAddon);
+      CServiceBroker::GetAddonMgr().AddToUpdateableAddons(pAddon);
     }
 
     Addon::~Addon()
     {
-      CAddonMgr::GetInstance().RemoveFromUpdateableAddons(pAddon);
+      CServiceBroker::GetAddonMgr().RemoveFromUpdateableAddons(pAddon);
     }
 
     String Addon::getLocalizedString(int id)

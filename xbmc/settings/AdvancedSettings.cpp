@@ -96,7 +96,7 @@ void CAdvancedSettings::OnSettingAction(const CSetting *setting)
   if (settingId == "debug.setextraloglevel")
   {
     AddonPtr addon;
-    CAddonMgr::GetInstance().GetAddon("xbmc.debug", addon);
+    CServiceBroker::GetAddonMgr().GetAddon("xbmc.debug", addon);
     CGUIDialogAddonSettings::ShowAndGetInput(addon, true);
     SetExtraLogsFromAddon(addon.get());
   }

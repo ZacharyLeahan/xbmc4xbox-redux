@@ -19,6 +19,7 @@
  */
 #include "Service.h"
 #include "AddonManager.h"
+#include "ServiceBroker.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "utils/log.h"
 #include "system.h"
@@ -29,7 +30,7 @@ namespace ADDON
 boost::movelib::unique_ptr<CService> CService::FromExtension(AddonProps props, const cp_extension_t* ext)
 {
   START_OPTION startOption(LOGIN);
-  std::string start = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@start");
+  std::string start = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@start");
   if (start == "startup")
     startOption = STARTUP;
   return boost::movelib::unique_ptr<CService>(new CService(boost::move(props), TYPE(UNKNOWN), startOption));

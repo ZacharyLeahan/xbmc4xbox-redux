@@ -27,6 +27,7 @@
 #include "utils/URIUtils.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "LangInfo.h"
+#include "ServiceBroker.h"
 #include "utils/log.h"
 #include "utils/SystemInfo.h"
 #include "addons/AddonManager.h"
@@ -312,7 +313,7 @@ void CGUIWindowWeather::CallScript()
   if (!StringUtils::EqualsNoCase(CSettings::Get().GetString("weather.addon"), DEFAULT_WEATHER_ADDON))
   {
     AddonPtr addon;
-    if (!ADDON::CAddonMgr::GetInstance().GetAddon(CSettings::Get().GetString("weather.addon"), addon, ADDON_SCRIPT_WEATHER))
+    if (!CServiceBroker::GetAddonMgr().GetAddon(CSettings::Get().GetString("weather.addon"), addon, ADDON_SCRIPT_WEATHER))
       return;
 
     // initialize our sys.argv variables

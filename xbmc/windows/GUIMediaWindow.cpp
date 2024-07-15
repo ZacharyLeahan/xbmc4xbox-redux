@@ -659,7 +659,7 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
   CLog::Log(LOGDEBUG,"  ParentPath = [%s]", CURL::GetRedacted(strParentPath).c_str());
 
   if (pathToUrl.IsProtocol("plugin"))
-    CAddonMgr::GetInstance().UpdateLastUsed(pathToUrl.GetHostName());
+    CServiceBroker::GetAddonMgr().UpdateLastUsed(pathToUrl.GetHostName());
 
   // see if we can load a previously cached folder
   CFileItemList cachedItems(strDirectory);
@@ -930,11 +930,11 @@ bool CGUIMediaWindow::OnClick(int iItem, const std::string &player)
     // execute the script
     CURL url(pItem->GetPath());
     AddonPtr addon;
-    if (CAddonMgr::GetInstance().GetAddon(url.GetHostName(), addon, ADDON_SCRIPT))
+    if (CServiceBroker::GetAddonMgr().GetAddon(url.GetHostName(), addon, ADDON_SCRIPT))
     {
       if (!CScriptInvocationManager::Get().Stop(addon->LibPath()))
       {
-        CAddonMgr::GetInstance().UpdateLastUsed(addon->ID());
+        CServiceBroker::GetAddonMgr().UpdateLastUsed(addon->ID());
         CScriptInvocationManager::Get().ExecuteAsync(addon->LibPath(), addon);
       }
       return true;
@@ -1025,7 +1025,7 @@ bool CGUIMediaWindow::OnClick(int iItem, const std::string &player)
     {
       CURL url(m_vecItems->GetPath());
       AddonPtr addon;
-      if (CAddonMgr::GetInstance().GetAddon(url.GetHostName(),addon))
+      if (CServiceBroker::GetAddonMgr().GetAddon(url.GetHostName(),addon))
       {
         PluginPtr plugin = boost::dynamic_pointer_cast<CPluginSource>(addon);
         if (plugin && plugin->Provides(CPluginSource::AUDIO))

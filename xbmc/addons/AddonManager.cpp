@@ -117,9 +117,9 @@ bool CAddonMgr::Factory(const cp_plugin_info_t* plugin, TYPE type, CAddonBuilder
       builder.SetType(TranslateType(ext->ext_point_id));
       builder.SetExtPoint(ext);
 
-      std::string libname = CAddonMgr::GetInstance().GetExtValue(ext->configuration, "@library");
+      std::string libname = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "@library");
       if (libname.empty())
-        libname = CAddonMgr::GetInstance().GetPlatformLibraryName(ext->configuration);
+        libname = CServiceBroker::GetAddonMgr().GetPlatformLibraryName(ext->configuration);
       builder.SetLibName(libname);
     }
   }
@@ -161,15 +161,15 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
     builder.SetDependencies(boost::move(dependencies));
   }
 
-  const cp_extension_t *metadata = CAddonMgr::GetInstance().GetExtension(plugin, "xbmc.addon.metadata");
+  const cp_extension_t *metadata = CServiceBroker::GetAddonMgr().GetExtension(plugin, "xbmc.addon.metadata");
   if (!metadata)
-    metadata = CAddonMgr::GetInstance().GetExtension(plugin, "kodi.addon.metadata");
+    metadata = CServiceBroker::GetAddonMgr().GetExtension(plugin, "kodi.addon.metadata");
 
   if (plugin->plugin_path && strcmp(plugin->plugin_path, "") != 0)
   {
     //backwards compatibility
-    std::string icon = metadata && CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "noicon") == "true" ? "" : "icon.png";
-    std::string fanart = metadata && CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "nofanart") == "true" ? "" : "fanart.jpg";
+    std::string icon = metadata && CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "noicon") == "true" ? "" : "icon.png";
+    std::string fanart = metadata && CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "nofanart") == "true" ? "" : "fanart.jpg";
     if (!icon.empty())
       builder.SetIcon(URIUtils::AddFileToFolder(plugin->plugin_path, icon));
     if (!fanart.empty())
@@ -178,14 +178,14 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
 
   if (metadata)
   {
-    builder.SetSummary(CAddonMgr::GetInstance().GetTranslatedString(metadata->configuration, "summary"));
-    builder.SetDescription(CAddonMgr::GetInstance().GetTranslatedString(metadata->configuration, "description"));
-    builder.SetDisclaimer(CAddonMgr::GetInstance().GetTranslatedString(metadata->configuration, "disclaimer"));
-    builder.SetChangelog(CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "news"));
-    builder.SetLicense(CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "license"));
-    builder.SetPackageSize(StringUtils::ToUint64(CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "size"), 0));
+    builder.SetSummary(CServiceBroker::GetAddonMgr().GetTranslatedString(metadata->configuration, "summary"));
+    builder.SetDescription(CServiceBroker::GetAddonMgr().GetTranslatedString(metadata->configuration, "description"));
+    builder.SetDisclaimer(CServiceBroker::GetAddonMgr().GetTranslatedString(metadata->configuration, "disclaimer"));
+    builder.SetChangelog(CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "news"));
+    builder.SetLicense(CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "license"));
+    builder.SetPackageSize(StringUtils::ToUint64(CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "size"), 0));
 
-    std::string language = CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "language");
+    std::string language = CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "language");
     if (!language.empty())
     {
       InfoMap extrainfo;
@@ -193,17 +193,17 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
       builder.SetExtrainfo(boost::move(extrainfo));
     }
 
-    builder.SetBroken(CAddonMgr::GetInstance().GetExtValue(metadata->configuration, "broken"));
+    builder.SetBroken(CServiceBroker::GetAddonMgr().GetExtValue(metadata->configuration, "broken"));
 
     if (plugin->plugin_path && strcmp(plugin->plugin_path, "") != 0)
     {
-      cp_cfg_element_t *assets = CAddonMgr::GetInstance().GetExtElement(metadata->configuration, "assets");
+      cp_cfg_element_t *assets = CServiceBroker::GetAddonMgr().GetExtElement(metadata->configuration, "assets");
       if (assets)
       {
         builder.SetIcon("");
         builder.SetFanart("");
-        std::string icon = CAddonMgr::GetInstance().GetExtValue(assets, "icon");
-        std::string fanart = CAddonMgr::GetInstance().GetExtValue(assets, "fanart");
+        std::string icon = CServiceBroker::GetAddonMgr().GetExtValue(assets, "icon");
+        std::string fanart = CServiceBroker::GetAddonMgr().GetExtValue(assets, "fanart");
 
         if (!icon.empty())
           builder.SetIcon(URIUtils::AddFileToFolder(plugin->plugin_path, icon));
@@ -212,7 +212,7 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
 
         std::vector<std::string> screenshots;
         ELEMENTS elements;
-        if (CAddonMgr::GetInstance().GetExtElements(assets, "screenshot", elements))
+        if (CServiceBroker::GetAddonMgr().GetExtElements(assets, "screenshot", elements))
         {
           for (ELEMENTS::const_iterator it = elements.begin(); it != elements.end(); ++it)
           {
@@ -267,11 +267,6 @@ CAddonMgr::CAddonMgr()
 CAddonMgr::~CAddonMgr()
 {
   DeInit();
-}
-
-CAddonMgr &CAddonMgr::GetInstance()
-{
-  return CServiceBroker::GetAddonMgr();
 }
 
 IAddonMgrCallback* CAddonMgr::GetCallbackForType(TYPE type)
@@ -749,7 +744,7 @@ static void ResolveDependencies(const std::string& addonId, std::vector<std::str
     return;
 
   AddonPtr addon;
-  if (!CAddonMgr::GetInstance().GetAddon(addonId, addon, ADDON_UNKNOWN, false))
+  if (!CServiceBroker::GetAddonMgr().GetAddon(addonId, addon, ADDON_UNKNOWN, false))
     missing.push_back(addonId);
   else
   {
@@ -917,16 +912,16 @@ std::string CAddonMgr::GetTranslatedString(const cp_cfg_element_t *root, const c
 
 bool CAddonMgr::PlatformSupportsAddon(const cp_plugin_info_t *plugin)
 {
-  const cp_extension_t *metadata = CAddonMgr::GetInstance().GetExtension(plugin, "xbmc.addon.metadata");
+  const cp_extension_t *metadata = CServiceBroker::GetAddonMgr().GetExtension(plugin, "xbmc.addon.metadata");
   if (!metadata)
-    metadata = CAddonMgr::GetInstance().GetExtension(plugin, "kodi.addon.metadata");
+    metadata = CServiceBroker::GetAddonMgr().GetExtension(plugin, "kodi.addon.metadata");
 
   // if platforms are not specified, assume supported
   if (!metadata)
     return true;
 
   std::vector<std::string> platforms;
-  if (!CAddonMgr::GetInstance().GetExtList(metadata->configuration, "platform", platforms))
+  if (!CServiceBroker::GetAddonMgr().GetExtList(metadata->configuration, "platform", platforms))
     return true;
 
   if (platforms.empty())

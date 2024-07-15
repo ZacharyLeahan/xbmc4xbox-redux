@@ -21,6 +21,7 @@
 #include "ResourceFile.h"
 #include "URL.h"
 #include "Util.h"
+#include "ServiceBroker.h"
 #include "addons/AddonManager.h"
 #include "addons/Resource.h"
 #include "utils/URIUtils.h"
@@ -58,7 +59,7 @@ bool CResourceFile::TranslatePath(const CURL &url, std::string &translatedPath)
     return false;
 
   AddonPtr addon;
-  if (!CAddonMgr::GetInstance().GetAddon(addonId, addon, ADDON_UNKNOWN, true) || addon == NULL)
+  if (!CServiceBroker::GetAddonMgr().GetAddon(addonId, addon, ADDON_UNKNOWN, true) || addon == NULL)
     return false;
 
   boost::shared_ptr<CResource> resource = boost::dynamic_pointer_cast<ADDON::CResource>(addon);

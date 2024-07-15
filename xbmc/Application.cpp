@@ -1019,7 +1019,7 @@ HRESULT CApplication::Create(HWND hWnd)
 
   // set logging from debug add-on
   AddonPtr addon;
-  CAddonMgr::GetInstance().GetAddon("xbmc.debug", addon);
+  CServiceBroker::GetAddonMgr().GetAddon("xbmc.debug", addon);
   if (addon)
     g_advancedSettings.SetExtraLogsFromAddon(addon.get());
 
@@ -1297,7 +1297,7 @@ HRESULT CApplication::Initialize()
 #ifdef __APPLE__
   g_xbmcHelper.CaptureAllInput();
 #endif
-  CAddonMgr::GetInstance().StartServices(false);
+  CServiceBroker::GetAddonMgr().StartServices(false);
 
   // configure seek handler
   CSeekHandler::Get().Configure();
@@ -1624,7 +1624,7 @@ bool CApplication::Save(TiXmlNode *settings) const
 bool CApplication::LoadSkin(const CStdString& skinID)
 {
   AddonPtr addon;
-  if (CAddonMgr::GetInstance().GetAddon(skinID, addon))
+  if (CServiceBroker::GetAddonMgr().GetAddon(skinID, addon))
   {
     if (LoadSkin(boost::dynamic_pointer_cast<ADDON::CSkinInfo>(addon)))
       return true;
@@ -3597,7 +3597,7 @@ void CApplication::Stop(bool bLCDStop)
     UnloadSkin();
 
     // Stop services before unloading Python
-    CAddonMgr::GetInstance().StopServices(false);
+    CServiceBroker::GetAddonMgr().StopServices(false);
 
     // unregister action listeners
     UnregisterActionListener(&CSeekHandler::Get());
@@ -4662,7 +4662,7 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
 
   // Get Screensaver Mode
   m_screenSaver.reset();
-  if (!CAddonMgr::GetInstance().GetAddon(CSettings::Get().GetString("screensaver.mode"), m_screenSaver))
+  if (!CServiceBroker::GetAddonMgr().GetAddon(CSettings::Get().GetString("screensaver.mode"), m_screenSaver))
     m_screenSaver.reset(new CScreenSaver(""));
 
   // disable screensaver lock from the login screen
@@ -4672,7 +4672,7 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
     // set to Dim in the case of a dialog on screen or playing video
     if (g_windowManager.HasModalDialog() || (IsPlayingVideo() && CSettings::Get().GetBool("screensaver.usedimonpause")))
     {
-      if (!CAddonMgr::GetInstance().GetAddon("screensaver.xbmc.builtin.dim", m_screenSaver))
+      if (!CServiceBroker::GetAddonMgr().GetAddon("screensaver.xbmc.builtin.dim", m_screenSaver))
         m_screenSaver.reset(new CScreenSaver(""));
     }
     // Check if we are Playing Audio and Vis instead Screensaver!
@@ -6190,7 +6190,7 @@ void CApplication::OnSettingAction(const CSetting *setting)
   else if (settingId == "screensaver.settings")
   {
     AddonPtr addon;
-    if (CAddonMgr::GetInstance().GetAddon(CSettings::Get().GetString("screensaver.mode"), addon, ADDON_SCREENSAVER))
+    if (CServiceBroker::GetAddonMgr().GetAddon(CSettings::Get().GetString("screensaver.mode"), addon, ADDON_SCREENSAVER))
       CGUIDialogAddonSettings::ShowAndGetInput(addon);
   }
   else if (settingId == "videoscreen.guicalibration")
