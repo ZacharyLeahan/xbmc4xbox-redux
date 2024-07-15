@@ -63,18 +63,6 @@ typedef enum
   VIDEO_PAL60
 } F_VIDEO;
 
-struct sortstringbyname
-{
-  bool operator()(const CStdString& strItem1, const CStdString& strItem2)
-  {
-    CStdString strLine1 = strItem1;
-    CStdString strLine2 = strItem2;
-    strLine1 = strLine1.ToLower();
-    strLine2 = strLine2.ToLower();
-    return strcmp(strLine1.c_str(), strLine2.c_str()) < 0;
-  }
-};
-
 struct XBOXDETECTION
 {
   std::vector<CStdString> client_ip;
@@ -89,18 +77,18 @@ public:
   CUtil(void);
   virtual ~CUtil(void);
   static bool GetVolumeFromFileName(const CStdString& strFileName, CStdString& strFileTitle, CStdString& strVolumeNumber);
-  static void CleanString(const CStdString& strFileName, CStdString& strTitle, CStdString& strTitleAndYear, CStdString& strYear, bool bRemoveExtension = false, bool bCleanChars = true);
+  static void CleanString(const CStdString& strFileName, std::string& strTitle, std::string& strTitleAndYear, std::string& strYear, bool bRemoveExtension = false, bool bCleanChars = true);
   static CStdString GetTitleFromPath(const CURL& url, bool bIsFolder = false);
   static CStdString GetTitleFromPath(const CStdString& strFileNameAndPath, bool bIsFolder = false);
-  static void GetQualifiedFilename(const CStdString &strBasePath, CStdString &strFilename);
+  static void GetQualifiedFilename(const std::string &strBasePath, std::string &strFilename);
   static bool InstallTrainer(CTrainer& trainer);
   static bool RemoveTrainer();
   static bool PatchCountryVideo(F_COUNTRY Country, F_VIDEO Video);
   static void RunShortcut(const char* szPath);
   static void RunXBE(const char* szPath, char* szParameters = NULL, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL);
-  static void LaunchXbe(const char* szPath, const char* szXbe, const char* szParameters, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL); 
+  static void LaunchXbe(const char* szPath, const char* szXbe, const char* szParameters, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL);
   static void GetHomePath(CStdString& strPath);
-  static bool ExcludeFileOrFolder(const CStdString& strFileOrFolder, const CStdStringArray& regexps);
+  static bool ExcludeFileOrFolder(const CStdString& strFileOrFolder, const std::vector<std::string>& regexps);
   static void GetFileAndProtocol(const CStdString& strURL, CStdString& strDir);
   static int GetDVDIfoTitle(const CStdString& strPathFile);
   static bool CacheXBEIcon(const CStdString& strFilePath, const CStdString& strIcon);
@@ -155,7 +143,7 @@ public:
   static CStdString MakeLegalPath(const CStdString &strPath, int LegalType=LEGAL_NONE);
 #endif
   static CStdString ValidatePath(const CStdString &path, bool bFixDoubleSlashes = false); ///< return a validated path, with correct directory separators.
-  
+
   static bool IsUsingTTFSubtitles();
   static void SplitParams(const std::string &paramString, std::vector<std::string> &parameters);
   static void SplitExecFunction(const std::string &execString, std::string &function, std::vector<std::string> &parameters);
@@ -174,7 +162,7 @@ public:
   static bool AutoDetectionPing(CStdString strFTPUserName, CStdString strFTPPass, CStdString strNickName, int iFTPPort);
   static bool AutoDetection();
   static void AutoDetectionGetSource(VECSOURCES &share);
-  static void GetSkinThemes(std::vector<CStdString>& vecTheme);
+  static void GetSkinThemes(std::vector<std::string>& vecTheme);
   static void GetRecursiveListing(const CStdString& strPath, CFileItemList& items, const CStdString& strMask, unsigned int flags = 0 /* DIR_FLAG_DEFAULTS */);
   static void GetRecursiveDirsListing(const CStdString& strPath, CFileItemList& items, unsigned int flags = 0 /* DIR_FLAG_DEFAULTS */);
   static void WipeDir(const CStdString& strPath);
@@ -204,7 +192,7 @@ public:
   static CStdString GetDefaultFolderThumb(const CStdString &folderThumb);
 
   static void BootToDash();
-  
+
   static void InitRandomSeed();
 
   // Get decimal integer representation of roman digit, ivxlcdm are valid
@@ -216,6 +204,11 @@ public:
 
   static bool CanBindPrivileged();
   static bool ValidatePort(int port);
+
+  /*!
+   * \brief Thread-safe random number generation
+   */
+  static int GetRandomNumber();
 };
 
 

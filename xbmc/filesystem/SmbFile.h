@@ -40,6 +40,7 @@
 #include "IFile.h"
 #include "URL.h"
 #include "threads/SingleLock.h"
+#include "utils/StdString.h"
 
 #define NT_STATUS_CONNECTION_REFUSED long(0xC0000000 | 0x0236)
 #define NT_STATUS_INVALID_HANDLE long(0xC0000000 | 0x0008)
@@ -89,7 +90,7 @@ public:
   virtual int Stat(struct __stat64* buffer);
   virtual int64_t GetLength();
   virtual int64_t GetPosition();
-  virtual int Write(const void* lpBuf, int64_t uiBufSize);
+  virtual ssize_t Write(const void* lpBuf, size_t uiBufSize);
 
   virtual bool OpenForWrite(const CURL& url, bool bOverWrite = false);
   virtual bool Delete(const CURL& url);

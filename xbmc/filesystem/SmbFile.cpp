@@ -161,7 +161,7 @@ void CSMB::Purge()
 void CSMB::PurgeEx(const CURL& url)
 {
   CSingleLock lock(*this);
-  CStdString strShare = url.GetFileName().substr(0, url.GetFileName().Find('/'));
+  CStdString strShare = url.GetFileName().substr(0, url.GetFileName().find('/'));
 
   if (m_strLastShare.length() > 0 && (m_strLastShare != strShare || m_strLastHost != url.GetHostName()))
     smbc_purge();
@@ -514,7 +514,7 @@ void CSmbFile::Close()
   m_fd = -1;
 }
 
-int CSmbFile::Write(const void* lpBuf, int64_t uiBufSize)
+ssize_t CSmbFile::Write(const void* lpBuf, size_t uiBufSize)
 {
   if (m_fd == -1) return -1;
   DWORD dwNumberOfBytesWritten = 0;
@@ -524,7 +524,7 @@ int CSmbFile::Write(const void* lpBuf, int64_t uiBufSize)
   CSingleLock lock(smb);
   dwNumberOfBytesWritten = smbc_write(m_fd, (void*)lpBuf, (DWORD)uiBufSize);
 
-  return (int)dwNumberOfBytesWritten;
+  return dwNumberOfBytesWritten;
 }
 
 bool CSmbFile::Delete(const CURL& url)

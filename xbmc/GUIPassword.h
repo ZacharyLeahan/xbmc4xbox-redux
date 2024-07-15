@@ -67,7 +67,7 @@ public:
   bool CheckLock(LockType btnType, const CStdString& strPassword, int iHeading);
   bool CheckLock(LockType btnType, const CStdString& strPassword, int iHeading, bool& bCanceled);
   bool IsProfileLockUnlocked(int iProfile=-1);
-  bool IsProfileLockUnlocked(int iProfile, bool& bCanceled);
+  bool IsProfileLockUnlocked(int iProfile, bool& bCanceled, bool prompt = true);
   bool IsMasterLockUnlocked(bool bPromptUser);
   bool IsMasterLockUnlocked(bool bPromptUser, bool& bCanceled);
   
@@ -89,7 +89,7 @@ public:
   bool LockSource(const CStdString& strType, const CStdString& strName, bool bState);
   void LockSources(bool lock);
   void RemoveSourceLocks();
-  bool IsDatabasePathUnlocked(CStdString& strPath, VECSOURCES& VECSOURCES);
+  bool IsDatabasePathUnlocked(std::string& strPath, VECSOURCES& VECSOURCES);
 
   virtual void OnSettingAction(const CSetting *setting);
 

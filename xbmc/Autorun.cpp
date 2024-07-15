@@ -36,11 +36,12 @@
 #include "video/VideoDatabase.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
+#include "Util.h"
 #ifdef HAS_CDDA_RIPPER
 #include "cdrip/CDDARipper.h"
 #endif
 #ifdef _XBOX
-#include "interfaces/Builtins.h"
+#include "interfaces/builtins/Builtins.h"
 #include "utils/Trainer.h"
 #include "xbox/xbeheader.h"
 #include "ProgramDatabase.h"
@@ -191,7 +192,7 @@ void CAutorun::RunMedia(bool bypassSettings, bool restart)
     g_windowManager.SendMessage( msg );
     g_playlistPlayer.SetCurrentPlaylist(PLAYLIST_MUSIC);
     // Start playing the items we inserted
-    g_playlistPlayer.Play(nSize);
+    g_playlistPlayer.Play(nSize, "");
   }
 }
 
@@ -261,7 +262,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
             g_playlistPlayer.ClearPlaylist(PLAYLIST_VIDEO);
             g_playlistPlayer.Add(PLAYLIST_VIDEO, items);
             g_playlistPlayer.SetCurrentPlaylist(PLAYLIST_VIDEO);
-            g_playlistPlayer.Play(0);
+            g_playlistPlayer.Play(0, "");
             bPlaying = true;
             return true;
           }
@@ -272,7 +273,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
           bPlaying = true;
           CStdString strExec;
           strExec.Format("XBMC.RecursiveSlideShow(%s)", pItem->GetPath().c_str());
-          CBuiltins::Execute(strExec);
+          CBuiltins::GetInstance().Execute(strExec);
           return true;
         }
       }
@@ -321,7 +322,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
       g_playlistPlayer.ClearPlaylist(PLAYLIST_VIDEO);
       g_playlistPlayer.Add(PLAYLIST_VIDEO, itemlist);
       g_playlistPlayer.SetCurrentPlaylist(PLAYLIST_VIDEO);
-      g_playlistPlayer.Play(0);
+      g_playlistPlayer.Play(0, "");
     }
   }
   // then music
@@ -348,7 +349,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
         bPlaying = true;
         CStdString strExec;
         strExec.Format("XBMC.RecursiveSlideShow(%s)", strDrive.c_str());
-        CBuiltins::Execute(strExec);
+        CBuiltins::GetInstance().Execute(strExec);
         break;
       }
     }

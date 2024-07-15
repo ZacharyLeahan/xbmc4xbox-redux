@@ -48,6 +48,16 @@ void CSpecialProtocol::SetXBMCPath(const CStdString &dir)
   SetPath("xbmc", dir);
 }
 
+void CSpecialProtocol::SetXBMCBinPath(const std::string &dir)
+{
+  SetPath("xbmcbin", dir);
+}
+
+void CSpecialProtocol::SetXBMCBinAddonPath(const std::string &dir)
+{
+  SetPath("xbmcbinaddons", dir);
+}
+
 void CSpecialProtocol::SetHomePath(const CStdString &dir)
 {
   SetPath("home", dir);
@@ -76,7 +86,7 @@ bool CSpecialProtocol::ComparePath(const CStdString &path1, const CStdString &pa
 CStdString CSpecialProtocol::TranslatePath(const CStdString &path)
 {
   CURL url(path);
-  if (!url.GetProtocol().Equals("special"))
+  if (!url.IsProtocol("special"))
   {
     return path;
   }
@@ -87,7 +97,7 @@ CStdString CSpecialProtocol::TranslatePath(const CStdString &path)
 CStdString CSpecialProtocol::TranslatePath(const CURL &url)
 {
   // check for special-protocol, if not, return
-  if (!url.GetProtocol().Equals("special"))
+  if (!url.IsProtocol("special"))
   {
     return url.Get();
   }
@@ -134,6 +144,7 @@ CStdString CSpecialProtocol::TranslatePath(const CURL &url)
   // from here on, we have our "real" special paths
   else if (RootDir.Equals("xbmc") ||
            RootDir.Equals("xbmcbin") ||
+           RootDir.Equals("xbmcbinaddons") ||
            RootDir.Equals("home") ||
            RootDir.Equals("userhome") ||
            RootDir.Equals("temp") ||
@@ -225,6 +236,8 @@ CStdString CSpecialProtocol::TranslatePathConvertCase(const CStdString& path)
 void CSpecialProtocol::LogPaths()
 {
   CLog::Log(LOGNOTICE, "special://xbmc/ is mapped to: %s", GetPath("xbmc").c_str());
+  CLog::Log(LOGNOTICE, "special://xbmcbin/ is mapped to: %s", GetPath("xbmcbin").c_str());
+  CLog::Log(LOGNOTICE, "special://xbmcbinaddons/ is mapped to: %s", GetPath("xbmcbinaddons").c_str());
   CLog::Log(LOGNOTICE, "special://masterprofile/ is mapped to: %s", GetPath("masterprofile").c_str());
   CLog::Log(LOGNOTICE, "special://home/ is mapped to: %s", GetPath("home").c_str());
   CLog::Log(LOGNOTICE, "special://temp/ is mapped to: %s", GetPath("temp").c_str());

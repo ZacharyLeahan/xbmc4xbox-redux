@@ -187,13 +187,13 @@ void CMythSession::SetFileItemMetaData(CFileItem &item, cmyth_proginfo_t program
    * would cause it to be shown in a different position if it was indeed strictly sorting by
    * what is displayed in the list).
    */
-  tag->m_strSortTitle = title + " " + item.m_dateTime.GetAsDBDateTime(); // e.g. Mythbusters 2009-12-13 12:23:14
+  tag->m_strSortTitle = title + " " + item.m_dateTime.GetAsDBDateTime().c_str(); // e.g. Mythbusters 2009-12-13 12:23:14
 
   /*
    * Set further FileItem and VideoInfoTag meta-data based on whether it is LiveTV or not.
    */
   CURL url(item.GetPath());
-  if (url.GetFileName().Left(9) == "channels/")
+  if (StringUtils::StartsWith(url.GetFileName(), "channels/"))
   {
     /*
      * Prepend the channel number onto the FileItem title for the listing so it's clear what is

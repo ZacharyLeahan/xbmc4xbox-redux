@@ -20,29 +20,26 @@
  *
  */
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "guilib/GUIDialog.h"
+
 
 class CMediaSource;
 
 enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
-                      CONTEXT_BUTTON_LAUNCH,
-                      CONTEXT_BUTTON_LAUNCH_IN,
-                      CONTEXT_BUTTON_GAMESAVES,
                       CONTEXT_BUTTON_RENAME,
                       CONTEXT_BUTTON_DELETE,
-                      CONTEXT_BUTTON_COPY,
                       CONTEXT_BUTTON_MOVE,
-                      CONTEXT_BUTTON_TRAINER_OPTIONS,
-                      CONTEXT_BUTTON_SCAN_TRAINERS,
                       CONTEXT_BUTTON_ADD_FAVOURITE,
                       CONTEXT_BUTTON_SETTINGS,
-                      CONTEXT_BUTTON_GOTO_ROOT,
-                      CONTEXT_BUTTON_PLAY_DISC,
-                      CONTEXT_BUTTON_RESUME_DISC,
                       CONTEXT_BUTTON_RIP_CD,
+                      CONTEXT_BUTTON_CANCEL_RIP_CD,
                       CONTEXT_BUTTON_RIP_TRACK,
                       CONTEXT_BUTTON_EJECT_DISC,
-                      CONTEXT_BUTTON_ADD_SOURCE,
+                      CONTEXT_BUTTON_EJECT_DRIVE,
                       CONTEXT_BUTTON_EDIT_SOURCE,
                       CONTEXT_BUTTON_REMOVE_SOURCE,
                       CONTEXT_BUTTON_SET_DEFAULT,
@@ -62,8 +59,6 @@ enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
                       CONTEXT_BUTTON_CANCEL_MOVE,
                       CONTEXT_BUTTON_MOVE_ITEM_UP,
                       CONTEXT_BUTTON_MOVE_ITEM_DOWN,
-                      CONTEXT_BUTTON_SAVE,
-                      CONTEXT_BUTTON_LOAD,
                       CONTEXT_BUTTON_CLEAR,
                       CONTEXT_BUTTON_QUEUE_ITEM,
                       CONTEXT_BUTTON_PLAY_ITEM,
@@ -71,23 +66,19 @@ enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
                       CONTEXT_BUTTON_PLAY_PARTYMODE,
                       CONTEXT_BUTTON_PLAY_PART,
                       CONTEXT_BUTTON_RESUME_ITEM,
-                      CONTEXT_BUTTON_RESTART_ITEM,
                       CONTEXT_BUTTON_EDIT,
                       CONTEXT_BUTTON_EDIT_SMART_PLAYLIST,
                       CONTEXT_BUTTON_INFO,
                       CONTEXT_BUTTON_INFO_ALL,
                       CONTEXT_BUTTON_CDDB,
-                      CONTEXT_BUTTON_REFRESH,
                       CONTEXT_BUTTON_SCAN,
-                      CONTEXT_BUTTON_STOP_SCANNING,
+                      CONTEXT_BUTTON_SCAN_TO_LIBRARY,
                       CONTEXT_BUTTON_SET_ARTIST_THUMB,
                       CONTEXT_BUTTON_SET_SEASON_ART,
                       CONTEXT_BUTTON_CANCEL_PARTYMODE,
                       CONTEXT_BUTTON_MARK_WATCHED,
                       CONTEXT_BUTTON_MARK_UNWATCHED,
                       CONTEXT_BUTTON_SET_CONTENT,
-                      CONTEXT_BUTTON_ADD_TO_LIBRARY,
-                      CONTEXT_BUTTON_SONG_INFO,
                       CONTEXT_BUTTON_EDIT_PARTYMODE,
                       CONTEXT_BUTTON_LINK_MOVIE,
                       CONTEXT_BUTTON_UNLINK_MOVIE,
@@ -96,34 +87,48 @@ enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
                       CONTEXT_BUTTON_PLAY_OTHER,
                       CONTEXT_BUTTON_SET_ACTOR_THUMB,
                       CONTEXT_BUTTON_UNLINK_BOOKMARK,
-                      CONTEXT_BUTTON_PLUGIN_SETTINGS,
-                      CONTEXT_BUTTON_SCRIPT_SETTINGS,
+                      CONTEXT_BUTTON_ADD,
+                      CONTEXT_BUTTON_ACTIVATE,
+                      CONTEXT_BUTTON_START_RECORD,
+                      CONTEXT_BUTTON_ADD_TIMER,
+                      CONTEXT_BUTTON_STOP_RECORD,
+                      CONTEXT_BUTTON_EDIT_TIMER,
+                      CONTEXT_BUTTON_EDIT_TIMER_RULE,
+                      CONTEXT_BUTTON_DELETE_TIMER,
+                      CONTEXT_BUTTON_DELETE_TIMER_RULE,
+                      CONTEXT_BUTTON_GROUP_MANAGER,
+                      CONTEXT_BUTTON_CHANNEL_MANAGER,
                       CONTEXT_BUTTON_SET_MOVIESET_ART,
-                      CONTEXT_BUTTON_DELETE_PLUGIN,
+                      CONTEXT_BUTTON_BEGIN,
+                      CONTEXT_BUTTON_END,
+                      CONTEXT_BUTTON_NOW,
+                      CONTEXT_BUTTON_FIND,
+                      CONTEXT_BUTTON_MENU_HOOKS,
                       CONTEXT_BUTTON_PLAY_AND_QUEUE,
                       CONTEXT_BUTTON_PLAY_ONLY_THIS,
+                      CONTEXT_BUTTON_UPDATE_EPG,
                       CONTEXT_BUTTON_TAGS_ADD_ITEMS,
                       CONTEXT_BUTTON_TAGS_REMOVE_ITEMS,
                       CONTEXT_BUTTON_SET_MOVIESET,
                       CONTEXT_BUTTON_MOVIESET_ADD_REMOVE_ITEMS,
                       CONTEXT_BUTTON_BROWSE_INTO,
                       CONTEXT_BUTTON_EDIT_SORTTITLE,
-                      CONTEXT_BUTTON_USER1,
-                      CONTEXT_BUTTON_USER2,
-                      CONTEXT_BUTTON_USER3,
-                      CONTEXT_BUTTON_USER4,
-                      CONTEXT_BUTTON_USER5,
-                      CONTEXT_BUTTON_USER6,
-                      CONTEXT_BUTTON_USER7,
-                      CONTEXT_BUTTON_USER8,
-                      CONTEXT_BUTTON_USER9,
-                      CONTEXT_BUTTON_USER10
+                      CONTEXT_BUTTON_UNDELETE,
+                      CONTEXT_BUTTON_DELETE_ALL,
+                      CONTEXT_BUTTON_HELP,
+                      CONTEXT_BUTTON_ACTIVE_ADSP_SETTINGS,
+                      CONTEXT_BUTTON_LAUNCH, // used to launch XBE
+                      CONTEXT_BUTTON_LAUNCH_IN,
+                      CONTEXT_BUTTON_GAMESAVES,
+                      CONTEXT_BUTTON_COPY, // used to copy Game Saves
+                      CONTEXT_BUTTON_TRAINER_OPTIONS,
+                      CONTEXT_BUTTON_SCAN_TRAINERS,
                     };
 
-class CContextButtons : public std::vector< std::pair<unsigned int, CStdString> >
+class CContextButtons : public std::vector< std::pair<unsigned int, std::string> >
 {
 public:
-  void Add(unsigned int, const CStdString &label);
+  void Add(unsigned int, const std::string &label);
   void Add(unsigned int, int label);
 };
 
@@ -134,19 +139,23 @@ public:
   CGUIDialogContextMenu(void);
   virtual ~CGUIDialogContextMenu(void);
   virtual bool OnMessage(CGUIMessage &message);
+  virtual bool OnAction(const CAction& action);
   virtual void SetPosition(float posX, float posY);
 
-  static bool SourcesMenu(const CStdString &strType, const CFileItemPtr item, float posX, float posY);
-  static void SwitchMedia(const CStdString& strType, const CStdString& strPath);
+  static bool SourcesMenu(const std::string &strType, const CFileItemPtr& item, float posX, float posY);
+  static void SwitchMedia(const std::string& strType, const std::string& strPath);
 
-  static void GetContextButtons(const CStdString &type, const CFileItemPtr item, CContextButtons &buttons);
-  static bool OnContextButton(const CStdString &type, const CFileItemPtr item, CONTEXT_BUTTON button);
+  static void GetContextButtons(const std::string &type, const CFileItemPtr& item, CContextButtons &buttons);
+  static bool OnContextButton(const std::string &type, const CFileItemPtr& item, CONTEXT_BUTTON button);
 
-  /*! \brief Show the context menu with the given choices
-   \param choices the choices available for the user.
-   \return -1 if no choice is made, else the chosen option.
+  /*! Show the context menu with the given choices and return the index of the selected item,
+    or -1 if cancelled.
    */
+  static int Show(const CContextButtons& choices);
+
+  /*! Legacy method that returns the context menu id, or -1 on cancel */
   static int ShowAndGetChoice(const CContextButtons &choices);
+
 protected:
   void SetupButtons();
 
@@ -155,15 +164,15 @@ protected:
    */
   void PositionAtCurrentFocus();
 
-  float GetWidth();
-  float GetHeight();
+  virtual float GetWidth() const;
+  virtual float GetHeight() const;
   virtual void OnInitWindow();
   virtual void OnWindowLoaded();
   virtual void OnDeinitWindow(int nextWindowID);
-  static CStdString GetDefaultShareNameByType(const CStdString &strType);
-  static void SetDefault(const CStdString &strType, const CStdString &strDefault);
-  static void ClearDefault(const CStdString &strType);
-  static CMediaSource *GetShare(const CStdString &type, const CFileItem *item);
+  static std::string GetDefaultShareNameByType(const std::string &strType);
+  static void SetDefault(const std::string &strType, const std::string &strDefault);
+  static void ClearDefault(const std::string &strType);
+  static CMediaSource *GetShare(const std::string &type, const CFileItem *item);
 
 private:
   float m_coordX, m_coordY;

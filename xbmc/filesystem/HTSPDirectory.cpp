@@ -166,7 +166,7 @@ bool CHTSPDirectorySession::Open(const CURL& url)
     return false;
   }
 
-  if(!url.GetUserName().IsEmpty())
+  if(!url.GetUserName().empty())
     m_session.Auth(url.GetUserName(), url.GetPassWord());
 
   if(!m_session.SendEnableAsync())
@@ -399,7 +399,9 @@ bool CHTSPDirectory::GetTag(const CURL &base, CFileItemList &items)
 {
   CURL url(base);
 
-  int id = atoi(url.GetFileName().Mid(5));
+  int id = 0;
+  if (url.GetFileName().size() >= 5)
+    id = atoi(url.GetFileName().substr(5).c_str());
 
   SChannels channels = m_session->GetChannels(id);
   if(channels.empty())
@@ -416,7 +418,7 @@ bool CHTSPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
     return false;
 
 
-  if(url.GetFileName().IsEmpty())
+  if(url.GetFileName().empty())
   {
     CFileItemPtr item;
 
@@ -447,7 +449,7 @@ bool CHTSPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
 
     return true;
   }
-  else if(url.GetFileName().Left(5) == "tags/")
+  else if (StringUtils::StartsWith(url.GetFileName(), "tags/"))
     return GetTag(url, items);
   return false;
 }

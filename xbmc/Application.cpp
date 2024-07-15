@@ -22,7 +22,7 @@
 #include "threads/SystemClock.h"
 #include "system.h"
 #include "Application.h"
-#include "interfaces/Builtins.h"
+#include "interfaces/builtins/Builtins.h"
 #include "utils/Variant.h"
 #include "utils/Splash.h"
 #include "LangInfo.h"
@@ -34,6 +34,7 @@
 #include "PlayListPlayer.h"
 #include "Autorun.h"
 #include "video/Bookmark.h"
+#include "video/VideoLibraryQueue.h"
 #include "network/NetworkServices.h"
 #include "utils/LangCodeExpander.h"
 #include "GUIInfoManager.h"
@@ -159,6 +160,7 @@
 #include "utils/XMLUtils.h"
 #include "addons/AddonInstaller.h"
 #include "addons/AddonManager.h"
+#include "addons/RepositoryUpdater.h"
 #include "music/tags/MusicInfoTag.h"
 #include "music/tags/MusicInfoTagLoaderFactory.h"
 
@@ -330,7 +332,6 @@ CApplication::CApplication(void)
   , m_itemCurrentFile(new CFileItem)
   , m_stackFileItemToUpdate(new CFileItem)
   , m_progressTrackingItem(new CFileItem)
-  , m_videoInfoScanner(new CVideoInfoScanner)
   , m_musicInfoScanner(new CMusicInfoScanner)
 {
   m_network = NULL;
@@ -711,6 +712,12 @@ extern "C" void __stdcall update_emu_environ();
 
 HRESULT CApplication::Create(HWND hWnd)
 {
+  m_ServiceManager.reset(new CServiceManager());
+  if (!m_ServiceManager->Init1())
+  {
+    return false;
+  }
+
 #if defined(HAS_LINUX_NETWORK)
   m_network = new CNetworkLinux();
 #elif defined(HAS_WIN32_NETWORK)
@@ -1005,21 +1012,14 @@ HRESULT CApplication::Create(HWND hWnd)
   // initialize the addon database (must be before the addon manager is init'd)
   CDatabaseManager::Get().Initialize(true);
 
-#ifdef HAS_PYTHON
-  CScriptInvocationManager::Get().RegisterLanguageInvocationHandler(&g_pythonParser, ".py");
-#endif // HAS_PYTHON
-
-  // start-up Addons Framework
-  // currently bails out if either cpluff Dll is unavailable or system dir can not be scanned
-  if (!CAddonMgr::Get().Init())
+  if (!m_ServiceManager->Init2())
   {
-    CLog::Log(LOGFATAL, "CApplication::Create: Unable to start CAddonMgr");
     FatalErrorHandler(true, true, true);
   }
 
   // set logging from debug add-on
   AddonPtr addon;
-  CAddonMgr::Get().GetAddon("xbmc.debug", addon);
+  CAddonMgr::GetInstance().GetAddon("xbmc.debug", addon);
   if (addon)
     g_advancedSettings.SetExtraLogsFromAddon(addon.get());
 
@@ -1269,6 +1269,11 @@ HRESULT CApplication::Initialize()
     uiInitializationFinished = firstWindow != WINDOW_STARTUP_ANIM;
 
     g_windowManager.ActivateWindow(firstWindow);
+
+    if (!m_ServiceManager->Init3())
+    {
+      CLog::Log(LOGERROR, "Application - Init3 failed");
+    }
   }
 
   //g_sysinfo.Refresh();
@@ -1292,13 +1297,15 @@ HRESULT CApplication::Initialize()
 #ifdef __APPLE__
   g_xbmcHelper.CaptureAllInput();
 #endif
-  CAddonMgr::Get().StartServices(false);
+  CAddonMgr::GetInstance().StartServices(false);
 
   // configure seek handler
   CSeekHandler::Get().Configure();
 
   // register action listeners
   RegisterActionListener(&CSeekHandler::Get());
+
+  CRepositoryUpdater::GetInstance().Start();
 
   CLog::Log(LOGNOTICE, "initialize done");
 
@@ -1617,7 +1624,7 @@ bool CApplication::Save(TiXmlNode *settings) const
 bool CApplication::LoadSkin(const CStdString& skinID)
 {
   AddonPtr addon;
-  if (CAddonMgr::Get().GetAddon(skinID, addon))
+  if (CAddonMgr::GetInstance().GetAddon(skinID, addon))
   {
     if (LoadSkin(boost::dynamic_pointer_cast<ADDON::CSkinInfo>(addon)))
       return true;
@@ -1631,7 +1638,13 @@ bool CApplication::LoadSkin(const SkinPtr& skin)
   if (!skin)
     return false;
 
+  // start/prepare the skin
   skin->Start();
+
+  // migrate any skin-specific settings that are still stored in guisettings.xml
+  CSkinSettings::Get().MigrateSettings(skin);
+
+  // check if the skin has been properly loaded and if it has a Home.xml
   if (!skin->HasSkinFile("Home.xml"))
     return false;
 
@@ -1754,6 +1767,9 @@ void CApplication::UnloadSkin(bool forReload /* = false */)
 {
   CLog::Log(LOGINFO, "Unloading old skin %s...", forReload ? "for reload " : "");
 
+  if (g_SkinInfo != NULL)
+    g_SkinInfo->SaveSettings();
+
   g_audioManager.Enable(false);
 
   g_windowManager.DeInitialize();
@@ -1782,7 +1798,7 @@ void CApplication::UnloadSkin(bool forReload /* = false */)
 bool CApplication::LoadUserWindows()
 {
   // Start from wherever home.xml is
-  std::vector<CStdString> vecSkinPath;
+  std::vector<std::string> vecSkinPath;
   g_SkinInfo->GetSkinPaths(vecSkinPath);
   for (unsigned int i = 0;i < vecSkinPath.size();++i)
   {
@@ -2198,7 +2214,7 @@ bool CApplication::OnAction(CAction &action)
   // built in functions : execute the built-in
   if (action.GetID() == ACTION_BUILT_IN_FUNCTION)
   {
-    CBuiltins::Execute(action.GetName());
+    CBuiltins::GetInstance().Execute(action.GetName());
     m_navigationTimer.StartZero();
     return true;
   }
@@ -2274,7 +2290,7 @@ bool CApplication::OnAction(CAction &action)
         CMusicDatabase db;
         if (db.Open())      // OpenForWrite() ?
         {
-          db.SetSongRating(m_itemCurrentFile->GetPath(), m_itemCurrentFile->GetMusicInfoTag()->GetRating());
+          db.SetSongUserrating(m_itemCurrentFile->GetPath(), m_itemCurrentFile->GetMusicInfoTag()->GetUserrating());
           db.Close();
         }
         // send a message to all windows to tell them to update the fileitem (eg playlistplayer, media windows)
@@ -2476,7 +2492,7 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
 
   case TMSG_QUIT:
 #ifdef _XBOX
-    CBuiltins::Execute("XBMC.Dashboard()");
+    CBuiltins::GetInstance().Execute("XBMC.Dashboard()");
 #else
     Stop(EXITCODE_QUIT);
 #endif
@@ -2612,15 +2628,6 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
 #endif
     break;
 
-  case TMSG_SETPVRMANAGERSTATE:
-#ifndef _XBOX
-    if (pMsg->param1 != 0)
-      StartPVRManager();
-    else
-      StopPVRManager();
-#endif
-    break;
-
   case TMSG_START_ANDROID_ACTIVITY:
   {
 #if defined(TARGET_ANDROID)
@@ -2707,7 +2714,7 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
     break;
 
   case TMSG_EXECUTE_BUILT_IN:
-    CBuiltins::Execute(pMsg->strParam.c_str());
+    CBuiltins::GetInstance().Execute(pMsg->strParam.c_str());
     break;
 
   case TMSG_PICTURE_SHOW:
@@ -3222,8 +3229,8 @@ void  CApplication::CheckForTitleChange()
       if (m_pXbmcHttp && tagVal)
       {
         CStdString msg="";
-        if (!tagVal->GetTitle().IsEmpty())
-          msg=m_pXbmcHttp->GetOpenTag()+"AudioTitle:"+tagVal->GetTitle()+m_pXbmcHttp->GetCloseTag();
+        if (!tagVal->GetTitle().empty())
+          msg=m_pXbmcHttp->GetOpenTag()+"AudioTitle:"+tagVal->GetTitle().c_str()+m_pXbmcHttp->GetCloseTag();
         if (!tagVal->GetArtist().empty())
           msg+=m_pXbmcHttp->GetOpenTag()+"AudioArtist:"+StringUtils::Join(tagVal->GetArtist(), g_advancedSettings.m_musicItemSeparator).c_str()+m_pXbmcHttp->GetCloseTag();
         if (m_prevMedia!=msg)
@@ -3468,8 +3475,6 @@ HRESULT CApplication::Cleanup()
   {
     g_windowManager.DestroyWindows();
 
-    CAddonMgr::Get().DeInit();
-
     CLog::Log(LOGNOTICE, "unload sections");
     CSectionLoader::UnloadAll();
     // reset our d3d params before we destroy
@@ -3509,6 +3514,13 @@ HRESULT CApplication::Cleanup()
 
     delete m_network;
     m_network = NULL;
+
+    // Cleanup was called more than once on exit during my tests
+    if (m_ServiceManager)
+    {
+      m_ServiceManager->Deinit();
+      m_ServiceManager.reset();
+    }
 
     return S_OK;
   }
@@ -3553,8 +3565,8 @@ void CApplication::Stop(bool bLCDStop)
     if (m_musicInfoScanner->IsScanning())
       m_musicInfoScanner->Stop();
 
-    if (m_videoInfoScanner->IsScanning())
-      m_videoInfoScanner->Stop();
+    if (CVideoLibraryQueue::GetInstance().IsRunning())
+      CVideoLibraryQueue::GetInstance().CancelAllJobs();
 
     StopServices();
     //Sleep(5000);
@@ -3585,7 +3597,7 @@ void CApplication::Stop(bool bLCDStop)
     UnloadSkin();
 
     // Stop services before unloading Python
-    CAddonMgr::Get().StopServices(false);
+    CAddonMgr::GetInstance().StopServices(false);
 
     // unregister action listeners
     UnregisterActionListener(&CSeekHandler::Get());
@@ -3609,18 +3621,16 @@ void CApplication::Stop(bool bLCDStop)
   {
     CLog::Log(LOGERROR, "Exception in CApplication::Stop()");
   }
-
-  Destroy();
 }
 
-bool CApplication::PlayMedia(const CFileItem& item, int iPlaylist)
+bool CApplication::PlayMedia(const CFileItem& item, const std::string &player, int iPlaylist)
 {
   //If item is a plugin, expand out now and run ourselves again
   if (item.IsPlugin())
   {
     CFileItem item_new(item);
     if (XFILE::CPluginDirectory::GetPluginResult(item.GetPath(), item_new))
-      return PlayMedia(item_new, iPlaylist);
+      return PlayMedia(item_new, player, iPlaylist);
     return false;
   }
   if (item.IsSmartPlayList())
@@ -3660,7 +3670,7 @@ bool CApplication::PlayMedia(const CFileItem& item, int iPlaylist)
   }
 
   //nothing special just play
-  return PlayFile(item, false) == PLAYBACK_OK;
+  return PlayFile(item, player, false) == PLAYBACK_OK;
 }
 
 // PlayStack()
@@ -3720,7 +3730,7 @@ PlayBackRet CApplication::PlayStack(const CFileItem& item, bool bRestart)
     movieList[selectedFile - 1]->m_lStartOffset = startoffset > 0 ? STARTOFFSET_RESUME : 0;
     movieList[selectedFile - 1]->SetProperty("stackFileItemToUpdate", true);
     *m_stackFileItemToUpdate = item;
-    return PlayFile(*(movieList[selectedFile - 1]));
+    return PlayFile(*(movieList[selectedFile - 1]), "");
   }
   // case 2: all other stacks
   else
@@ -3800,21 +3810,21 @@ PlayBackRet CApplication::PlayStack(const CFileItem& item, bool bRestart)
           long start = (i > 0) ? (*m_currentStack)[i-1]->m_lEndOffset : 0;
           item.m_lStartOffset = (long)(seconds - start) * 75;
           m_currentStackPosition = i;
-          return PlayFile(item, true);
+          return PlayFile(item, "", true);
         }
       }
     }
 
-    return PlayFile(*(*m_currentStack)[0], true);
+    return PlayFile(*(*m_currentStack)[0], "", true);
   }
   return PLAYBACK_FAIL;
 }
 
-PlayBackRet CApplication::PlayFile(const CFileItem& item, bool bRestart)
+PlayBackRet CApplication::PlayFile(CFileItem item, const std::string& player, bool bRestart)
 {
   // Ensure the MIME type has been retrieved for http:// and shout:// streams
   if (item.GetMimeType().empty())
-    const_cast<CFileItem&>(item).FillInMimeType();
+    item.FillInMimeType();
 
   if (!bRestart)
   {
@@ -3842,7 +3852,7 @@ PlayBackRet CApplication::PlayFile(const CFileItem& item, bool bRestart)
   { // we modify the item so that it becomes a real URL
     CFileItem item_new(item);
     if (XFILE::CPluginDirectory::GetPluginResult(item.GetPath(), item_new))
-      return PlayFile(item_new, false);
+      return PlayFile(boost::move(item_new), player, false);
     return PLAYBACK_FAIL;
   }
 
@@ -3850,7 +3860,7 @@ PlayBackRet CApplication::PlayFile(const CFileItem& item, bool bRestart)
   {
     CFileItem item_new(item);
     if (XFILE::CUPnPDirectory::GetResource(item.GetURL(), item_new))
-      return PlayFile(item_new, false);
+      return PlayFile(boost::move(item_new), player, false);
     return PLAYBACK_FAIL;
   }
 
@@ -3879,7 +3889,7 @@ PlayBackRet CApplication::PlayFile(const CFileItem& item, bool bRestart)
 
       // keep the tuxbox:// url as playing url
       // and give the new url to the player
-      ret = PlayFile(item_new, true);
+      ret = PlayFile(item_new, player, true);
       if(ret == PLAYBACK_OK)
       {
         if(!g_tuxboxService.IsRunning())
@@ -4448,7 +4458,7 @@ void CApplication::UpdateFileState()
         // Update bookmark for save
         m_progressTrackingVideoResumeBookmark.player = CPlayerCoreFactory::Get().GetPlayerName(m_eCurrentPlayer);
         m_progressTrackingVideoResumeBookmark.playerState = m_pPlayer->GetPlayerState();
-        m_progressTrackingVideoResumeBookmark.thumbNailImage.Empty();
+        m_progressTrackingVideoResumeBookmark.thumbNailImage.empty();
 
         if (g_advancedSettings.m_videoIgnorePercentAtEnd > 0 &&
             GetTotalTime() - GetTime() < 0.01f * g_advancedSettings.m_videoIgnorePercentAtEnd * GetTotalTime())
@@ -4577,14 +4587,14 @@ bool CApplication::ResetScreenSaverWindow()
     }
     else if (m_screenSaver->ID() == "screensaver.xbmc.builtin.dim")
     {
-      if (!m_screenSaver->GetSetting("level").IsEmpty())
-        fFadeLevel = 1.0f - 0.01f * (float)atof(m_screenSaver->GetSetting("level"));
+      if (!m_screenSaver->GetSetting("level").empty())
+        fFadeLevel = 1.0f - 0.01f * (float)atof(m_screenSaver->GetSetting("level").c_str());
     }
     else if (m_screenSaver->ID() == "screensaver.xbmc.builtin.black")
     {
       fFadeLevel = 0;
     }
-    else if (!m_screenSaver->ID().IsEmpty())
+    else if (!m_screenSaver->ID().empty())
     { // we're in screensaver window
       if (g_windowManager.GetActiveWindow() == WINDOW_SCREENSAVER)
         g_windowManager.PreviousWindow();  // show the previous window
@@ -4652,7 +4662,7 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
 
   // Get Screensaver Mode
   m_screenSaver.reset();
-  if (!CAddonMgr::Get().GetAddon(CSettings::Get().GetString("screensaver.mode"), m_screenSaver))
+  if (!CAddonMgr::GetInstance().GetAddon(CSettings::Get().GetString("screensaver.mode"), m_screenSaver))
     m_screenSaver.reset(new CScreenSaver(""));
 
   // disable screensaver lock from the login screen
@@ -4662,7 +4672,7 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
     // set to Dim in the case of a dialog on screen or playing video
     if (g_windowManager.HasModalDialog() || (IsPlayingVideo() && CSettings::Get().GetBool("screensaver.usedimonpause")))
     {
-      if (!CAddonMgr::Get().GetAddon("screensaver.xbmc.builtin.dim", m_screenSaver))
+      if (!CAddonMgr::GetInstance().GetAddon("screensaver.xbmc.builtin.dim", m_screenSaver))
         m_screenSaver.reset(new CScreenSaver(""));
     }
     // Check if we are Playing Audio and Vis instead Screensaver!
@@ -4691,14 +4701,14 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
   }
   else if (m_screenSaver->ID() == "screensaver.xbmc.builtin.dim")
   {
-    if (!m_screenSaver->GetSetting("level").IsEmpty())
-      fFadeLevel = 1.0f - 0.01f * (float)atof(m_screenSaver->GetSetting("level"));
+    if (!m_screenSaver->GetSetting("level").empty())
+      fFadeLevel = 1.0f - 0.01f * (float)atof(m_screenSaver->GetSetting("level").c_str());
   }
   else if (m_screenSaver->ID() == "screensaver.xbmc.builtin.black")
   {
     fFadeLevel = 0;
   }
-  else if (!m_screenSaver->ID().IsEmpty())
+  else if (!m_screenSaver->ID().empty())
   {
     g_windowManager.ActivateWindow(WINDOW_SCREENSAVER);
     return ;
@@ -4735,7 +4745,7 @@ void CApplication::CheckShutdown()
   if (m_musicInfoScanner->IsScanning())
     resetTimer = true;
 
-  if (m_videoInfoScanner->IsScanning())
+  if (CVideoLibraryQueue::GetInstance().IsRunning())
     resetTimer = true;
 
   if (g_windowManager.IsWindowActive(WINDOW_DIALOG_PROGRESS)) // progress dialog is onscreen
@@ -5034,7 +5044,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
       {
         if (m_itemCurrentFile->IsStack() && m_currentStack->Size() > 0 && m_currentStackPosition < m_currentStack->Size() - 1)
         { // just play the next item in the stack
-          PlayFile(*(*m_currentStack)[++m_currentStackPosition], true);
+          PlayFile(*(*m_currentStack)[++m_currentStackPosition], "", true);
           return true;
         }
       }
@@ -5144,8 +5154,8 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPt
     actionStr = CGUIInfoLabel::GetLabel(actionStr);
 
   // user has asked for something to be executed
-  if (CBuiltins::HasCommand(actionStr))
-    CBuiltins::Execute(actionStr);
+  if (CBuiltins::GetInstance().HasCommand(actionStr))
+    CBuiltins::GetInstance().Execute(actionStr);
   else
   {
     // try translating the action from our ButtonTranslator
@@ -5177,7 +5187,7 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPt
     }
     else if (item.IsAudio() || item.IsVideo())
     { // an audio or video file
-      PlayFile(item);
+      PlayFile(item , "");
     }
     else
       return false;
@@ -5330,9 +5340,6 @@ void CApplication::ProcessSlow()
 
   //Check to see if current playing Title has changed and whether we should broadcast the fact
   CheckForTitleChange();
-
-  if (!IsPlayingVideo())
-    CAddonInstaller::Get().UpdateRepos();
 }
 
 // Global Idle Time in Seconds
@@ -5391,7 +5398,7 @@ void CApplication::Restart(bool bSamePosition)
   if (false == bSamePosition)
   {
     // no, then just reopen the file and start at the beginning
-    PlayFile(*m_itemCurrentFile, true);
+    PlayFile(*m_itemCurrentFile, "", true);
     return ;
   }
 
@@ -5405,7 +5412,7 @@ void CApplication::Restart(bool bSamePosition)
   m_itemCurrentFile->m_lStartOffset = (long)(time * 75.0);
 
   // reopen the file
-  if ( PlayFile(*m_itemCurrentFile, true) == PLAYBACK_OK && m_pPlayer )
+  if ( PlayFile(*m_itemCurrentFile, "", true) == PLAYBACK_OK && m_pPlayer )
     m_pPlayer->SetPlayerState(state);
 }
 
@@ -5779,7 +5786,7 @@ void CApplication::UpdateLibraries()
 
 bool CApplication::IsVideoScanning() const
 {
-  return m_videoInfoScanner->IsScanning();
+  return CVideoLibraryQueue::GetInstance().IsScanningLibrary();
 }
 
 bool CApplication::IsMusicScanning() const
@@ -5789,8 +5796,7 @@ bool CApplication::IsMusicScanning() const
 
 void CApplication::StopVideoScan()
 {
-  if (m_videoInfoScanner->IsScanning())
-    m_videoInfoScanner->Stop();
+  CVideoLibraryQueue::GetInstance().StopLibraryScanning();
 }
 
 void CApplication::StopMusicScan()
@@ -5799,25 +5805,38 @@ void CApplication::StopMusicScan()
     m_musicInfoScanner->Stop();
 }
 
-void CApplication::StartVideoCleanup()
+void CApplication::StartVideoCleanup(bool userInitiated /* = true */)
 {
-  if (m_videoInfoScanner->IsScanning())
+  if (userInitiated && CVideoLibraryQueue::GetInstance().IsRunning())
     return;
 
-  m_videoInfoScanner->CleanDatabase();
+  std::set<int> paths;
+  if (userInitiated)
+    CVideoLibraryQueue::GetInstance().CleanLibraryModal(paths);
+  else
+    CVideoLibraryQueue::GetInstance().CleanLibrary(paths, false);
 }
 
-void CApplication::StartVideoScan(const CStdString &strDirectory, bool scanAll)
+void CApplication::StartVideoScan(const CStdString &strDirectory, bool userInitiated /* = true */, bool scanAll)
 {
-  if (m_videoInfoScanner->IsScanning())
+  CVideoLibraryQueue::GetInstance().ScanLibrary(strDirectory, scanAll, userInitiated);
+}
+
+void CApplication::StartMusicCleanup(bool userInitiated /* = true */)
+{
+  if (m_musicInfoScanner->IsScanning())
     return;
 
-  m_videoInfoScanner->ShowDialog(true);
-
-  m_videoInfoScanner->Start(strDirectory,scanAll);
+  if (userInitiated)
+    m_musicInfoScanner->CleanDatabase(true);
+  else
+  {
+    m_musicInfoScanner->ShowDialog(false);
+    m_musicInfoScanner->StartCleanDatabase();
+  }
 }
 
-void CApplication::StartMusicScan(const CStdString &strDirectory, int flags)
+void CApplication::StartMusicScan(const CStdString &strDirectory, bool userInitiated /* = true */, int flags)
 {
   if (m_musicInfoScanner->IsScanning())
     return;
@@ -5826,7 +5845,7 @@ void CApplication::StartMusicScan(const CStdString &strDirectory, int flags)
   { // setup default flags
     if (CSettings::Get().GetBool("musiclibrary.downloadinfo"))
       flags |= CMusicInfoScanner::SCAN_ONLINE;
-    if (CSettings::Get().GetBool("musiclibrary.backgroundupdate"))
+    if (!userInitiated || CSettings::Get().GetBool("musiclibrary.backgroundupdate"))
       flags |= CMusicInfoScanner::SCAN_BACKGROUND;
   }
 
@@ -5911,7 +5930,7 @@ bool CApplication::ProcessAndStartPlaylist(const CStdString& strPlayList, CPlayL
     // start playing it
     g_playlistPlayer.SetCurrentPlaylist(iPlaylist);
     g_playlistPlayer.Reset();
-    g_playlistPlayer.Play(track);
+    g_playlistPlayer.Play(track, "");
     return true;
   }
   return false;
@@ -5960,12 +5979,13 @@ bool CApplication::IsCurrentThread() const
 void CApplication::InitDirectoriesXbox()
 {
   // map our special drives to the correct drive letter
+  CSpecialProtocol::SetXBMCBinPath("Q:\\");
   CSpecialProtocol::SetXBMCPath("Q:\\"); // Use Q as ie. F doesn't exist yet!!!
   CSpecialProtocol::SetHomePath("Q:\\home");
-  CSpecialProtocol::SetTempPath("Z:\\");
-
   // First profile is always the Master Profile
   CSpecialProtocol::SetMasterProfilePath("Q:\\home\\userdata");
+  CSpecialProtocol::SetTempPath("Z:\\");
+  CSpecialProtocol::SetXBMCBinAddonPath("Q:\\addons");
 
   g_advancedSettings.m_logFolder = "special://home/";
 
@@ -6170,7 +6190,7 @@ void CApplication::OnSettingAction(const CSetting *setting)
   else if (settingId == "screensaver.settings")
   {
     AddonPtr addon;
-    if (CAddonMgr::Get().GetAddon(CSettings::Get().GetString("screensaver.mode"), addon, ADDON_SCREENSAVER))
+    if (CAddonMgr::GetInstance().GetAddon(CSettings::Get().GetString("screensaver.mode"), addon, ADDON_SCREENSAVER))
       CGUIDialogAddonSettings::ShowAndGetInput(addon);
   }
   else if (settingId == "videoscreen.guicalibration")

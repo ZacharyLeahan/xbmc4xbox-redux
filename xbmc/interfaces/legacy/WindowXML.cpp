@@ -107,7 +107,7 @@ namespace XBMCAddon
       if (!XFILE::CFile::Exists(strSkinPath))
       {
         CStdString str("none");
-        ADDON::AddonProps props(str, ADDON::ADDON_SKIN, "", "");
+        ADDON::AddonProps props(str, ADDON::ADDON_SKIN);
         ADDON::CSkinInfo::TranslateResolution(defaultRes, res);
 
         // Check for the matching folder for the skin in the fallback skins folder
@@ -443,33 +443,16 @@ namespace XBMCAddon
     {
       XBMC_TRACE;
       // load our window
-      XFILE::CFile file;
+      CXBMCTinyXML xmlDoc;
+
       std::string strPathLower = strPath;
       StringUtils::ToLower(strPathLower);
-      if (!file.Open(strPath) && !file.Open(strPathLower) && !file.Open(strLowerPath))
+      if (xmlDoc.LoadFile(strPath) <= 0 && xmlDoc.LoadFile(strPathLower) <= 0 && xmlDoc.LoadFile(strLowerPath) <= 0)
       {
         // fail - can't load the file
         CLog::Log(LOGERROR, "%s: Unable to load skin file %s", __FUNCTION__, strPath.c_str());
         return false;
       }
-
-      CStdString xml;
-      char *buffer = new char[(unsigned int)file.GetLength()+1];
-      if(buffer == NULL)
-        return false;
-      int size = file.Read(buffer, file.GetLength());
-      if (size > 0)
-      {
-        buffer[size] = 0;
-        xml = buffer;
-      }
-      delete[] buffer;
-
-      CXBMCTinyXML xmlDoc;
-      xmlDoc.Parse(xml);
-
-      if (xmlDoc.Error())
-        return false;
 
       return interceptor->Load(xmlDoc.RootElement());
     }

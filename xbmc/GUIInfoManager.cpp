@@ -27,6 +27,7 @@
 #include "GUIUserMessages.h"
 #include "Application.h"
 #include "Util.h"
+#include "URL.h"
 #include "utils/MathUtils.h"
 #include "utils/SeekHandler.h"
 #include "utils/TuxBoxUtil.h"
@@ -51,6 +52,7 @@
 #include "GUIPassword.h"
 #include "LangInfo.h"
 #include "GUIInfoManager.h"
+#include "view/GUIViewState.h"
 #include <stack>
 #include "xbox/network.h"
 #include "pictures/GUIWindowSlideShow.h"
@@ -565,7 +567,22 @@ const infomap listitem_labels[]= {{ "thumb",            LISTITEM_THUMB },
                                   { "discnumber",       LISTITEM_DISC_NUMBER },
                                   { "dateadded",        LISTITEM_DATE_ADDED },
                                   { "dbtype",           LISTITEM_DBTYPE },
-                                  { "dbid",             LISTITEM_DBID }};
+                                  { "dbid",             LISTITEM_DBID },
+                                  { "addonname",        LISTITEM_ADDON_NAME },
+                                  { "addonversion",     LISTITEM_ADDON_VERSION },
+                                  { "addoncreator",     LISTITEM_ADDON_CREATOR },
+                                  { "addonsummary",     LISTITEM_ADDON_SUMMARY },
+                                  { "addondescription", LISTITEM_ADDON_DESCRIPTION },
+                                  { "addondisclaimer",  LISTITEM_ADDON_DISCLAIMER },
+                                  { "addonnews",        LISTITEM_ADDON_NEWS },
+                                  { "addonbroken",      LISTITEM_ADDON_BROKEN },
+                                  { "addontype",        LISTITEM_ADDON_TYPE },
+                                  { "addoninstalldate", LISTITEM_ADDON_INSTALL_DATE },
+                                  { "addonlastupdated", LISTITEM_ADDON_LAST_UPDATED },
+                                  { "addonlastused",    LISTITEM_ADDON_LAST_USED },
+                                  { "addonorigin",      LISTITEM_ADDON_ORIGIN },
+                                  { "addonsize",        LISTITEM_ADDON_SIZE },
+};
 
 const infomap visualisation[] =  {{ "locked",           VISUALISATION_LOCKED },
                                   { "preset",           VISUALISATION_PRESET },
@@ -1302,7 +1319,9 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *f
     strLabel = strLabel.Trim();
     break;
   case WEATHER_TEMPERATURE:
-    strLabel.Format("%s%s", g_weatherManager.GetInfo(WEATHER_LABEL_CURRENT_TEMP), g_langInfo.GetTempUnitString().c_str());
+    strLabel = StringUtils::Format("%s%s",
+                                   g_weatherManager.GetInfo(WEATHER_LABEL_CURRENT_TEMP).c_str(),
+                                   g_langInfo.GetTemperatureUnitString().c_str());
     break;
   case WEATHER_LOCATION:
     strLabel = g_weatherManager.GetInfo(WEATHER_LABEL_LOCATION);
@@ -1606,7 +1625,7 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *f
       if (window)
       {
         CURL url(((CGUIMediaWindow*)window)->CurrentDirectory().GetPath());
-        if (url.GetProtocol().Equals("plugin"))
+        if (url.IsProtocol("plugin"))
         {
           strLabel = url.GetFileName();
           URIUtils::RemoveSlashAtEnd(strLabel);
@@ -1772,7 +1791,7 @@ CStdString CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *f
     strLabel = g_langInfo.GetEnglishLanguageName();
     break;
   case SYSTEM_TEMPERATURE_UNITS:
-    strLabel = g_langInfo.GetTempUnitString();
+    strLabel = g_langInfo.GetTemperatureUnitString();
     break;
   case SYSTEM_PROGRESS_BAR:
     {
@@ -2024,10 +2043,10 @@ bool CGUIInfoManager::GetInt(int &value, int info, int contextWindow, const CGUI
       value = atoi(g_sysinfo.GetInfo(LCD_HDD_TEMPERATURE).c_str());
       return true;
     case SYSTEM_CPU_TEMPERATURE:
-      value = atoi(CFanController::Instance()->GetCPUTemp().ToString().c_str());
+      value = atoi(CFanController::Instance()->GetCPUTemp().ToString(g_langInfo.GetTemperatureUnit()).c_str());
       return true;
     case SYSTEM_GPU_TEMPERATURE:
-      value = atoi(CFanController::Instance()->GetGPUTemp().ToString().c_str());
+      value = atoi(CFanController::Instance()->GetGPUTemp().ToString(g_langInfo.GetTemperatureUnit()).c_str());
       return true;
     case SYSTEM_FAN_SPEED:
       value = CFanController::Instance()->GetFanSpeed() * 2;
@@ -2635,7 +2654,7 @@ bool CGUIInfoManager::GetMultiInfoBool(const GUIInfo &info, int contextWindow, c
       case SYSTEM_HAS_ADDON:
         {
           AddonPtr addon;
-          bReturn = CAddonMgr::Get().GetAddon(m_stringParameters[info.GetData1()],addon) && addon;
+          bReturn = CAddonMgr::GetInstance().GetAddon(m_stringParameters[info.GetData1()],addon) && addon;
           break;
         }
       case SYSTEM_IDLE_TIME:
@@ -2849,7 +2868,7 @@ bool CGUIInfoManager::GetMultiInfoBool(const GUIInfo &info, int contextWindow, c
         {
           const CGUIViewState *viewState = ((CGUIMediaWindow*)window)->GetViewState();
           if (viewState)
-            bReturn = ((unsigned int)viewState->GetDisplaySortOrder() == info.GetData1());
+            bReturn = ((unsigned int)viewState->GetSortOrder() == info.GetData1());
         }
         break;
       }
@@ -3109,9 +3128,9 @@ CStdString CGUIInfoManager::GetMultiInfoLabel(const GUIInfo &info, int contextWi
     // in the future.
     AddonPtr addon;
     if (info.GetData2() == 0)
-      CAddonMgr::Get().GetAddon(const_cast<CGUIInfoManager*>(this)->GetLabel(info.GetData1(), contextWindow),addon,ADDON_UNKNOWN,false);
+      CAddonMgr::GetInstance().GetAddon(const_cast<CGUIInfoManager*>(this)->GetLabel(info.GetData1(), contextWindow),addon,ADDON_UNKNOWN,false);
     else
-      CAddonMgr::Get().GetAddon(m_stringParameters[info.GetData1()],addon,ADDON_UNKNOWN,false);
+      CAddonMgr::GetInstance().GetAddon(m_stringParameters[info.GetData1()],addon,ADDON_UNKNOWN,false);
     if (addon && info.m_info == SYSTEM_ADDON_TITLE)
       return addon->Name();
     if (addon && info.m_info == SYSTEM_ADDON_ICON)
@@ -3603,30 +3622,32 @@ CStdString CGUIInfoManager::GetVideoLabel(int item)
       break;
     case VIDEOPLAYER_RATING:
       {
-        CStdString strRating;
-        if (m_currentFile->GetVideoInfoTag()->m_fRating > 0.f)
-          strRating.Format("%.1f", m_currentFile->GetVideoInfoTag()->m_fRating);
+        std::string strRating;
+        float rating = m_currentFile->GetVideoInfoTag()->GetRating().rating;
+        if (rating > 0.f)
+          strRating = StringUtils::FormatNumber(rating);
         return strRating;
       }
       break;
     case VIDEOPLAYER_RATING_AND_VOTES:
       {
-        CStdString strRatingAndVotes;
-        if (m_currentFile->GetVideoInfoTag()->m_fRating > 0.f)
+        std::string strRatingAndVotes;
+        CRating rating = m_currentFile->GetVideoInfoTag()->GetRating();
+        if (rating.rating > 0.f)
         {
-          if (m_currentFile->GetVideoInfoTag()->m_strVotes.IsEmpty())
-            strRatingAndVotes.Format("%.1f", m_currentFile->GetVideoInfoTag()->m_fRating);
+          if (rating.votes == 0)
+            strRatingAndVotes = StringUtils::FormatNumber(rating.rating);
           else
-            strRatingAndVotes.Format("%.1f (%s %s)", m_currentFile->GetVideoInfoTag()->m_fRating, m_currentFile->GetVideoInfoTag()->m_strVotes, g_localizeStrings.Get(20350));
+            strRatingAndVotes = FormatRatingAndVotes(rating.rating, rating.votes);
         }
         return strRatingAndVotes;
       }
       break;
     case VIDEOPLAYER_YEAR:
       {
-        CStdString strYear;
-        if (m_currentFile->GetVideoInfoTag()->m_iYear > 0)
-          strYear.Format("%i", m_currentFile->GetVideoInfoTag()->m_iYear);
+        std::string strYear;
+        if (m_currentFile->GetVideoInfoTag()->HasYear())
+          strYear = StringUtils::Format("%i", m_currentFile->GetVideoInfoTag()->GetYear());
         return strYear;
       }
       break;
@@ -3807,7 +3828,7 @@ void CGUIInfoManager::SetCurrentSong(CFileItem &item)
   *m_currentFile = item;
 
   m_currentFile->LoadMusicTag();
-  if (m_currentFile->GetMusicInfoTag()->GetTitle().IsEmpty())
+  if (m_currentFile->GetMusicInfoTag()->GetTitle().empty())
   {
     // No title in tag, show filename only
     m_currentFile->GetMusicInfoTag()->SetTitle(CUtil::GetTitleFromPath(m_currentFile->GetPath()));
@@ -3900,11 +3921,11 @@ string CGUIInfoManager::GetSystemHeatInfo(int info)
   {
     case LCD_CPU_TEMPERATURE:
     case SYSTEM_CPU_TEMPERATURE:
-      return m_cpuTemp.ToString();
+      return g_langInfo.GetTemperatureAsString(m_cpuTemp);
       break;
     case LCD_GPU_TEMPERATURE:
     case SYSTEM_GPU_TEMPERATURE:
-      return m_gpuTemp.ToString();
+      return g_langInfo.GetTemperatureAsString(m_gpuTemp);
       break;
     case LCD_FAN_SPEED:
     case SYSTEM_FAN_SPEED:
@@ -4121,7 +4142,7 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::s
     if (item->HasVideoInfoTag())
       return StringUtils::Join(item->GetVideoInfoTag()->m_artist, g_advancedSettings.m_videoItemSeparator);
     if (item->HasMusicInfoTag())
-      return StringUtils::Join(item->GetMusicInfoTag()->GetArtist(), g_advancedSettings.m_musicItemSeparator);
+      return item->GetMusicInfoTag()->GetArtistString();
     break;
   case LISTITEM_ALBUM_ARTIST:
     if (item->HasMusicInfoTag())
@@ -4138,16 +4159,14 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::s
       return item->GetMusicInfoTag()->GetAlbum();
     break;
   case LISTITEM_YEAR:
-    if (item->HasVideoInfoTag())
     {
-      CStdString strResult;
-      if (item->GetVideoInfoTag()->m_iYear > 0)
-        strResult.Format("%i",item->GetVideoInfoTag()->m_iYear);
-      return strResult;
+      std::string year;
+      if (item->HasVideoInfoTag() && item->GetVideoInfoTag()->HasYear())
+        year = StringUtils::Format("%i", item->GetVideoInfoTag()->GetYear());
+      if (item->HasMusicInfoTag())
+        year = item->GetMusicInfoTag()->GetYearString();
+      return year;
     }
-    if (item->HasMusicInfoTag())
-      return item->GetMusicInfoTag()->GetYearString();
-    break;
   case LISTITEM_PREMIERED:
     if (item->HasVideoInfoTag())
     {
@@ -4192,24 +4211,38 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::s
     break;
   case LISTITEM_RATING:
     {
-      CStdString rating;
-      if (item->HasVideoInfoTag() && item->GetVideoInfoTag()->m_fRating > 0.f) // movie rating
-        rating.Format("%.1f", item->GetVideoInfoTag()->m_fRating);
-      else if (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetRating() > '0')
-      { // song rating.  Images will probably be better than numbers for this in the long run
-        rating = item->GetMusicInfoTag()->GetRating();
-      }
+      std::string rating;
+      float r = 0.f;
+      if (item->HasVideoInfoTag()) // movie rating
+        r = item->GetVideoInfoTag()->GetRating().rating;
+      if (r > 0.f)
+        rating = StringUtils::FormatNumber(r);
+      else if (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetRating() > 0.f) // song rating
+        rating = StringUtils::FormatNumber(item->GetMusicInfoTag()->GetRating());
       return rating;
     }
   case LISTITEM_RATING_AND_VOTES:
     {
-      if (item->HasVideoInfoTag() && item->GetVideoInfoTag()->m_fRating > 0.f) // movie rating
+      CRating r(0.f, 0);
+      if (item->HasVideoInfoTag()) // video rating & votes
+        r = item->GetVideoInfoTag()->GetRating();
+      if (r.rating > 0.f)
       {
-        CStdString strRatingAndVotes;
-        if (item->GetVideoInfoTag()->m_strVotes.IsEmpty())
-          strRatingAndVotes.Format("%.1f", item->GetVideoInfoTag()->m_fRating);
+        std::string strRatingAndVotes;
+        if (r.votes == 0)
+          strRatingAndVotes = StringUtils::FormatNumber(r.rating);
         else
-          strRatingAndVotes.Format("%.1f (%s %s)", item->GetVideoInfoTag()->m_fRating, item->GetVideoInfoTag()->m_strVotes, g_localizeStrings.Get(20350));
+          strRatingAndVotes = FormatRatingAndVotes(r.rating, r.votes);
+        return strRatingAndVotes;
+      }
+      else if (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetRating() > 0.f) // music rating & votes
+      {
+        std::string strRatingAndVotes;
+        if (item->GetMusicInfoTag()->GetVotes() <= 0)
+          strRatingAndVotes = StringUtils::FormatNumber(item->GetMusicInfoTag()->GetRating());
+        else
+          strRatingAndVotes = FormatRatingAndVotes(item->GetMusicInfoTag()->GetRating(), 
+                                                   item->GetMusicInfoTag()->GetVotes());
         return strRatingAndVotes;
       }
     }
@@ -4454,7 +4487,75 @@ CStdString CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::s
         return dbid;
       }
     break;
+  case LISTITEM_ADDON_NAME:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Name();
+    break;
+  case LISTITEM_ADDON_VERSION:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Version().asString();
+    break;
+  case LISTITEM_ADDON_CREATOR:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Author();
+    break;
+  case LISTITEM_ADDON_SUMMARY:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Summary();
+    break;
+  case LISTITEM_ADDON_DESCRIPTION:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Description();
+    break;
+  case LISTITEM_ADDON_DISCLAIMER:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->Disclaimer();
+    break;
+  case LISTITEM_ADDON_NEWS:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->ChangeLog();
+    break;
+  case LISTITEM_ADDON_BROKEN:
+    if (item->HasAddonInfo())
+    {
+      if (item->GetAddonInfo()->Broken() == "DEPSNOTMET")
+        return g_localizeStrings.Get(24044);
+      return item->GetAddonInfo()->Broken();
+    }
+    break;
+  case LISTITEM_ADDON_TYPE:
+    if (item->HasAddonInfo())
+      return ADDON::TranslateType(item->GetAddonInfo()->Type(),true);
+    break;
+  case LISTITEM_ADDON_INSTALL_DATE:
+    if (item->HasAddonInfo())
+      return item->GetAddonInfo()->InstallDate().GetAsLocalizedDateTime();
+    break;
+  case LISTITEM_ADDON_LAST_UPDATED:
+    if (item->HasAddonInfo() && item->GetAddonInfo()->LastUpdated().IsValid())
+      return item->GetAddonInfo()->LastUpdated().GetAsLocalizedDateTime();
+    break;
+  case LISTITEM_ADDON_LAST_USED:
+    if (item->HasAddonInfo() && item->GetAddonInfo()->LastUsed().IsValid())
+      return item->GetAddonInfo()->LastUsed().GetAsLocalizedDateTime();
+    break;
+  case LISTITEM_ADDON_ORIGIN:
+    if (item->HasAddonInfo())
+    {
+      if (item->GetAddonInfo()->Origin() == ORIGIN_SYSTEM)
+        return g_localizeStrings.Get(24992);
+      AddonPtr origin;
+      if (CAddonMgr::GetInstance().GetAddon(item->GetAddonInfo()->Origin(), origin, ADDON_UNKNOWN, false))
+        return origin->Name();
+      return g_localizeStrings.Get(13205);
+    }
+    break;
+  case LISTITEM_ADDON_SIZE:
+    if (item->HasAddonInfo() && item->GetAddonInfo()->PackageSize() > 0)
+      return StringUtils::FormatFileSize(item->GetAddonInfo()->PackageSize());
+    break;
   }
+
   return "";
 }
 
@@ -4480,7 +4581,7 @@ CStdString CGUIInfoManager::GetItemImage(const CFileItem *item, int info, std::s
       CStdString rating;
       if (item->HasVideoInfoTag())
       { // rating for videos is assumed 0..10, so convert to 0..5
-        rating.Format("rating%d.png", (long)((item->GetVideoInfoTag()->m_fRating * 0.5f) + 0.5f));
+        rating.Format("rating%d.png", (long)((item->GetVideoInfoTag()->GetRating().rating * 0.5f) + 0.5f));
       }
       else if (item->HasMusicInfoTag())
       { // song rating.
@@ -4966,4 +5067,11 @@ void CGUIInfoManager::OnApplicationMessage(KODI::MESSAGING::ThreadMessage* pMsg)
   default:
     break;
   }
+}
+
+std::string CGUIInfoManager::FormatRatingAndVotes(float rating, int votes)
+{
+  return StringUtils::Format(g_localizeStrings.Get(20350).c_str(),
+                             StringUtils::FormatNumber(rating).c_str(),
+                             StringUtils::FormatNumber(votes).c_str());
 }

@@ -28,7 +28,7 @@
 
 class CJobManager;
 
-class CJobWorker : public CThread 
+class CJobWorker : public CThread
 {
 public:
   CJobWorker(CJobManager *manager);
@@ -100,7 +100,7 @@ public:
    \param job a pointer to the job to add. The job should be subclassed from CJob.
    \sa CJob
    */
-  void AddJob(CJob *job);
+  bool AddJob(CJob *job);
 
   /*!
    \brief Cancel a job in the queue
@@ -121,6 +121,11 @@ public:
   void CancelJobs();
 
   /*!
+   \brief Check whether the queue is processing a job
+   */
+  bool IsProcessing() const;
+
+  /*!
    \brief The callback used when a job completes.
 
    OnJobComplete is called at the completion of the CJob::DoWork function, and is used
@@ -138,7 +143,7 @@ public:
 protected:
   /*!
    \brief Returns if we still have jobs waiting to be processed
-   NOTE: This function does not take into account the jobs that are currently processing 
+   NOTE: This function does not take into account the jobs that are currently processing
    */
   bool QueueEmpty() const;
 
@@ -202,6 +207,20 @@ class CJobManager
     CJob::PRIORITY m_priority;
   };
 
+  template<typename F>
+  class CLambdaJob : public CJob
+  {
+  public:
+    CLambdaJob(const F& f) : m_f(boost::forward<F>(f)) {};
+    bool DoWork()
+    {
+      m_f();
+      return true;
+    }
+  private:
+    F m_f;
+  };
+
 public:
   /*!
    \brief The only way through which the global instance of the CJobManager should be accessed.
@@ -220,6 +239,15 @@ public:
   unsigned int AddJob(CJob *job, IJobCallback *callback, CJob::PRIORITY priority = CJob::PRIORITY_LOW);
 
   /*!
+   \brief Add a function f to this job manager for asynchronously execution.
+   */
+  template<typename F>
+  void Submit(F& f, CJob::PRIORITY priority = CJob::PRIORITY_LOW)
+  {
+    AddJob(new CLambdaJob<F>(boost::forward<F>(f)), nullptr, priority);
+  }
+
+  /*!
    \brief Cancel a job with the given id.
    \param jobID the id of the job to cancel, retrieved previously from AddJob()
    \sa AddJob()
@@ -232,6 +260,14 @@ public:
    \sa CancelJob(), AddJob()
    */
   void CancelJobs();
+
+  /*!
+   \brief Re-start accepting jobs again
+   Called after calling CancelJobs() to allow this manager to accept more jobs
+   \throws std::logic_error if the manager was not previously cancelled
+   \sa CancelJobs()
+   */
+  void Restart();
 
   /*!
    \brief Checks to see if any jobs of a specific type are currently processing.
@@ -306,7 +342,7 @@ private:
 
   void StartWorkers(CJob::PRIORITY priority);
   void RemoveWorker(const CJobWorker *worker);
-  unsigned int GetMaxWorkers(CJob::PRIORITY priority) const;
+  static unsigned int GetMaxWorkers(CJob::PRIORITY priority);
 
   unsigned int m_jobCounter;
 
@@ -314,7 +350,7 @@ private:
   typedef std::vector<CWorkItem>   Processing;
   typedef std::vector<CJobWorker*> Workers;
 
-  JobQueue   m_jobQueue[CJob::PRIORITY_HIGH+1];
+  JobQueue   m_jobQueue[CJob::PRIORITY_DEDICATED + 1];
   bool       m_pauseJobs;
   Processing m_processing;
   Workers    m_workers;

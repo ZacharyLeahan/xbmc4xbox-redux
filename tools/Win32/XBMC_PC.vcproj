@@ -1252,9 +1252,6 @@
 				<File
 					RelativePath="..\..\xbmc\music\windows\GUIWindowMusicPlaylistEditor.h">
 				</File>
-				<File
-					RelativePath="..\..\xbmc\music\windows\GUIWindowMusicSongs.cpp">
-				</File>
 			</Filter>
 			<Filter
 				Name="GUI Video"
@@ -1787,9 +1784,6 @@
 				</File>
 				<File
 					RelativePath="..\..\xbmc\utils\SystemInfo.h">
-				</File>
-				<File
-					RelativePath="..\..\xbmc\Temperature.cpp">
 				</File>
 				<File
 					RelativePath="..\..\xbmc\utils\Thread.cpp">
@@ -3154,9 +3148,6 @@
 				RelativePath="..\..\xbmc\music\windows\GUIWindowMusicPlaylist.h">
 			</File>
 			<File
-				RelativePath="..\..\xbmc\music\windows\GUIWindowMusicSongs.h">
-			</File>
-			<File
 				RelativePath="..\..\xbmc\pictures\GUIWindowPictures.h">
 			</File>
 			<File
@@ -3377,9 +3368,6 @@
 			</File>
 			<File
 				RelativePath="..\..\xbmc\utils\StringUtils.h">
-			</File>
-			<File
-				RelativePath="..\..\xbmc\Temperature.h">
 			</File>
 			<File
 				RelativePath="..\..\xbmc\utils\Thread.h">

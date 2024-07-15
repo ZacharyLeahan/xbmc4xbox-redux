@@ -86,9 +86,9 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     void Clear();
 
     static void GetCustomTVRegexps(TiXmlElement *pRootElement, SETTINGS_TVSHOWLIST& settings);
-    static void GetCustomRegexps(TiXmlElement *pRootElement, CStdStringArray& settings);
-    static void GetCustomRegexpReplacers(TiXmlElement *pRootElement, CStdStringArray& settings);
-    static void GetCustomExtensions(TiXmlElement *pRootElement, CStdString& extensions);
+    static void GetCustomRegexps(TiXmlElement *pRootElement, std::vector<std::string>& settings);
+    static void GetCustomRegexpReplacers(TiXmlElement *pRootElement, std::vector<std::string>& settings);
+    static void GetCustomExtensions(TiXmlElement *pRootElement, std::string& extensions);
 
     bool m_DisableModChipDetection;
     bool m_bPowerSave;
@@ -136,6 +136,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_guiKeepInMemory;
     bool m_guiVisualizeDirtyRegions;
     int  m_guiAlgorithmDirtyRegions;
+    unsigned int m_addonPackageFolderSize;
 
     unsigned int m_cacheMemSize;
     unsigned int m_cacheBufferMode;
@@ -166,18 +167,18 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     CStdString m_cachePath;
     bool m_displayRemoteCodes;
     CStdString m_videoCleanDateTimeRegExp;
-    CStdStringArray m_videoCleanStringRegExps;
-    CStdStringArray m_videoExcludeFromListingRegExps;
-    CStdStringArray m_moviesExcludeFromScanRegExps;
-    CStdStringArray m_tvshowExcludeFromScanRegExps;
-    CStdStringArray m_audioExcludeFromListingRegExps;
-    CStdStringArray m_audioExcludeFromScanRegExps;
-    CStdStringArray m_pictureExcludeFromListingRegExps;
-    CStdStringArray m_videoStackRegExps;
-    CStdStringArray m_folderStackRegExps;
-    CStdStringArray m_trailerMatchRegExps;
-    SETTINGS_TVSHOWLIST m_tvshowStackRegExps;
-    CStdString m_tvshowMultiPartStackRegExp;
+    std::vector<std::string> m_videoCleanStringRegExps;
+    std::vector<std::string> m_videoExcludeFromListingRegExps;
+    std::vector<std::string> m_moviesExcludeFromScanRegExps;
+    std::vector<std::string> m_tvshowExcludeFromScanRegExps;
+    std::vector<std::string> m_audioExcludeFromListingRegExps;
+    std::vector<std::string> m_audioExcludeFromScanRegExps;
+    std::vector<std::string> m_pictureExcludeFromListingRegExps;
+    std::vector<std::string> m_videoStackRegExps;
+    std::vector<std::string> m_folderStackRegExps;
+    std::vector<std::string> m_trailerMatchRegExps;
+    SETTINGS_TVSHOWLIST m_tvshowEnumRegExps;
+    std::string m_tvshowMultiPartEnumRegExp;
     typedef std::vector< std::pair<CStdString, CStdString> > StringMapping;
     StringMapping m_pathSubstitutions;
     int m_remoteRepeat;
@@ -210,12 +211,14 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
 
     bool m_bMusicLibraryHideAllItems;
     int m_iMusicLibraryRecentlyAddedItems;
+    int m_iMusicLibraryDateAdded;
     bool m_bMusicLibraryAllItemsOnBottom;
     bool m_bMusicLibraryCleanOnUpdate;
     CStdString m_strMusicLibraryAlbumFormat;
     CStdString m_strMusicLibraryAlbumFormatRight;
     bool m_prioritiseAPEv2tags;
     CStdString m_musicItemSeparator;
+    std::vector<std::string> m_musicArtistSeparators;
     CStdString m_videoItemSeparator;
     std::vector<CStdString> m_musicTagsFromFileFilters;
 
@@ -224,11 +227,13 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_iVideoLibraryRecentlyAddedItems;
     bool m_bVideoLibraryHideEmptySeries;
     bool m_bVideoLibraryCleanOnUpdate;
+    bool m_bVideoLibraryUseFastHash;
     bool m_bVideoLibraryExportAutoThumbs;
     bool m_bVideoLibraryImportWatchedState;
     bool m_bVideoLibraryImportResumePoint;
 
     bool m_bVideoScannerIgnoreErrors;
+    int m_iVideoLibraryDateAdded;
 
     std::set<std::string> m_vecTokens;
     //TuxBox
@@ -258,6 +263,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_curlconnecttimeout;
     int m_curllowspeedtime;
     int m_curlretries;
+    bool m_curlDisableIPV6;
 
     bool m_splashImage;
 
@@ -274,6 +280,9 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_loaded;
     bool m_initialized;
 
+    //! \brief Returns a list of music extension for filtering in the GUI
+    std::string GetMusicExtensions() const;
+
     void SetDebugMode(bool debug);
     void SetExtraLogsFromAddon(ADDON::IAddon* addon);
 
@@ -285,10 +294,13 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     std::vector<CStdString> m_settingsFiles;
     void ParseSettingsFile(const CStdString &file);
 
+    //! \brief Toggles dirty-region visualization
+    void ToggleDirtyRegionVisualization() { m_guiVisualizeDirtyRegions = !m_guiVisualizeDirtyRegions; };
+
     // runtime settings which cannot be set from advancedsettings.xml
-    CStdString m_pictureExtensions;
-    CStdString m_musicExtensions;
-    CStdString m_videoExtensions;
+    std::string m_pictureExtensions;
+    std::string m_musicExtensions;
+    std::string m_videoExtensions;
     CStdString m_discStubExtensions;
     CStdString m_subtitlesExtensions;
 

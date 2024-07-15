@@ -1,6 +1,6 @@
 /*
  *      Copyright (C) 2005-2013 Team XBMC
- *      http://www.xbmc.org
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,20 +19,24 @@
  */
 
 #include "RssManager.h"
+
+#include <utility>
+
 #include "addons/AddonInstaller.h"
 #include "addons/AddonManager.h"
 #include "filesystem/File.h"
-#include "interfaces/Builtins.h"
+#include "interfaces/builtins/Builtins.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogHelper.h"
 #include "profiles/ProfilesManager.h"
 #include "settings/lib/Setting.h"
+#include "settings/Settings.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
 #include "utils/RssReader.h"
 #include "utils/StringUtils.h"
+#include "utils/Variant.h"
 
-using namespace std;
 using namespace XFILE;
 using namespace KODI::MESSAGING;
 
@@ -73,17 +77,12 @@ void CRssManager::OnSettingAction(const CSetting *setting)
   if (settingId == "lookandfeel.rssedit")
   {
     ADDON::AddonPtr addon;
-    ADDON::CAddonMgr::Get().GetAddon("script.rss.editor",addon);
-    if (!addon)
+    if (!ADDON::CAddonMgr::GetInstance().GetAddon("script.rss.editor", addon))
     {
-      if (HELPERS::ShowYesNoDialogLines(24076, 24100, "RSS Editor", 24101) !=
-        YES)
-      {
+      if (!CAddonInstaller::GetInstance().InstallModal("script.rss.editor", addon))
         return;
-      }
-      CAddonInstaller::Get().Install("script.rss.editor", true, "", false);
     }
-    CBuiltins::Execute("RunScript(script.rss.editor)");
+    CBuiltins::GetInstance().Execute("RunScript(script.rss.editor)");
   }
 }
 
@@ -107,7 +106,7 @@ void CRssManager::Stop()
 bool CRssManager::Load()
 {
   CSingleLock lock(m_critical);
-  string rssXML = CProfilesManager::Get().GetUserDataItem("RssFeeds.xml");
+  std::string rssXML = CProfilesManager::Get().GetUserDataItem("RssFeeds.xml");
   if (!CFile::Exists(rssXML))
     return false;
 
@@ -133,7 +132,7 @@ bool CRssManager::Load()
     if (pSet->QueryIntAttribute("id", &iId) == TIXML_SUCCESS)
     {
       RssSet set;
-      set.rtl = pSet->Attribute("rtl") != NULL && stricmp(pSet->Attribute("rtl"), "true") == 0;
+      set.rtl = pSet->Attribute("rtl") != NULL && strcasecmp(pSet->Attribute("rtl"), "true") == 0;
       const TiXmlElement* pFeed = pSet->FirstChildElement("feed");
       while (pFeed != NULL)
       {
@@ -146,16 +145,16 @@ bool CRssManager::Load()
 
         if (pFeed->FirstChild() != NULL)
         {
-          // TODO: UTF-8: Do these URLs need to be converted to UTF-8?
-          //              What about the xml encoding?
-          string strUrl = pFeed->FirstChild()->ValueStr();
+          //! @todo UTF-8: Do these URLs need to be converted to UTF-8?
+          //!              What about the xml encoding?
+          std::string strUrl = pFeed->FirstChild()->ValueStr();
           set.url.push_back(strUrl);
           set.interval.push_back(iInterval);
         }
         pFeed = pFeed->NextSiblingElement("feed");
       }
 
-      m_mapRssUrls.insert(make_pair(iId,set));
+      m_mapRssUrls.insert(std::make_pair(iId,set));
     }
     else
       CLog::Log(LOGERROR, "CRssManager: found rss url set with no id in RssFeeds.xml, ignored");

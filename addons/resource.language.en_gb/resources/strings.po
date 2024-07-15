@@ -2418,6 +2418,11 @@ msgctxt "#592"
 msgid "One"
 msgstr ""
 
+#: xbmc/dialogs/GUIDialogMediaFilter.cpp
+#: xbmc/filesystem/AddonsDirectory.cpp
+#: xbmc/PlayListPlayer.cpp
+#: xbmc/profiles/dialogs/GUIDialogLockSettings.cpp
+#: xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.cpp
 msgctxt "#593"
 msgid "All"
 msgstr ""
@@ -2666,6 +2671,7 @@ msgctxt "#657"
 msgid "Browse for folder"
 msgstr ""
 
+#: xbmc/music/ContextMenus.h
 msgctxt "#658"
 msgid "Song information"
 msgstr ""
@@ -3346,10 +3352,7 @@ msgctxt "#1044"
 msgid "Set plug-in thumb"
 msgstr ""
 
-#: xbmc/dialogs/GUIDialogContextMenu.cpp
-msgctxt "#1045"
-msgid "Add-on settings"
-msgstr ""
+#empty string with ID 1045
 
 msgctxt "#1046"
 msgid "Access points"
@@ -4166,6 +4169,7 @@ msgctxt "#10522"
 msgid "Now Playing - Videos"
 msgstr ""
 
+#: xbmc/music/ContextMenus.h
 msgctxt "#10523"
 msgid "Album info"
 msgstr ""
@@ -4233,7 +4237,17 @@ msgctxt "#12011"
 msgid "Return to videos window"
 msgstr ""
 
-#empty strings from id 12012 to 12020
+#: xbmc/addons/GUIViewStateAddonBrowser.cpp
+msgctxt "#12012"
+msgid "Last used"
+msgstr ""
+
+#: xbmc/addons/GUIViewStateAddonBrowser.cpp
+msgctxt "#12013"
+msgid "Install date"
+msgstr ""
+
+#empty strings from id 12014 to 12020
 
 #: xbmc\Autorun.cpp
 #: xbmc\pvr\windows\GUIWindowPVRRecordings.cpp
@@ -4248,7 +4262,12 @@ msgctxt "#12022"
 msgid "Resume from %s"
 msgstr ""
 
-#empty strings from id 12023 to 12309
+#: xbmc/video/ContextMenus.cpp
+msgctxt "#12023"
+msgid "Play from beginning"
+msgstr ""
+
+#empty strings from id 12024 to 12309
 
 #: skin.confluence
 #: skin.touched
@@ -5291,6 +5310,7 @@ msgctxt "#13350"
 msgid "Current playlist"
 msgstr ""
 
+#: Not used anymore. Use #10523 instead.
 msgctxt "#13351"
 msgid "Album information"
 msgstr ""
@@ -6153,7 +6173,39 @@ msgctxt "#14101"
 msgid "Acceleration"
 msgstr ""
 
-#empty strings from id 14102 to 15011
+#empty strings from id 14102 to 14104
+
+#: system/settings/settings.xml
+msgctxt "#14105"
+msgid "Temperature unit"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#14106"
+msgid "Speed unit"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#14107"
+msgid "Time format"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#14108"
+msgid "Use 12 / 24-hour format"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#14109"
+msgid "Short date format"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#14110"
+msgid "Long date format"
+msgstr ""
+
+#empty strings from id 14111 to 15011
 
 #: xbmc/video/VideoDatabase.cpp
 msgctxt "#15012"
@@ -6639,7 +6691,22 @@ msgctxt "#17999"
 msgid "%i days"
 msgstr ""
 
-#empty strings from id 18000 to 19999
+#empty strings from id 18000 to 19032
+
+#: xbmc/event/windows/GUIWindowEventLog.cpp
+#: xbmc/pvr/addons/PVRClients.cpp
+#: xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+#: xbmc/pvr/PVRManager.cpp
+#: xbmc/pvr/timers/PVRTimers.cpp
+#: xbmc/pvr/windows/GUIWindowPVRBase.cpp
+#: xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+#: xbmc/video/windows/GUIWindowVideoBase.cpp
+#: addons/skin.estuary/1080i/VideoOSD.xml
+msgctxt "#19033"
+msgid "Information"
+msgstr ""
+
+#empty strings from id 19034 to 19999
 
 #: system/settings/settings.xml
 msgctxt "#20000"
@@ -6769,6 +6836,17 @@ msgstr ""
 
 #empty strings from id 20027 to 20036
 #string id's 20027 thru 20034 are reserved for temperature strings (LocalizeStrings.cpp)
+
+#: xbmc/LangInfo.cpp
+msgctxt "#20035"
+msgid "Regional (%s)"
+msgstr ""
+
+#. Used for date/time format settings like "10:00:00 (HH:mm:ss)"
+#: xbmc/LangInfo.cpp
+msgctxt "#20036"
+msgid "%s (%s)"
+msgstr ""
 
 msgctxt "#20037"
 msgid "Summary"
@@ -7724,6 +7802,7 @@ msgctxt "#20350"
 msgid "votes"
 msgstr ""
 
+#: xbmc/video/ContextMenus.h
 msgctxt "#20351"
 msgid "TV show information"
 msgstr ""
@@ -7921,6 +8000,7 @@ msgctxt "#20392"
 msgid "Remove music video from library"
 msgstr ""
 
+#: xbmc/video/ContextMenus.h
 msgctxt "#20393"
 msgid "Music video information"
 msgstr ""
@@ -8291,12 +8371,38 @@ msgctxt "#21336"
 msgid "Connecting to: %s"
 msgstr ""
 
+#. Used in the add-on browser under "Last updated" when a repository has never been updated
+#: xbmc/addons/RepositoryUpdater.cpp
 msgctxt "#21337"
-msgid "TuxBox device"
+msgid "Never"
 msgstr ""
 
-#empty strings from id 21338 to 21358
-#up to 21355 is reserved for the TuxBox Client!! !
+#: xbmc/addons/GUIDialogAddonInfo.cpp
+msgctxt "#21338"
+msgid "Select version"
+msgstr ""
+
+#: xbmc/addons/GUIDialogAddonInfo.cpp
+msgctxt "#21339"
+msgid "Version %s"
+msgstr ""
+
+#: xbmc/addons/GUIDialogAddonInfo.cpp
+msgctxt "#21340"
+msgid "Auto-update"
+msgstr ""
+
+#: xbmc/addons/GUIDialogAddonInfo.cpp
+msgctxt "#21341"
+msgid "No updates available"
+msgstr ""
+
+#: xbmc/addons/GUIDialogAddonInfo.cpp
+msgctxt "#21342"
+msgid "There are currently no updates available for this add-on."
+msgstr ""
+
+#empty strings from id 21343 to 21358
 
 #: xbmc/dialogs/GUIDialogFileBrowser.cpp
 msgctxt "#21359"
@@ -8876,7 +8982,13 @@ msgctxt "#21843"
 msgid "Orientation"
 msgstr ""
 
-#empty strings from id 21844 to 21859
+#empty string with id 21844
+
+msgctxt "#21845"
+msgid "Scan to library"
+msgstr ""
+
+#empty strings from id 21846 to 21859
 
 msgctxt "#21860"
 msgid "Supplemental categories"
@@ -9009,6 +9121,7 @@ msgctxt "#21890"
 msgid "Select artist"
 msgstr ""
 
+#: xbmc/music/ContextMenus.h
 msgctxt "#21891"
 msgid "Artist information"
 msgstr ""
@@ -9312,6 +9425,7 @@ msgctxt "#24002"
 msgid "Add-on options"
 msgstr ""
 
+#: xbmc/addons/ContextMenus.h
 msgctxt "#24003"
 msgid "Add-on Information"
 msgstr ""
@@ -9418,7 +9532,11 @@ msgctxt "#24024"
 msgid "Add-on disabled"
 msgstr ""
 
-#empty string with id 24025
+#. Used as the type name for context item addons
+#: xbmc/addons/Addons.cpp
+msgctxt "#24025"
+msgid "Context Items"
+msgstr ""
 
 #: xbmc/addons/Addon.cpp
 msgctxt "#24026"
@@ -9458,6 +9576,8 @@ msgctxt "#24033"
 msgid "Install from repository"
 msgstr ""
 
+#: xbmc/addons/ContextMenus.h
+#: xbmc/addons/GUIViewStateAddonBrowser.cpp
 msgctxt "#24034"
 msgid "Check for updates"
 msgstr ""
@@ -9559,10 +9679,32 @@ msgstr ""
 
 #: xbmc/addons/guidialogaddoninfo.cpp
 msgctxt "#24054"
-msgid "Changelog"
+msgid "What's new"
 msgstr ""
 
-#empty strings from id 24055 to 24058
+#. Used in the Add-on Manager
+#: xbmc/addons/GUIViewStateAddonBrowser.cpp
+msgctxt "#24055"
+msgid "Check for updates"
+msgstr ""
+
+#. Used in the Add-on Manager to specify last update time
+#: xbmc/addons/GUIViewStateAddonBrowser.cpp
+msgctxt "#24056"
+msgid "Last updated %s"
+msgstr ""
+
+#. Used as a title in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24057"
+msgid "Installing %s..."
+msgstr ""
+
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24058"
+msgid "Checking dependencies..."
+msgstr ""
 
 msgctxt "#24059"
 msgid "Would you like to enable this Add-on?"
@@ -9646,14 +9788,65 @@ msgctxt "#24076"
 msgid "Add-on Required"
 msgstr ""
 
-#empty strings from id 24077 to 24079
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24077"
+msgid "Verifying downloaded add-on..."
+msgstr ""
+
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24078"
+msgid "Downloading add-on..."
+msgstr ""
+
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24079"
+msgid "Installing add-on dependencies..."
+msgstr ""
 
 msgctxt "#24080"
 msgid "Try to reconnect?"
 msgstr ""
 
-#empty strings from id 24081 to 24086
+#: xbmc/addons/Addon.cpp
+msgctxt "#24081"
+msgid "Helper Add-ons"
+msgstr ""
 
+#. The label in the add-ons manager for add-on libraries
+#: xbmc/addons/Addon.cpp
+msgctxt "#24082"
+msgid "Add-on libraries"
+msgstr ""
+
+#. The label in the add-ons manager for information libraries
+#: xbmc/addons/Addon.cpp
+msgctxt "#24083"
+msgid "Information libraries"
+msgstr ""
+
+#. The label in the add-ons manager for visualisation libraries
+#: xbmc/addons/Addon.cpp
+msgctxt "#24084"
+msgid "Visualisation libraries"
+msgstr ""
+
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24085"
+msgid "Failed to install a dependency"
+msgstr ""
+
+#. Used as a text in the progress dialog when installing an add-on
+#: xbmc/addons/AddonInstaller.cpp
+msgctxt "#24086"
+msgid "Installing add-on..."
+msgstr ""
+
+#. Used in add-on browser
+#: xbmc/filesystem/AddonsDirectory.cpp
 msgctxt "#24087"
 msgid "All repositories"
 msgstr ""
@@ -9838,7 +10031,43 @@ msgctxt "#24134"
 msgid "We were unable to load your configured language. Please check your language settings."
 msgstr ""
 
-#empty strings from id 24135 to 24997
+#empty strings from id 24135 to 24991
+
+#: xbmc/addons/CGUIViewStateAddonBrowser.cpp
+#: xbmc/filesystem/AddonsDirectory.cpp
+msgctxt "#24992"
+msgid "System"
+msgstr ""
+
+#: xbmc/addons/CGUIViewStateAddonBrowser.cpp
+#: xbmc/filesystem/AddonsDirectory.cpp
+msgctxt "#24993"
+msgid "Information providers"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#24994"
+msgid "Running"
+msgstr ""
+
+#: xbmc/filesystem/AddonsDirectory.cpp
+msgctxt "#24995"
+msgid "Orphaned"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#24996"
+msgid "Manage dependencies"
+msgstr ""
+
+msgctxt "#24996"
+msgid "Manage dependencies"
+msgstr ""
+
+#: xbmc/filesystem/AddonsDirectory.cpp
+msgctxt "#24997"
+msgid "Look and feel"
+msgstr ""
 
 msgctxt "#24998"
 msgid "My Add-ons"
@@ -9874,7 +10103,57 @@ msgctxt "#29802"
 msgid "Passthrough Audio in use"
 msgstr ""
 
-#empty strings from id 29803 to 33000
+#empty strings from id 29803 to 29986
+
+#. Node title for music artist role, plural of #38036
+#: system/library/music/musicroles/Remixers.xml
+msgctxt "#29987"
+msgid "Remixers"
+msgstr ""
+
+#. Node title for music artist role, plural of #38037
+#: system/library/music/musicroles/Arrangers.xml
+msgctxt "#29988"
+msgid "Arrangers"
+msgstr ""
+
+#. Node title for music artist role, plural of #29903
+#: system/library/music/musicroles/Composers.xml
+msgctxt "#29989"
+msgid "Composers"
+msgstr ""
+
+#. Node title for music artist role, plural of #29905
+#: system/library/music/musicroles/Conductors.xml
+msgctxt "#29990"
+msgid "Conductors"
+msgstr ""
+
+#. Node title for music artist role, plural of #38040
+#: system/library/music/musicroles/DJ.xml
+msgctxt "#29991"
+msgid "DJ Mixers"
+msgstr ""
+
+#. Node title for music artist role, plural of #38035
+#: system/library/music/musicroles/Lyricists.xml
+msgctxt "#29992"
+msgid "Lyricists"
+msgstr ""
+
+#. Node title for music artist role, plural of #38034
+#: system/library/music/musicroles/Orchestras.xml
+msgctxt "#29993"
+msgid "Orchestras"
+msgstr ""
+
+#. Title for music artist roles node
+#: system/library/music/musicroles/index.xml
+msgctxt "#29994"
+msgid "Roles"
+msgstr ""
+
+#empty strings from id 29995 to 33000
 #strings 30000 thru 30999 reserved for plug-ins and plug-in settings
 #strings 31000 thru 31999 reserved for skins
 #strings 32000 thru 32999 reserved for scripts
@@ -10509,10 +10788,10 @@ msgctxt "#36139"
 msgid "Category containing the settings for how the video library is handled."
 msgstr ""
 
-#. Description of setting "Videos -> Library -> Enable" with label #24022
+#. Description of setting "Appearance -> International -> Temperature unit" with label #14105
 #: system/settings/settings.xml
 msgctxt "#36140"
-msgid "Enable the video library."
+msgid "Choose which temperature unit is used for displaying temperatures in the user interface."
 msgstr ""
 
 #. Description of setting "Videos -> Library -> Show plot for unwatched items" with label #20369
@@ -10521,7 +10800,11 @@ msgctxt "#36141"
 msgid "Show plot information for unwatched media in the Video Library."
 msgstr ""
 
-#empty string with id 36142
+#. Description of setting "Appearance -> International -> Speed unit" with label #14106
+#: system/settings/settings.xml
+msgctxt "#36142"
+msgid "Choose which speed unit is used for displaying speeds in the user interface."
+msgstr ""
 
 #. Description of setting "Videos -> Library -> Download actor thumbnails when adding to library" with label #20402
 #: system/settings/settings.xml
@@ -10665,16 +10948,16 @@ msgctxt "#36166"
 msgid "Synchronise the video to the refresh rate of the monitor."
 msgstr ""
 
-#. Description of setting "Videos -> Playback -> A/V sync method" with label #13500
+#. Description of setting "Appearance -> International -> Time format" with label #14107
 #: system/settings/settings.xml
 msgctxt "#36167"
-msgid "Audio has to stay in sync, this can either be done by resampling, skipping/duplicating packets, or adjusting the clock if it gets out of sync too far."
+msgid "Choose which time format is used for displaying the time in the user interface."
 msgstr ""
 
-#. Description of setting "Videos -> Playback -> Maximum speedup/slowdown amount (%)" with label #13504
+#. Description of setting "Appearance -> International -> Use 12/24-hour format" with label #14108
 #: system/settings/settings.xml
 msgctxt "#36168"
-msgid "Maximum video speed adjust to match actual screen refresh rate."
+msgid "Choose whether to use 12 or 24-hour format for displaying the time in the user interface."
 msgstr ""
 
 #. Description of setting "System -> Audio output -> Resample quality" with label #13505
@@ -10701,10 +10984,10 @@ msgctxt "#36172"
 msgid "VDPAU studio level conversion provides a way for advanced applications like XBMC to influence the colour space conversion."
 msgstr ""
 
-#. Description of setting "Videos -> Playback -> VDPAU HQ Upscaling level" with label #13121
+#. Description of setting "Appearance -> International -> Short date format" with label #14109
 #: system/settings/settings.xml
 msgctxt "#36173"
-msgid "Enable upscaling using VDPAU."
+msgid "Choose which short date format is used for displaying the date in the user interface."
 msgstr ""
 
 #. Description of setting "Videos -> Playback -> Activate Teletext" with label #23050
@@ -10934,9 +11217,10 @@ msgctxt "#36214"
 msgid "Close the on screen display controls after switching channels."
 msgstr ""
 
+#. Description of setting "Appearance -> International -> Long date format" with label #14110
 #: system/settings/settings.xml
 msgctxt "#36215"
-msgid "How long the programming information is displayed when the 'automatically hide' setting is turned on."
+msgid "Choose which long date format is used for displaying the date in the user interface."
 msgstr ""
 
 #: system/settings/settings.xml
@@ -12413,7 +12697,90 @@ msgctxt "#36603"
 msgid "Category containing settings for how video output is handled."
 msgstr ""
 
-#empty strings from id 36604 to 36899
+#empty string with id 36604
+
+#: system/settings/settings.xml
+msgctxt "#36605"
+msgid "Updates"
+msgstr ""
+
+#. Option for setting "System -> Add-ons -> Updates"
+#: system/settings/settings.xml
+msgctxt "#36606"
+msgid "Install updates automatically"
+msgstr ""
+
+#. Option for setting "System -> Add-ons -> Updates"
+#: system/settings/settings.xml
+msgctxt "#36607"
+msgid "Notify, but don't install updates"
+msgstr ""
+
+#. Option for setting "System -> Add-ons -> Updates"
+#: system/settings/settings.xml
+msgctxt "#36608"
+msgid "Never check for updates"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#36609"
+msgid "Show notifications"
+msgstr ""
+
+#. Description of settings category "System -> Add-ons"
+#: system/settings/settings.xml
+msgctxt "#36610"
+msgid "This category contains settings for the add-on system."
+msgstr ""
+
+#. Description of setting "System -> Add-ons -> Updates" with label #36605
+#: system/settings/settings.xml
+msgctxt "#36611"
+msgid "Change how auto updating of add-ons are handled."
+msgstr ""
+
+#. Description of setting "System -> Add-ons -> Show notifications" with label #36609
+#: system/settings/settings.xml
+msgctxt "#36612"
+msgid "Show notification when an add-on have been updated."
+msgstr ""
+
+#. Description of setting "System -> Add-ons -> Manage dependencies" with label #24996
+msgctxt "#36613"
+msgid "Manage modules and support libraries that have been automatically installed as a dependency to other add-ons. Items listed as \"Orphaned\" are no longer required by any add-ons and are safe to uninstall."
+msgstr ""
+
+#. Description of setting "System -> Add-ons -> Running" with label #24994
+#: system/settings/settings.xml
+msgctxt "#36614"
+msgid "Show add-ons that are currently running in the background."
+msgstr ""
+
+#. Label of a setting or option referring to the source/origin of e.g. add-ons.
+#: system/settings/settings.xml
+msgctxt "#36615"
+msgid "Unknown sources"
+msgstr ""
+
+#. Description of setting "System -> Add-ons -> Unknown sources" with label #36615
+#: system/settings/settings.xml
+msgctxt "#36616"
+msgid "Allow installation of add-ons from unknown sources."
+msgstr ""
+
+#. Text in warning dialog when attempting to install add-ons from zip file.
+#: xbmc/addons/GUIWindowAddonBrowser.cpp
+msgctxt "#36617"
+msgid "For security, installation of add-ons from unknown sources is disabled."
+msgstr ""
+
+#. Text in confirm dialog when enabling setting "System -> Add-ons -> Unknown sources"
+#: xbmc/addons/AddonSystemSettings.cpp
+msgctxt "#36618"
+msgid "Add-ons will be given access to personal data stored on this device. By allowing, you agree that you are solely responsible for any loss of data, unwanted behaviour, or damage to your device. Proceed?"
+msgstr ""
+
+#empty strings from id 36619 to 36899
 
 #: xbmc/media/MediaType.cpp
 msgctxt "#36900"

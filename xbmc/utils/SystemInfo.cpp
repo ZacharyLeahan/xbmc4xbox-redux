@@ -119,7 +119,7 @@ CStdString CSysInfoJob::GetInternetState()
   m_info.haveInternetState = http.IsInternet();
   if (m_info.haveInternetState)
     return g_localizeStrings.Get(13296);
-  else if (http.IsInternet(false))
+  else if (http.IsInternet())
     return g_localizeStrings.Get(13274);
   else // NOT Connected to the Internet!
     return g_localizeStrings.Get(13297);
@@ -311,12 +311,9 @@ std::string CSysInfo::TranslateInfo(int info) const
   case SYSTEM_HDD_TEMPERATURE:
   {
     CTemperature temp;
-    CStdString strTemp;
-    temp.SetState(CTemperature::invalid);
     if(m_bSmartEnabled && m_info.HDDTemp != 0)
       temp = CTemperature::CreateFromCelsius((double)m_info.HDDTemp);
-    strTemp.Format("%s",temp.ToString());
-    return strTemp;
+    return temp.IsValid() ? g_langInfo.GetTemperatureAsString(temp) : "N/A";
   }
 #endif
   case SYSTEM_UPTIME:

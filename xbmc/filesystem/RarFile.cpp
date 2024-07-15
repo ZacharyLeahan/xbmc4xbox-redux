@@ -359,12 +359,6 @@ ssize_t CRarFile::Read(void *lpBuf, size_t uiBufSize)
 }
 
 //*********************************************************************************************
-unsigned int CRarFile::Write(void *lpBuf, int64_t uiBufSize)
-{
-  return 0;
-}
-
-//*********************************************************************************************
 void CRarFile::Close()
 {
   if (!m_bOpen)
@@ -527,7 +521,7 @@ int64_t CRarFile::GetPosition()
   return m_iFilePosition;
 }
 
-int CRarFile::Write(const void* lpBuf, int64_t uiBufSize)
+ssize_t CRarFile::Write(const void* lpBuf, size_t uiBufSize)
 {
   return -1;
 }
@@ -546,7 +540,8 @@ void CRarFile::InitFromUrl(const CURL& url)
   m_strPathInRar = url.GetFileName();  
 
   vector<std::string> options;
-  StringUtils::Tokenize(url.GetOptions().Mid(1), options, "&");
+  if (!url.GetOptions().empty())
+    StringUtils::Tokenize(url.GetOptions().substr(1), options, "&");
   
   m_bFileOptions = 0;
 

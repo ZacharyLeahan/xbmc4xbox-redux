@@ -21,12 +21,15 @@
 
 #include "IMsgTargetCallback.h"
 #include "messaging/IMessageTarget.h"
+#include "ServiceBroker.h"
 #include <boost/shared_ptr.hpp>
 
 #define PLAYLIST_NONE    -1
 #define PLAYLIST_MUSIC   0
 #define PLAYLIST_VIDEO   1
 #define PLAYLIST_PICTURE 2
+
+#define g_playlistPlayer CServiceBroker::GetPlaylistPlayer()
 
 class CFileItem; typedef boost::shared_ptr<CFileItem> CFileItemPtr;
 class CFileItemList;
@@ -71,7 +74,7 @@ public:
    \param replace whether this item should replace the currently playing item. See CApplication::PlayFile (defaults to false).
    \param playPreviousOnFail whether to go back to the previous item if playback fails (default to false)
    */
-  bool Play(int index, bool replace = false, bool playPreviousOnFail = false);
+  bool Play(int index, std::string player, bool replace = false, bool playPreviousOnFail = false);
 
   /*! \brief Returns the index of the current item in active playlist.
    \return Current item in the active playlist.
@@ -196,9 +199,3 @@ protected:
 };
 
 }
-
-/*!
- \ingroup windows 
- \brief Global instance of playlist player
- */
-extern PLAYLIST::CPlayListPlayer g_playlistPlayer;
