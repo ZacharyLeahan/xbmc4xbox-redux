@@ -173,7 +173,7 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
     if (!icon.empty())
       builder.SetIcon(URIUtils::AddFileToFolder(plugin->plugin_path, icon));
     if (!fanart.empty())
-      builder.SetFanart(URIUtils::AddFileToFolder(plugin->plugin_path, fanart));
+      builder.SetArt("fanart", URIUtils::AddFileToFolder(plugin->plugin_path, fanart));
   }
 
   if (metadata)
@@ -201,14 +201,24 @@ void CAddonMgr::FillCpluffMetadata(const cp_plugin_info_t* plugin, CAddonBuilder
       if (assets)
       {
         builder.SetIcon("");
-        builder.SetFanart("");
+        builder.SetArt("fanart", "");
         std::string icon = CServiceBroker::GetAddonMgr().GetExtValue(assets, "icon");
-        std::string fanart = CServiceBroker::GetAddonMgr().GetExtValue(assets, "fanart");
-
         if (!icon.empty())
-          builder.SetIcon(URIUtils::AddFileToFolder(plugin->plugin_path, icon));
-        if (!fanart.empty())
-          builder.SetFanart(URIUtils::AddFileToFolder(plugin->plugin_path, fanart));
+          icon = URIUtils::AddFileToFolder(plugin->plugin_path, icon);
+        builder.SetIcon(icon);
+
+        std::map<std::string, std::string> art;
+        std::string artTypes[3] = {"fanart", "banner", "clearlogo"};
+        for (int i = 0; i < 3; i++)
+        {
+          std::string type = artTypes[i];
+          std::string value = CServiceBroker::GetAddonMgr().GetExtValue(assets, type.c_str());
+          if (!value.empty())
+          {
+            value = URIUtils::AddFileToFolder(plugin->plugin_path, value);
+            builder.SetArt(type, value);
+          }
+        }
 
         std::vector<std::string> screenshots;
         ELEMENTS elements;

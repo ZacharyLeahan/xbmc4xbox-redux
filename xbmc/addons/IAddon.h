@@ -91,6 +91,7 @@ namespace ADDON
   class AddonVersion;
   typedef std::map<std::string, std::pair<const AddonVersion, bool> > ADDONDEPS;
   typedef std::map<std::string, std::string> InfoMap;
+  typedef std::map<std::string, std::string> ArtMap;
   class AddonProps;
 
   class IAddon : public boost::enable_shared_from_this<IAddon>
@@ -112,6 +113,7 @@ namespace ADDON
     virtual std::string LibPath() const =0;
     virtual std::string ChangeLog() const =0;
     virtual std::string FanArt() const =0;
+    virtual ArtMap Art() const =0;
     virtual std::vector<std::string> Screenshots() const =0;
     virtual std::string Author() const =0;
     virtual std::string Icon() const =0;

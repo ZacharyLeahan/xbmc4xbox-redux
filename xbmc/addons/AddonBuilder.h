@@ -39,7 +39,8 @@ public:
   void SetAuthor(std::string author) { m_props.author = boost::move(author); }
   void SetSource(std::string source) { m_props.source = boost::move(source); }
   void SetIcon(std::string icon) { m_props.icon = boost::move(icon); }
-  void SetFanart(std::string fanart) { m_props.fanart = boost::move(fanart); }
+  void SetArt(std::string type, std::string value) { m_props.art[type] = value; }
+  void SetArt(std::map<std::string, std::string> art) { m_props.art = boost::move(art); }
   void SetScreenshots(std::vector<std::string> screenshots) { m_props.screenshots = boost::move(screenshots); }
   void SetChangelog(std::string changelog) { m_props.changelog = boost::move(changelog); }
   void SetBroken(std::string broken) { m_props.broken = boost::move(broken); }

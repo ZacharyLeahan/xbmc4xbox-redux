@@ -47,8 +47,12 @@ static std::string SerializeMetadata(const IAddon& addon)
   variant["size"] = addon.PackageSize();
 
   variant["path"] = addon.Path();
-  variant["fanart"] = addon.FanArt();
   variant["icon"] = addon.Icon();
+
+  variant["art"] = CVariant(CVariant::VariantTypeObject);
+  ArtMap mapArt = addon.Art();
+  for (ArtMap::const_iterator it = mapArt.begin(); it != mapArt.end(); ++it)
+    variant["art"][it->first] = it->second;
 
   variant["screenshots"] = CVariant(CVariant::VariantTypeArray);
   for (std::vector<std::string>::const_iterator it = addon.Screenshots().begin(); it != addon.Screenshots().end(); ++it)
@@ -91,8 +95,12 @@ static void DeserializeMetadata(const std::string& document, CAddonBuilder& buil
   builder.SetPackageSize(variant["size"].asUnsignedInteger());
 
   builder.SetPath(variant["path"].asString());
-  builder.SetFanart(variant["fanart"].asString());
   builder.SetIcon(variant["icon"].asString());
+
+  std::map<std::string, std::string> art;
+  for (CVariant::iterator_map it = variant["art"].begin_map(); it != variant["art"].end_map(); ++it)
+    art.insert(std::make_pair(it->first, it->second.asString()));
+  builder.SetArt(boost::move(art));
 
   std::vector<std::string> screenshots;
   for (CVariant::iterator_array it = variant["screenshots"].begin_array(); it != variant["screenshots"].end_array(); ++it)

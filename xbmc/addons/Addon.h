@@ -71,9 +71,9 @@ public:
   std::string author;
   std::string source;
   std::string path;
-  std::string icon;
   std::string changelog;
-  std::string fanart;
+  std::string icon;
+  std::map<std::string, std::string> art;
   std::vector<std::string> screenshots;
   std::string disclaimer;
   ADDONDEPS dependencies;
@@ -108,8 +108,8 @@ public:
   std::string LibPath() const;
   std::string Author() const { return m_props.author; }
   std::string ChangeLog() const { return m_props.changelog; }
-  std::string FanArt() const { return m_props.fanart; }
   std::string Icon() const { return m_props.icon; };
+  ArtMap Art() const { return m_props.art; };
   std::vector<std::string> Screenshots() const { return m_props.screenshots; };
   std::string Disclaimer() const { return m_props.disclaimer; }
   std::string Broken() const { return m_props.broken; }
@@ -120,6 +120,12 @@ public:
   uint64_t PackageSize() const { return m_props.packageSize; }
   const InfoMap& ExtraInfo() const { return m_props.extrainfo; }
   const ADDONDEPS& GetDeps() const { return m_props.dependencies; }
+
+  std::string FanArt() const
+  {
+    ADDON::InfoMap::const_iterator it = m_props.art.find("fanart");
+    return it != m_props.art.end() ? it->second : "";
+  }
 
   /*! \brief Check whether the this addon can be configured or not
    \return true if the addon has settings, false otherwise
