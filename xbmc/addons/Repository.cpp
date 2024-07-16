@@ -251,10 +251,12 @@ bool CRepositoryUpdateJob::DoWork()
         if (!oldAddon->Icon().empty())
           textureDB.InvalidateCachedTexture(oldAddon->Icon());
 
-        for (std::vector<std::string>::const_iterator it = oldAddon->Screenshots().begin(); it != oldAddon->Screenshots().end(); ++it)
+        std::vector<std::string> vecScreenshots = oldAddon->Screenshots();
+        for (std::vector<std::string>::const_iterator it = vecScreenshots.begin(); it != vecScreenshots.end(); ++it)
           textureDB.InvalidateCachedTexture(*it);
 
-        for (ArtMap::const_iterator it = oldAddon->Art().begin(); it != oldAddon->Art().end(); ++it)
+        ArtMap mapArt = oldAddon->Art();
+        for (ArtMap::const_iterator it = mapArt.begin(); it != mapArt.end(); ++it)
           textureDB.InvalidateCachedTexture(it->second);
       }
     }

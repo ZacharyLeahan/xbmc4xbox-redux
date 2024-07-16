@@ -55,7 +55,8 @@ static std::string SerializeMetadata(const IAddon& addon)
     variant["art"][it->first] = it->second;
 
   variant["screenshots"] = CVariant(CVariant::VariantTypeArray);
-  for (std::vector<std::string>::const_iterator it = addon.Screenshots().begin(); it != addon.Screenshots().end(); ++it)
+  std::vector<std::string> vecScreenshots = addon.Screenshots();
+  for (std::vector<std::string>::const_iterator it = vecScreenshots.begin(); it != vecScreenshots.end(); ++it)
     variant["screenshots"].push_back(*it);
 
   variant["extensions"] = CVariant(CVariant::VariantTypeArray);

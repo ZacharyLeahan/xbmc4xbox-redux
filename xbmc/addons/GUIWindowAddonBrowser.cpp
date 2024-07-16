@@ -167,7 +167,8 @@ class UpdateAddons : public IRunnable
 {
   virtual void Run()
   {
-    for (VECADDONS::const_iterator it = CServiceBroker::GetAddonMgr().GetAvailableUpdates().begin(); it != CServiceBroker::GetAddonMgr().GetAvailableUpdates().end(); ++it)
+    VECADDONS vecAvailableUpdates = CServiceBroker::GetAddonMgr().GetAvailableUpdates();
+    for (VECADDONS::const_iterator it = vecAvailableUpdates.begin(); it != vecAvailableUpdates.end(); ++it)
       CAddonInstaller::GetInstance().InstallOrUpdate((*it)->ID());
   }
 };

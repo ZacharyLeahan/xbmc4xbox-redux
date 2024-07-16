@@ -217,7 +217,8 @@ bool CONTEXTMENU::ShowFor(const CFileItemPtr& fileItem, const CContextMenuItem& 
     return false;
 
   ContextMenuView menuItems = CContextMenuManager::GetInstance().GetItems(*fileItem, root);
-  for (ContextMenuView::const_iterator it = CContextMenuManager::GetInstance().GetAddonItems(*fileItem, root).begin(); it != CContextMenuManager::GetInstance().GetAddonItems(*fileItem, root).end(); ++it)
+  ContextMenuView vecAddonItems = CContextMenuManager::GetInstance().GetAddonItems(*fileItem, root);
+  for (ContextMenuView::const_iterator it = vecAddonItems.begin(); it != vecAddonItems.end(); ++it)
     menuItems.push_back(boost::move(*it));
 
   if (menuItems.empty())

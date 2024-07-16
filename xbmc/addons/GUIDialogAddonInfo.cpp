@@ -194,7 +194,8 @@ void CGUIDialogAddonInfo::UpdateControls()
   CONTROL_ENABLE_ON_CONDITION(CONTROL_BTN_SETTINGS, isInstalled && m_localAddon->HasSettings());
 
   CFileItemList items;
-  for (std::vector<std::string>::const_iterator it = m_item->GetAddonInfo()->Screenshots().begin(); it != m_item->GetAddonInfo()->Screenshots().end(); ++it)
+  std::vector<std::string> vecScreenshots = m_item->GetAddonInfo()->Screenshots();
+  for (std::vector<std::string>::const_iterator it = vecScreenshots.begin(); it != vecScreenshots.end(); ++it)
   {
     const std::string &screenshot = *it;
     boost::shared_ptr<CFileItem> item = boost::make_shared<CFileItem>("");
