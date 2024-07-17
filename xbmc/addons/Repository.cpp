@@ -22,6 +22,7 @@
 
 #include <iterator>
 #include <utility>
+#include <boost/bind.hpp>
 
 #include "ServiceBroker.h"
 #include "addons/AddonDatabase.h"
@@ -39,6 +40,7 @@
 #include "settings/Settings.h"
 #include "TextureDatabase.h"
 #include "URL.h"
+#include "utils/Base64.h"
 #include "utils/JobManager.h"
 #include "utils/log.h"
 #include "utils/Mime.h"
@@ -53,6 +55,83 @@ using namespace KODI::MESSAGING;
 
 using KODI::MESSAGING::HELPERS::DialogResponse;
 
+bool dirHasParent(const ADDON::CRepository::DirInfo &dir, const std::string &path) { return URIUtils::PathHasParent(path, dir.datadir, true); }
+
+CRepository::ResolveResult CRepository::ResolvePathAndHash(const AddonPtr& addon) const
+{
+  std::string const& path = addon->Path();
+
+  ADDON::CRepository::DirList::const_iterator dirIt = std::find_if(m_dirs.begin(), m_dirs.end(), boost::bind(dirHasParent, _1, boost::cref(path)));
+  if (dirIt == m_dirs.end())
+  {
+    CLog::Log(LOGERROR, "Requested path {} not found in known repository directories", path);
+    ResolveResult resolveResult = {};
+    return resolveResult;
+  }
+
+  if (!dirIt->hashes)
+  {
+    // We have a path, but need no hash
+    ResolveResult resolveResult = {path, ""};
+    return resolveResult;
+  }
+
+  // Do not follow mirror redirect, we want the headers of the redirect response
+  CURL url(path);
+  url.SetProtocolOption("redirect-limit", "0");
+  CCurlFile file;
+  if (!file.Open(url))
+  {
+    CLog::Log(LOGERROR, "Could not fetch addon location and hash from {}", path);
+    ResolveResult resolveResult = {};
+    return resolveResult;
+  }
+
+  // Return the location from the header so we don't have to look it up again
+  // (saves one request per addon install)
+  std::string location = file.GetRedirectURL();
+  // content-* headers are base64, convert to base16
+  std::string hash = StringUtils::ToHexadecimal(Base64::Decode(file.GetHttpHeader().GetValue("content-md5")));
+
+  if (hash.empty())
+  {
+    // Expected hash, but none found -> fall back to old method
+    if (!FetchChecksum(path + ".md5", hash))
+    {
+      CLog::Log(LOGERROR, "Failed to find hash for {} from HTTP header and in separate file", path);
+      ResolveResult resolveResult = {};
+      return resolveResult;
+    }
+  }
+  if (location.empty())
+  {
+    // Fall back to original URL if we do not get a redirect
+    location = path;
+  }
+
+  CLog::Log(LOGDEBUG, "Resolved addon path {} to {} hash {}", path, location, hash);
+
+  ResolveResult resolveResult = {location, hash};
+  return resolveResult;
+}
+
+CRepository::DirInfo CRepository::ParseDirConfiguration(cp_cfg_element_t* configuration)
+{
+  const ADDON::CAddonMgr &mgr = CServiceBroker::GetAddonMgr();
+  DirInfo dir;
+  dir.checksum = mgr.GetExtValue(configuration, "checksum");
+  dir.info = mgr.GetExtValue(configuration, "info");
+  dir.datadir = mgr.GetExtValue(configuration, "datadir");
+  dir.artdir = mgr.GetExtValue(configuration, "artdir");
+  if (dir.artdir.empty())
+  {
+    dir.artdir = dir.datadir;
+  }
+  dir.hashes = mgr.GetExtValue(configuration, "hashes") == "true";
+  dir.version = AddonVersion(mgr.GetExtValue(configuration, "@minversion"));
+  return dir;
+}
+
 boost::movelib::unique_ptr<CRepository> CRepository::FromExtension(AddonProps props, const cp_extension_t* ext)
 {
   DirList dirs;
@@ -62,30 +141,19 @@ boost::movelib::unique_ptr<CRepository> CRepository::FromExtension(AddonProps pr
     version = addonver->Version();
   for (size_t i = 0; i < ext->configuration->num_children; ++i)
   {
-    if(ext->configuration->children[i].name &&
-       strcmp(ext->configuration->children[i].name, "dir") == 0)
+    cp_cfg_element_t* element = &ext->configuration->children[i];
+    if(element->name && strcmp(element->name, "dir") == 0)
     {
-      AddonVersion min_version(CServiceBroker::GetAddonMgr().GetExtValue(&ext->configuration->children[i], "@minversion"));
-      if (min_version <= version)
+      DirInfo dir = ParseDirConfiguration(element);
+      if (dir.version <= version)
       {
-        DirInfo dir;
-        dir.version = min_version;
-        dir.checksum = CServiceBroker::GetAddonMgr().GetExtValue(&ext->configuration->children[i], "checksum");
-        dir.info = CServiceBroker::GetAddonMgr().GetExtValue(&ext->configuration->children[i], "info");
-        dir.datadir = CServiceBroker::GetAddonMgr().GetExtValue(&ext->configuration->children[i], "datadir");
-        dir.hashes = CServiceBroker::GetAddonMgr().GetExtValue(&ext->configuration->children[i], "hashes") == "true";
         dirs.push_back(boost::move(dir));
       }
     }
   }
   if (!CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "info").empty())
   {
-    DirInfo info;
-    info.checksum = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "checksum");
-    info.info = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "info");
-    info.datadir = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "datadir");
-    info.hashes = CServiceBroker::GetAddonMgr().GetExtValue(ext->configuration, "hashes") == "true";
-    dirs.push_back(boost::move(info));
+    dirs.push_back(ParseDirConfiguration(ext->configuration));
   }
   return boost::movelib::unique_ptr<CRepository>(new CRepository(boost::move(props), boost::move(dirs)));
 }
@@ -93,34 +161,14 @@ boost::movelib::unique_ptr<CRepository> CRepository::FromExtension(AddonProps pr
 CRepository::CRepository(AddonProps props, DirList dirs)
     : CAddon(boost::move(props)), m_dirs(boost::move(dirs))
 {
-}
-
-
-bool CRepository::GetAddonHash(const AddonPtr& addon, std::string& checksum) const
-{
-  DirList::const_iterator it;
-  for (it = m_dirs.begin();it != m_dirs.end(); ++it)
-    if (URIUtils::PathHasParent(addon->Path(), it->datadir, true))
-      break;
-
-  if (it != m_dirs.end())
+  for (DirList::const_iterator it = m_dirs.begin(); it != m_dirs.end(); ++it)
   {
-    if (!it->hashes)
+    const ADDON::CRepository::DirInfo &dir = *it;
+    if (CURL(dir.datadir).IsProtocol("http"))
     {
-      checksum = "";
-      return true;
-    }
-    if (FetchChecksum(addon->Path() + ".md5", checksum))
-    {
-      size_t pos = checksum.find_first_of(" \n");
-      if (pos != std::string::npos)
-      {
-        checksum = checksum.substr(0, pos);
-        return true;
-      }
+      CLog::Log(LOGWARNING, "Repository {} uses plain HTTP for add-on downloads - this is insecure and will make your Kodi installation vulnerable to attacks if enabled!", Name());
     }
   }
-  return false;
 }
 
 bool CRepository::FetchChecksum(const std::string& url, std::string& checksum)
@@ -139,6 +187,11 @@ bool CRepository::FetchChecksum(const std::string& url, std::string& checksum)
   if (read <= -1)
     return false;
   checksum = ss.str();
+  std::size_t pos = checksum.find_first_of(" \n");
+  if (pos != std::string::npos)
+  {
+    checksum = checksum.substr(0, pos);
+  }
   return true;
 }
 
