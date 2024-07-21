@@ -19,14 +19,17 @@
 */
 
 #include "InputCodingTableFactory.h"
+#ifndef _XBOX
 #include "InputCodingTableBaiduPY.h"
 #include "InputCodingTableBasePY.h"
 #include "InputCodingTableKorean.h"
+#endif
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
 
 IInputCodingTable* CInputCodingTableFactory::CreateCodingTable(const std::string& strTableName, const TiXmlElement* element)
 {
+#ifndef _XBOX
   if (strTableName == "BaiduPY")
   {
     const char* apiurl = element->Attribute("apiurl");
@@ -41,5 +44,6 @@ IInputCodingTable* CInputCodingTableFactory::CreateCodingTable(const std::string
     return new CInputCodingTableBasePY();
   if (strTableName == "Korean")
     return new CInputCodingTableKorean();
+#endif
   return nullptr;
 }

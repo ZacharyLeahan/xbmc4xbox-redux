@@ -4620,28 +4620,10 @@ bundler xbelogo\saveimage.rdf -o xbelogo\saveimage.xbx
 					RelativePath=".\xbmc\input\InputCodingTable.h">
 				</File>
 				<File
-					RelativePath=".\xbmc\input\InputCodingTableBaiduPY.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\input\InputCodingTableBaiduPY.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\input\InputCodingTableBasePY.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\input\InputCodingTableBasePY.h">
-				</File>
-				<File
 					RelativePath=".\xbmc\input\InputCodingTableFactory.cpp">
 				</File>
 				<File
 					RelativePath=".\xbmc\input\InputCodingTableFactory.h">
-				</File>
-				<File
-					RelativePath=".\xbmc\input\InputCodingTableKorean.cpp">
-				</File>
-				<File
-					RelativePath=".\xbmc\input\InputCodingTableKorean.h">
 				</File>
 				<File
 					RelativePath=".\xbmc\input\KeyboardLayout.cpp">
