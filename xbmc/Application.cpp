@@ -2892,7 +2892,7 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
     ProcessEventServer(frameTime);
     if (processGUI)
     {
-      CSeekHandler::Get().Process();
+      CSeekHandler::Get().FrameMove();
     }
   }
   if (processGUI)
@@ -4971,7 +4971,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
         g_playlistPlayer.SetCurrentSong(m_nextPlaylistItem);
         *m_itemCurrentFile = *item;
       }
-      g_infoManager.SetCurrentItem(*m_itemCurrentFile);
+      g_infoManager.SetCurrentItem(m_itemCurrentFile);
       g_partyModeManager.OnSongChange(true);
 
       CheckNetworkHDSpinDown(true);
