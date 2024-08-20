@@ -339,11 +339,6 @@
       <menu>Back</menu>
     </keyboard>
   </ContextMenu>
-  <Scripts>
-    <keyboard>
-      <i>info</i>
-    </keyboard>
-  </Scripts>
   <MusicInformation>
     <keyboard>
       <i>Back</i>

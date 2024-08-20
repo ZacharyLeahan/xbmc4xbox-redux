@@ -103,7 +103,7 @@
       <mymusic>XBMC.ActivateWindow(MyMusic)</mymusic>
       <mypictures>XBMC.ActivateWindow(MyPictures)</mypictures>
       <mytv>XBMC.ActivateWindow(MyPrograms)</mytv>
-      <livetv>XBMC.ActivateWindow(Scripts)</livetv>
+      <livetv>XBMC.ActivateWindow(AddonBrowser)</livetv>
       <hash>XBMC.ActivateWindow(Settings)</hash>
       <zero>Number0</zero>
       <one>Number1</one>
@@ -341,11 +341,6 @@
       <title>Back</title>
     </remote>
   </ContextMenu>
-  <Scripts>
-    <remote>
-      <info>info</info>
-    </remote>
-  </Scripts>
   <NumericInput>
     <remote>
       <zero>Number0</zero>
