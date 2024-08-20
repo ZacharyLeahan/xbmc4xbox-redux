@@ -24,8 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "system.h" // <xtl.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "ISetting.h"
 #include "ISettingCallback.h"

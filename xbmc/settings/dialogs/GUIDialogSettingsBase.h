@@ -57,6 +57,8 @@ class CSettingAction;
 class CSettingCategory;
 class CSettingSection;
 
+class CVariant;
+
 typedef boost::shared_ptr<CGUIControlBaseSetting> BaseSettingControlPtr;
 
 class CGUIDialogSettingsBase
@@ -96,17 +98,29 @@ protected:
   virtual void Save() = 0;
   virtual unsigned int GetDelayMs() const { return 1500; }
   virtual std::string GetLocalizedString(uint32_t labelId) const;
-  
+
   virtual void OnOkay() { m_confirmed = true; }
   virtual void OnCancel() { }
-  
+
   virtual void SetupView();
   virtual std::set<std::string> CreateSettings();
   virtual void UpdateSettings();
-  
+
+  /*!
+    \brief Get the name for the setting entry
+
+    Used as virtual to allow related settings dialog to give a std::string name of the setting.
+    If not used on own dialog class it handle the string from int CSetting::GetLabel(),
+    This must also be used if on related dialog no special entry is wanted.
+
+    \param pSetting Base settings class which need the name
+    \return Name used on settings dialog
+   */
+  virtual std::string GetSettingsLabel(CSetting *pSetting);
+
   virtual CGUIControl* AddSetting(CSetting *pSetting, float width, int &iControlID);
   virtual CGUIControl* AddSettingControl(CGUIControl *pControl, BaseSettingControlPtr pSettingControl, float width, int &iControlID);
-  
+
   virtual void SetupControls(bool createSettings = true);
   virtual void FreeControls();
   virtual void DeleteControls();
@@ -116,7 +130,7 @@ protected:
   virtual void SetDescription(const CVariant &label);
 
   virtual void OnResetSettings();
-  
+
   /*!
     \brief A setting control has been interacted with by the user
 
@@ -136,18 +150,18 @@ protected:
 
   BaseSettingControlPtr GetSettingControl(const std::string &setting);
   BaseSettingControlPtr GetSettingControl(int controlId);
-  
+
   CGUIControl* AddSeparator(float width, int &iControlID);
   CGUIControl* AddLabel(float width, int &iControlID, int label);
 
   std::vector<CSettingCategory*> m_categories;
   std::vector<BaseSettingControlPtr> m_settingControls;
-  
+
   int m_iSetting;
   int m_iCategory;
   CSettingAction *m_resetSetting;
   CSettingCategory *m_dummyCategory;
-  
+
   CGUISpinControlEx *m_pOriginalSpin;
   CGUISettingsSliderControl *m_pOriginalSlider;
   CGUIRadioButtonControl *m_pOriginalRadioButton;
@@ -157,7 +171,7 @@ protected:
   CGUIImage *m_pOriginalImage;
   CGUILabelControl *m_pOriginalGroupTitle;
   bool m_newOriginalEdit;
-  
+
   BaseSettingControlPtr m_delayedSetting; ///< Current delayed setting \sa CBaseSettingControl::SetDelayed()
   CTimer m_delayedTimer;                  ///< Delayed setting timer
 

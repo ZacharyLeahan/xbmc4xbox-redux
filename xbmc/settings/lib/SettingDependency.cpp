@@ -18,6 +18,10 @@
  *
  */
 
+#include <memory>
+#include <set>
+#include <string>
+
 #include <stdlib.h>
 
 #include "SettingDependency.h"
@@ -173,12 +177,12 @@ bool CSettingDependencyCondition::setTarget(const std::string &target)
 bool CSettingDependencyCondition::setOperator(const std::string &op)
 {
   size_t length = 0;
-  if (StringUtils::EndsWith(op, "is"))
+  if (StringUtils::EndsWithNoCase(op, "is"))
   {
     m_operator = SettingDependencyOperatorEquals;
     length = 2;
   }
-  else if (StringUtils::EndsWith(op, "contains"))
+  else if (StringUtils::EndsWithNoCase(op, "contains"))
   {
     m_operator = SettingDependencyOperatorContains;
     length = 8;

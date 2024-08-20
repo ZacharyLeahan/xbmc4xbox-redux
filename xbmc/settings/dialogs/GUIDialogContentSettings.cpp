@@ -216,7 +216,7 @@ void CGUIDialogContentSettings::OnSettingAction(const CSetting *setting)
     CGUIDialogSelect *dialog = (CGUIDialogSelect *)g_windowManager.GetWindow(WINDOW_DIALOG_SELECT);
     if (dialog)
     {
-      dialog->SetHeading(20344); //Label "This directory contains"
+      dialog->SetHeading( 20344 ); //Label "This directory contains"
 
       int iIndex = 0;
       int iSelected = 0;

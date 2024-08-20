@@ -22,8 +22,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-#include "utils/Variant.h"
-
+class CVariant;
 class CSettingList;
 class CSetting;
 
