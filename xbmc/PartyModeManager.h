@@ -19,9 +19,11 @@
  *
  */
 
-#include "utils/StdString.h"
-
+#include "system.h" // <xtl.h>
 #include <boost/shared_ptr.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 class CFileItem; typedef boost::shared_ptr<CFileItem> CFileItemPtr;
 class CFileItemList;
@@ -43,7 +45,7 @@ public:
   CPartyModeManager(void);
   virtual ~CPartyModeManager(void);
 
-  bool Enable(PartyModeContext context=PARTYMODECONTEXT_MUSIC, const CStdString& strXspPath = "");
+  bool Enable(PartyModeContext context=PARTYMODECONTEXT_MUSIC, const std::string& strXspPath = "");
   void Disable();
   void Play(int iPos);
   void OnSongChange(bool bUpdatePlayed = false);
@@ -56,6 +58,7 @@ public:
   int GetMatchingSongsLeft();
   int GetRelaxedSongs();
   int GetRandomSongs();
+  PartyModeContext GetType() const;
 
 private:
   void Process();
@@ -65,20 +68,21 @@ private:
   bool ReapSongs();
   bool MovePlaying();
   void SendUpdateMessage();
-  void OnError(int iError, CStdString& strLogMessage);
+  void OnError(int iError, const std::string& strLogMessage);
   void ClearState();
   void UpdateStats();
-  std::pair<CStdString,CStdString> GetWhereClauseWithHistory() const;
+  std::pair<std::string,std::string> GetWhereClauseWithHistory() const;
   void AddToHistory(int type, int songID);
   void GetRandomSelection(std::vector< std::pair<int,int> > &in, unsigned int number, std::vector< std::pair<int, int> > &out);
+  void Announce();
 
   // state
   bool m_bEnabled;
   bool m_bIsVideo;
   int m_iLastUserSong;
-  CStdString m_strCurrentFilterMusic;
-  CStdString m_strCurrentFilterVideo;
-  CStdString m_type;
+  std::string m_strCurrentFilterMusic;
+  std::string m_strCurrentFilterVideo;
+  std::string m_type;
 
   // statistics
   int m_iSongsPlayed;
