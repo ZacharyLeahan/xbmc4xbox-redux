@@ -222,34 +222,36 @@ static const ActionMapping windows[] =
         {"programs"                 , WINDOW_PROGRAMS},
         {"pictures"                 , WINDOW_PICTURES},
         {"filemanager"              , WINDOW_FILES},
-        {"files"                    , WINDOW_FILES},
+        {"files"                    , WINDOW_FILES}, // backward compat
         {"settings"                 , WINDOW_SETTINGS_MENU},
         {"music"                    , WINDOW_MUSIC},
-        {"video"                    , WINDOW_VIDEOS},
+        {"video"                    , WINDOW_VIDEOS}, // backward compat
         {"videos"                   , WINDOW_VIDEOS},
         {"systeminfo"               , WINDOW_SYSTEM_INFORMATION},
         {"screencalibration"        , WINDOW_SCREEN_CALIBRATION},
-        {"guicalibration"           , WINDOW_SCREEN_CALIBRATION},
+        {"guicalibration"           , WINDOW_SCREEN_CALIBRATION}, // backward compat
         {"systemsettings"           , WINDOW_SETTINGS_SYSTEM},
         {"networksettings"          , WINDOW_SETTINGS_SERVICE}, // backward compat
         {"servicesettings"          , WINDOW_SETTINGS_SERVICE},
-        {"playersettings"           , WINDOW_SETTINGS_PLAYER },
-        {"mediasettings"            , WINDOW_SETTINGS_MEDIA },
-        {"interfacesettings"        , WINDOW_SETTINGS_INTERFACE },
-        {"videofiles"               , WINDOW_VIDEO_FILES},
+        {"playersettings"           , WINDOW_SETTINGS_PLAYER},
+        {"mediasettings"            , WINDOW_SETTINGS_MEDIA},
+        {"interfacesettings"        , WINDOW_SETTINGS_INTERFACE},
+        {"videofiles"               , WINDOW_VIDEO_FILES}, // backward compat
         {"videolibrary"             , WINDOW_VIDEO_NAV},
         {"videoplaylist"            , WINDOW_VIDEO_PLAYLIST},
-        {"addonbrowser"             , WINDOW_ADDON_BROWSER},
         {"loginscreen"              , WINDOW_LOGIN_SCREEN},
         {"profiles"                 , WINDOW_SETTINGS_PROFILES},
+        {"skinsettings"             , WINDOW_SKIN_SETTINGS},
+        {"addonbrowser"             , WINDOW_ADDON_BROWSER},
         {"yesnodialog"              , WINDOW_DIALOG_YES_NO},
         {"progressdialog"           , WINDOW_DIALOG_PROGRESS},
         {"virtualkeyboard"          , WINDOW_DIALOG_KEYBOARD},
         {"volumebar"                , WINDOW_DIALOG_VOLUME_BAR},
         {"submenu"                  , WINDOW_DIALOG_SUB_MENU},
+        {"favourites"               , WINDOW_DIALOG_FAVOURITES},
         {"contextmenu"              , WINDOW_DIALOG_CONTEXT_MENU},
-        {"notification"             , WINDOW_DIALOG_KAI_TOAST },
-        {"infodialog"               , WINDOW_DIALOG_KAI_TOAST },          // backward compat
+        {"notification"             , WINDOW_DIALOG_KAI_TOAST},
+        {"infodialog"               , WINDOW_DIALOG_KAI_TOAST}, // backward compat
         {"numericinput"             , WINDOW_DIALOG_NUMERIC},
         {"gamepadinput"             , WINDOW_DIALOG_GAMEPAD},
         {"shutdownmenu"             , WINDOW_DIALOG_BUTTON_MENU},
@@ -257,7 +259,7 @@ static const ActionMapping windows[] =
         {"seekbar"                  , WINDOW_DIALOG_SEEK_BAR},
         {"musicosd"                 , WINDOW_DIALOG_MUSIC_OSD},
         {"addonsettings"            , WINDOW_DIALOG_ADDON_SETTINGS},
-        {"visualisationsettings"    , WINDOW_DIALOG_ADDON_SETTINGS},
+        {"visualisationsettings"    , WINDOW_DIALOG_ADDON_SETTINGS}, // backward compat
         {"visualisationpresetlist"  , WINDOW_DIALOG_VIS_PRESET_LIST},
         {"osdvideosettings"         , WINDOW_DIALOG_VIDEO_OSD_SETTINGS},
         {"osdaudiosettings"         , WINDOW_DIALOG_AUDIO_OSD_SETTINGS},
@@ -268,7 +270,6 @@ static const ActionMapping windows[] =
         {"profilesettings"          , WINDOW_DIALOG_PROFILE_SETTINGS},
         {"locksettings"             , WINDOW_DIALOG_LOCK_SETTINGS},
         {"contentsettings"          , WINDOW_DIALOG_CONTENT_SETTINGS},
-        {"favourites"               , WINDOW_DIALOG_FAVOURITES},
         {"songinformation"          , WINDOW_DIALOG_SONG_INFO},
         {"smartplaylisteditor"      , WINDOW_DIALOG_SMART_PLAYLIST_EDITOR},
         {"smartplaylistrule"        , WINDOW_DIALOG_SMART_PLAYLIST_RULE},
@@ -276,10 +277,11 @@ static const ActionMapping windows[] =
         {"pictureinfo"              , WINDOW_DIALOG_PICTURE_INFO},
         {"fullscreeninfo"           , WINDOW_DIALOG_FULLSCREEN_INFO},
         {"sliderdialog"             , WINDOW_DIALOG_SLIDER},
+        {"addoninformation"         , WINDOW_DIALOG_ADDON_INFO},
         {"subtitlesearch"           , WINDOW_DIALOG_SUBTITLES},
         {"musicplaylist"            , WINDOW_MUSIC_PLAYLIST},
-        {"musicfiles"               , WINDOW_MUSIC_FILES},
-        {"musiclibrary"             , WINDOW_MUSIC_NAV},
+        {"musicfiles"               , WINDOW_MUSIC_FILES}, // backward compat
+        {"musiclibrary"             , WINDOW_MUSIC_NAV}, // backward compat
         {"musicplaylisteditor"      , WINDOW_MUSIC_PLAYLIST_EDITOR},
         {"selectdialog"             , WINDOW_DIALOG_SELECT},
         {"musicinformation"         , WINDOW_DIALOG_MUSIC_INFO},
@@ -289,7 +291,7 @@ static const ActionMapping windows[] =
         {"fullscreenvideo"          , WINDOW_FULLSCREEN_VIDEO},
         {"visualisation"            , WINDOW_VISUALISATION},
         {"slideshow"                , WINDOW_SLIDESHOW},
-        {"filestackingdialog"       , WINDOW_DIALOG_FILESTACKING},
+        {"filestackingdialog"       , WINDOW_DIALOG_FILESTACKING}, // Deprecated
         {"weather"                  , WINDOW_WEATHER},
         {"screensaver"              , WINDOW_SCREENSAVER},
         {"videoosd"                 , WINDOW_DIALOG_VIDEO_OSD},
@@ -299,7 +301,9 @@ static const ActionMapping windows[] =
         {"gamesaves"                , WINDOW_GAMESAVES},
         {"startwindow"              , WINDOW_START},
         {"startup"                  , WINDOW_STARTUP_ANIM},
-        {"mediafilter"              , WINDOW_DIALOG_MEDIA_FILTER}};
+        {"extendedprogressdialog"   , WINDOW_DIALOG_EXT_PROGRESS},
+        {"mediafilter"              , WINDOW_DIALOG_MEDIA_FILTER},
+        {"addon"                    , WINDOW_ADDON_START}};
 
 static const ActionMapping mousecommands[] =
 {
