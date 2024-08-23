@@ -25,7 +25,7 @@
 #include "threads/CriticalSection.h"
 
 #include <vector>
-#include "boost/shared_ptr.hpp"
+#include <boost/shared_ptr.hpp>
 
 class CFileItem; typedef boost::shared_ptr<CFileItem> CFileItemPtr;
 class CFileItemList;
@@ -63,6 +63,7 @@ protected:
   std::vector<CFileItemPtr> m_vecItems; // FileItemList would delete the items and we only want to keep a reference.
   CCriticalSection m_lock;
 
+  volatile bool m_bIsLoading;
   volatile bool m_bStop;
   CThread *m_thread;
 
