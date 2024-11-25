@@ -316,7 +316,7 @@ BuildObject(CFileItem&                    item,
     std::string thumb, fanart;
     bool fetched_art(false);
 
-    CLog::Log(LOGDEBUG, "Building didl for object '%s'", (const char*)item.GetPath());
+    CLog::Log(LOGDEBUG, "Building didl for object '%s'", (const char*)item.GetPath().c_str());
 
     EClientQuirks quirks = GetClientQuirks(context);
 
@@ -333,7 +333,7 @@ BuildObject(CFileItem&                    item,
 
     if (!item.m_bIsFolder) {
         object = new PLT_MediaItem();
-        object->m_ObjectID = item.GetPath();
+        object->m_ObjectID = item.GetPath().c_str();
 
         /* Setup object type */
         if (item.IsMusicDb() || item.IsAudio()) {
@@ -405,7 +405,7 @@ BuildObject(CFileItem&                    item,
         object = container;
 
         /* Assign a title and id for this container */
-        container->m_ObjectID = item.GetPath();
+        container->m_ObjectID = item.GetPath().c_str();
         container->m_ObjectClass.type = "object.container";
         container->m_ChildrenCount = -1;
 

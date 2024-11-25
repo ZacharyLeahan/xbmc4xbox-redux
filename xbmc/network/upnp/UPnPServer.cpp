@@ -90,7 +90,7 @@ CUPnPServer::Build(CFileItemPtr                  item,
       else {
         // db path handling
         NPT_String file_path, share_name;
-        file_path = item->GetPath();
+        file_path = item->GetPath().c_str();
         share_name = "";
 
         if (path.StartsWith("musicdb://")) {

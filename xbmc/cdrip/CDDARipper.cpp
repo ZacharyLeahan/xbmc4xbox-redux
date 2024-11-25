@@ -112,7 +112,7 @@ bool CCDDARipper::RipCD()
   {
     CFileItemPtr pItem = vecItems[i];
     CMusicInfoTagLoaderFactory factory;
-    auto_ptr<IMusicInfoTagLoader> pLoader (factory.CreateLoader(pItem->GetPath()));
+    auto_ptr<IMusicInfoTagLoader> pLoader (factory.CreateLoader(*pItem));
     if (NULL != pLoader.get())
     {
       pLoader->Load(pItem->GetPath(), *pItem->GetMusicInfoTag()); // get tag from file
@@ -137,7 +137,7 @@ bool CCDDARipper::RipCD()
     CStdString strFile = CUtil::MakeLegalPath(URIUtils::AddFileToFolder(strDirectory, track), legalType);
 
     // don't rip non cdda items
-    if (item->GetPath().Find(".cdda") < 0)
+    if (item->GetPath().find(".cdda") == std::string::npos)
       continue;
 
     bool eject = CSettings::GetInstance().GetBool("audiocds.ejectonrip") && 

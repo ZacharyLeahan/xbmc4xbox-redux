@@ -190,7 +190,7 @@ bool CMythDirectory::GetGuideForChannel(const CStdString& base, CFileItemList &i
       CDateTime localstart;
       if (program[i].starttime)
         localstart = CTimeUtils::GetLocalTime(program[i].starttime);
-      item->m_strTitle.Format("%s - %s", localstart.GetAsLocalizedTime("HH:mm", false), title); // e.g. 20:30 - Mythbusters
+      item->m_strTitle = StringUtils::Format("%s - %s", localstart.GetAsLocalizedTime("HH:mm", false), title); // e.g. 20:30 - Mythbusters
       if (!subtitle.IsEmpty())
         item->m_strTitle     += " - \"" + subtitle + "\""; // e.g. 20:30 - Mythbusters - "The Pirate Special"
       item->m_dateTime        = localstart;

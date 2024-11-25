@@ -85,7 +85,7 @@ void CPlayerSelectionRule::GetPlayers(const CFileItem& item, VECPLAYERCORES &vec
 
   if (m_tDVD >= 0 && (m_tDVD > 0) != item.IsDVD()) return;
   if (m_tDVDFile >= 0 && (m_tDVDFile > 0) != item.IsDVDFile()) return;
-  if (m_tDVDImage >= 0 && (m_tDVDImage > 0) != item.IsDVDImage()) return;
+  if (m_tDVDImage >= 0 && (m_tDVDImage > 0) != item.IsDiscImage()) return;
 
   CURL url(item.GetPath());
 

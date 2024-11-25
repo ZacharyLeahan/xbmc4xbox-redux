@@ -3694,7 +3694,7 @@ PlayBackRet CApplication::PlayStack(const CFileItem& item, bool bRestart)
   CVideoDatabase dbs;
 
   // case 1: stacked ISOs
-  if (CFileItem(CStackDirectory::GetFirstStackedFile(item.GetPath()),false).IsDVDImage())
+  if (CFileItem(CStackDirectory::GetFirstStackedFile(item.GetPath()),false).IsDiscImage())
   {
     CStackDirectory dir;
     CFileItemList movieList;
@@ -4451,7 +4451,7 @@ void CApplication::UpdateFileState()
       if (IsPlayingVideo())
       {
         // Special case for DVDs: Only extract streamdetails if title length > 15m. Should yield more correct info
-        if (!(m_progressTrackingItem->IsDVDImage() || m_progressTrackingItem->IsDVDFile()) || m_pPlayer->GetTotalTime() > 15*60*1000)
+        if (!(m_progressTrackingItem->IsDiscImage() || m_progressTrackingItem->IsDVDFile()) || m_pPlayer->GetTotalTime() > 15*60*1000)
         {
           CStreamDetails details;
           // Update with stream details from player, if any
@@ -4990,7 +4990,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
           {
             if (!m_itemCurrentFile->HasMusicInfoTag() || !m_itemCurrentFile->GetMusicInfoTag()->Loaded())
             {
-              IMusicInfoTagLoader* tagloader = CMusicInfoTagLoaderFactory::CreateLoader(m_itemCurrentFile->GetPath());
+              IMusicInfoTagLoader* tagloader = CMusicInfoTagLoaderFactory::CreateLoader(*m_itemCurrentFile);
               tagloader->Load(m_itemCurrentFile->GetPath(),*m_itemCurrentFile->GetMusicInfoTag());
               delete tagloader;
             }
@@ -5423,7 +5423,7 @@ void CApplication::Restart(bool bSamePosition)
     m_pPlayer->SetPlayerState(state);
 }
 
-const CStdString& CApplication::CurrentFile()
+const std::string& CApplication::CurrentFile()
 {
   return m_itemCurrentFile->GetPath();
 }

@@ -1603,7 +1603,8 @@ void CUtil::ClearSubtitles()
   {
     if (!items[i]->m_bIsFolder)
     {
-      if ( items[i]->GetPath().Find("subtitle") >= 0 || items[i]->GetPath().Find("vobsub_queue") >= 0 )
+      if (items[i]->GetPath().find("subtitle") != std::string::npos ||
+          items[i]->GetPath().find("vobsub_queue") != std::string::npos)
       {
         CLog::Log(LOGDEBUG, "%s - Deleting temporary subtitle %s", __FUNCTION__, items[i]->GetPath().c_str());
         CFile::Delete(items[i]->GetPath());
@@ -1764,7 +1765,7 @@ void CUtil::CacheSubtitles(const CStdString& strMovie, CStdString& strExtensionC
       strFileNameNoExtNoCase.MakeLower();
       for (int j = 0; j < (int)items.Size(); j++)
       {
-        URIUtils::Split(items[j]->GetPath(), strPath, strItem);
+        URIUtils::Split(items[j]->GetPath().c_str(), strPath, strItem);
 
         // is this a rar-file ..
         if ((URIUtils::IsRAR(strItem) || URIUtils::IsZIP(strItem)) && CSettings::GetInstance().GetBool("subtitles.searchrars"))
@@ -3367,7 +3368,7 @@ void CUtil::GetRecursiveDirsListing(const CStdString& strPath, CFileItemList& it
   CDirectory::GetDirectory(strPath,myItems,"",flags);
   for (int i=0;i<myItems.Size();++i)
   {
-    if (myItems[i]->m_bIsFolder && !myItems[i]->GetPath().Equals(".."))
+    if (myItems[i]->m_bIsFolder && !myItems[i]->IsPath(".."))
     {
       item.Add(myItems[i]);
       CUtil::GetRecursiveDirsListing(myItems[i]->GetPath(),item,flags);

@@ -466,7 +466,7 @@ int CXbmcWeb::xbmcCatalog( int eid, webs_t wp, char_t *parameter)
         if( selectionNumber >= 0 && selectionNumber < iItemCount)
         {
           CFileItemPtr itm = webDirItems->Get(selectionNumber);
-          strcpy(buffer, itm->GetPath());
+          strcpy(buffer, itm->GetPath().c_str());
           output = buffer;
         }
       }
@@ -983,7 +983,7 @@ void CXbmcWeb::SetCurrentMediaItem(CFileItem& newItem)
   if (!bFound && CSettings::GetInstance().GetBool("musicfiles.usetags"))
   {
     //	...no, try to load the tag of the file.
-    auto_ptr<IMusicInfoTagLoader> pLoader(CMusicInfoTagLoaderFactory::CreateLoader(newItem.GetPath()));
+    auto_ptr<IMusicInfoTagLoader> pLoader(CMusicInfoTagLoaderFactory::CreateLoader(newItem));
     //	Do we have a tag loader for this file type?
     if (pLoader.get() != NULL)
       pLoader->Load(newItem.GetPath(),*tag);

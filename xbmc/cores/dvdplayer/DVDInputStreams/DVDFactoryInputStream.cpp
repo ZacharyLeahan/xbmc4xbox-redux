@@ -39,7 +39,7 @@ CDVDInputStream* CDVDFactoryInputStream::CreateInputStream(IDVDPlayer* pPlayer, 
 {
   std::string file = fileitem.GetPath();
 
-  if (fileitem.IsDVDImage())
+  if (fileitem.IsDiscImage())
     return new CDVDInputStreamNavigator(pPlayer, fileitem);
 
 #ifdef _XBOX

@@ -46,7 +46,7 @@ namespace XFILE
       url = URIUtils::CreateArchivePath("rar", urlOrig);
 
     CStdString strArchive = url.GetHostName();
-    CStdString strOptions = url.GetOptions();
+    std::string strOptions = url.GetOptions();
     CStdString strPathInArchive = url.GetFileName();
     url.SetOptions("");
 

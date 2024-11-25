@@ -382,7 +382,7 @@ void CGUIDialogMediaSource::UpdateButtons()
   if (!m_paths->Size()) // sanity
     return;
   
-  CONTROL_ENABLE_ON_CONDITION(CONTROL_OK, !m_paths->Get(0)->GetPath().IsEmpty() && !m_name.IsEmpty());
+  CONTROL_ENABLE_ON_CONDITION(CONTROL_OK, !m_paths->Get(0)->GetPath().empty() && !m_name.empty());
   CONTROL_ENABLE_ON_CONDITION(CONTROL_PATH_REMOVE, m_paths->Size() > 1);
   // name
   SET_CONTROL_LABEL2(CONTROL_NAME, m_name);
@@ -406,7 +406,7 @@ void CGUIDialogMediaSource::UpdateButtons()
   if (m_type.Equals("video"))
   {
     SET_CONTROL_VISIBLE(CONTROL_CONTENT);
-    CONTROL_ENABLE_ON_CONDITION(CONTROL_CONTENT, !m_paths->Get(0)->GetPath().IsEmpty() && !m_name.IsEmpty());
+    CONTROL_ENABLE_ON_CONDITION(CONTROL_CONTENT, !m_paths->Get(0)->GetPath().empty() && !m_name.empty());
   }
   else
   {
@@ -497,7 +497,7 @@ std::vector<std::string> CGUIDialogMediaSource::GetPaths()
   std::vector<std::string> paths;
   for (int i = 0; i < m_paths->Size(); i++)
   {
-    if (!m_paths->Get(i)->GetPath().IsEmpty())
+    if (!m_paths->Get(i)->GetPath().empty())
     { // strip off the user and password for smb paths (anything that the password manager can auth)
       // and add the user/pass to the password manager - note, we haven't confirmed that it works
       // at this point, but if it doesn't, the user will get prompted anyway in SMBDirectory.

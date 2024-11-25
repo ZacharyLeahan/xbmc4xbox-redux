@@ -235,7 +235,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
       if (pItem->m_bIsFolder && pItem->GetPath() != "." && pItem->GetPath() != "..")
       {
         // Check if the current foldername indicates a DVD structure (name is "VIDEO_TS")
-        if (pItem->GetPath().Find( "VIDEO_TS" ) != -1 && bAllowVideo
+        if (pItem->GetPath().find("VIDEO_TS") != std::string::npos && bAllowVideo
         && (bypassSettings || CSettings::GetInstance().GetBool("autorun.dvd")))
         {
           CUtil::PlayDVD("dvd", restart);
@@ -245,9 +245,9 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
 
         // Video CDs can have multiple file formats. First we need to determine which one is used on the CD
         CStdString strExt;
-        if (pItem->GetPath().Find("MPEGAV") != -1)
+        if (pItem->GetPath().find("MPEGAV") != std::string::npos)
           strExt = ".dat";
-        if (pItem->GetPath().Find("MPEG2") != -1)
+        if (pItem->GetPath().find("MPEG2") != std::string::npos)
           strExt = ".mpg";
 
         // If a file format was extracted we are sure this is a VCD. Autoplay if settings indicate we should.
@@ -267,7 +267,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
             return true;
           }
         }
-        else if (pItem->GetPath().Find("PICTURES") != -1 && bAllowPictures
+        else if (pItem->GetPath().find("PICTURES") != std::string::npos && bAllowPictures
               && (bypassSettings || CSettings::GetInstance().GetBool("autorun.pictures")))
         {
           bPlaying = true;

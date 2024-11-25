@@ -208,11 +208,11 @@ namespace XFILE
     // we replace all instances of comma's with double comma's, then separate
     // the files using " , ".
     CStdString stackedPath = "stack://";
-    CStdString folder, file;
+    std::string folder, file;
     URIUtils::Split(items[stack[0]]->GetPath(), folder, file);
     stackedPath += folder;
     // double escape any occurence of commas
-    file.Replace(",", ",,");
+    StringUtils::Replace(file, ",", ",,");
     stackedPath += file;
     for (unsigned int i = 1; i < stack.size(); ++i)
     {
@@ -220,7 +220,7 @@ namespace XFILE
       file = items[stack[i]]->GetPath();
       
       // double escape any occurence of commas
-      file.Replace(",", ",,");
+      StringUtils::Replace(file, ",", ",,");
       stackedPath += file;
     }
     return stackedPath;

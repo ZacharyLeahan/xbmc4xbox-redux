@@ -315,7 +315,7 @@ void CGUIWindowFileManager::OnSort(int iList)
   for (int i = 0; i < m_vecItems[iList]->Size(); i++)
   {
     CFileItemPtr pItem = m_vecItems[iList]->Get(i);
-    if (pItem->m_bIsFolder && (!pItem->m_dwSize || pItem->GetPath().Equals("add")))
+    if (pItem->m_bIsFolder && (!pItem->m_dwSize || pItem->IsPath("add")))
       pItem->SetLabel2("");
     else
       pItem->SetFileSizeLabel();
@@ -628,7 +628,7 @@ void CGUIWindowFileManager::OnStart(CFileItem *pItem)
     CUtil::RunXBE(pItem->GetPath().c_str(),NULL,F_VIDEO(iRegion));
   }
   else if (pItem->IsShortCut())
-    CUtil::RunShortcut(pItem->GetPath());
+    CUtil::RunShortcut(pItem->GetPath().c_str());
   if (pItem->IsPicture())
   {
     CGUIWindowSlideShow *pSlideShow = (CGUIWindowSlideShow *)g_windowManager.GetWindow(WINDOW_SLIDESHOW);

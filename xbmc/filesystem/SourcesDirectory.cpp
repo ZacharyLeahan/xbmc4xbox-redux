@@ -77,7 +77,7 @@ bool CSourcesDirectory::GetDirectory(const VECSOURCES &sources, CFileItemList &i
       if (XFILE::CFile::Exists(strThumb))
         pItem->SetArt("thumb", strThumb);
     }
-    else if (pItem->GetPath().Left(9) == "addons://")
+    else if (URIUtils::IsProtocol(pItem->GetPath(), "addons"))
       strIcon = "DefaultHardDisk.png";
     else if (   pItem->IsVideoDb()
              || pItem->IsMusicDb()

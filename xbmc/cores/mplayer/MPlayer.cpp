@@ -839,10 +839,10 @@ bool CMPlayer::OpenFile(const CFileItem& file, const CPlayerOptions& initoptions
   bool bIsAudio = file.IsAudio();
   bool bIsDVD(false);
 
-  bFileIsDVDImage = file.IsDVDImage();
+  bFileIsDVDImage = file.IsDiscImage();
   bFileIsDVDIfoFile = file.IsDVDFile(false, true);
 
-  CLog::Log(LOGDEBUG,"file:%s IsDVDImage:%i IsDVDIfoFile:%i", strFile.c_str(), bFileIsDVDImage , bFileIsDVDIfoFile);
+  CLog::Log(LOGDEBUG,"file:%s IsDiscImage:%i IsDVDIfoFile:%i", strFile.c_str(), bFileIsDVDImage , bFileIsDVDIfoFile);
   if (strFile.Find("dvd://") >= 0 || bFileIsDVDImage || bFileIsDVDIfoFile)
   {
     bIsDVD = true;

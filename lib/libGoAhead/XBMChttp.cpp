@@ -432,12 +432,12 @@ int CXbmcHttp::displayDir(int numParas, CStdString paras[])
     if (mask=="*" || mask=="/" || (mask =="" && itm->m_bIsFolder))
     {
       if (!URIUtils::HasSlashAtEnd(itm->GetPath()))
-        aLine = closeTag + openTag + itm->GetPath() + "\\" ;
+        aLine = closeTag + openTag + itm->GetPath().c_str() + "\\" ;
       else
-        aLine = closeTag + openTag + itm->GetPath();
+        aLine = closeTag + openTag + itm->GetPath().c_str();
     }
     else if (!itm->m_bIsFolder)
-      aLine = closeTag + openTag + itm->GetPath();
+      aLine = closeTag + openTag + itm->GetPath().c_str();
 
     if (!aLine.IsEmpty())
     {
@@ -470,7 +470,7 @@ void CXbmcHttp::SetCurrentMediaItem(CFileItem& newItem)
   if (!bFound && CSettings::GetInstance().GetBool("musicfiles.usetags"))
   {
     //  ...no, try to load the tag of the file.
-    auto_ptr<IMusicInfoTagLoader> pLoader(CMusicInfoTagLoaderFactory::CreateLoader(newItem.GetPath()));
+    auto_ptr<IMusicInfoTagLoader> pLoader(CMusicInfoTagLoaderFactory::CreateLoader(newItem));
     //  Do we have a tag loader for this file type?
     if (pLoader.get() != NULL)
       pLoader->Load(newItem.GetPath(),*newItem.GetMusicInfoTag());
@@ -1223,7 +1223,7 @@ int CXbmcHttp::xbmcGetTagFromFilename(int numParas, CStdString paras[])
     if (CSettings::GetInstance().GetBool("musicfiles.usetags"))
     {
       // get correct tag parser
-      auto_ptr<IMusicInfoTagLoader> pLoader (CMusicInfoTagLoaderFactory::CreateLoader(pItem->GetPath()));
+      auto_ptr<IMusicInfoTagLoader> pLoader (CMusicInfoTagLoaderFactory::CreateLoader(*pItem));
       if (NULL != pLoader.get())
       {            
         // get id3tag
@@ -1390,7 +1390,7 @@ int CXbmcHttp::xbmcGetCurrentlyPlaying(int numParas, CStdString paras[])
   if (g_windowManager.GetActiveWindow() == WINDOW_SLIDESHOW && pSlideShow)
   {
     const boost::shared_ptr<const CFileItem>& slide = pSlideShow->GetCurrentSlide();
-    output=openTag+"Filename:"+slide->GetPath();
+    output=openTag+"Filename:"+slide->GetPath().c_str();
     if (lastPlayingInfo!=output)
     {
       changed=true;
@@ -1423,7 +1423,7 @@ int CXbmcHttp::xbmcGetCurrentlyPlaying(int numParas, CStdString paras[])
   }
 
   CFileItem &fileItem = g_application.CurrentFileItem();
-  if (fileItem.GetPath().IsEmpty())
+  if (fileItem.GetPath().empty())
   {
     output=openTag+"Filename:[Nothing Playing]";
     if (lastPlayingInfo!=output)
@@ -1784,21 +1784,21 @@ int CXbmcHttp::xbmcGetGUIStatus()
   CStdString output, tmp, strTmp;
   CGUIMediaWindow *mediaWindow = (CGUIMediaWindow *)g_windowManager.GetWindow(WINDOW_MUSIC_FILES);
   if (mediaWindow)
-    output = closeTag+openTag+"MusicPath:" + mediaWindow->CurrentDirectory().GetPath();
+    output = closeTag+openTag+"MusicPath:" + mediaWindow->CurrentDirectory().GetPath().c_str();
   mediaWindow = (CGUIMediaWindow *)g_windowManager.GetWindow(WINDOW_VIDEO_FILES);
   if (mediaWindow)
-    output += closeTag+openTag+"VideoPath:" + mediaWindow->CurrentDirectory().GetPath();
+    output += closeTag+openTag+"VideoPath:" + mediaWindow->CurrentDirectory().GetPath().c_str();
   mediaWindow = (CGUIMediaWindow *)g_windowManager.GetWindow(WINDOW_PICTURES);
   if (mediaWindow)
-    output += closeTag+openTag+"PicturePath:" + mediaWindow->CurrentDirectory().GetPath();
+    output += closeTag+openTag+"PicturePath:" + mediaWindow->CurrentDirectory().GetPath().c_str();
   mediaWindow = (CGUIMediaWindow *)g_windowManager.GetWindow(WINDOW_PROGRAMS);
   if (mediaWindow)
-    output += closeTag+openTag+"ProgramsPath:" + mediaWindow->CurrentDirectory().GetPath();
+    output += closeTag+openTag+"ProgramsPath:" + mediaWindow->CurrentDirectory().GetPath().c_str();
   CGUIWindowFileManager *fileManager = (CGUIWindowFileManager *)g_windowManager.GetWindow(WINDOW_FILES);
   if (fileManager)
   {
-    output += closeTag+openTag+"FilesPath1:" + fileManager->CurrentDirectory(0).GetPath();
-    output += closeTag+openTag+"FilesPath2:" + fileManager->CurrentDirectory(1).GetPath();
+    output += closeTag+openTag+"FilesPath1:" + fileManager->CurrentDirectory(0).GetPath().c_str();
+    output += closeTag+openTag+"FilesPath2:" + fileManager->CurrentDirectory(1).GetPath().c_str();
   }
   int iWin=g_windowManager.GetActiveWindow();
   CGUIWindow* pWindow=g_windowManager.GetWindow(iWin);  
@@ -2018,7 +2018,7 @@ int CXbmcHttp::xbmcGetSlideshowContents()
       list=openTag+"[Empty]" ;
     else
     for (int i = 0; i < slideshowContents.Size(); ++i)
-      list += closeTag+openTag + slideshowContents[i]->GetPath();
+      list += closeTag+openTag + slideshowContents[i]->GetPath().c_str();
     return SetResponse(list) ;
   }
 }
@@ -2592,7 +2592,7 @@ int CXbmcHttp::xbmcGetCurrentSlide()
     const boost::shared_ptr<const CFileItem>& slide=pSlideShow->GetCurrentSlide();
     if (!slide)
       return SetResponse(openTag + "[None]");
-    return SetResponse(openTag + slide->GetPath());
+    return SetResponse(openTag + slide->GetPath().c_str());
   }
 }
 

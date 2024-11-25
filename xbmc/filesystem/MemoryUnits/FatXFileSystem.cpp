@@ -24,6 +24,7 @@
 #include "filesystem/HDDirectory.h"
 #include "URL.h"
 #include "FileItem.h"
+#include "utils/StringUtils.h"
 
 using namespace XFILE;
 
@@ -111,8 +112,7 @@ bool CFatXFileSystem::GetDirectory(const CStdString &directory, CFileItemList &i
     for (int i = 0; i < items.Size(); i++)
     {
       CFileItemPtr item = items[i];
-      CStdString path;
-      path.Format("mem%d://%s", m_unit, item->GetPath().Mid(3).c_str());
+      CStdString path = StringUtils::Format("mem%d://%s", m_unit, item->GetPath().substr(3).c_str());
       path.Replace("\\","/");
       item->SetPath(path);
     }

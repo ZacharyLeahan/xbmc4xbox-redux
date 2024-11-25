@@ -200,7 +200,7 @@ void CMythSession::SetFileItemMetaData(CFileItem &item, cmyth_proginfo_t program
      * playing on each channel without using up as much room as the channel name.
      */
     CStdString number = GetValue(m_dll->proginfo_chanstr(program));
-    item.m_strTitle = number + " - " + item.m_strTitle;
+    item.m_strTitle = number + " - " + item.m_strTitle.c_str();
 
     /*
      * Append the channel name onto the end of the tag title for the OSD so it's clear what LiveTV
