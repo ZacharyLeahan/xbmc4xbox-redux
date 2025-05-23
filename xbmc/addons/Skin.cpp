@@ -445,7 +445,7 @@ void CSkinInfo::SettingOptionsSkinColorsFiller(const CSetting *setting, std::vec
   std::string strPath = URIUtils::AddFileToFolder(g_SkinInfo->Path(), "colors");
 
   CFileItemList items;
-  CDirectory::GetDirectory(CSpecialProtocol::TranslatePathConvertCase(strPath), items, ".xml");
+  CDirectory::GetDirectory(CSpecialProtocol::TranslatePathConvertCase(strPath), items, ".xml", DIR_FLAG_DEFAULTS);
   // Search for Themes in the Current skin!
   for (int i = 0; i < items.Size(); ++i)
   {

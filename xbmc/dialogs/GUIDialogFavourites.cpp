@@ -85,7 +85,7 @@ bool CGUIDialogFavourites::OnMessage(CGUIMessage &message)
 
 void CGUIDialogFavourites::OnInitWindow()
 {
-  XFILE::CDirectory::GetDirectory("favourites://", *m_favourites);
+  XFILE::CDirectory::GetDirectory("favourites://", *m_favourites, "", DIR_FLAG_DEFAULTS);
   UpdateList();
   CGUIWindow::OnInitWindow();
 }

@@ -299,7 +299,7 @@ void CGUIDialogAudioSubtitleSettings::OnSettingAction(const CSetting *setting)
               strFileNameNoExtNoCase = URIUtils::ReplaceExtension(strPath3,".");
               strFileNameNoExtNoCase.ToLower();
               strDir = URIUtils::GetDirectory(strPath);
-              XFILE::CDirectory::GetDirectory(strDir,items,".rar|.zip",XFILE::DIR_FLAG_NO_FILE_DIRS,true);
+              XFILE::CDirectory::GetDirectory(strDir,items,".rar|.zip",XFILE::DIR_FLAG_NO_FILE_DIRS);
               for (int i=0;i<items.Size();++i)
                 CUtil::CacheRarSubtitles(items[i]->GetPath(),strFileNameNoExtNoCase);
             }

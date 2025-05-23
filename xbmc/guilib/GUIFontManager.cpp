@@ -439,9 +439,9 @@ void GUIFontManager::SettingOptionsFontsFiller(const CSetting *setting, std::vec
   CFileItemList items2;
 
   // find TTF fonts
-  XFILE::CDirectory::GetDirectory("special://home/media/Fonts/", items2);
+  XFILE::CDirectory::GetDirectory("special://home/media/Fonts/", items2, "", XFILE::DIR_FLAG_DEFAULTS);
 
-  if (XFILE::CDirectory::GetDirectory("special://xbmc/media/Fonts/", items))
+  if (XFILE::CDirectory::GetDirectory("special://xbmc/media/Fonts/", items, "", XFILE::DIR_FLAG_DEFAULTS))
   {
     items.Append(items2);
     for (int i = 0; i < items.Size(); ++i)
@@ -458,7 +458,7 @@ void GUIFontManager::SettingOptionsFontsFiller(const CSetting *setting, std::vec
 
 #ifdef _XBOX
   // Find mplayer fonts...
-  XFILE::CDirectory::GetDirectory("special://xbmc/system/players/mplayer/font/", items);
+  XFILE::CDirectory::GetDirectory("special://xbmc/system/players/mplayer/font/", items, "", XFILE::DIR_FLAG_DEFAULTS);
   for (int i = 0; i < items.Size(); ++i)
   {
     CFileItemPtr pItem = items[i];
@@ -487,7 +487,7 @@ void GUIFontManager::SettingOptionsSubtitleHeightsFiller(const CSetting *setting
       CStdString strPath = "special://xbmc/system/players/mplayer/font/";
       strPath += CSettings::GetInstance().GetString("subtitles.font");
       strPath += "/";
-      XFILE::CDirectory::GetDirectory(strPath, items);
+      XFILE::CDirectory::GetDirectory(strPath, items, "", XFILE::DIR_FLAG_DEFAULTS);
       int iCurrentSize = 0;
 
       bool found = false;

@@ -35,6 +35,7 @@
 #if defined(TARGET_ANDROID)
 #include "platform/android/activity/XBMCApp.h"
 #endif
+#include "dialogs/GUIDialogBusy.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogMediaFilter.h"
 #include "dialogs/GUIDialogMediaSource.h"
@@ -90,6 +91,28 @@
 using namespace ADDON;
 using namespace KODI::MESSAGING;
 
+namespace
+{
+class CGetDirectoryItems : public IRunnable
+{
+public:
+  CGetDirectoryItems(XFILE::CVirtualDirectory &dir, CURL &url, CFileItemList &items, bool useDir)
+  : m_dir(dir), m_url(url), m_items(items), m_useDir(useDir)
+  {
+  }
+  void Run()
+  {
+    m_result = m_dir.GetDirectory(m_url, m_items, m_useDir);
+  }
+  bool m_result;
+protected:
+  XFILE::CVirtualDirectory &m_dir;
+  CURL m_url;
+  CFileItemList &m_items;
+  bool m_useDir;
+};
+}
+
 CGUIMediaWindow::CGUIMediaWindow(int id, const char *xmlFile)
     : CGUIWindow(id, xmlFile)
 {
@@ -99,6 +122,7 @@ CGUIMediaWindow::CGUIMediaWindow(int id, const char *xmlFile)
   m_vecItems->SetPath("?");
   m_iLastControl = -1;
   m_canFilterAdvanced = false;
+  m_useBusyDialog = false;
 
   m_guiState.reset(CGUIViewState::GetViewState(GetID(), *m_vecItems));
 }
@@ -650,7 +674,7 @@ void CGUIMediaWindow::FormatAndSort(CFileItemList &items)
   */
 bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemList &items)
 {
-  const CURL pathToUrl(strDirectory);
+  CURL pathToUrl(strDirectory);
 
   std::string strParentPath = m_history.GetParentPath();
 
@@ -675,7 +699,7 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
       SetupShares();
 
     CFileItemList dirItems;
-    if (!m_rootDir.GetDirectory(pathToUrl, dirItems, UseFileDirectories()))
+    if (!GetDirectoryItems(pathToUrl, dirItems, UseFileDirectories()))
       return false;
 
     // assign fetched directory items
@@ -1267,7 +1291,8 @@ void CGUIMediaWindow::SetHistoryForPath(const std::string& strDirectory)
     URIUtils::RemoveSlashAtEnd(strPath);
 
     CFileItemList items;
-    m_rootDir.GetDirectory(CURL(), items, UseFileDirectories());
+    CURL url;
+    GetDirectoryItems(url, items, UseFileDirectories());
 
     m_history.ClearPathHistory();
 
@@ -1485,7 +1510,7 @@ void CGUIMediaWindow::OnRenameItem(int iItem)
 void CGUIMediaWindow::OnInitWindow()
 {
   // initial fetch is done unthreaded to ensure the items are setup prior to skin animations kicking off
-  m_rootDir.SetAllowThreads(false);
+  m_useBusyDialog = false;
 
   // the start directory may change during Refresh
   bool updateStartDirectory = URIUtils::PathEquals(m_vecItems->GetPath(), m_startDirectory, true);
@@ -1513,7 +1538,7 @@ void CGUIMediaWindow::OnInitWindow()
     SetHistoryForPath(m_startDirectory);
   }
 
-  m_rootDir.SetAllowThreads(true);
+  m_useBusyDialog = true;
 
   CGUIWindow::OnInitWindow();
 }
@@ -2027,4 +2052,22 @@ std::string CGUIMediaWindow::RemoveParameterFromPath(const std::string &strDirec
 void CGUIMediaWindow::ProcessRenderLoop(bool renderOnly)
 {
   g_windowManager.ProcessRenderLoop(renderOnly);
+}
+
+bool CGUIMediaWindow::GetDirectoryItems(CURL &url, CFileItemList &items, bool useDir)
+{
+  if (m_useBusyDialog)
+  {
+    CGetDirectoryItems getItems(m_rootDir, url, items, useDir);
+    if (!CGUIDialogBusy::Wait(&getItems))
+    {
+      m_rootDir.CancelDirectory();
+      return false;
+    }
+    return getItems.m_result;
+  }
+  else
+  {
+    return m_rootDir.GetDirectory(url, items, useDir);
+  }
 }

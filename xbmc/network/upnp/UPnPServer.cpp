@@ -345,7 +345,7 @@ CUPnPServer::OnBrowseDirectChildren(PLT_ActionReference&          action,
             items.Add(item);
           
         } else {
-            CDirectory::GetDirectory((const char*)parent_id, items);
+            CDirectory::GetDirectory((const char*)parent_id, items, "", DIR_FLAG_DEFAULTS);
         }
 
         if (items.CacheToDiscAlways() || (items.CacheToDiscIfSlow() && (XbmcThreads::SystemClockMillis() - time) > 1000 )) {

@@ -2310,7 +2310,9 @@ void CFileItemList::StackFolders()
           if (bMatch)
           {
             CFileItemList items;
-            CDirectory::GetDirectory(item->GetPath(),items,g_advancedSettings.m_videoExtensions);
+            CDirectory::GetDirectory(item->GetPath(), items,
+                                     g_advancedSettings.m_videoExtensions,
+                                     DIR_FLAG_DEFAULTS);
             // optimized to only traverse listing once by checking for filecount
             // and recording last file item for later use
             int nFiles = 0;

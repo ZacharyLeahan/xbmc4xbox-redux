@@ -230,8 +230,8 @@ void CScraper::ClearCache()
   if (CDirectory::Exists(strCachePath))
   {
     CFileItemList items;
-    CDirectory::GetDirectory(strCachePath,items);
-    for (int i=0;i<items.Size();++i)
+    CDirectory::GetDirectory(strCachePath, items, "", DIR_FLAG_DEFAULTS);
+    for (int i = 0; i < items.Size(); ++i)
     {
       // wipe cache
       if (items[i]->m_dateTime + m_persistence <= CDateTime::GetCurrentDateTime())
@@ -441,7 +441,7 @@ CScraperUrl CScraper::NfoUrl(const std::string &sNfoContent)
     str << "plugin://" << ID() << "?action=NfoUrl&nfo="
       << CURL::Encode(sNfoContent);
     CFileItemList items;
-    if (!XFILE::CDirectory::GetDirectory(str.str(), items))
+    if (!XFILE::CDirectory::GetDirectory(str.str(), items, "", DIR_FLAG_DEFAULTS))
       return scurlRet;
 
     if (items.Size() == 0)
@@ -661,7 +661,7 @@ PythonFind(const std::string& ID,
   for (std::map<std::string, std::string>::const_iterator it = additionals.begin(); it != additionals.end(); ++it)
     str << "&" << it->first<< "=" << CURL::Encode(it->second);
 
-  if (XFILE::CDirectory::GetDirectory(str.str(), items))
+  if (XFILE::CDirectory::GetDirectory(str.str(), items, "", DIR_FLAG_DEFAULTS))
   {
     for (int i = 0; i < items.Size(); ++i)
       result.push_back(boost::move(FromFileItem<T>(*items[i])));
@@ -1175,7 +1175,7 @@ EPISODELIST CScraper::GetEpisodeList(XFILE::CCurlFile &fcurl, const CScraperUrl 
     str << "plugin://" << ID() << "?action=getepisodelist&url="
         << CURL::Encode(scurl.m_url.front().m_url);
     CFileItemList items;
-    if (!XFILE::CDirectory::GetDirectory(str.str(), items))
+    if (!XFILE::CDirectory::GetDirectory(str.str(), items, "", DIR_FLAG_DEFAULTS))
       return vcep;
 
     for (int i = 0; i < items.Size(); ++i)

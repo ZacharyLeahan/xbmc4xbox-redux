@@ -479,7 +479,7 @@ void CGUIWindowPrograms::PopulateTrainersList()
   if (!bBreak)
   {
     //CLog::Log(LOGDEBUG,"trainerpath %s",CSettings::GetInstance().GetString("myprograms.trainerpath",false).c_str());
-    directory.GetDirectory(CSettings::GetInstance().GetString("myprograms.trainerpath").c_str(),trainers,".xbtf|.etm");
+    directory.GetDirectory(CSettings::GetInstance().GetString("myprograms.trainerpath").c_str(),trainers,".xbtf|.etm",DIR_FLAG_DEFAULTS);
     //if (CSettings::GetInstance().GetString("myprograms.trainerpath",false).IsEmpty())
     //{
     //  m_database.RollbackTransaction();
@@ -488,7 +488,7 @@ void CGUIWindowPrograms::PopulateTrainersList()
     //  return;
     //}
 
-    directory.GetDirectory(CSettings::GetInstance().GetString("myprograms.trainerpath").c_str(),archives,".rar|.zip",false); // TODO: ZIP SUPPORT
+    directory.GetDirectory(CSettings::GetInstance().GetString("myprograms.trainerpath").c_str(),archives,".rar|.zip",DIR_FLAG_DEFAULTS); // TODO: ZIP SUPPORT
     for( int i=0;i<archives.Size();++i)
     {
       if (stricmp(URIUtils::GetExtension(archives[i]->GetPath()),".rar") == 0)
@@ -513,7 +513,7 @@ void CGUIWindowPrograms::PopulateTrainersList()
         CStdString strZipPath;
         URIUtils::CreateArchivePath(strZipPath,"zip",archives[i]->GetPath(),"");
         CFileItemList zipTrainers;
-        directory.GetDirectory(strZipPath,zipTrainers,".etm|.xbtf");
+        directory.GetDirectory(strZipPath,zipTrainers,".etm|.xbtf",DIR_FLAG_DEFAULTS);
         for (int j=0;j<zipTrainers.Size();++j)
         {
           CFileItemPtr item(new CFileItem(*zipTrainers[j]));
@@ -721,7 +721,7 @@ bool CGUIWindowPrograms::GetDirectory(const std::string &strDirectory, CFileItem
       CFileItemList items;
       std::string strRootPath = URIUtils::GetParentPath(item->GetPath());
       std::string strPath = URIUtils::AddFileToFolder(strRootPath, "_resources\\artwork\\");
-      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_pictureExtensions))
+      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_pictureExtensions, DIR_FLAG_DEFAULTS))
       {
         for (int i = 0; i < items.Size(); i++)
         {
@@ -733,7 +733,7 @@ bool CGUIWindowPrograms::GetDirectory(const std::string &strDirectory, CFileItem
 
       items.Clear();
       strPath = URIUtils::AddFileToFolder(strRootPath, "_resources\\screenshots\\");
-      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_pictureExtensions))
+      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_pictureExtensions, DIR_FLAG_DEFAULTS))
       {
         for (int i = 0; i < items.Size(); i++)
         {
@@ -745,7 +745,7 @@ bool CGUIWindowPrograms::GetDirectory(const std::string &strDirectory, CFileItem
 
       items.Clear();
       strPath = URIUtils::AddFileToFolder(strRootPath, "_resources\\media\\");
-      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_videoExtensions))
+      if(CDirectory::Exists(strPath) && CDirectory::GetDirectory(strPath, items, g_advancedSettings.m_videoExtensions, DIR_FLAG_DEFAULTS))
       {
         for (int i = 0; i < items.Size(); i++)
         {

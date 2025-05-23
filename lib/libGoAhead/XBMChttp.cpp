@@ -408,7 +408,7 @@ int CXbmcHttp::displayDir(int numParas, CStdString paras[])
     lineStart = atoi(paras[3]);
   if (numParas>4)
     numLines = atoi(paras[4]);
-  if (!CDirectory::GetDirectory(folder, dirItems, mask))
+  if (!CDirectory::GetDirectory(folder, dirItems, mask, DIR_FLAG_DEFAULTS))
   {
     return SetResponse(openTag+"Error:Not folder");
   }
@@ -504,7 +504,7 @@ void CXbmcHttp::AddItemToPlayList(const CFileItemPtr &pItem, int playList, int s
     if (pItem->IsParentFolder()) return;
     CStdString strDirectory=pItem->GetPath();
     CFileItemList items;
-    CDirectory::GetDirectory(pItem->GetPath(), items, mask);
+    CDirectory::GetDirectory(pItem->GetPath(), items, mask, DIR_FLAG_DEFAULTS);
     items.Sort(SortByLabel, SortOrderAscending);
     for (int i=0; i < items.Size(); ++i)
       if (!(CFileItem*)items[i]->m_bIsFolder || recursive)
@@ -762,7 +762,7 @@ int CXbmcHttp::xbmcGetMediaLocation(int numParas, CStdString paras[])
       params[1] = "pathsonly";
     return xbmcGetSources(2, params);
   }
-  else if (!CDirectory::GetDirectory(strLocation, items, strMask))
+  else if (!CDirectory::GetDirectory(strLocation, items, strMask, DIR_FLAG_DEFAULTS))
   {
     CStdString strError = "Error: could not get location, " + strLocation;
     return SetResponse(openTag+strError);

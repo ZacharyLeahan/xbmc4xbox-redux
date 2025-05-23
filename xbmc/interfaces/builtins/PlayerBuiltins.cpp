@@ -437,7 +437,7 @@ static int PlayMedia(const std::vector<std::string>& params)
   {
     CFileItemList items;
     std::string extensions = g_advancedSettings.m_videoExtensions + "|" + g_advancedSettings.GetMusicExtensions();
-    XFILE::CDirectory::GetDirectory(item.GetPath(),items,extensions);
+    XFILE::CDirectory::GetDirectory(item.GetPath(), items, extensions, XFILE::DIR_FLAG_DEFAULTS);
 
     bool containsMusic = false, containsVideo = false;
     for (int i = 0; i < items.Size(); i++)

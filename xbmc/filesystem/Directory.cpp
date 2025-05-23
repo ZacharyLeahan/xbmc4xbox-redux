@@ -122,29 +122,29 @@ CDirectory::CDirectory()
 CDirectory::~CDirectory()
 {}
 
-bool CDirectory::GetDirectory(const std::string& strPath, CFileItemList &items, const std::string &strMask /*=""*/, int flags /*=DIR_FLAG_DEFAULTS*/, bool allowThreads /* = false */)
+bool CDirectory::GetDirectory(const std::string& strPath, CFileItemList &items, const std::string &strMask, int flags)
 {
   CHints hints;
   hints.flags = flags;
   hints.mask = strMask;
-  return GetDirectory(strPath, items, hints, allowThreads);
+  return GetDirectory(strPath, items, hints);
 }
 
-bool CDirectory::GetDirectory(const std::string& strPath, CFileItemList &items, const CHints &hints, bool allowThreads)
+bool CDirectory::GetDirectory(const std::string& strPath, CFileItemList &items, const CHints &hints)
 {
   const CURL pathToUrl(strPath);
-  return GetDirectory(pathToUrl, items, hints, allowThreads);
+  return GetDirectory(pathToUrl, items, hints);
 }
 
-bool CDirectory::GetDirectory(const CURL& url, CFileItemList &items, const std::string &strMask /*=""*/, int flags /*=DIR_FLAG_DEFAULTS*/, bool allowThreads /* = false */)
+bool CDirectory::GetDirectory(const CURL& url, CFileItemList &items, const std::string &strMask, int flags)
 {
   CHints hints;
   hints.flags = flags;
   hints.mask = strMask;
-  return GetDirectory(url, items, hints, allowThreads);
+  return GetDirectory(url, items, hints);
 }
 
-bool CDirectory::GetDirectory(const CURL& url, CFileItemList &items, const CHints &hints, bool allowThreads)
+bool CDirectory::GetDirectory(const CURL& url, CFileItemList &items, const CHints &hints)
 {
   try
   {
@@ -176,25 +176,8 @@ bool CDirectory::GetDirectory(const CURL& url, CFileItemList &items, const CHint
         if (CPasswordManager::GetInstance().IsURLSupported(authUrl) && authUrl.GetUserName().empty())
           CPasswordManager::GetInstance().AuthenticateURL(authUrl);
 
-        if (g_application.IsCurrentThread() && allowThreads && !URIUtils::IsSpecial(pathToUrl))
-        {
-          CSingleExit ex(g_graphicsContext);
-
-          CGetDirectory get(pDirectory, authUrl, url);
-
-          if (!CGUIDialogBusy::WaitOnEvent(get.GetEvent(), TIME_TO_BUSY_DIALOG))
-          {
-            cancel = true;
-            pDirectory->CancelDirectory();
-          }
-
-          result = get.GetDirectory(items);
-        }
-        else
-        {
-          items.SetURL(url);
-          result = pDirectory->GetDirectory(authUrl, items);
-        }
+        items.SetURL(url);
+        result = pDirectory->GetDirectory(authUrl, items);
 
         if (!result)
         {

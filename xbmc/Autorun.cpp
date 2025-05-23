@@ -255,7 +255,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const CStdString& strDrive, int& nAdded
               && (bypassSettings || CSettings::GetInstance().GetBool("autorun.vcd")))
         {
           CFileItemList items;
-          CDirectory::GetDirectory(pItem->GetPath(), items, strExt);
+          CDirectory::GetDirectory(pItem->GetPath(), items, strExt, DIR_FLAG_DEFAULTS);
           if (items.Size())
           {
             items.Sort(SortByLabel, SortOrderDescending);

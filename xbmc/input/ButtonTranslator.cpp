@@ -351,7 +351,7 @@ bool CButtonTranslator::Load(bool AlwaysLoad)
   if( XFILE::CDirectory::Exists(systemKeymapDirPath) )
   {
     CFileItemList files;
-    XFILE::CDirectory::GetDirectory(systemKeymapDirPath, files, "*.xml");
+    XFILE::CDirectory::GetDirectory(systemKeymapDirPath, files, "*.xml", XFILE::DIR_FLAG_DEFAULTS);
     //sort the list for filesystem based prioties, e.g. 01-keymap.xml, 02-keymap-overrides.xml
     files.Sort(SortByFile, SortOrderAscending);
     for(int i = 0; i<files.Size(); ++i)
@@ -362,7 +362,7 @@ bool CButtonTranslator::Load(bool AlwaysLoad)
   if( XFILE::CDirectory::Exists(userKeymapDirPath) )
   {
     CFileItemList files;
-    XFILE::CDirectory::GetDirectory(userKeymapDirPath, files, "*.xml");
+    XFILE::CDirectory::GetDirectory(userKeymapDirPath, files, "*.xml", XFILE::DIR_FLAG_DEFAULTS);
     //sort the list for filesystem based prioties, e.g. 01-keymap.xml, 02-keymap-overrides.xml
     files.Sort(SortByFile, SortOrderAscending);
     for(int i = 0; i<files.Size(); ++i)

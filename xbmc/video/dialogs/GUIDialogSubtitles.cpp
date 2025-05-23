@@ -71,7 +71,7 @@ public:
   }
   virtual bool DoWork()
   {
-    CDirectory::GetDirectory(m_url.Get(), *m_items);
+    CDirectory::GetDirectory(m_url.Get(), *m_items, "", DIR_FLAG_DEFAULTS);
     return true;
   }
   virtual bool operator==(const CJob *job) const

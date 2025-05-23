@@ -431,7 +431,7 @@ bool CGUIWindowGameSaves::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
         CFileItemList items2;
         CStdString strParent;
         URIUtils::GetParentPath(item->GetPath(),strParent);
-        CDirectory::GetDirectory(strParent,items2);
+        CDirectory::GetDirectory(strParent,items2,"",DIR_FLAG_DEFAULTS);
         path = URIUtils::AddFileToFolder(value,URIUtils::GetFileName(strParent));
         for (int j=0;j<items2.Size();++j)
         {
@@ -489,7 +489,7 @@ bool CGUIWindowGameSaves::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
         CFileItemList items2;
         CStdString strParent;
         URIUtils::GetParentPath(item->GetPath(),strParent);
-        CDirectory::GetDirectory(strParent,items2);
+        CDirectory::GetDirectory(strParent,items2,"",DIR_FLAG_DEFAULTS);
 
         path = URIUtils::AddFileToFolder(value,URIUtils::GetFileName(strParent));
         for (int j=0;j<items2.Size();++j) // only copy main title stuff

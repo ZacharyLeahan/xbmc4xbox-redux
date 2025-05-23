@@ -41,7 +41,6 @@ CVirtualDirectory::CVirtualDirectory(void)
 {
   m_flags = DIR_FLAG_ALLOW_PROMPT;
   m_allowNonLocalSources = true;
-  m_allowThreads = true;
 }
 
 CVirtualDirectory::~CVirtualDirectory(void)
@@ -77,7 +76,9 @@ bool CVirtualDirectory::GetDirectory(const CURL& url, CFileItemList &items, bool
   if (!bUseFileDirectories)
     flags |= DIR_FLAG_NO_FILE_DIRS;
   if (!strPath.empty() && strPath != "files://")
-    return CDirectory::GetDirectory(strPath, items, m_strFileMask, flags, m_allowThreads);
+  {
+    return CDirectory::GetDirectory(strPath, items, m_strFileMask, flags);
+  }
 
   // if strPath is blank, clear the list (to avoid parent items showing up)
   if (strPath.empty())

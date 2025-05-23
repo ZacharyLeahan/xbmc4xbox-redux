@@ -75,7 +75,7 @@ public:
   virtual bool DoWork()
   {
     CFileItemList items;
-    if (CDirectory::GetDirectory(m_url, items, ""))
+    if (CDirectory::GetDirectory(m_url, items, "", DIR_FLAG_DEFAULTS))
     {
       // sort the items if necessary
       if (m_sort.sortBy != SortByNone)

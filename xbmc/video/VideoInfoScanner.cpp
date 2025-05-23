@@ -282,7 +282,8 @@ namespace VIDEO
       }
       else
       { // need to fetch the folder
-        CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_videoExtensions);
+        CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_videoExtensions,
+                                 DIR_FLAG_DEFAULTS);
         items.Stack();
 
         // check whether to re-use previously computed fast hash
@@ -320,7 +321,8 @@ namespace VIDEO
 
       if (foundDirectly && !settings.parent_name_root)
       {
-        CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_videoExtensions);
+        CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_videoExtensions,
+                                 DIR_FLAG_DEFAULTS);
         items.SetPath(strDirectory);
         GetPathHash(items, hash);
         bSkip = true;
@@ -1729,7 +1731,7 @@ namespace VIDEO
       else
         strPath = URIUtils::GetDirectory(item->GetPath());
 
-      if (dir.GetDirectory(strPath, items, ".nfo") && items.Size())
+      if (dir.GetDirectory(strPath, items, ".nfo", DIR_FLAG_DEFAULTS) && items.Size())
       {
         int numNFO = -1;
         for (int i = 0; i < items.Size(); i++)

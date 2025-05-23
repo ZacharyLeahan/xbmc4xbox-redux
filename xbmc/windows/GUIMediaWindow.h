@@ -165,8 +165,8 @@ protected:
   void UpdateFileList();
   virtual void OnDeleteItem(int iItem);
   void OnRenameItem(int iItem);
-
   bool WaitForNetwork() const;
+  bool GetDirectoryItems(CURL &url, CFileItemList &items, bool useDir);
 
   /*! \brief Translate the folder to start in from the given quick path
    \param dir the folder the user wants
@@ -210,4 +210,5 @@ protected:
    \sa Update
    */
   std::string m_strFilterPath;
+  bool m_useBusyDialog;
 };
