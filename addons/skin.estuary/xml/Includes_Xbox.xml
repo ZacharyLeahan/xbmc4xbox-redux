@@ -649,4 +649,51 @@
 			</control>
 		</definition>
 	</include>
+	<include name="GameInfo">
+		<definition>
+			<control type="group">
+				<top>0</top>
+				<control type="label">
+					<top>0</top>
+					<left>$PARAM[position]</left>
+					<width>240</width>
+					<height>auto</height>
+					<align>center</align>
+					<label>$PARAM[label]</label>
+					<shadowcolor>text_shadow</shadowcolor>
+				</control>
+				<control type="label">
+					<top>40</top>
+					<left>$PARAM[position]</left>
+					<width>240</width>
+					<height>auto</height>
+					<align>center</align>
+					<label>$PARAM[value]</label>
+					<shadowcolor>text_shadow</shadowcolor>
+				</control>
+			</control>
+		</definition>
+	</include>
+	<include name="FeatureImage">
+		<definition>
+			<control type="image">
+				<left>0</left>
+				<top>$PARAM[position]</top>
+				<width>35</width>
+				<height>35</height>
+				<texture>$PARAM[texture]</texture>
+				<include>Animation_FocusTextureFade</include>
+				<visible>$PARAM[available]</visible>
+			</control>
+			<control type="image">
+				<left>0</left>
+				<top>$PARAM[position]</top>
+				<width>35</width>
+				<height>35</height>
+				<texture colordiffuse="disabled">$PARAM[texture]</texture>
+				<include>Animation_FocusTextureFade</include>
+				<visible>!$PARAM[available]</visible>
+			</control>
+		</definition>
+	</include>
 </includes>
