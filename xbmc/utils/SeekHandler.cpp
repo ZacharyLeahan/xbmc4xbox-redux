@@ -1,6 +1,6 @@
 /*
- *      Copyright (C) 2012 Team XBMC
- *      http://www.xbmc.org
+ *      Copyright (C) 2012-2013 Team XBMC
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,25 +13,28 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *  http://www.gnu.org/copyleft/gpl.html
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
  *
  */
 
-#include "system.h" // <xtl.h>
 #include "SeekHandler.h"
 
+#include <cmath>
 #include <stdlib.h>
-#include "guilib/LocalizeStrings.h"
-#include "guilib/GraphicContext.h"
+
 #include "Application.h"
 #include "FileItem.h"
+#include "guilib/GraphicContext.h"
+#include "guilib/LocalizeStrings.h"
+#include "ServiceBroker.h"
 #include "settings/AdvancedSettings.h"
-#include "settings/Settings.h"
 #include "settings/lib/Setting.h"
+#include "settings/Settings.h"
 #include "utils/log.h"
+#include "utils/MathUtils.h"
 #include "utils/StringUtils.h"
+#include "utils/Variant.h"
 
 CSeekHandler::CSeekHandler()
 : m_seekDelay(500),
@@ -70,23 +73,23 @@ void CSeekHandler::Configure()
   seekTypeSettingMap.insert(std::make_pair(SEEK_TYPE_VIDEO, "videoplayer.seeksteps"));
   seekTypeSettingMap.insert(std::make_pair(SEEK_TYPE_MUSIC, "musicplayer.seeksteps"));
 
-  for (std::map<SeekType, std::string>::iterator itt = seekTypeSettingMap.begin(); itt!=seekTypeSettingMap.end(); ++itt)
+  for (std::map<SeekType, std::string>::iterator it = seekTypeSettingMap.begin(); it!=seekTypeSettingMap.end(); ++it)
   {
     std::vector<int> forwardSeekSteps;
     std::vector<int> backwardSeekSteps;
 
-    std::vector<CVariant> seekSteps = CSettings::GetInstance().GetList(itt->second);
-    for (std::vector<CVariant>::iterator it = seekSteps.begin(); it != seekSteps.end(); ++it)
+    std::vector<CVariant> seekSteps = CSettings::GetInstance().GetList(it->second);
+    for (std::vector<CVariant>::iterator itt = seekSteps.begin(); itt != seekSteps.end(); ++itt)
     {
-      int stepSeconds = (*it).asInteger();
+      int stepSeconds = static_cast<int>((*itt).asInteger());
       if (stepSeconds < 0)
         backwardSeekSteps.insert(backwardSeekSteps.begin(), stepSeconds);
       else
         forwardSeekSteps.push_back(stepSeconds);
     }
 
-    m_forwardSeekSteps.insert(std::make_pair(itt->first, forwardSeekSteps));
-    m_backwardSeekSteps.insert(std::make_pair(itt->first, backwardSeekSteps));
+    m_forwardSeekSteps.insert(std::make_pair(it->first, forwardSeekSteps));
+    m_backwardSeekSteps.insert(std::make_pair(it->first, backwardSeekSteps));
   }
 }
 
@@ -101,6 +104,9 @@ void CSeekHandler::Reset()
 
 int CSeekHandler::GetSeekStepSize(SeekType type, int step)
 {
+  if (step == 0)
+    return 0;
+
   std::vector<int> seekSteps(step > 0 ? m_forwardSeekSteps.find(type)->second : m_backwardSeekSteps.find(type)->second);
 
   if (seekSteps.empty())
@@ -154,7 +160,7 @@ void CSeekHandler::Seek(bool forward, float amount, float duration /* = 0 */, bo
     if (totalTime < 0)
       totalTime = 0;
 
-    int seekSize = (amount * amount * speed) * totalTime / 100;
+    double seekSize = (amount * amount * speed) * totalTime / 100;
     if (forward)
       m_seekSize += seekSize;
     else
@@ -188,14 +194,15 @@ void CSeekHandler::SeekSeconds(int seconds)
   m_seekSize = seconds;
 
   // perform relative seek
-  g_application.m_pPlayer->SeekTimeRelative(static_cast<int64_t>(seconds * 1000));
+  if (g_application.m_pPlayer)
+    g_application.m_pPlayer->SeekTimeRelative(static_cast<int64_t>(seconds * 1000));
 
   Reset();
 }
 
 int CSeekHandler::GetSeekSize() const
 {
-  return m_seekSize;
+  return MathUtils::round_int(m_seekSize);
 }
 
 bool CSeekHandler::InProgress() const
@@ -275,23 +282,27 @@ bool CSeekHandler::OnAction(const CAction &action)
     case ACTION_BIG_STEP_BACK:
     case ACTION_CHAPTER_OR_BIG_STEP_BACK:
     {
-      g_application.m_pPlayer->Seek(false, true, action.GetID() == ACTION_CHAPTER_OR_BIG_STEP_BACK);
+      if (g_application.m_pPlayer)
+        g_application.m_pPlayer->Seek(false, true, action.GetID() == ACTION_CHAPTER_OR_BIG_STEP_BACK);
       return true;
     }
     case ACTION_BIG_STEP_FORWARD:
     case ACTION_CHAPTER_OR_BIG_STEP_FORWARD:
     {
-      g_application.m_pPlayer->Seek(true, true, action.GetID() == ACTION_CHAPTER_OR_BIG_STEP_FORWARD);
+      if (g_application.m_pPlayer)
+        g_application.m_pPlayer->Seek(true, true, action.GetID() == ACTION_CHAPTER_OR_BIG_STEP_FORWARD);
       return true;
     }
     case ACTION_NEXT_SCENE:
     {
-      g_application.m_pPlayer->SeekScene(true);
+      if (g_application.m_pPlayer)
+        g_application.m_pPlayer->SeekScene(true);
       return true;
     }
     case ACTION_PREV_SCENE:
     {
-      g_application.m_pPlayer->SeekScene(false);
+      if (g_application.m_pPlayer)
+        g_application.m_pPlayer->SeekScene(false);
       return true;
     }
     case ACTION_ANALOG_SEEK_FORWARD:
@@ -339,7 +350,8 @@ bool CSeekHandler::SeekTimeCode(const CAction &action)
     {
       CSingleLock lock(m_critSection);
 
-      g_application.m_pPlayer->SeekTime(GetTimeCodeSeconds() * 1000);
+      if (g_application.m_pPlayer)
+        g_application.m_pPlayer->SeekTime(GetTimeCodeSeconds() * 1000);
       Reset();
       return true;
     }
@@ -347,6 +359,7 @@ bool CSeekHandler::SeekTimeCode(const CAction &action)
     case ACTION_STEP_BACK:
     case ACTION_BIG_STEP_BACK:
     case ACTION_CHAPTER_OR_BIG_STEP_BACK:
+    case ACTION_MOVE_LEFT:
     {
       SeekSeconds(-GetTimeCodeSeconds());
       return true;
@@ -354,6 +367,7 @@ bool CSeekHandler::SeekTimeCode(const CAction &action)
     case ACTION_STEP_FORWARD:
     case ACTION_BIG_STEP_FORWARD:
     case ACTION_CHAPTER_OR_BIG_STEP_FORWARD:
+    case ACTION_MOVE_RIGHT:
     {
       SeekSeconds(GetTimeCodeSeconds());
       return true;
@@ -366,6 +380,11 @@ bool CSeekHandler::SeekTimeCode(const CAction &action)
 
 void CSeekHandler::ChangeTimeCode(int remote)
 {
+  if (remote >= ACTION_JUMP_SMS2 && remote <= ACTION_JUMP_SMS9)
+  {
+    // cast to REMOTE_X
+    remote -= (ACTION_JUMP_SMS2 - REMOTE_2);
+  }
   if (remote >= REMOTE_0 && remote <= REMOTE_9)
   {
     m_timerTimeCode.StartZero();
