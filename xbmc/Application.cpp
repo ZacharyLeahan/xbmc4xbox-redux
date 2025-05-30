@@ -1206,6 +1206,8 @@ HRESULT CApplication::Create(HWND hWnd)
 
   CUtil::InitRandomSeed();
 
+  g_windowManager.Initialize();
+
   return CXBApplicationEx::Create(hWnd);
 }
 
@@ -1228,11 +1230,19 @@ HRESULT CApplication::Initialize()
 
   bool uiInitializationFinished = true;
 
-  if (!LoadSkin(CSettings::GetInstance().GetString("lookandfeel.skin")))
-    LoadSkin(DEFAULT_SKIN);
-
   g_windowManager.CreateWindows();
   /* window id's 3000 - 3100 are reserved for python */
+
+  std::string defaultSkin = ((const CSettingString*)CSettings::GetInstance().GetSetting("lookandfeel.skin"))->GetDefault();
+  if (!LoadSkin(CSettings::GetInstance().GetString("lookandfeel.skin")))
+  {
+    CLog::Log(LOGERROR, "Failed to load skin '%s'", CSettings::GetInstance().GetString("lookandfeel.skin").c_str());
+    if (!LoadSkin(defaultSkin))
+    {
+      CLog::Log(LOGFATAL, "Default skin '%s' could not be loaded! Terminating..", defaultSkin.c_str());
+      return false;
+    }
+  }
 
   // initialize splash window after splash screen disappears
   // because we need a real window in the background which gets
@@ -1259,11 +1269,19 @@ HRESULT CApplication::Initialize()
   }
   else
   {
+    CServiceBroker::GetAddonMgr().StartServices(false);
+
+    // activate the configured start window
     int firstWindow = g_SkinInfo->GetFirstWindow();
+    g_windowManager.ActivateWindow(firstWindow);
+
+    if (g_windowManager.GetActiveWindowID() == WINDOW_STARTUP_ANIM)
+    {
+      CLog::Log(LOGWARNING, "CApplication::Initialize - startup.xml taints init process");
+    }
+
     // the startup window is considered part of the initialization as it most likely switches to the final window
     uiInitializationFinished = firstWindow != WINDOW_STARTUP_ANIM;
-
-    g_windowManager.ActivateWindow(firstWindow);
 
     if (!m_ServiceManager->Init3())
     {
@@ -1292,7 +1310,7 @@ HRESULT CApplication::Initialize()
 #ifdef __APPLE__
   g_xbmcHelper.CaptureAllInput();
 #endif
-  CServiceBroker::GetAddonMgr().StartServices(false);
+  CServiceBroker::GetAddonMgr().StartServices(true);
 
   // configure seek handler
   CSeekHandler::Get().Configure();
@@ -1616,40 +1634,23 @@ bool CApplication::Save(TiXmlNode *settings) const
   return true;
 }
 
-bool CApplication::LoadSkin(const CStdString& skinID)
+bool CApplication::LoadSkin(const std::string& skinID)
 {
-  AddonPtr addon;
-  if (CServiceBroker::GetAddonMgr().GetAddon(skinID, addon))
+  SkinPtr skin;
   {
-    if (LoadSkin(boost::dynamic_pointer_cast<ADDON::CSkinInfo>(addon)))
-      return true;
+    AddonPtr addon;
+    if (!CServiceBroker::GetAddonMgr().GetAddon(skinID, addon, ADDON_SKIN))
+      return false;
+    skin = boost::static_pointer_cast<ADDON::CSkinInfo>(addon);
   }
-  CLog::Log(LOGERROR, "failed to load requested skin '%s'", skinID.c_str());
-  return false;
-}
-
-bool CApplication::LoadSkin(const SkinPtr& skin)
-{
-  if (!skin)
-    return false;
-
-  // start/prepare the skin
-  skin->Start();
-
-  // migrate any skin-specific settings that are still stored in guisettings.xml
-  CSkinSettings::Get().MigrateSettings(skin);
-
-  // check if the skin has been properly loaded and if it has a Home.xml
-  if (!skin->HasSkinFile("Home.xml"))
-    return false;
 
   bool bPreviousPlayingState=false;
   bool bPreviousRenderingState=false;
-  if (g_application.m_pPlayer && g_application.IsPlayingVideo())
+  if (g_application.IsPlayingVideo())
   {
-    bPreviousPlayingState = !g_application.m_pPlayer->IsPaused();
+    bPreviousPlayingState = !m_pPlayer->IsPaused();
     if (bPreviousPlayingState)
-      g_application.m_pPlayer->Pause();
+      m_pPlayer->Pause();
 #ifdef HAS_VIDEO_PLAYBACK
     if (!g_renderManager.Paused())
     {
@@ -1670,14 +1671,25 @@ bool CApplication::LoadSkin(const SkinPtr& skin)
   CGUIWindow* pWindow = g_windowManager.GetWindow(currentWindow);
   if (pWindow)
     iCtrlID = pWindow->GetFocusedControlID();
-  vector<int> currentModelessWindows;
+  std::vector<int> currentModelessWindows;
   g_windowManager.GetActiveModelessWindows(currentModelessWindows);
 
   UnloadSkin();
 
+  skin->Start();
+
+  // migrate any skin-specific settings that are still stored in guisettings.xml
+  CSkinSettings::Get().MigrateSettings(skin);
+
+  // check if the skin has been properly loaded and if it has a Home.xml
+  if (!skin->HasSkinFile("Home.xml"))
+  {
+    CLog::Log(LOGERROR, "failed to load requested skin '%s'", skin->ID().c_str());
+    return false;
+  }
+
   CLog::Log(LOGINFO, "  load skin from: %s (version: %s)", skin->Path().c_str(), skin->Version().asString().c_str());
   g_SkinInfo = skin;
-  g_SkinInfo->Start();
 
   CLog::Log(LOGINFO, "  load fonts for skin...");
   g_graphicsContext.SetMediaDir(skin->Path());
@@ -1688,7 +1700,7 @@ bool CApplication::LoadSkin(const SkinPtr& skin)
   g_fontManager.LoadFonts(CSettings::GetInstance().GetString("lookandfeel.font"));
 
   // load in the skin strings
-  CStdString langPath = URIUtils::AddFileToFolder(skin->Path(), "language");
+  std::string langPath = URIUtils::AddFileToFolder(skin->Path(), "language");
   URIUtils::AddSlashAtEnd(langPath);
 
   g_localizeStrings.LoadSkinStrings(langPath, CSettings::GetInstance().GetString("locale.language"));
@@ -1748,10 +1760,10 @@ bool CApplication::LoadSkin(const SkinPtr& skin)
     }
   }
 
-  if (g_application.m_pPlayer && g_application.IsPlayingVideo())
+  if (g_application.IsPlayingVideo())
   {
     if (bPreviousPlayingState)
-      g_application.m_pPlayer->Pause();
+      m_pPlayer->Pause();
     if (bPreviousRenderingState)
       g_windowManager.ActivateWindow(WINDOW_FULLSCREEN_VIDEO);
   }

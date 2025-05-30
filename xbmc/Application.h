@@ -136,7 +136,6 @@ public:
   DWORD GetThreadId() const { return m_threadID; };
   void Stop(bool bLCDStop = true);
   void RestartApp();
-  bool LoadSkin(const CStdString& skinID);
   void UnloadSkin(bool forReload = false);
   bool LoadUserWindows();
   void ReloadSkin(bool confirm = false);
@@ -341,7 +340,7 @@ protected:
   virtual void OnSettingAction(const CSetting *setting);
   virtual bool OnSettingUpdate(CSetting* &setting, const char *oldSettingId, const TiXmlNode *oldSettingNode);
 
-  bool LoadSkin(const boost::shared_ptr<ADDON::CSkinInfo>& skin);
+  bool LoadSkin(const std::string& skinID);
 
   /*!
    \brief Delegates the action to all registered action handlers.
