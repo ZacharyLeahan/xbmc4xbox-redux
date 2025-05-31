@@ -275,7 +275,10 @@ void CDisplaySettings::SetCurrentResolution(RESOLUTION resolution, bool save /* 
   if (save)
     CSettings::GetInstance().SetInt("videoscreen.resolution", (int)resolution);
 
-  m_currentResolution = resolution;
+  if (resolution == RES_AUTORES)
+    m_currentResolution = g_videoConfig.GetBestMode();
+  else
+    m_currentResolution = resolution;
 
   // SetChanged() is added in PVR pull request
   CSettings::GetInstance().Save()/*g_guiSettings.SetChanged()*/;
@@ -410,27 +413,16 @@ void CDisplaySettings::UpdateCalibrations()
 
 void CDisplaySettings::SettingOptionsResolutionsFiller(const CSetting *setting, std::vector< std::pair<std::string, int> > &list, int &current, void *data)
 {
-  RESOLUTION res = RES_INVALID;
+  list.push_back(make_pair(g_localizeStrings.Get(16316), RES_AUTORES));
 
-  vector<RESOLUTION> resolutions;
+  std::vector<RESOLUTION> resolutions;
   g_graphicsContext.GetAllowedResolutions(resolutions, false);
-  for (vector<RESOLUTION>::const_iterator it = resolutions.begin(); it != resolutions.end(); ++it)
+  for (std::vector<RESOLUTION>::const_iterator it = resolutions.begin(); it != resolutions.end(); ++it)
   {
     RESOLUTION resolution = *it;
-    RESOLUTION_INFO res1 = CDisplaySettings::Get().GetCurrentResolutionInfo();
     RESOLUTION_INFO res2 = CDisplaySettings::Get().GetResolutionInfo(resolution);
-
     list.push_back(make_pair(res2.strMode, resolution));
-
-    if (
-        res1.iWidth  == res2.iWidth &&
-        res1.iHeight == res2.iHeight &&
-        (res1.dwFlags & D3DPRESENTFLAG_INTERLACED) == (res2.dwFlags & D3DPRESENTFLAG_INTERLACED))
-      res = resolution;
   }
-
-  if (res != RES_INVALID)
-    current = res;
 }
 
 void CDisplaySettings::SettingOptionsFramerateconversionsFiller(const CSetting *setting, std::vector< std::pair<std::string, int> > &list, int &current, void *data)
