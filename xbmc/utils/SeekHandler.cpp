@@ -217,8 +217,19 @@ void CSeekHandler::FrameMove()
     CSingleLock lock(m_critSection);
 
     // perform relative seek
+#ifdef _XBOX
     if (g_application.m_pPlayer)
-      g_application.m_pPlayer->SeekTimeRelative(static_cast<int64_t>(m_seekSize * 1000));
+    {
+      // we don't have CApplicationPlayer where this is checked in Kodi
+      if (!g_application.m_pPlayer->SeekTimeRelative(static_cast<int64_t>(m_seekSize * 1000)))
+      {
+        int64_t abstime = g_application.m_pPlayer->GetTime() + (m_seekSize * 1000);
+        g_application.m_pPlayer->SeekTime(abstime);
+      }
+    }
+#else
+    g_application.m_pPlayer->SeekTimeRelative(static_cast<int64_t>(m_seekSize * 1000));
+#endif
 
     Reset();
   }
