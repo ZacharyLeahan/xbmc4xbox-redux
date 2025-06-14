@@ -6100,30 +6100,30 @@ std::string CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *
     strLabel = StringUtils::Format("%2.3f s", CMediaSettings::Get().GetCurrentVideoSettings().m_AudioDelay);
     break;
   case PLAYER_CHAPTER:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
       strLabel = StringUtils::Format("%02d", g_application.m_pPlayer->GetChapter());
     break;
   case PLAYER_CHAPTERCOUNT:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
       strLabel = StringUtils::Format("%02d", g_application.m_pPlayer->GetChapterCount());
     break;
   case PLAYER_CHAPTERNAME:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
       g_application.m_pPlayer->GetChapterName(strLabel);
     break;
   case PLAYER_CACHELEVEL:
     {
       int iLevel = 0;
-      if(g_application.IsPlaying() && GetInt(iLevel, PLAYER_CACHELEVEL) && iLevel >= 0)
+      if(g_application.m_pPlayer->IsPlaying() && GetInt(iLevel, PLAYER_CACHELEVEL) && iLevel >= 0)
         strLabel = StringUtils::Format("%i", iLevel);
     }
     break;
   case PLAYER_TIME:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
       strLabel = GetCurrentPlayTime(TIME_FORMAT_HH_MM);
     break;
   case PLAYER_DURATION:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
       strLabel = GetDuration(TIME_FORMAT_HH_MM);
     break;
   case PLAYER_PATH:
@@ -6178,27 +6178,23 @@ std::string CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *
           return m_currentFile->GetVideoInfoTag()->m_strTitle;
         if (m_currentFile->HasMusicInfoTag() && !m_currentFile->GetMusicInfoTag()->GetTitle().empty())
           return m_currentFile->GetMusicInfoTag()->GetTitle();
-#ifndef _XBOX
         // don't have the title, so use VideoPlayer, label, or drop down to title from path
         if (!g_application.m_pPlayer->GetPlayingTitle().empty())
           return g_application.m_pPlayer->GetPlayingTitle();
         if (!m_currentFile->GetLabel().empty())
           return m_currentFile->GetLabel();
-#endif
         return CUtil::GetTitleFromPath(m_currentFile->GetPath());
       }
       else
       {
-#ifndef _XBOX
         if (!g_application.m_pPlayer->GetPlayingTitle().empty())
           return g_application.m_pPlayer->GetPlayingTitle();
-#endif
       }
     }
     break;
   case PLAYER_PLAYSPEED:
-      if(g_application.IsPlaying())
-        strLabel = StringUtils::Format("%i", g_application.GetPlaySpeed());
+      if(g_application.m_pPlayer->IsPlaying())
+        strLabel = StringUtils::Format("%i", g_application.m_pPlayer->GetPlaySpeed());
       break;
   case MUSICPLAYER_TITLE:
   case MUSICPLAYER_ALBUM:
@@ -6282,41 +6278,49 @@ std::string CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *
     strLabel = GetVideoLabel(info);
   break;
   case VIDEOPLAYER_VIDEO_CODEC:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
     {
-      strLabel = g_application.m_pPlayer->GetVideoCodecName();
+      SPlayerVideoStreamInfo info;
+      g_application.m_pPlayer->GetVideoStreamInfo(-1, info);
+      strLabel = info.videoCodecName;
     }
     break;
   case VIDEOPLAYER_VIDEO_RESOLUTION:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
     {
-      return CStreamDetails::VideoDimsToResolutionDescription(g_application.m_pPlayer->GetPictureWidth(), g_application.m_pPlayer->GetPictureHeight());
+      SPlayerVideoStreamInfo info;
+      g_application.m_pPlayer->GetVideoStreamInfo(-1, info);
+      return CStreamDetails::VideoDimsToResolutionDescription(info.width, info.height);
     }
     break;
   case VIDEOPLAYER_AUDIO_CODEC:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
     {
-      strLabel = g_application.m_pPlayer->GetAudioCodecName();
+      SPlayerAudioStreamInfo info;
+      g_application.m_pPlayer->GetAudioStreamInfo(g_application.m_pPlayer->GetAudioStream(), info);
+      strLabel = info.audioCodecName;
     }
     break;
   case VIDEOPLAYER_VIDEO_ASPECT:
-    if (g_application.IsPlaying())
+    if (g_application.m_pPlayer->IsPlaying())
     {
-      float aspect;
-      g_application.m_pPlayer->GetVideoAspectRatio(aspect);
-      strLabel = CStreamDetails::VideoAspectToAspectDescription(aspect);
+      SPlayerVideoStreamInfo info;
+      g_application.m_pPlayer->GetVideoStreamInfo(-1, info);
+      strLabel = CStreamDetails::VideoAspectToAspectDescription(info.videoAspectRatio);
     }
     break;
   case VIDEOPLAYER_AUDIO_CHANNELS:
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
     {
-      if (g_application.m_pPlayer->GetChannels() > 0)
-        strLabel = StringUtils::Format("%i", g_application.m_pPlayer->GetChannels());
+      SPlayerAudioStreamInfo info;
+      g_application.m_pPlayer->GetAudioStreamInfo(g_application.m_pPlayer->GetAudioStream(), info);
+      if (info.channels > 0)
+        strLabel = StringUtils::Format("%i", info.channels);
     }
     break;
   case VIDEOPLAYER_AUDIO_LANG:
 #ifndef _XBOX
-    if(g_application.IsPlaying())
+    if(g_application.m_pPlayer->IsPlaying())
     {
       strLabel = m_audioInfo.language;
     }
@@ -6810,8 +6814,8 @@ std::string CGUIInfoManager::GetLabel(int info, int contextWindow, std::string *
 #ifdef HAS_XBOX_HARDWARE
   case LCD_PLAY_ICON:
     {
-      int iPlaySpeed = g_application.GetPlaySpeed();
-      if (g_application.IsPaused())
+      int iPlaySpeed = g_application.m_pPlayer->GetPlaySpeed();
+      if (g_application.m_pPlayer->IsPaused())
         strLabel = "\7";
       else if (iPlaySpeed < 1)
         strLabel = StringUtils::Format("\3:%ix", iPlaySpeed);
@@ -7016,7 +7020,7 @@ bool CGUIInfoManager::GetInt(int &value, int info, int contextWindow, const CGUI
     case PLAYER_CHAPTER:
     case PLAYER_CHAPTERCOUNT:
       {
-        if( g_application.IsPlaying())
+        if( g_application.m_pPlayer->IsPlaying())
         {
           switch( info )
           {
@@ -7462,7 +7466,7 @@ bool CGUIInfoManager::GetBool(int condition1, int contextWindow, const CGUIListI
     CGUIWindowSlideShow *slideShow = (CGUIWindowSlideShow *)g_windowManager.GetWindow(WINDOW_SLIDESHOW);
     bReturn = (slideShow && slideShow->GetCurrentSlide() && slideShow->GetCurrentSlide()->IsVideo());
   }
-  else if (g_application.IsPlaying())
+  else if (g_application.m_pPlayer->IsPlaying())
   {
     switch (condition)
     {
@@ -7470,52 +7474,52 @@ bool CGUIInfoManager::GetBool(int condition1, int contextWindow, const CGUIListI
       bReturn = true;
       break;
     case PLAYER_HAS_AUDIO:
-      bReturn = g_application.IsPlayingAudio();
+      bReturn = g_application.m_pPlayer->IsPlayingAudio();
       break;
     case PLAYER_HAS_VIDEO:
-      bReturn = g_application.IsPlayingVideo();
+      bReturn = g_application.m_pPlayer->IsPlayingVideo();
       break;
     case PLAYER_PLAYING:
-      bReturn = !g_application.IsPaused() && (g_application.GetPlaySpeed() == 1);
+      bReturn = !g_application.m_pPlayer->IsPaused() && (g_application.m_pPlayer->GetPlaySpeed() == 1);
       break;
     case PLAYER_PAUSED:
-      bReturn = g_application.IsPaused();
+      bReturn = g_application.m_pPlayer->IsPaused();
       break;
     case PLAYER_REWINDING:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() < 1;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() < 1;
       break;
     case PLAYER_FORWARDING:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() > 1;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() > 1;
       break;
     case PLAYER_REWINDING_2x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == -2;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == -2;
       break;
     case PLAYER_REWINDING_4x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == -4;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == -4;
       break;
     case PLAYER_REWINDING_8x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == -8;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == -8;
       break;
     case PLAYER_REWINDING_16x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == -16;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == -16;
       break;
     case PLAYER_REWINDING_32x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == -32;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == -32;
       break;
     case PLAYER_FORWARDING_2x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == 2;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == 2;
       break;
     case PLAYER_FORWARDING_4x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == 4;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == 4;
       break;
     case PLAYER_FORWARDING_8x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == 8;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == 8;
       break;
     case PLAYER_FORWARDING_16x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == 16;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == 16;
       break;
     case PLAYER_FORWARDING_32x:
-      bReturn = !g_application.IsPaused() && g_application.GetPlaySpeed() == 32;
+      bReturn = !g_application.m_pPlayer->IsPaused() && g_application.m_pPlayer->GetPlaySpeed() == 32;
       break;
     case PLAYER_CAN_RECORD:
       bReturn = g_application.m_pPlayer->CanRecord();
@@ -7533,7 +7537,7 @@ bool CGUIInfoManager::GetBool(int condition1, int contextWindow, const CGUIListI
       break;
     case PLAYER_IS_TEMPO:
       {
-        float speed = (float)g_application.GetPlaySpeed();
+        float speed = (float)g_application.m_pPlayer->GetPlaySpeed();
         bReturn = (speed >= 0.75 && speed <= 1.55 && speed != 1);
       }
       break;
@@ -7588,7 +7592,7 @@ bool CGUIInfoManager::GetBool(int condition1, int contextWindow, const CGUIListI
     case MUSICPLAYER_PLAYLISTPLAYING:
       {
         bReturn = false;
-        if (g_application.IsPlayingAudio() && g_playlistPlayer.GetCurrentPlaylist() == PLAYLIST_MUSIC)
+        if (g_application.m_pPlayer->IsPlayingAudio() && g_playlistPlayer.GetCurrentPlaylist() == PLAYLIST_MUSIC)
           bReturn = true;
       }
       break;
@@ -8346,7 +8350,7 @@ std::string CGUIInfoManager::GetMultiInfoLabel(const GUIInfo &info, int contextW
   else if (info.m_info == PLAYER_TIME_SPEED)
   {
     std::string strTime;
-    int speed = g_application.GetPlaySpeed();
+    int speed = g_application.m_pPlayer->GetPlaySpeed();
     if (speed != 1)
       strTime = StringUtils::Format("%s (%ix)", GetCurrentPlayTime((TIME_FORMAT)info.GetData1()).c_str(), speed);
     else
@@ -8561,14 +8565,14 @@ std::string CGUIInfoManager::GetImage(int info, int contextWindow, std::string *
   }
   else if (info == MUSICPLAYER_COVER)
   {
-    if (!g_application.IsPlayingAudio()) return "";
+    if (!g_application.m_pPlayer->IsPlayingAudio()) return "";
     if (fallback)
       *fallback = "DefaultAlbumCover.png";
     return m_currentFile->HasArt("thumb") ? m_currentFile->GetArt("thumb") : "DefaultAlbumCover.png";
   }
   else if (info == VIDEOPLAYER_COVER)
   {
-    if (!g_application.IsPlayingVideo()) return "";
+    if (!g_application.m_pPlayer->IsPlayingVideo()) return "";
     if (fallback)
       *fallback = "DefaultVideoCover.png";
     if(m_currentMovieThumb.empty())
@@ -8702,13 +8706,13 @@ std::string CGUIInfoManager::LocalizeTime(const CDateTime &time, TIME_FORMAT for
 
 std::string CGUIInfoManager::GetDuration(TIME_FORMAT format) const
 {
-  if (g_application.IsPlayingAudio() && m_currentFile->HasMusicInfoTag())
+  if (g_application.m_pPlayer->IsPlayingAudio() && m_currentFile->HasMusicInfoTag())
   {
     const CMusicInfoTag& tag = *m_currentFile->GetMusicInfoTag();
     if (tag.GetDuration() > 0)
       return StringUtils::SecondsToTimeString(tag.GetDuration(), format);
   }
-  if (g_application.IsPlayingVideo() && !m_currentMovieDuration.empty())
+  if (g_application.m_pPlayer->IsPlayingVideo() && !m_currentMovieDuration.empty())
     return m_currentMovieDuration;
   unsigned int iTotal = MathUtils::round_int(g_application.GetTotalTime());
   if (iTotal > 0)
@@ -8804,7 +8808,7 @@ const std::string CGUIInfoManager::GetMusicPlaylistInfo(const GUIInfo& info)
 
 std::string CGUIInfoManager::GetPlaylistLabel(int item, int playlistid /* = PLAYLIST_NONE */) const
 {
-  if (playlistid <= PLAYLIST_NONE && !g_application.IsPlaying())
+  if (playlistid <= PLAYLIST_NONE && !g_application.m_pPlayer->IsPlaying())
     return "";
 
   int iPlaylist = playlistid == PLAYLIST_NONE ? g_playlistPlayer.GetCurrentPlaylist() : playlistid;
@@ -9014,7 +9018,10 @@ std::string CGUIInfoManager::GetRadioRDSLabel(int item)
 
 std::string CGUIInfoManager::GetMusicLabel(int item)
 {
-  if (!g_application.IsPlaying() || !m_currentFile->HasMusicInfoTag()) return "";
+  if (!g_application.m_pPlayer->IsPlaying() || !m_currentFile->HasMusicInfoTag()) return "";
+
+  SPlayerAudioStreamInfo info;
+  g_application.m_pPlayer->GetAudioStreamInfo(g_application.m_pPlayer->GetAudioStream(), info);
 
   switch (item)
   {
@@ -9035,11 +9042,11 @@ std::string CGUIInfoManager::GetMusicLabel(int item)
       float fTimeSpan = (float)(CTimeUtils::GetFrameTime() - m_lastMusicBitrateTime);
       if (fTimeSpan >= 500.0f)
       {
-        m_MusicBitrate = g_application.m_pPlayer->GetAudioBitrate();
+        m_MusicBitrate = info.bitrate;
         m_lastMusicBitrateTime = CTimeUtils::GetFrameTime();
       }
       std::string strBitrate = "";
-      if (m_MusicBitrate > 0)
+      if (info.bitrate > 0)
         strBitrate = StringUtils::Format("%i", MathUtils::round_int((double)m_MusicBitrate / 1000.0));
       return strBitrate;
     }
@@ -9047,9 +9054,9 @@ std::string CGUIInfoManager::GetMusicLabel(int item)
   case MUSICPLAYER_CHANNELS:
     {
       std::string strChannels = "";
-      if (g_application.m_pPlayer->GetChannels() > 0)
+      if (info.channels > 0)
       {
-        strChannels = StringUtils::Format("%i", g_application.m_pPlayer->GetChannels());
+        strChannels = StringUtils::Format("%i", info.channels);
       }
       return strChannels;
     }
@@ -9057,22 +9064,22 @@ std::string CGUIInfoManager::GetMusicLabel(int item)
   case MUSICPLAYER_BITSPERSAMPLE:
     {
       std::string strBitsPerSample = "";
-      if (g_application.m_pPlayer->GetBitsPerSample() > 0)
-        strBitsPerSample = StringUtils::Format("%i", g_application.m_pPlayer->GetBitsPerSample());
+      if (info.bitspersample > 0)
+        strBitsPerSample = StringUtils::Format("%i", info.bitspersample);
       return strBitsPerSample;
     }
     break;
   case MUSICPLAYER_SAMPLERATE:
     {
       std::string strSampleRate = "";
-      if (g_application.m_pPlayer->GetSampleRate() > 0)
-        strSampleRate = StringUtils::Format("%.5g", ((double)g_application.m_pPlayer->GetSampleRate() / 1000.0));
+      if (info.samplerate > 0)
+        strSampleRate = StringUtils::Format("%.5g", ((double)info.samplerate / 1000.0));
       return strSampleRate;
     }
     break;
   case MUSICPLAYER_CODEC:
     {
-      return StringUtils::Format("%s", g_application.m_pPlayer->GetAudioCodecName().c_str());
+      return StringUtils::Format("%s", info.audioCodecName.c_str());
     }
     break;
   }
@@ -9208,7 +9215,7 @@ std::string CGUIInfoManager::GetMusicTagLabel(int info, const CFileItem *item)
 
 std::string CGUIInfoManager::GetVideoLabel(int item)
 {
-  if (!g_application.IsPlaying())
+  if (!g_application.m_pPlayer->IsPlaying())
     return "";
 
 #ifndef _XBOX
@@ -9592,7 +9599,7 @@ std::string CGUIInfoManager::GetVideoLabel(int item)
 
 int64_t CGUIInfoManager::GetPlayTime() const
 {
-  if (g_application.IsPlaying())
+  if (g_application.m_pPlayer->IsPlaying())
   {
     int64_t lPTS = (int64_t)(g_application.GetTime() * 1000);
     if (lPTS < 0) lPTS = 0;
@@ -9605,7 +9612,7 @@ std::string CGUIInfoManager::GetCurrentPlayTime(TIME_FORMAT format) const
 {
   if (format == TIME_FORMAT_GUESS && GetTotalPlayTime() >= 3600)
     format = TIME_FORMAT_HH_MM_SS;
-  if (g_application.IsPlaying())
+  if (g_application.m_pPlayer->IsPlaying())
     return StringUtils::SecondsToTimeString(MathUtils::round_int(GetPlayTime()/1000.0), format);
   return "";
 }
@@ -9651,7 +9658,7 @@ std::string CGUIInfoManager::GetCurrentPlayTimeRemaining(TIME_FORMAT format) con
   if (format == TIME_FORMAT_GUESS && GetTotalPlayTime() >= 3600)
     format = TIME_FORMAT_HH_MM_SS;
   int timeRemaining = GetPlayTimeRemaining();
-  if (timeRemaining && g_application.IsPlaying())
+  if (timeRemaining && g_application.m_pPlayer->IsPlaying())
     return StringUtils::SecondsToTimeString(timeRemaining, format);
   return "";
 }
@@ -9772,7 +9779,7 @@ void CGUIInfoManager::SetCurrentMovie(CFileItem &item)
   if (item.IsInternetStream())
   {
     // case where .strm is used to start an audio stream
-    if (g_application.IsPlayingAudio())
+    if (g_application.m_pPlayer->IsPlayingAudio())
     {
       SetCurrentSong(item);
       return;
@@ -9948,7 +9955,7 @@ void CGUIInfoManager::UpdateFPS()
 
 void CGUIInfoManager::UpdateAVInfo()
 {
-  if(g_application.IsPlaying())
+  if(g_application.m_pPlayer->IsPlaying())
   {
 #ifndef _XBOX
     if (CServiceBroker::GetDataCacheCore().HasAVInfoChanges())
