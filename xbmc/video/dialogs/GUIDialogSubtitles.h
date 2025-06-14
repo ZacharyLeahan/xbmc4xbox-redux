@@ -2,7 +2,7 @@
 
 /*
  *      Copyright (C) 2005-2013 Team XBMC
- *      http://www.xbmc.org
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ public:
   virtual void OnInitWindow();
 
 protected:
-  virtual void Render();
+  virtual void Process(unsigned int currentTime, CDirtyRegionList &dirtyregions);
   virtual void OnJobComplete(unsigned int jobID, bool success, CJob *job);
 
   bool SetService(const std::string &service);
@@ -68,8 +68,8 @@ protected:
   CFileItemList* m_serviceItems;
   std::string    m_currentService;
   std::string    m_status;
-  CStdString     m_strManualSearch;
+  std::string     m_strManualSearch;
   bool           m_pausedOnRun;
   bool           m_updateSubsList; ///< true if we need to update our subs list
-  CStdString     m_LastAutoDownloaded; ///< Last video file path which automatically downloaded subtitle
+  std::string     m_LastAutoDownloaded; ///< Last video file path which automatically downloaded subtitle
 };

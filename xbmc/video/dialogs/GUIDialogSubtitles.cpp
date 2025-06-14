@@ -1,6 +1,6 @@
 /*
  *      Copyright (C) 2005-2013 Team XBMC
- *      http://www.xbmc.org
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "GUIUserMessages.h"
 #include "Application.h"
 #include "GUIDialogSubtitles.h"
+#include "LangInfo.h"
 #include "addons/AddonManager.h"
 #include "cores/IPlayer.h"
 #include "dialogs/GUIDialogKaiToast.h"
@@ -40,6 +41,7 @@
 #include "utils/log.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
+#include "utils/Variant.h"
 #include "URL.h"
 #include "Util.h"
 #include "video/VideoDatabase.h"
@@ -98,13 +100,12 @@ private:
 
 CGUIDialogSubtitles::CGUIDialogSubtitles(void)
     : CGUIDialog(WINDOW_DIALOG_SUBTITLES, "DialogSubtitles.xml")
+    , m_subtitles(new CFileItemList)
+    , m_serviceItems(new CFileItemList)
+    , m_pausedOnRun(false)
+    , m_updateSubsList(false)
 {
-  m_loadType  = KEEP_IN_MEMORY;
-  m_subtitles = new CFileItemList;
-  m_serviceItems = new CFileItemList;
-  m_pausedOnRun = false;
-  m_updateSubsList = false;
-  m_LastAutoDownloaded = "";
+  m_loadType = KEEP_IN_MEMORY;
 }
 
 CGUIDialogSubtitles::~CGUIDialogSubtitles(void)
@@ -185,7 +186,7 @@ void CGUIDialogSubtitles::OnInitWindow()
   Search();
 }
 
-void CGUIDialogSubtitles::Render()
+void CGUIDialogSubtitles::Process(unsigned int currentTime, CDirtyRegionList &dirtyregions)
 {
   if (m_bInvalidated)
   {
@@ -227,7 +228,7 @@ void CGUIDialogSubtitles::Render()
       OnMessage(msg);
     }
   }
-  CGUIDialog::Render();
+  CGUIDialog::Process(currentTime, dirtyregions);
 }
 
 void CGUIDialogSubtitles::FillServices()
@@ -254,9 +255,9 @@ void CGUIDialogSubtitles::FillServices()
     defaultService = CSettings::GetInstance().GetString("subtitles.movie");
 
   std::string service = addons.front()->ID();
-  for (VECADDONS::const_iterator addonIt = addons.begin(); addonIt != addons.end(); addonIt++)
+  for (VECADDONS::const_iterator addonIt = addons.begin(); addonIt != addons.end(); ++addonIt)
   {
-    CFileItemPtr item(CAddonsDirectory::FileItemFromAddon(*addonIt, "plugin://", false));
+    CFileItemPtr item(CAddonsDirectory::FileItemFromAddon(*addonIt, "plugin://" + (*addonIt)->ID(), false));
     m_serviceItems->Add(item);
     if ((*addonIt)->ID() == defaultService)
       service = (*addonIt)->ID();
@@ -352,7 +353,7 @@ void CGUIDialogSubtitles::Search(const std::string &search/*=""*/)
     preferredLanguage = strLanguage;
   }
   else if (StringUtils::EqualsNoCase(preferredLanguage, "default"))
-    preferredLanguage = CSettings::GetInstance().GetString("locale.language");
+    preferredLanguage = g_langInfo.GetEnglishLanguageName();
 
   url.SetOption("preferredlanguage", preferredLanguage);
 
@@ -448,13 +449,13 @@ void CGUIDialogSubtitles::OnDownloadComplete(const CFileItemList *items, const s
   SUBTITLE_STORAGEMODE storageMode = (SUBTITLE_STORAGEMODE) CSettings::GetInstance().GetInt("subtitles.storagemode");
 
   // Get (unstacked) path
-  CStdString strCurrentFile = g_application.CurrentUnstackedItem().GetPath();
+  std::string strCurrentFile = g_application.CurrentUnstackedItem().GetPath();
 
-  CStdString strDownloadPath = "special://temp";
-  CStdString strDestPath;
+  std::string strDownloadPath = "special://temp";
+  std::string strDestPath;
   std::vector<std::string> vecFiles;
 
-  CStdString strCurrentFilePath;
+  std::string strCurrentFilePath;
   if (StringUtils::StartsWith(strCurrentFilePath, "http://"))
   {
     strCurrentFile = "TempSubtitle";
@@ -462,13 +463,13 @@ void CGUIDialogSubtitles::OnDownloadComplete(const CFileItemList *items, const s
   }
   else
   {
-    CStdString subPath = CSpecialProtocol::TranslatePath("special://subtitles");
+    std::string subPath = CSpecialProtocol::TranslatePath("special://subtitles");
     if (!subPath.empty())
       strDownloadPath = subPath;
 
-    /* Get item's folder for sub storage, special case for RAR/ZIP items
-       TODO: We need some way to avoid special casing this all over the place
-             for rar/zip (perhaps modify GetDirectory?)
+    /** Get item's folder for sub storage, special case for RAR/ZIP items
+     * @todo We need some way to avoid special casing this all over the place
+     * for rar/zip (perhaps modify GetDirectory?)
      */
     if (URIUtils::IsInRAR(strCurrentFile) || URIUtils::IsInZIP(strCurrentFile))
       strCurrentFilePath = URIUtils::GetDirectory(CURL(strCurrentFile).GetHostName());
@@ -503,23 +504,23 @@ void CGUIDialogSubtitles::OnDownloadComplete(const CFileItemList *items, const s
     strDestPath = strDownloadPath;
 
   // Extract the language and appropriate extension
-  CStdString strSubLang;
+  std::string strSubLang;
   g_LangCodeExpander.ConvertToISO6391(language, strSubLang);
 
   // Iterate over all items to transfer
   for (unsigned int i = 0; i < vecFiles.size() && i < (unsigned int) items->Size(); i++)
   {
-    CStdString strUrl = items->Get(i)->GetPath();
-    CStdString strFileName = URIUtils::GetFileName(vecFiles[i]);
+    std::string strUrl = items->Get(i)->GetPath();
+    std::string strFileName = URIUtils::GetFileName(vecFiles[i]);
     URIUtils::RemoveExtension(strFileName);
 
     // construct subtitle path
-    CStdString strSubExt = URIUtils::GetExtension(strUrl);
-    CStdString strSubName = StringUtils::Format("%s.%s%s", strFileName.c_str(), strSubLang.c_str(), strSubExt.c_str());
+    std::string strSubExt = URIUtils::GetExtension(strUrl);
+    std::string strSubName = StringUtils::Format("%s.%s%s", strFileName.c_str(), strSubLang.c_str(), strSubExt.c_str());
 
     // Handle URL encoding:
-    CStdString strDownloadFile = URIUtils::ChangeBasePath(strCurrentFilePath, strSubName, strDownloadPath);
-    CStdString strDestFile = strDownloadFile;
+    std::string strDownloadFile = URIUtils::ChangeBasePath(strCurrentFilePath, strSubName, strDownloadPath);
+    std::string strDestFile = strDownloadFile;
 
     if (!CFile::Copy(strUrl, strDownloadFile))
     {
@@ -531,7 +532,7 @@ void CGUIDialogSubtitles::OnDownloadComplete(const CFileItemList *items, const s
       if (strDestPath != strDownloadPath)
       {
         // Handle URL encoding:
-        CStdString strTryDestFile = URIUtils::ChangeBasePath(strCurrentFilePath, strSubName, strDestPath);
+        std::string strTryDestFile = URIUtils::ChangeBasePath(strCurrentFilePath, strSubName, strDestPath);
 
         /* Copy the file from temp to our final destination, if that fails fallback to download path
          * (ie. special://subtitles or use special://temp). Note that after the first item strDownloadPath equals strDestpath
@@ -557,12 +558,12 @@ void CGUIDialogSubtitles::OnDownloadComplete(const CFileItemList *items, const s
       }
 
       // for ".sub" subtitles we check if ".idx" counterpart exists and copy that as well
-      if (strSubExt.Equals(".sub"))
+      if (StringUtils::EqualsNoCase(strSubExt, ".sub"))
       {
         strUrl = URIUtils::ReplaceExtension(strUrl, ".idx");
         if(CFile::Exists(strUrl))
         {
-          CStdString strSubNameIdx = StringUtils::Format("%s.%s.idx", strFileName.c_str(), strSubLang.c_str());
+          std::string strSubNameIdx = StringUtils::Format("%s.%s.idx", strFileName.c_str(), strSubLang.c_str());
           // Handle URL encoding:
           strDestFile = URIUtils::ChangeBasePath(strCurrentFilePath, strSubNameIdx, strDestPath);
           CFile::Copy(strUrl, strDestFile);
