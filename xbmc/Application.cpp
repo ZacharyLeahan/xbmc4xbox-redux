@@ -1046,7 +1046,7 @@ HRESULT CApplication::Create(HWND hWnd)
   F_VIDEO ForceVideo = VIDEO_NULL;
   F_COUNTRY ForceCountry = COUNTRY_NULL;
 
-  if (CUtil::RemoveTrainer())
+  if (CTrainer::RemoveTrainer())
     bNeedReboot = true;
 
 // now check if we are switching video modes. if, are we in the wrong mode according to eeprom?

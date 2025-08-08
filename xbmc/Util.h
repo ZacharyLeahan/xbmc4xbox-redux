@@ -43,7 +43,6 @@ namespace XFILE
 class CFileItem;
 class CFileItemList;
 class CURL;
-class CTrainer;
 
 // for 'cherry' patching
 typedef enum
@@ -81,8 +80,6 @@ public:
   static CStdString GetTitleFromPath(const CURL& url, bool bIsFolder = false);
   static CStdString GetTitleFromPath(const CStdString& strFileNameAndPath, bool bIsFolder = false);
   static void GetQualifiedFilename(const std::string &strBasePath, std::string &strFilename);
-  static bool InstallTrainer(CTrainer& trainer);
-  static bool RemoveTrainer();
   static bool PatchCountryVideo(F_COUNTRY Country, F_VIDEO Video);
   static void RunShortcut(const char* szPath);
   static void RunXBE(const char* szPath, char* szParameters = NULL, F_VIDEO ForceVideo=VIDEO_NULL, F_COUNTRY ForceCountry=COUNTRY_NULL, CUSTOM_LAUNCH_DATA* pData=NULL);
