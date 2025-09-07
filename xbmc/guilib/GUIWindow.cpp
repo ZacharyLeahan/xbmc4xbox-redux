@@ -607,7 +607,7 @@ bool CGUIWindow::OnMessage(CGUIMessage& message)
       CLog::Log(LOGDEBUG, "------ Window Deinit (%s) ------", GetProperty("xmlfile").c_str());
       OnDeinitWindow(message.GetParam1());
       // now free the window
-      if (m_dynamicResourceAlloc) FreeResources();
+      if (m_dynamicResourceAlloc) FreeResources(!g_advancedSettings.m_guiKeepInMemory);
       return true;
     }
     break;
@@ -812,9 +812,6 @@ void CGUIWindow::AllocResources(bool forceLoad /*= FALSE */)
 
 void CGUIWindow::FreeResources(bool forceUnload /*= FALSE */)
 {
-  if (!g_advancedSettings.m_guiKeepInMemory && !forceUnload)
-    forceUnload = true;
-
   m_bAllocated = false;
   CGUIControlGroup::FreeResources();
   //g_TextureManager.Dump();
