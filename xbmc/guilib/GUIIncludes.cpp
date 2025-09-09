@@ -107,7 +107,15 @@ void CGUIIncludes::Clear()
   m_expressions.clear();
 }
 
-bool CGUIIncludes::Load(const std::string &file)
+void CGUIIncludes::Load(const std::string &file)
+{
+  if (!Load_Internal(file))
+    return;
+  FlattenExpressions();
+  FlattenSkinVariableConditions();
+}
+
+bool CGUIIncludes::Load_Internal(const std::string &file)
 {
   // check to see if we already have this loaded
   if (HasLoaded(file))
@@ -236,12 +244,45 @@ void CGUIIncludes::LoadIncludes(const TiXmlElement *node)
       if (condition)
       { // load include file if condition evals to true
         if (g_infoManager.Register(condition)->Get())
-          Load(file);
+          Load_Internal(file);
       }
       else
-        Load(file);
+        Load_Internal(file);
     }
     child = child->NextSiblingElement("include");
+  }
+}
+
+void CGUIIncludes::FlattenExpressions()
+{
+  for (std::map<std::string, std::string>::iterator it = m_expressions.begin(); it != m_expressions.end(); ++it)
+  {
+    std::vector<std::string> resolved = std::vector<std::string>();
+    resolved.push_back(it->first);
+    FlattenExpression(it->second, resolved);
+  }
+}
+
+void CGUIIncludes::FlattenExpression(std::string &expression, const std::vector<std::string> &resolved)
+{
+  std::string original(expression);
+  ExpressionFlattener flattener(this, original, resolved);
+  CGUIInfoLabel::ReplaceSpecialKeywordReferences(expression, "EXP", boost::ref(flattener));
+}
+
+void CGUIIncludes::FlattenSkinVariableConditions()
+{
+  for (std::map<std::string, TiXmlElement>::iterator it = m_skinvariables.begin(); it != m_skinvariables.end(); ++it)
+  {
+    TiXmlElement* valueNode = it->second.FirstChildElement("value");
+    while (valueNode)
+    {
+      const char *condition = valueNode->Attribute("condition");
+      if (condition)
+        valueNode->SetAttribute("condition", ResolveExpressions(condition));
+
+      valueNode = valueNode->NextSiblingElement("value");
+    }
   }
 }
 
@@ -368,7 +409,7 @@ void CGUIIncludes::ResolveIncludes(TiXmlElement *node, std::map<INFO::InfoPtr, b
     const char *condition = include->Attribute("condition");
     if (condition)
     {
-      INFO::InfoPtr conditionID = g_infoManager.Register(condition);
+      INFO::InfoPtr conditionID = g_infoManager.Register(ResolveExpressions(condition));
       bool value = conditionID->Get();
 
       if (xmlIncludeConditions)
