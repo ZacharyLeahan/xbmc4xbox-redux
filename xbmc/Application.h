@@ -133,7 +133,7 @@ public:
   void Stop(bool bLCDStop = true);
   void RestartApp();
   void UnloadSkin(bool forReload = false);
-  bool LoadUserWindows();
+  bool LoadCustomWindows();
   void ReloadSkin(bool confirm = false);
   const std::string& CurrentFile();
   CFileItem& CurrentFileItem();

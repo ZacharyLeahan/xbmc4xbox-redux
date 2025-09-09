@@ -71,6 +71,7 @@ CGUIWindow::CGUIWindow(int id, const std::string &xmlFile)
   m_windowXMLRootElement = NULL;
   m_menuControlID = 0;
   m_menuLastFocusedControlID = 0;
+  m_custom = false;
 }
 
 CGUIWindow::~CGUIWindow(void)
@@ -161,7 +162,7 @@ bool CGUIWindow::Load(TiXmlElement* pRootElement)
 
   if (strcmpi(pRootElement->Value(), "window"))
   {
-    CLog::Log(LOGERROR, "file : XML file doesnt contain <window>");
+    CLog::Log(LOGERROR, "XML file %s does not contain a <window> root element", GetProperty("xmlfile").c_str());
     return false;
   }
 
@@ -175,6 +176,7 @@ bool CGUIWindow::Load(TiXmlElement* pRootElement)
 
   // Resolve any includes that may be present and save conditions used to do it
   g_SkinInfo->ResolveIncludes(pRootElement, &m_xmlIncludeConditions);
+
   // now load in the skin file
   SetDefaults();
 
