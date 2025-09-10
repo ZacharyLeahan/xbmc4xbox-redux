@@ -27,9 +27,6 @@
 #ifndef WOLF_CRYPT_SETTINGS_H
 #define WOLF_CRYPT_SETTINGS_H
 
-#define vsnprintf _vsnprintf
-#define snprintf _snprintf
-
 #ifdef __cplusplus
     extern "C" {
 #endif

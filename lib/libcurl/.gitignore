@@ -58,5 +58,3 @@ scripts/curl.fish
 curl_fuzzer
 curl_fuzzer_seed_corpus.zip
 libstandaloneengine.a
-.sconsign.dblite
-projects/Xbox/objs
