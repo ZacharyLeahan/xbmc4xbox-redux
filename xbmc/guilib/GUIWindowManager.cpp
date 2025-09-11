@@ -1421,6 +1421,10 @@ void CGUIWindowManager::LoadNotOnDemandWindows()
     {
       pWindow->FreeResources(true);
       pWindow->Initialize();
+#ifdef _XBOX
+      if (!g_advancedSettings.m_guiKeepInMemory)
+        pWindow->FreeResources(true);
+#endif
     }
   }
 }
