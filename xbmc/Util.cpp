@@ -734,7 +734,7 @@ bool CUtil::GetDirectoryName(const CStdString& strFileName, CStdString& strDescr
   return true;
 }
 
-bool CUtil::GetXBEDescription(const CStdString& strFileName, CStdString& strDescription)
+bool CUtil::GetXBEDescription(const std::string& strFileName, std::string& strDescription)
 {
   _XBE_CERTIFICATE HC;
   _XBE_HEADER HS;
@@ -2279,6 +2279,11 @@ void CUtil::DeleteMusicDatabaseDirectoryCache()
 void CUtil::DeleteVideoDatabaseDirectoryCache()
 {
   CUtil::DeleteDirectoryCache("vdb-");
+}
+
+void CUtil::DeleteProgramDatabaseDirectoryCache()
+{
+  CUtil::DeleteDirectoryCache("10001-");
 }
 
 void CUtil::DeleteDirectoryCache(const CStdString &prefix)

@@ -23,7 +23,7 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "FileItem.h"
-#include "ProgramDatabase.h"
+#include "programs/ProgramDatabase.h"
 #include "settings/lib/Setting.h"
 #include "settings/windows/GUIControlSettings.h"
 #include "utils/Variant.h"

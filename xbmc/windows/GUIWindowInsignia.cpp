@@ -33,7 +33,7 @@
 #include "utils/Variant.h"
 #include "utils/StringUtils.h"
 #include "utils/XBMCTinyXML.h"
-#include "ProgramDatabase.h"
+#include "programs/ProgramDatabase.h"
 
 CGUIWindowInsignia::CGUIWindowInsignia(void)
     : CGUIWindow(WINDOW_INSIGNIA, "Insignia.xml"),
@@ -73,15 +73,11 @@ bool CGUIWindowInsignia::OnAction(const CAction &action)
   if (focusedControl && action.GetButtonCode() == KEY_BUTTON_A && focusedControl->GetID() == CONTROL_GAMES_LIST)
   {
     CGUIListItemPtr game = m_pGamesContainer->GetListItem(0);
-    uint32_t xbeID;
-    if (sscanf(game->GetProperty("code").asString().c_str(), "%x", (uint32_t*)&xbeID) == 0)
-      return false;
 
     CProgramDatabase database;
     database.Open();
 
-    std::string gamePath;
-    database.GetXBEPathByTitleId(xbeID, gamePath);
+    std::string gamePath = database.GetXBEPathByTitleId(game->GetProperty("code").asString());
     if (gamePath.empty())
       CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, "Insignia", g_localizeStrings.Get(38903));
     else

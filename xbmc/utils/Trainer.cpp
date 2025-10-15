@@ -26,7 +26,7 @@
 #include "filesystem/Directory.h"
 #include "filesystem/RarManager.h"
 #include "dialogs/GUIDialogProgress.h"
-#include "ProgramDatabase.h"
+#include "programs/ProgramDatabase.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/GUIWindowManager.h"
 #include "settings/Settings.h"
