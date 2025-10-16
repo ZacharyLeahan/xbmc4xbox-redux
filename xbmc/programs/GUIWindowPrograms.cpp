@@ -15,6 +15,8 @@
 #include "guilib/LocalizeStrings.h"
 #include "FileItem.h"
 #include "programs/ProgramLibraryQueue.h"
+#include "programs/dialogs/GUIDialogProgramSettings.h"
+#include "programs/launchers/ProgramLauncher.h"
 #include "messaging/ApplicationMessenger.h"
 #include "Util.h"
 #include "utils/StringUtils.h"
@@ -76,6 +78,7 @@ void CGUIWindowPrograms::GetContextButtons(int itemNumber, CContextButtons &butt
   }
   else if (item->IsXBE())
   {
+    buttons.Add(CONTEXT_BUTTON_LAUNCH_IN, 519);
     buttons.Add(CONTEXT_BUTTON_PLAY_TRAILER, StringUtils::Format("%s %s", g_localizeStrings.Get(208).c_str(), g_localizeStrings.Get(20410).c_str()));
     buttons.Add(CONTEXT_BUTTON_DELETE, 117);
     buttons.Add(CONTEXT_BUTTON_TRAINER_OPTIONS, 38712);
@@ -116,6 +119,11 @@ bool CGUIWindowPrograms::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
         Refresh(true);
         m_viewControl.SetSelectedItem(select);
       }
+      return true;
+    }
+  case CONTEXT_BUTTON_LAUNCH_IN:
+    {
+      CGUIDialogProgramSettings::ShowForTitle(item);
       return true;
     }
   case CONTEXT_BUTTON_PLAY_TRAILER:
@@ -166,35 +174,7 @@ bool CGUIWindowPrograms::OnPlayMedia(int iItem, const std::string& player)
     return true;
   }
 
-  if (!pItem->IsXBE())
-    return false;
-
-  unsigned int idTitle = CUtil::GetXbeID(pItem->GetPath());
-
-  // Load active trainer
-  CFileItemList items;
-  if (m_database.GetTrainers(items, idTitle))
-  {
-    for (int i = 0; i < items.Size(); ++i)
-    {
-      if (items[i]->GetProperty("isactive").asBoolean())
-      {
-        CTrainer* trainer = new CTrainer(items[i]->GetProperty("idtrainer").asInteger32());
-        if (trainer->Load(items[i]->GetPath()))
-        {
-          m_database.GetTrainerOptions(trainer->GetTrainerId(), idTitle, trainer->GetOptions(), trainer->GetNumberOfOptions());
-          CTrainer::InstallTrainer(*trainer);
-        }
-        else
-        {
-          delete trainer;
-        }
-      }
-    }
-  }
-
-  CUtil::RunXBE(pItem->GetPath().c_str());
-  return true;
+  return LAUNCHERS::CProgramLauncher::LaunchProgram(pItem->GetPath());
 }
 
 bool CGUIWindowPrograms::GetDirectory(const std::string &strDirectory, CFileItemList &items)
