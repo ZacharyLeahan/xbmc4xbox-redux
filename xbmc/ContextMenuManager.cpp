@@ -26,6 +26,7 @@
 #include "addons/IAddon.h"
 #include "music/ContextMenus.h"
 #include "video/ContextMenus.h"
+#include "programs/ContextMenus.h"
 #include "utils/log.h"
 #include "ServiceBroker.h"
 
@@ -79,6 +80,7 @@ void CContextMenuManager::Init()
   m_items.push_back(boost::make_shared<CONTEXTMENU::CSongInfo>());
   m_items.push_back(boost::make_shared<CONTEXTMENU::CMarkWatched>());
   m_items.push_back(boost::make_shared<CONTEXTMENU::CMarkUnWatched>());
+  m_items.push_back(boost::make_shared<CONTEXTMENU::CScriptLaunch>());
   ReloadAddonItems();
 }
 
