@@ -79,6 +79,8 @@ public:
 
   std::string GetXBEPathByTitleId(const std::string& idTitle);
 
+  bool GetRecentlyPlayedGames(CFileItemList &items);
+
 protected:
   void GetDetailsForItem(boost::movelib::unique_ptr<dbiplus::Dataset> &pDS, CFileItem* pItem);
 

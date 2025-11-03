@@ -237,6 +237,13 @@ bool CGUIWindowPrograms::GetDirectory(const std::string &strDirectory, CFileItem
     pItem2->SetSpecialSort(SortSpecialOnTop);
     items.Add(pItem2);
 
+    CFileItemPtr pItem3(new CFileItem("programdb://games/recentlyplayed/", true));
+    pItem3->SetIconImage("DefaultRecentlyAddedMovies.png");
+    pItem3->SetLabel(g_localizeStrings.Get(38973));
+    pItem3->SetLabelPreformated(true);
+    pItem3->SetSpecialSort(SortSpecialOnTop);
+    items.Add(pItem3);
+
     items.SetLabel("");
   }
 

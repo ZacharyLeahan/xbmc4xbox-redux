@@ -23,11 +23,13 @@ CProgramDatabaseDirectory::~CProgramDatabaseDirectory(void)
 
 bool CProgramDatabaseDirectory::GetDirectory(const CURL& url, CFileItemList &items)
 {
-  int idPath = atoi(url.GetShareName().c_str());
-
   CProgramDatabase database;
   if (!database.Open())
     return false;
 
+  if (url.Get() == "programdb://games/recentlyplayed/")
+    return database.GetRecentlyPlayedGames(items);
+
+  int idPath = atoi(url.GetShareName().c_str());
   return database.GetPathContent(idPath, items);
 }

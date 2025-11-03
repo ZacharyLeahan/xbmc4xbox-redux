@@ -38,6 +38,12 @@ CGUIViewStateWindowPrograms::CGUIViewStateWindowPrograms(const CFileItemList& it
   {
     AddSortMethod(SortByLabel, 551, LABEL_MASKS("%K", "%I", "%L", ""), SortAttributeIgnoreFolders); // Title, Size | Foldername, empty
   }
+  else if (items.GetPath() == "programdb://games/recentlyplayed/")
+  {
+    AddSortMethod(SortByNone, 551, LABEL_MASKS("%K", "%I", "%L", ""), SortAttributeNone); // Title, Size | Foldername, empty
+    SetSortMethod(SortByNone);
+    SetSortOrder(SortOrderNone);
+  }
   else
   {
     AddSortMethod(SortByLabel, 551, LABEL_MASKS("%K", "%I", "%L", ""),  // Titel, Size | Foldername, empty

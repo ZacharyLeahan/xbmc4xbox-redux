@@ -691,3 +691,36 @@ void CProgramDatabase::GetDetailsForItem(boost::movelib::unique_ptr<dbiplus::Dat
 
   pItem->m_dwSize = pDS->fv(PROGRAMDB_ID_SIZE + 2).get_asInt64();
 }
+
+bool CProgramDatabase::GetRecentlyPlayedGames(CFileItemList &items)
+{
+  std::string strSQL = PrepareSQL("SELECT * FROM program WHERE c%02d='game' ORDER BY lastPlayed desc LIMIT 25", PROGRAMDB_ID_TYPE);
+  try
+  {
+    if (NULL == m_pDB.get())
+      return false;
+    if (NULL == m_pDS.get())
+      return false;
+
+    int iRowsFound = RunQuery(strSQL);
+    if (iRowsFound <= 0)
+      return false;
+
+    while (!m_pDS->eof())
+    {
+      CFileItemPtr pItem(new CFileItem());
+      GetDetailsForItem(m_pDS, pItem.get());
+      items.Add(pItem);
+      m_pDS->next();
+    }
+
+    // cleanup
+    m_pDS->close();
+    return true;
+  }
+  catch(...)
+  {
+    CLog::Log(LOGERROR, "%s (%s) failed", __FUNCTION__, strSQL.c_str());
+  }
+  return false;
+}
