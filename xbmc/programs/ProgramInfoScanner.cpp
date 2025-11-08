@@ -110,33 +110,39 @@ namespace PROGRAM
       if (item->m_bIsFolder && !recursive)
       {
         DoScraping(item->GetPath(), true);
+        if (m_handle)
+          m_handle->SetPercentage(i * 100.f / items.Size());
         continue;
       }
 
-      std::string strFilename = URIUtils::GetFileName(item->GetPath());
-      URIUtils::RemoveExtension(strFilename);
-      if (!StringUtils::EqualsNoCase(strFilename, "default"))
+      std::string strTemp = URIUtils::GetFileName(item->GetPath());
+      URIUtils::RemoveExtension(strTemp);
+      if (!StringUtils::EqualsNoCase(strTemp, "default"))
         continue;
 
+      strTemp = strDirectory;
+      URIUtils::RemoveSlashAtEnd(strTemp);
+      strTemp = URIUtils::GetFileName(strTemp);
+
       if (m_handle)
-        m_handle->SetTitle(strDirectory);
+        m_handle->SetTitle(strTemp);
 
       if (m_database.AddProgram(item->GetPath(), idPath) < 0)
         return false;
 
-      std::string strRootPath = strDirectory;
-      std::string strNFO = URIUtils::AddFileToFolder(strRootPath, "_resources", "default.xml");
+      CFileItemPtr pItem(new CFileItem());
+      pItem->SetPath(item->GetPath());
+      pItem->SetProperty("type", "game");
+      pItem->SetProperty("system", "xbox");
+      pItem->SetProperty("title", strTemp);
+
+      std::string strNFO = URIUtils::AddFileToFolder(strDirectory, "_resources", "default.xml");
 
       CXBMCTinyXML doc;
       if (doc.LoadFile(strNFO) && doc.RootElement())
       {
         const TiXmlElement* element = doc.RootElement();
         std::string value;
-
-        CFileItemPtr pItem(new CFileItem());
-        pItem->SetPath(item->GetPath());
-        pItem->SetProperty("type", "game");
-        pItem->SetProperty("system", "xbox");
 
         if (XMLUtils::GetString(element, "type", value))
           pItem->SetProperty("type", value);
@@ -154,57 +160,48 @@ namespace PROGRAM
 
         if (XMLUtils::GetString(element, "title", value))
           pItem->SetProperty("title", value);
-        else
-        {
-          if (item->IsXBE())
-            CUtil::GetXBEDescription(item->GetPath(), value);
-          else
-            value = URIUtils::GetFileName(URIUtils::GetParentPath(item->GetPath()));
-          pItem->SetProperty("title", value);
-        }
+        else if (item->IsXBE())
+          CUtil::GetXBEDescription(item->GetPath(), value);
 
         if (XMLUtils::GetString(element, "overview", value))
           pItem->SetProperty("overview", value);
 
-        value = URIUtils::AddFileToFolder(strRootPath, "_resources", "media", "preview.mp4");
+        value = URIUtils::AddFileToFolder(strDirectory, "_resources", "media", "preview.mp4");
         if (!CFile::Exists(value))
         {
-          value = URIUtils::AddFileToFolder(strRootPath, "_resources", "artwork", "preview.xmv");
+          value = URIUtils::AddFileToFolder(strDirectory, "_resources", "artwork", "preview.xmv");
           if (!CFile::Exists(value))
             value.clear();
         }
         if (!value.empty())
           pItem->SetProperty("trailer", value);
 
-        value = URIUtils::AddFileToFolder(strRootPath, "_resources", "artwork", "poster.jpg");
+        value = URIUtils::AddFileToFolder(strDirectory, "_resources", "artwork", "poster.jpg");
         if (!CFile::Exists(value))
         {
-          value = URIUtils::AddFileToFolder(strRootPath, "_resources", "artwork", "poster.png");
+          value = URIUtils::AddFileToFolder(strDirectory, "_resources", "artwork", "poster.png");
           if (!CFile::Exists(value))
             value.clear();
         }
         if (!value.empty())
           pItem->SetArt("poster", value);
 
-        value = URIUtils::AddFileToFolder(strRootPath, "_resources", "artwork", "fanart.jpg");
+        value = URIUtils::AddFileToFolder(strDirectory, "_resources", "artwork", "fanart.jpg");
         if (!CFile::Exists(value))
         {
-          value = URIUtils::AddFileToFolder(strRootPath, "_resources", "artwork", "fanart.png");
+          value = URIUtils::AddFileToFolder(strDirectory, "_resources", "artwork", "fanart.png");
           if (!CFile::Exists(value))
             value.clear();
         }
         if (!value.empty())
           pItem->SetArt("fanart", value);
-
-        int64_t iSize = CGUIWindowFileManager::CalculateFolderSize(strRootPath);
-        if (iSize > 0)
-          pItem->SetProperty("size", iSize);
-
-        m_database.SetDetailsForItem(*pItem);
-
-        if (m_handle)
-          m_handle->SetPercentage(i * 100.f / items.Size());
       }
+
+      int64_t iSize = CGUIWindowFileManager::CalculateFolderSize(strDirectory);
+      if (iSize > 0)
+        pItem->SetProperty("size", iSize);
+
+      m_database.SetDetailsForItem(*pItem);
     }
 
     return true;
