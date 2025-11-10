@@ -42,7 +42,7 @@ bool CProgramDatabase::Open()
 void CProgramDatabase::CreateTables()
 {
   CLog::Log(LOGINFO, "create path table");
-  m_pDS->exec("CREATE TABLE path (idPath integer primary key, strPath text, strContent text, strHash text, strScraper text, dateAdded text)");
+  m_pDS->exec("CREATE TABLE path (idPath integer primary key, strPath text, strScraper text, dateAdded text)");
 
   CLog::Log(LOGINFO, "create program table");
   std::string columns = "CREATE TABLE program (idProgram integer primary key, idPath integer";
@@ -358,7 +358,7 @@ int CProgramDatabase::GetPathId(const std::string& strPath)
   return -1;
 }
 
-int CProgramDatabase::AddPath(const std::string& strPath, const CDateTime& dateAdded /* = CDateTime() */)
+int CProgramDatabase::AddPath(const std::string& strPath)
 {
   std::string strSQL;
   try
@@ -376,10 +376,7 @@ int CProgramDatabase::AddPath(const std::string& strPath, const CDateTime& dateA
     URIUtils::AddSlashAtEnd(strPath1);
 
     // add the path
-    if (dateAdded.IsValid())
-      strSQL=PrepareSQL("insert into path (idPath, strPath, dateAdded) values (NULL, '%s', '%s')", strPath1.c_str(), dateAdded.GetAsDBDateTime().c_str());
-    else
-      strSQL=PrepareSQL("insert into path (idPath, strPath) values (NULL, '%s')", strPath1.c_str());
+    strSQL=PrepareSQL("insert into path (idPath, strPath, dateAdded) values (NULL, '%s', '%s')", strPath1.c_str(), CDateTime::GetCurrentDateTime().GetAsDBDateTime().c_str());
 
     m_pDS->exec(strSQL);
     idPath = (int)m_pDS->lastinsertid();

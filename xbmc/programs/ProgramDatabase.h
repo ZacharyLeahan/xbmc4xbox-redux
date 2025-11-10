@@ -110,7 +110,7 @@ public:
   int GetPathId(const std::string& strPath);
   int GetProgramId(const std::string& strFilenameAndPath);
 
-  int AddPath(const std::string& strPath, const CDateTime& dateAdded = CDateTime());
+  int AddPath(const std::string& strPath);
   int AddProgram(const std::string& strFilenameAndPath, const int idPath);
 
   bool GetPathContent(const std::string& strPath, CFileItemList &items);
