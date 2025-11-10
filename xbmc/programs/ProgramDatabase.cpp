@@ -579,7 +579,7 @@ void CProgramDatabase::SetScraperForPath(const std::string& strPath, const Scrap
     if (idPath < 0)
       return;
 
-    std::string strSQL = PrepareSQL("UPDATE path SET strScraper='%s'", scraper->ID().c_str());
+    std::string strSQL = PrepareSQL("UPDATE path SET strScraper='%s' WHERE idPath=%i", scraper->ID().c_str(), idPath);
     m_pDS->exec(strSQL);
   }
   catch(...)
