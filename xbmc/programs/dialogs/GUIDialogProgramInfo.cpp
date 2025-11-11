@@ -15,6 +15,7 @@
 #include "guilib/Key.h"
 #include "guilib/LocalizeStrings.h"
 #include "messaging/ApplicationMessenger.h"
+#include "programs/ProgramInfoTag.h"
 #include "programs/dialogs/GUIDialogProgramSettings.h"
 #include "programs/launchers/ProgramLauncher.h"
 #include "settings/AdvancedSettings.h"
@@ -137,7 +138,7 @@ void CGUIDialogProgramInfo::ClearScreenshotList()
 
 void CGUIDialogProgramInfo::PlayTrailer()
 {
-  std::string strTrailer = m_programItem->GetProperty("trailer").asString();
+  std::string strTrailer = m_programItem->GetProgramInfoTag()->m_strTrailer;
   if (!strTrailer.empty())
   {
     CFileItem item(strTrailer, false);
