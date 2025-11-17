@@ -221,6 +221,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.1.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.1.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.1.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.1.Fanart)]</property>
 					</item>
 					<item id="2">
 						<label>$INFO[Window.Property(LatestMovie.2.Title)]</label>
@@ -229,6 +230,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.2.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.2.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.2.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.2.Fanart)]</property>
 					</item>
 					<item id="3">
 						<label>$INFO[Window.Property(LatestMovie.3.Title)]</label>
@@ -237,6 +239,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.3.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.3.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.3.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.3.Fanart)]</property>
 					</item>
 					<item id="4">
 						<label>$INFO[Window.Property(LatestMovie.4.Title)]</label>
@@ -245,6 +248,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.4.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.4.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.4.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.4.Fanart)]</property>
 					</item>
 					<item id="5">
 						<label>$INFO[Window.Property(LatestMovie.5.Title)]</label>
@@ -253,6 +257,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.5.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.5.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.5.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.5.Fanart)]</property>
 					</item>
 					<item id="6">
 						<label>$INFO[Window.Property(LatestMovie.6.Title)]</label>
@@ -261,6 +266,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.6.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.6.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.6.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.6.Fanart)]</property>
 					</item>
 					<item id="7">
 						<label>$INFO[Window.Property(LatestMovie.7.Title)]</label>
@@ -269,6 +275,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.7.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.7.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.7.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.7.Fanart)]</property>
 					</item>
 					<item id="8">
 						<label>$INFO[Window.Property(LatestMovie.8.Title)]</label>
@@ -277,22 +284,7 @@
 						<thumb>$INFO[Window.Property(LatestMovie.8.Thumb)]</thumb>
 						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.8.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMovie.8.Title))</visible>
-					</item>
-					<item id="9">
-						<label>$INFO[Window.Property(LatestMovie.9.Title)]</label>
-						<label2>-</label2>
-						<icon>$INFO[Window.Property(LatestMovie.9.Icon)]</icon>
-						<thumb>$INFO[Window.Property(LatestMovie.9.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.9.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestMovie.9.Title))</visible>
-					</item>
-					<item id="10">
-						<label>$INFO[Window.Property(LatestMovie.10.Title)]</label>
-						<label2>-</label2>
-						<icon>$INFO[Window.Property(LatestMovie.10.Icon)]</icon>
-						<thumb>$INFO[Window.Property(LatestMovie.10.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestMovie.10.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestMovie.10.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestMovie.8.Fanart)]</property>
 					</item>
 				</content>
 			</control>
@@ -353,6 +345,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.1.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.1.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.1.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.1.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.1.Fanart)]</property>
 					</item>
 					<item id="2">
 						<label>$INFO[Window.Property(LatestEpisode.2.ShowTitle)]</label>
@@ -362,6 +355,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.2.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.2.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.2.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.2.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.2.Fanart)]</property>
 					</item>
 					<item id="3">
 						<label>$INFO[Window.Property(LatestEpisode.3.ShowTitle)]</label>
@@ -371,6 +365,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.3.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.3.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.3.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.3.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.3.Fanart)]</property>
 					</item>
 					<item id="4">
 						<label>$INFO[Window.Property(LatestEpisode.4.ShowTitle)]</label>
@@ -380,6 +375,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.4.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.4.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.4.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.4.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.4.Fanart)]</property>
 					</item>
 					<item id="5">
 						<label>$INFO[Window.Property(LatestEpisode.5.ShowTitle)]</label>
@@ -389,6 +385,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.5.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.5.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.5.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.5.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.5.Fanart)]</property>
 					</item>
 					<item id="6">
 						<label>$INFO[Window.Property(LatestEpisode.6.ShowTitle)]</label>
@@ -398,6 +395,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.6.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.6.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.6.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.6.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.6.Fanart)]</property>
 					</item>
 					<item id="7">
 						<label>$INFO[Window.Property(LatestEpisode.7.ShowTitle)]</label>
@@ -407,6 +405,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.7.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.7.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.7.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.7.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.7.Fanart)]</property>
 					</item>
 					<item id="8">
 						<label>$INFO[Window.Property(LatestEpisode.8.ShowTitle)]</label>
@@ -416,24 +415,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.8.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestEpisode.8.EpisodeTitle))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.8.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.8.EpisodeNumber)]</property>
-					</item>
-					<item id="9">
-						<label>$INFO[Window.Property(LatestEpisode.9.ShowTitle)]</label>
-						<label2>$INFO[Window.Property(LatestEpisode.9.EpisodeTitle)]</label2>
-						<icon>$INFO[Window.Property(LatestEpisode.9.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestEpisode.9.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.9.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestEpisode.9.EpisodeTitle))</visible>
-						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.9.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.9.EpisodeNumber)]</property>
-					</item>
-					<item id="10">
-						<label>$INFO[Window.Property(LatestEpisode.10.ShowTitle)]</label>
-						<label2>$INFO[Window.Property(LatestEpisode.10.EpisodeTitle)]</label2>
-						<icon>$INFO[Window.Property(LatestEpisode.10.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestEpisode.10.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestEpisode.10.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestEpisode.10.EpisodeTitle))</visible>
-						<property name="ThumbLabel">$INFO[Window.Property(LatestEpisode.10.EpisodeSeason)]x$INFO[Window.Property(LatestEpisode.10.EpisodeNumber)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestEpisode.8.Fanart)]</property>
 					</item>
 				</content>
 			</control>
@@ -567,6 +549,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.1.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.1.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.1.Fanart)]</property>
 					</item>
 					<item id="2">
 						<label>$INFO[Window.Property(LatestAlbum.2.Title)]</label>
@@ -576,6 +559,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.2.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.2.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.2.Fanart)]</property>
 					</item>
 					<item id="3">
 						<label>$INFO[Window.Property(LatestAlbum.3.Title)]</label>
@@ -585,6 +569,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.3.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.3.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.3.Fanart)]</property>
 					</item>
 					<item id="4">
 						<label>$INFO[Window.Property(LatestAlbum.4.Title)]</label>
@@ -594,6 +579,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.4.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.4.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.4.Fanart)]</property>
 					</item>
 					<item id="5">
 						<label>$INFO[Window.Property(LatestAlbum.5.Title)]</label>
@@ -603,6 +589,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.5.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.5.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.5.Fanart)]</property>
 					</item>
 					<item id="6">
 						<label>$INFO[Window.Property(LatestAlbum.6.Title)]</label>
@@ -612,6 +599,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.6.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.6.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.6.Fanart)]</property>
 					</item>
 					<item id="7">
 						<label>$INFO[Window.Property(LatestAlbum.7.Title)]</label>
@@ -621,6 +609,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.7.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.7.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.7.Fanart)]</property>
 					</item>
 					<item id="8">
 						<label>$INFO[Window.Property(LatestAlbum.8.Title)]</label>
@@ -630,24 +619,7 @@
 						<onclick>PlayList.Clear</onclick>
 						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.8.Path)]&quot;)</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestAlbum.8.Title))</visible>
-					</item>
-					<item id="9">
-						<label>$INFO[Window.Property(LatestAlbum.9.Title)]</label>
-						<label2>$INFO[Window.Property(LatestAlbum.9.Artist)]</label2>
-						<icon>$INFO[Window.Property(LatestAlbum.9.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestAlbum.9.Thumb)]</thumb>
-						<onclick>PlayList.Clear</onclick>
-						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.9.Path)]&quot;)</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestAlbum.9.Title))</visible>
-					</item>
-					<item id="10">
-						<label>$INFO[Window.Property(LatestAlbum.10.Title)]</label>
-						<label2>$INFO[Window.Property(LatestAlbum.10.Artist)]</label2>
-						<icon>$INFO[Window.Property(LatestAlbum.10.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestAlbum.10.Thumb)]</thumb>
-						<onclick>PlayList.Clear</onclick>
-						<onclick>PlayMedia(&quot;$INFO[Window.Property(LatestAlbum.10.Path)]&quot;)</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestAlbum.10.Title))</visible>
+						<property name="fanart">$INFO[Window.Property(LatestAlbum.8.Fanart)]</property>
 					</item>
 				</content>
 			</control>
@@ -708,6 +680,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.1.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.1.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.1.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.1.Fanart)]</property>
 					</item>
 					<item id="2">
 						<label>$INFO[Window.Property(LatestMusicVideo.2.Title)]</label>
@@ -717,6 +690,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.2.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.2.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.2.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.2.Fanart)]</property>
 					</item>
 					<item id="3">
 						<label>$INFO[Window.Property(LatestMusicVideo.3.Title)]</label>
@@ -726,6 +700,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.3.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.3.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.3.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.3.Fanart)]</property>
 					</item>
 					<item id="4">
 						<label>$INFO[Window.Property(LatestMusicVideo.4.Title)]</label>
@@ -735,6 +710,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.4.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.4.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.4.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.4.Fanart)]</property>
 					</item>
 					<item id="5">
 						<label>$INFO[Window.Property(LatestMusicVideo.5.Title)]</label>
@@ -744,6 +720,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.5.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.5.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.5.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.5.Fanart)]</property>
 					</item>
 					<item id="6">
 						<label>$INFO[Window.Property(LatestMusicVideo.6.Title)]</label>
@@ -753,6 +730,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.6.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.6.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.6.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.6.Fanart)]</property>
 					</item>
 					<item id="7">
 						<label>$INFO[Window.Property(LatestMusicVideo.7.Title)]</label>
@@ -762,6 +740,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.7.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.7.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.7.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.7.Fanart)]</property>
 					</item>
 					<item id="8">
 						<label>$INFO[Window.Property(LatestMusicVideo.8.Title)]</label>
@@ -771,24 +750,7 @@
 						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.8.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.8.Title))</visible>
 						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.8.Year)]</property>
-					</item>
-					<item id="9">
-						<label>$INFO[Window.Property(LatestMusicVideo.9.Title)]</label>
-						<label2>$INFO[Window.Property(LatestMusicVideo.9.Artist)]</label2>
-						<icon>$INFO[Window.Property(LatestMusicVideo.9.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestMusicVideo.9.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.9.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.9.Title))</visible>
-						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.9.Year)]</property>
-					</item>
-					<item id="10">
-						<label>$INFO[Window.Property(LatestMusicVideo.10.Title)]</label>
-						<label2>$INFO[Window.Property(LatestMusicVideo.10.Artist)]</label2>
-						<icon>$INFO[Window.Property(LatestMusicVideo.10.Thumb)]</icon>
-						<thumb>$INFO[Window.Property(LatestMusicVideo.10.Thumb)]</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(LatestMusicVideo.10.Path)])</onclick>
-						<visible>!String.IsEmpty(Window.Property(LatestMusicVideo.10.Title))</visible>
-						<property name="ThumbLabel">$INFO[Window.Property(LatestMusicVideo.10.Year)]</property>
+						<property name="fanart">$INFO[Window.Property(LatestMusicVideo.8.Fanart)]</property>
 					</item>
 				</content>
 			</control>
