@@ -74,7 +74,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.1.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.1.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.1.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.1.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.1.Fanart)]</property>
 					</item>
@@ -83,7 +83,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.2.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.2.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.2.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.2.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.2.Fanart)]</property>
 					</item>
@@ -92,7 +92,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.3.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.3.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.3.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.3.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.3.Fanart)]</property>
 					</item>
@@ -101,7 +101,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.4.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.4.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.4.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.4.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.4.Fanart)]</property>
 					</item>
@@ -110,7 +110,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.5.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.5.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.5.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.5.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.5.Fanart)]</property>
 					</item>
@@ -119,7 +119,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.6.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.6.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.6.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.6.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.6.Fanart)]</property>
 					</item>
@@ -128,7 +128,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.7.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.7.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.7.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.7.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.7.Fanart)]</property>
 					</item>
@@ -137,7 +137,7 @@
 						<label2>-</label2>
 						<icon>$INFO[Window.Property(RecentlyPlayedGame.8.Icon)]</icon>
 						<thumb>-</thumb>
-						<onclick>PlayMedia($INFO[Window.Property(RecentlyPlayedGame.8.Path)])</onclick>
+						<onclick>RunXBE($INFO[Window.Property(RecentlyPlayedGame.8.Path)])</onclick>
 						<visible>!String.IsEmpty(Window.Property(RecentlyPlayedGame.8.Title))</visible>
 						<property name="fanart">$INFO[Window.Property(RecentlyPlayedGame.8.Fanart)]</property>
 					</item>
