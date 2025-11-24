@@ -21,10 +21,10 @@
 </p>
 
 <h1 align="center">
-  Welcome to XBMC Home Theater Software!
+  Welcome to Xbox Media Center Home Theater Software!
 </h1>
 
-XBMC4Xbox is a free and open source media player software made solely for the first-generation Xbox video-game console. The software was forked from the XBMC project (now known as Kodi and formerly known as Xbox Media Player) after XBMC removed support for the Xbox console. Other than the audio / video playback and media center functionality, XBMC4Xbox also has the ability to catalog and launch original Xbox games, and homebrew applications such as console emulators from the Xbox's built-in harddrive.
+Xbox Media Center (in short just XBMC) is a free and open source media player software made solely for the first-generation Xbox video-game console. The software was forked from the XBMC project (now known as Kodi and formerly known as Xbox Media Player) after XBMC removed support for the Xbox console. Other than the audio / video playback and media center functionality, XBMC also has the ability to catalog and launch original Xbox games, and homebrew applications such as console emulators from the Xbox's built-in harddrive.
 
 ## Suppport us
 I'm seeking for Xbox Development Kit (DVT3/4). Consider buying me a coffee so I can buy one!
@@ -33,9 +33,9 @@ I'm seeking for Xbox Development Kit (DVT3/4). Consider buying me a coffee so I 
 ## Download links
 This software is in alpha and currently we are only providing nightly releases.
 
-**XBMC (Nightly)**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly/XBMC4XBOX.zip)
+**XBMC (Nightly) - Python 2**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly/XBMC4XBOX.zip)
 <br/>
-**XBMC (Nightly) - Python 3**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly-python3/XBMC4XBOX.zip)
+**XBMC (Nightly) - Python 3**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly-python3/XBMC4XBOX.zip) - **EXPERIMENTAL! - It's stable but it's slower compared to Python 2 so we are still trying to figure out why. Besides that everything works well.**
 
 ## Give your media the love it deserves
 XBMC is your all-in-one solution for enjoying almost all popular audio, video, and gaming formats. Whether you're streaming multimedia from anywhere in your home or directly from the internet, XBMC handles it effortlessly, supporting virtually any protocol available.
@@ -47,7 +47,7 @@ Simply point XBMC to your media or game collection, and watch as it **magically 
 </p>
 
 ## Getting Started
-XBMC4Xbox is the continuation of the popular [Kodi fork](https://www.xbmc4xbox.org.uk/), specifically developed for the Original Xbox (2001). This project is a revitalized fork of the original XBMC4Xbox, with the primary goal of aligning it with the latest advancements in Kodi software. Our main mission is to keep the GUILIB updated to match Kodi, ensuring that the newest skins can be seamlessly backported. By doing so, we aim to bring the best of modern Kodi features to the classic Xbox platform, preserving its legacy while enhancing its functionality.
+Xbox Media Center (XBMC) is the continuation of the popular [Kodi fork](https://www.xbmc4xbox.org.uk/), specifically developed for the Original Xbox (2001). This project is a revitalized fork of the original XBMC4Xbox, with the primary goal of aligning it with the latest advancements in Kodi software. Our main mission is to keep the GUILIB updated to match Kodi, ensuring that the newest skins can be seamlessly backported. By doing so, we aim to bring the best of modern Kodi features to the classic Xbox platform, preserving its legacy while enhancing its functionality.
 
 ## How to Contribute
 XBMC is created by users for users and **we welcome every contribution**. There are no highly paid developers or poorly paid support personnel on the phones ready to take your call. There are only users who have seen a problem and done their best to fix it. This means XBMC will always need the contributions of users like you. How can you get involved?
