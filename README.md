@@ -34,6 +34,8 @@ I'm seeking for Xbox Development Kit (DVT3/4). Consider buying me a coffee so I 
 This software is in alpha and currently we are only providing nightly releases.
 
 **XBMC (Nightly)**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly/XBMC4XBOX.zip)
+<br/>
+**XBMC (Nightly) - Python 3**: [Download Link](https://github.com/antonic901/xbmc4xbox-redux/releases/download/nightly-python3/XBMC4XBOX.zip)
 
 ## Give your media the love it deserves
 XBMC is your all-in-one solution for enjoying almost all popular audio, video, and gaming formats. Whether you're streaming multimedia from anywhere in your home or directly from the internet, XBMC handles it effortlessly, supporting virtually any protocol available.
