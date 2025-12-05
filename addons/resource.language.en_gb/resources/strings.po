@@ -2676,6 +2676,16 @@ msgctxt "#621"
 msgid "Encoder"
 msgstr ""
 
+#: system/settings/settings.xml
+msgctxt "#622"
+msgid "Quality"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#623"
+msgid "Bitrate"
+msgstr ""
+
 msgctxt "#624"
 msgid "Include track number"
 msgstr ""
