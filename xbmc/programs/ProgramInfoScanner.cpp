@@ -147,24 +147,7 @@ namespace PROGRAM
     }
 
     CFileItemList items;
-    if (URIUtils::IsMultiPath(strDirectory))
-    {
-      std::vector<std::string> paths;
-      if (!CMultiPathDirectory::GetPaths(strDirectory, paths))
-        return false;
-
-      for (unsigned int i = 0; i < paths.size(); i++)
-      {
-        CFileItemList items2;
-        if(!CDirectory::GetDirectory(paths[i], items, g_advancedSettings.m_programExtensions, DIR_FLAG_DEFAULTS))
-        {
-          CLog::Log(LOGWARNING, "%s - Could not fetch items of directory: %s", paths[i].c_str());
-        }
-        else
-          items.Append(items2);
-      }
-    }
-    else if(!CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_programExtensions, DIR_FLAG_DEFAULTS))
+    if(!CDirectory::GetDirectory(strDirectory, items, g_advancedSettings.m_programExtensions, DIR_FLAG_DEFAULTS))
       return false;
 
     for (int i = 0; i < items.Size(); ++i)
@@ -173,7 +156,7 @@ namespace PROGRAM
       if (item->m_bIsFolder && !recursive)
         DoScraping(item->GetPath(), scraper, idPath);
       else if (!item->m_bIsFolder && recursive)
-        ScrapeProgram(idPath, item->GetPath(), scraper);
+        ScrapeProgram(item->GetPath(), scraper, idPath);
 
       if (!recursive)
         m_handle->SetPercentage(i * 100.f / items.Size());
@@ -182,7 +165,7 @@ namespace PROGRAM
     return true;
   }
 
-  void CProgramInfoScanner::ScrapeProgram(int idPath, const std::string& strPath, const ScraperPtr& scraper)
+  void CProgramInfoScanner::ScrapeProgram(const std::string& strPath, const ScraperPtr& scraper, int idPath)
   {
     std::string strTemp(strPath);
     URIUtils::RemoveExtension(strTemp);
