@@ -173,7 +173,8 @@ bool CGUIWindowPrograms::Update(const std::string &strDirectory, bool updateFilt
   if (!CGUIMediaWindow::Update(strDirectory, updateFilterPath))
     return false;
 
-  m_thumbLoader.Load(*m_vecItems);
+  if (URIUtils::IsProtocol(m_vecItems->GetPath(), "gamesaves"))
+    m_thumbLoader.Load(*m_vecItems);
 
   return true;
 }
